@@ -3,36 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster - Multi-Monster Map</title>
+    <title>AR Monster - Hatching & Canvas Throwing</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
-        
-        @keyframes creatureFloat {
-            0%, 100% { transform: translate(-50%, -50%) translateY(0); }
-            50% { transform: translate(-50%, -50%) translateY(-12px); }
-        }
-        .creature-float {
-            animation: creatureFloat 3.5s ease-in-out infinite;
-            transition: all 0.2s ease-out;
-        }
-
-        @keyframes throwBall {
-            0% { transform: translate(-50%, 150px) scale(0.4); opacity: 0; }
-            50% { transform: translate(-50%, -20px) scale(1); opacity: 1; }
-            100% { transform: translate(-50%, -50px) scale(1.2); opacity: 0; }
-        }
-        .anim-throw { animation: throwBall 0.5s ease-out forwards; }
-
         #map { height: 100%; width: 100%; border-radius: 1rem; z-index: 10; }
+        .leaflet-control-attribution { display: none !important; }
     </style>
 </head>
 <body class="text-white relative h-screen w-screen overflow-hidden">
 
     <!-- QUẢN LÝ PHIÊN BẢN (AUTO UPDATE CACHE) -->
     <script>
-        const APP_VERSION = '1.7'; // Tăng số phiên bản để tự động cập nhật cache
+        const APP_VERSION = '1.8'; // Phiên bản mới tích hợp Trứng, Túi đồ & Canvas Minigame
 
         async function checkForUpdates() {
             try {
@@ -47,18 +31,21 @@
         window.addEventListener('load', checkForUpdates);
     </script>
 
-    <!-- MÀN HÌNH BẢN ĐỒ GPS -->
+    <!-- MÀN HÌNH BẢN ĐỒ GPS & NHỮNG CHÚ THÚ XUNG QUANH -->
     <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-3">
         <div class="flex justify-between items-center z-30">
-            <div class="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
+            <div class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full bg-blue-500 animate-ping"></span>
                 <span id="gps-status" class="text-xs font-medium">GPS: Đang quét khu vực...</span>
             </div>
             <div class="flex gap-2">
-                <button onclick="openTeamMenu()" class="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold">
+                <button onclick="openEggsMenu()" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold flex items-center gap-1">
+                    🥚 Trứng (<span id="egg-steps-count">0</span>/50)
+                </button>
+                <button onclick="openTeamMenu()" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold">
                     🎒 Đội hình (<span id="team-count">0</span>/3)
                 </button>
-                <button onclick="openPokedexMenu()" class="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold">
+                <button onclick="openPokedexMenu()" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold">
                     📖 Sổ tay
                 </button>
             </div>
@@ -69,8 +56,8 @@
         </div>
 
         <div class="flex flex-col items-center z-30 pb-2">
-            <div id="distance-info" class="text-xs font-bold text-yellow-300 bg-black/70 px-4 py-1.5 rounded-full border border-white/20 mb-2 shadow-lg">
-                📍 Chạm vào bất kỳ con thú nào trên bản đồ để bắt!
+            <div id="distance-info" class="text-xs font-bold text-yellow-300 bg-black/80 px-4 py-1.5 rounded-full border border-white/20 mb-2 shadow-lg">
+                📍 Chạm vào icon thú trên bản đồ để ném bóng bắt!
             </div>
             <button onclick="spawnMultipleMonsters()" class="w-full max-w-sm bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-2xl shadow-xl transition-all">
                 🔄 Quét lại khu vực (Tìm thú mới)
@@ -78,45 +65,45 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH CAMERA AR & BẮT THÚ -->
+    <!-- MÀN HÌNH MINIGAME CANVAS BẮT THÚ (VUỐT NÉM BÓNG) -->
     <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
+        <!-- Camera Background -->
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
         </div>
 
-        <div class="flex justify-between items-center z-10 p-4">
-            <button onclick="exitARScreen()" class="bg-black/70 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">
+        <!-- Canvas Minigame Layer -->
+        <canvas id="gameCanvas" class="absolute inset-0 z-10 touch-none"></canvas>
+
+        <!-- Top bar AR -->
+        <div class="flex justify-between items-center z-20 p-4 pointer-events-auto">
+            <button onclick="exitARScreen()" class="bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">
                 ⬅️ Quay lại bản đồ
             </button>
-            <div class="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold text-yellow-300">
-                CP <span id="ar-mon-cp">150</span>
+            <div id="ar-mon-info" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold text-yellow-300">
+                Mục tiêu: Đang tải...
             </div>
         </div>
 
-        <div class="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-            <div id="active-monster" class="absolute pointer-events-auto cursor-pointer flex flex-col items-center creature-float" onclick="tryCatchMonster()" style="left: 50%; top: 48%;">
-                <div id="ar-mon-avatar" class="text-9xl filter drop-shadow-[0_25px_25px_rgba(0,0,0,0.9)]">🐕</div>
-                <div id="ar-mon-name" class="text-xs font-bold mt-2 bg-black/70 px-3 py-1 rounded-full border border-white/20 shadow-lg">Inu-Spark</div>
-            </div>
-            <div id="pokeball-anim" class="absolute text-6xl pointer-events-none hidden" style="left: 50%; top: 50%;">🔴</div>
-        </div>
-
-        <div class="flex flex-col items-center z-10 pb-12 pointer-events-none">
-            <div id="throw-feedback" class="text-sm font-bold bg-black/80 px-4 py-2 rounded-full border border-white/20 opacity-0 transition-opacity shadow-lg">Ném hụt rồi! Thú đã vùng vẫy thoát ra!</div>
-            <div class="text-[11px] text-zinc-300 mt-2 bg-black/50 px-3 py-1 rounded-full">Chạm trực tiếp vào thú để ném bóng bắt!</div>
+        <!-- Hướng dẫn dưới màn hình -->
+        <div class="flex flex-col items-center z-20 pb-8 pointer-events-none">
+            <div id="throw-feedback" class="text-sm font-bold bg-black/80 px-4 py-2 rounded-full border border-white/20 opacity-0 transition-opacity shadow-lg">Ném hụt rồi!</div>
+            <div class="text-[11px] text-zinc-300 mt-2 bg-black/60 px-3 py-1 rounded-full border border-white/10">👆 Vuốt ngón tay hướng lên trên để ném bóng bắt thú!</div>
         </div>
     </div>
 
-    <!-- MODAL OVERLAY -->
+    <!-- MODAL OVERLAY CHUNG (SỔ TAY, ĐỘI HÌNH, ẤP TRỨNG) -->
     <div id="modal-container" class="hidden absolute inset-0 z-40 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // --- 1. HỆ THỐNG LOCALSTORAGE & DỮ LIỆU ---
         let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
         let pokedex = JSON.parse(localStorage.getItem('ar_pokedex') || '[]');
-        
+        let eggSteps = parseInt(localStorage.getItem('ar_egg_steps') || '0');
+
         const categories = {
             'Gia cầm': [
                 { id: 101, name: 'Gà Ta', emoji: '🐔', cp: 120, hp: 60, maxHp: 60, atk: 70, level: 1 },
@@ -146,23 +133,82 @@
         const allMonsters = Object.values(categories).flat();
         let currentWildMonster = null;
 
+        // --- 2. HỆ THỐNG ẤP TRỨNG BẰNG BƯỚC CHÂN (DEVICEMOTION) ---
+        function initStepCounter() {
+            document.getElementById('egg-steps-count').innerText = eggSteps;
+            
+            if (window.DeviceMotionEvent) {
+                let lastAcc = { x: 0, y: 0, z: 0 };
+                window.addEventListener('devicemotion', (event) => {
+                    let acc = event.accelerationIncludingGravity;
+                    if (!acc) return;
+
+                    let delta = Math.abs(acc.x - lastAcc.x) + Math.abs(acc.y - lastAcc.y) + Math.abs(acc.z - lastAcc.z);
+                    if (delta > 12) { // Ngưỡng nhận diện bước chân đi bộ
+                        eggSteps++;
+                        localStorage.setItem('ar_egg_steps', eggSteps);
+                        document.getElementById('egg-steps-count').innerText = eggSteps;
+                    }
+                    lastAcc = { x: acc.x, y: acc.y, z: acc.z };
+                });
+            }
+        }
+
+        function openEggsMenu() {
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            const targetSteps = 50; // 50 bước để nở trứng
+            let progress = Math.min(100, (eggSteps / targetSteps) * 100);
+            let canHatch = eggSteps >= targetSteps;
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🥚 Ấp Trứng Linh Thú</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
+            <div class="flex flex-col items-center bg-zinc-800 p-6 rounded-2xl border border-zinc-700 text-center">
+                <div class="text-7xl mb-3 animate-pulse">🥚</div>
+                <div class="font-bold text-sm mb-1">Trứng Đặc Biệt</div>
+                <div class="text-xs text-zinc-400 mb-4">Đi bộ ngoài đời thực để tích lũy bước chân ấp nở!</div>
+                <div class="w-full bg-zinc-900 rounded-full h-4 overflow-hidden border border-zinc-700 mb-2">
+                    <div class="bg-amber-500 h-full transition-all" style="width: ${progress}%"></div>
+                </div>
+                <div class="text-xs font-bold text-yellow-300 mb-4">Tiến độ: ${eggSteps} / ${targetSteps} bước</div>
+                
+                <button onclick="hatchEgg()" ${canHatch ? '' : 'disabled'} class="w-full py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${canHatch ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer' : 'bg-zinc-700 text-zinc-400 opacity-50 cursor-not-allowed'}">
+                    ${canHatch ? '🎉 ẤP NỞ NGAY!' : '🔒 Chưa đủ bước chân'}
+                </button>
+            </div>`;
+        }
+
+        function hatchEgg() {
+            if (eggSteps < 50) return;
+            eggSteps -= 50;
+            localStorage.setItem('ar_egg_steps', eggSteps);
+            document.getElementById('egg-steps-count').innerText = eggSteps;
+
+            // Nhận ngẫu nhiên 1 linh thú từ trứng
+            const hatchedPet = allMonsters[Math.floor(Math.random() * allMonsters.length)];
+            team.push({ ...hatchedPet, uniqueId: Date.now(), level: 1 });
+            localStorage.setItem('ar_team', JSON.stringify(team));
+            updateTeamCount();
+
+            alert(`🎉 Chúc mừng! Trứng đã nở ra linh thú hiếm: ${hatchedPet.emoji} ${hatchedPet.name}!`);
+            closeModal();
+        }
+
+        // --- 3. BẢN ĐỒ LEAFLET & NHIỀU THÚ XUẤT HIỆN ---
         let map, userMarker;
-        let activeMarkers = []; // Danh sách các marker quái vật trên bản đồ
+        let activeMarkers = [];
         let userLat = 10.0452, userLng = 105.7469; 
 
         function initMap() {
             map = L.map('map', { zoomControl: false }).setView([userLat, userLng], 17);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
             const userIcon = L.divIcon({
                 className: 'custom-user-icon',
                 html: '<div style="font-size: 28px; filter: drop-shadow(0 0 8px rgba(59,130,246,0.8));">📍</div>',
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
+                iconSize: [30, 30], iconAnchor: [15, 15]
             });
 
             userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
@@ -181,15 +227,11 @@
             }
         }
 
-        // Sinh nhiều con thú xuất hiện cùng lúc trên bản đồ quanh vị trí người chơi
         function spawnMultipleMonsters() {
-            // Xóa các marker cũ nếu có
             activeMarkers.forEach(m => map.removeLayer(m));
             activeMarkers = [];
 
-            // Tạo ngẫu nhiên 8-10 con thú quanh vị trí người chơi
-            const count = 8;
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < 8; i++) {
                 const template = allMonsters[Math.floor(Math.random() * allMonsters.length)];
                 const monsterData = { 
                     ...template, 
@@ -201,107 +243,196 @@
                 const monsterIcon = L.divIcon({
                     className: 'custom-monster-icon',
                     html: `<div style="font-size: 32px; animation: bounce 1.5s infinite; filter: drop-shadow(0 0 8px rgba(234,179,8,0.9));">${monsterData.emoji}</div>`,
-                    iconSize: [35, 35],
-                    iconAnchor: [17, 17]
+                    iconSize: [35, 35], iconAnchor: [17, 17]
                 });
 
                 const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(map);
-                
-                // Khi bấm vào con thú nào trên bản đồ, lập tức mở camera bắt con đó
                 marker.on('click', () => {
                     currentWildMonster = monsterData;
                     enterARScreen();
                 });
-
                 activeMarkers.push(marker);
             }
         }
 
+        // --- 4. MINIGAME CANVAS & VUỐT NÉM BÓNG VẬT LÝ ---
+        let canvas, ctx;
+        let isARActive = false;
+        let ball = { x: 0, y: 0, vx: 0, vy: 0, radius: 25, active: false, flying: false };
+        let monsterPos = { x: 0, y: 0, vx: 2 };
+        let touchStart = { x: 0, y: 0 };
+        let touchEnd = { x: 0, y: 0 };
+
         async function enterARScreen() {
             document.getElementById('map-screen').classList.add('hidden');
             document.getElementById('ar-screen').classList.remove('hidden');
+            isARActive = true;
 
-            document.getElementById('ar-mon-avatar').innerText = currentWildMonster.emoji;
-            document.getElementById('ar-mon-name').innerText = currentWildMonster.name;
-            document.getElementById('ar-mon-cp').innerText = currentWildMonster.cp;
+            document.getElementById('ar-mon-info').innerText = `${currentWildMonster.emoji} ${currentWildMonster.name} (CP ${currentWildMonster.cp})`;
 
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: { exact: "environment" } },
-                    audio: false
-                });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } }, audio: false });
                 document.getElementById('camera-feed').srcObject = stream;
-            } catch (err) {
+            } catch (e) {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                     document.getElementById('camera-feed').srcObject = stream;
-                } catch (e) {}
+                } catch (err) {}
             }
+
+            initCanvasGame();
             playSound('spawn');
         }
 
         function exitARScreen() {
+            isARActive = false;
             const videoEl = document.getElementById('camera-feed');
-            if (videoEl.srcObject) {
-                videoEl.srcObject.getTracks().forEach(track => track.stop());
-            }
+            if (videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
             document.getElementById('ar-screen').classList.add('hidden');
             document.getElementById('map-screen').classList.remove('hidden');
             map.invalidateSize();
         }
 
-        function tryCatchMonster() {
-            if (!currentWildMonster) return;
-            playSound('throw');
+        function initCanvasGame() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
 
-            const ball = document.getElementById('pokeball-anim');
-            ball.classList.remove('hidden');
-            ball.classList.add('anim-throw');
+            // Vị trí ban đầu của quái vật trên canvas
+            monsterPos.x = canvas.width / 2;
+            monsterPos.y = canvas.height * 0.35;
 
-            const feedback = document.getElementById('throw-feedback');
+            // Đặt bóng ở vị trí xuất phát phía dưới màn hình
+            resetBall();
 
-            setTimeout(() => {
-                ball.classList.remove('anim-throw');
-                ball.classList.add('hidden');
+            // Đăng ký sự kiện cảm ứng vuốt màn hình (Touch & Mouse)
+            canvas.onpointerdown = (e) => {
+                if (ball.flying) return;
+                touchStart.x = e.clientX;
+                touchStart.y = e.clientY;
+            };
 
-                const isFailed = Math.random() < 0.30;
+            canvas.onpointerup = (e) => {
+                if (ball.flying) return;
+                touchEnd.x = e.clientX;
+                touchEnd.y = e.clientY;
 
-                if (isFailed) {
-                    playSound('miss');
-                    feedback.innerText = `💥 Ném hụt rồi! ${currentWildMonster.name} đã vùng vẫy thoát ra!`;
-                    feedback.classList.remove('text-emerald-400');
-                    feedback.classList.add('text-red-400');
-                    feedback.style.opacity = '1';
-                    setTimeout(() => { feedback.style.opacity = '0'; }, 2000);
-                } else {
-                    playSound('catch');
-                    feedback.innerText = `🎉 Bắt thành công ${currentWildMonster.name}!`;
-                    feedback.classList.remove('text-red-400');
-                    feedback.classList.add('text-emerald-400');
-                    feedback.style.opacity = '1';
+                let dx = touchEnd.x - touchStart.x;
+                let dy = touchEnd.y - touchStart.y;
 
-                    if (team.length < 3) {
-                        team.push({ ...currentWildMonster, uniqueId: Date.now() });
-                        localStorage.setItem('ar_team', JSON.stringify(team));
-                        updateTeamCount();
-                    } else {
-                        alert(`Đội hình đã đầy (3/3). Thú tự động lưu vào kho.`);
-                    }
-
-                    if (!pokedex.includes(currentWildMonster.id)) {
-                        pokedex.push(currentWildMonster.id);
-                        localStorage.setItem('ar_pokedex', JSON.stringify(pokedex));
-                    }
-
-                    setTimeout(() => {
-                        feedback.style.opacity = '0';
-                        exitARScreen();
-                        spawnMultipleMonsters(); // Làm mới lại bản đồ
-                    }, 1500);
+                // Nếu vuốt hướng lên trên (dy < 0) thì kích hoạt ném bóng
+                if (dy < -30) {
+                    playSound('throw');
+                    ball.vx = dx * 0.12;
+                    ball.vy = dy * 0.15;
+                    ball.flying = true;
                 }
-            }, 500);
+            };
+
+            requestAnimationFrame(updateCanvasGame);
         }
 
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height * 0.82;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.flying = false;
+        }
+
+        function updateCanvasGame() {
+            if (!isARActive) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Cập nhật và vẽ Quái vật di chuyển qua lại
+            monsterPos.x += monsterPos.vx;
+            if (monsterPos.x < 60 || monsterPos.x > canvas.width - 60) {
+                monsterPos.vx *= -1;
+            }
+
+            ctx.font = "80px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y);
+
+            // 2. Cập nhật và vẽ Quả bóng Pokéball khi ném
+            if (ball.flying) {
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+                ball.vy += 0.3; // Trọng lực hút bóng rơi xuống
+
+                // Kiểm tra va chạm bóng với quái vật
+                let dist = Math.hypot(ball.x - monsterPos.x, ball.y - monsterPos.y);
+                if (dist < 60) {
+                    ball.flying = false;
+                    handleCatchResult();
+                }
+
+                // Nếu bóng bay ra ngoài màn hình -> Ném hụt
+                if (ball.y < 0 || ball.x < 0 || ball.x > canvas.width) {
+                    ball.flying = false;
+                    showThrowFeedback(false, "Ném hụt rồi!");
+                    resetBall();
+                }
+            }
+
+            // Vẽ Pokéball tại vị trí hiện tại
+            ctx.font = "45px sans-serif";
+            ctx.fillText("🔴", ball.x, ball.y);
+
+            requestAnimationFrame(updateCanvasGame);
+        }
+
+        function handleCatchResult() {
+            // Tỷ lệ bắt hụt/thành công: 30% trượt
+            let isFailed = Math.random() < 0.30;
+            const feedback = document.getElementById('throw-feedback');
+
+            if (isFailed) {
+                playSound('miss');
+                feedback.innerText = `💥 Trúng nhưng ${currentWildMonster.name} đã vùng vẫy thoát ra!`;
+                feedback.classList.remove('text-emerald-400');
+                feedback.classList.add('text-red-400');
+                feedback.style.opacity = '1';
+                setTimeout(() => { feedback.style.opacity = '0'; }, 2000);
+                resetBall();
+            } else {
+                playSound('catch');
+                feedback.innerText = `🎉 Bắt thành công ${currentWildMonster.name}!`;
+                feedback.classList.remove('text-red-400');
+                feedback.classList.add('text-emerald-400');
+                feedback.style.opacity = '1';
+
+                if (team.length < 3) {
+                    team.push({ ...currentWildMonster, uniqueId: Date.now() });
+                    localStorage.setItem('ar_team', JSON.stringify(team));
+                    updateTeamCount();
+                } else {
+                    alert(`Đội hình đã đầy (3/3). Thú tự động lưu vào bộ nhớ.`);
+                }
+
+                if (!pokedex.includes(currentWildMonster.id)) {
+                    pokedex.push(currentWildMonster.id);
+                    localStorage.setItem('ar_pokedex', JSON.stringify(pokedex));
+                }
+
+                setTimeout(() => {
+                    feedback.style.opacity = '0';
+                    exitARScreen();
+                    spawnMultipleMonsters();
+                }, 1500);
+            }
+        }
+
+        function showThrowFeedback(success, text) {
+            const feedback = document.getElementById('throw-feedback');
+            feedback.innerText = text;
+            feedback.style.opacity = '1';
+            setTimeout(() => { feedback.style.opacity = '0'; }, 1500);
+        }
+
+        // --- 5. QUẢN LÝ ĐỘI HÌNH & SỔ TAY ---
         function updateTeamCount() {
             document.getElementById('team-count').innerText = team.length;
         }
@@ -340,7 +471,7 @@
 
             let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Đội Hình Thú Cưng (${team.length}/3)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>`;
             if (team.length === 0) {
-                html += `<p class="text-zinc-400 text-sm text-center py-6">Chưa có thú nào trong đội hình. Hãy bấm vào các con thú trên bản đồ để bắt!</p>`;
+                html += `<p class="text-zinc-400 text-sm text-center py-6">Chưa có thú nào trong đội hình. Hãy ra bản đồ bắt thú hoặc ấp trứng nhé!</p>`;
             } else {
                 html += `<div class="space-y-3">`;
                 team.forEach((pet, idx) => {
@@ -398,10 +529,10 @@
             let pet = team[index];
             if (action === 'feed') {
                 pet.hp = Math.min(pet.maxHp, pet.hp + 25);
-                alert(`🍖 Bạn đã cho ${pet.name} ăn ngon lành! HP hồi phục.`);
+                alert(`🍖 Bạn đã cho ${pet.name} ăn ngon lành!`);
             } else if (action === 'play') {
                 pet.atk += 3;
-                alert(`🎾 Bạn cùng chơi đùa với ${pet.name}. Thú cưng rất vui vẻ!`);
+                alert(`🎾 Bạn cùng chơi đùa với ${pet.name}!`);
             } else if (action === 'train') {
                 pet.level = (pet.level || 1) + 1;
                 pet.atk += 10;
@@ -463,6 +594,7 @@
 
         window.onload = () => {
             initMap();
+            initStepCounter();
             updateTeamCount();
         };
     </script>
