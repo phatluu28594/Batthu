@@ -3,55 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster - Living Creature</title>
+    <title>AR Monster - True 3D Spatial</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; perspective: 1000px; }
         
-        @keyframes monsterLive {
-            0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
-            25% { transform: translate(15px, -10px) scale(1.05) rotate(3deg); }
-            50% { transform: translate(-10px, 10px) scale(0.95) rotate(-3deg); }
-            75% { transform: translate(5px, 5px) scale(1.02) rotate(1deg); }
+        @keyframes float3D {
+            0%, 100% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg); }
+            50% { transform: translate3d(0, -15px, 20px) rotateX(5deg) rotateY(5deg); }
         }
-        .creature-alive {
-            animation: monsterLive 4s ease-in-out infinite;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .creature-3d {
+            animation: float3D 4s ease-in-out infinite;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out, opacity 0.15s ease-out;
+            will-change: transform, opacity;
         }
     </style>
 </head>
 <body class="text-white relative h-screen w-screen overflow-hidden">
 
-    <!-- PHẦN QUẢN LÝ PHIÊN BẢN (UPDATE SYSTEM) -->
+    <!-- QUẢN LÝ PHIÊN BẢN VÀ TỰ ĐỘNG CẬP NHẬT CACHE -->
     <script>
-        // BẠN HÃY TĂNG SỐ NÀY LÊN (Ví dụ: '1.1', '1.2'...) MỖI KHI CẬP NHẬT CODE LÊN GITHUB ĐỂ TRÁNH CACHE
-        const APP_VERSION = '1.0'; 
+        const APP_VERSION = '1.1'; // Hãy tăng số này lên (ví dụ '1.2', '1.3'...) mỗi khi bạn sửa code để tự động update không cần xóa cache!
 
         async function checkForUpdates() {
             try {
-                // Tải file index.html hiện tại từ server với tham số thời gian để tránh cache
                 const response = await fetch(window.location.pathname + '?_=' + new Date().getTime());
                 const text = await response.text();
-                
-                // Trích xuất mã phiên bản từ nội dung server
                 const match = text.match(/const APP_VERSION = '([^']+)'/);
-                if (match && match[1]) {
-                    const serverVersion = match[1];
-                    if (serverVersion !== APP_VERSION) {
-                        console.log('Phát hiện phiên bản mới, đang cập nhật cache...');
-                        // Thông báo và tự động tải lại trang bằng dữ liệu mới nhất từ server
-                        window.location.reload(true);
-                    }
+                if (match && match[1] && match[1] !== APP_VERSION) {
+                    window.location.reload(true);
                 }
-            } catch (e) {
-                console.log('Không thể kiểm tra cập nhật:', e);
-            }
+            } catch (e) {}
         }
-
-        // Tự động kiểm tra cập nhật mỗi khi mở ứng dụng
-        window.addEventListener('load', () => {
-            checkForUpdates();
-        });
+        window.addEventListener('load', checkForUpdates);
     </script>
 
     <!-- CAMERA BACKGROUND -->
@@ -60,8 +45,8 @@
         <div id="camera-fallback" class="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-blue-900 to-indigo-950 text-center p-6">
             <div>
                 <div class="text-6xl mb-4">🌍</div>
-                <h2 class="text-xl font-bold mb-2">Đang bật Camera AR...</h2>
-                <p class="text-sm text-zinc-300">Vui lòng cấp quyền camera để trải nghiệm.</p>
+                <h2 class="text-xl font-bold mb-2">Đang bật Camera AR 3D...</h2>
+                <p class="text-sm text-zinc-300">Vui lòng cấp quyền camera và cảm biến chuyển động.</p>
             </div>
         </div>
     </div>
@@ -73,7 +58,7 @@
         <div class="flex justify-between items-center pointer-events-auto">
             <div class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span id="radar-status" class="text-xs font-medium">Phát hiện sinh vật ảo gần bạn!</span>
+                <span id="radar-status" class="text-xs font-medium">Radar: Quét không gian 3D (Trên/Giữa/Dưới)...</span>
             </div>
             <div class="flex gap-2">
                 <button onclick="openMenu('team')" class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold flex items-center gap-1">
@@ -85,11 +70,11 @@
             </div>
         </div>
 
-        <!-- FREE ROAMING CREATURE LAYER -->
-        <div id="ar-scene" class="absolute inset-0 pointer-events-none">
-            <div id="active-monster" class="absolute pointer-events-auto cursor-pointer flex flex-col items-center creature-alive" onclick="catchMonster()" style="left: 50%; top: 50%; transform: translate(-50%, -50%);">
+        <!-- TRUE 3D SPATIAL LAYER -->
+        <div id="ar-scene" class="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div id="active-monster" class="absolute pointer-events-auto cursor-pointer flex flex-col items-center creature-3d" onclick="catchMonster()">
                 <div class="bg-black/50 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-[11px] text-yellow-300 font-bold mb-1 border border-yellow-500/40 shadow-lg">CP <span id="mon-cp">150</span></div>
-                <div id="mon-avatar" class="text-8xl filter drop-shadow-[0_20px_20px_rgba(0,0,0,0.8)]">🐕</div>
+                <div id="mon-avatar" class="text-8xl filter drop-shadow-[0_25px_25px_rgba(0,0,0,0.8)]">🐕</div>
                 <div id="mon-name" class="text-xs font-bold mt-1 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/20 shadow-lg">Inu-Spark</div>
             </div>
         </div>
@@ -130,6 +115,10 @@
         ];
 
         let currentWildMonster = null;
+        let lastVibrateTime = 0;
+
+        // Tọa độ 3D thực tế của con thú trong không gian phòng
+        let monsterPos = { alpha: 0, beta: 0, distance: 1.0 }; // alpha: hướng ngang, beta: độ cao thấp (trên/dưới), distance: gần/xa
 
         async function initCamera() {
             try {
@@ -150,24 +139,77 @@
             }
         }
 
+        function initSensors() {
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (event) => {
+                    let currentAlpha = event.alpha || 0; // Xoay ngang trái/phải
+                    let currentBeta = event.beta || 0;   // Ngẩng lên / Cúi xuống (Góc nhìn trên, giữa, dưới)
+                    
+                    update3DScene(currentAlpha, currentBeta);
+                });
+            }
+        }
+
+        function update3DScene(currAlpha, currBeta) {
+            const monsterEl = document.getElementById('active-monster');
+            const radarStatus = document.getElementById('radar-status');
+
+            // Tính độ lệch góc 3D so với vị trí ngẫu nhiên của con thú
+            let diffAlpha = currAlpha - monsterPos.alpha;
+            let diffBeta = currBeta - monsterPos.beta;
+
+            if (diffAlpha > 180) diffAlpha -= 360;
+            if (diffAlpha < -180) diffAlpha += 360;
+
+            // Quy đổi tọa độ không gian 3D sang màn hình điện thoại
+            const screenX = -diffAlpha * 22; 
+            const screenY = diffBeta * 18;   // Thay đổi theo góc ngẩng (nhìn trên/dưới)
+
+            // Hiệu ứng phối cảnh chiều sâu 3D (Đến gần to ra, đi xa nhỏ lại)
+            let depthScale = monsterPos.distance + (diffBeta / 50);
+            depthScale = Math.max(0.4, Math.min(3.0, depthScale));
+
+            monsterEl.style.transform = `translate3d(${screenX}px, ${screenY}px, 0px) scale(${depthScale})`;
+
+            // Kiểm tra góc nhìn: Nếu người chơi xoay đi hướng khác hoặc nhìn lệch hẳn, thú sẽ ẩn đi
+            if (Math.abs(diffAlpha) > 40 || Math.abs(diffBeta) > 45) {
+                monsterEl.style.opacity = '0';
+                radarStatus.innerText = '🧭 Xoay vòng quanh hoặc ngẩng/cúi máy để tìm thú 3D...';
+            } else {
+                let opacityFactor = 1 - (Math.abs(diffAlpha) / 40);
+                monsterEl.style.opacity = Math.max(0.2, opacityFactor);
+
+                // Thông báo góc nhìn hiện tại cho người chơi biết (Trên, Giữa hay Dưới)
+                let positionLabel = "ở giữa";
+                if (diffBeta < -10) positionLabel = "phía dưới (sàn nhà)";
+                else if (diffBeta > 10) positionLabel = "phía trên (trần nhà/bàn cao)";
+
+                if (Math.abs(diffAlpha) < 15) {
+                    radarStatus.innerText = `🎯 Đã nhắm mục tiêu ${positionLabel}!`;
+                    if (navigator.vibrate && Date.now() - lastVibrateTime > 3000) {
+                        navigator.vibrate(100);
+                        lastVibrateTime = Date.now();
+                    }
+                } else {
+                    radarStatus.innerText = `👀 Thú đang ở góc ${positionLabel} hướng này...`;
+                }
+            }
+        }
+
         function respawnMonster() {
             const template = monstersPool[Math.floor(Math.random() * monstersPool.length)];
             currentWildMonster = { ...template, cp: Math.floor(template.cp * (0.9 + Math.random() * 0.3)) };
             
+            // Sinh tọa độ 3D ngẫu nhiên hoàn toàn trong phòng
+            monsterPos.alpha = Math.random() * 360; // Hướng la bàn ngẫu nhiên
+            monsterPos.beta = (Math.random() * 60) - 30; // Góc độ cao thấp (-30 độ nhìn dưới sàn, +30 độ nhìn trên cao)
+            monsterPos.distance = 0.6 + (Math.random() * 0.8); // Kích thước xa gần 3D
+
             document.getElementById('mon-avatar').innerText = currentWildMonster.emoji;
             document.getElementById('mon-name').innerText = currentWildMonster.name;
             document.getElementById('mon-cp').innerText = currentWildMonster.cp;
             
-            const monsterEl = document.getElementById('active-monster');
-            const randomX = Math.floor(Math.random() * 70) + 15;
-            const randomY = Math.floor(Math.random() * 50) + 25;
-            const randomScale = 0.7 + (Math.random() * 0.6);
-
-            monsterEl.style.left = randomX + '%';
-            monsterEl.style.top = randomY + '%';
-            monsterEl.style.transform = `translate(-50%, -50%) scale(${randomScale})`;
-            monsterEl.style.display = 'flex';
-
+            document.getElementById('active-monster').style.display = 'flex';
             playSound('spawn');
         }
 
@@ -314,6 +356,7 @@
 
         window.onload = () => {
             initCamera();
+            initSensors();
             respawnMonster();
         };
     </script>
