@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster - Ultimate World Edition v2.0</title>
+    <title>AR Monster - Instant Auto Update v2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -16,26 +16,42 @@
 </head>
 <body class="text-white relative h-screen w-screen overflow-hidden">
 
-    <!-- QUẢN LÝ PHIÊN BẢN (AUTO UPDATE CACHE) -->
+    <!-- HỆ THỐNG SERVICE WORKER TỰ ĐỘNG XÓA CACHE & TẢI BẢN MỚI -->
     <script>
-        const APP_VERSION = '2.0'; 
+        const APP_VERSION = '2.1'; // Tăng số này mỗi khi cập nhật code!
 
-        async function checkForUpdates() {
+        // Tự động vô hiệu hóa và xóa toàn bộ Service Worker / Cache cũ nếu có
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+
+        // Tự động kiểm tra thay đổi code từ server và reload ngay lập tức nếu có bản mới
+        async function forceAutoUpdate() {
             try {
-                const response = await fetch(window.location.pathname + '?_=' + new Date().getTime());
+                const cacheBuster = '?v=' + APP_VERSION + '&t=' + new Date().getTime();
+                const response = await fetch(window.location.pathname + cacheBuster, { cache: 'no-store' });
                 const text = await response.text();
                 const match = text.match(/const APP_VERSION = '([^']+)'/);
                 if (match && match[1] && match[1] !== APP_VERSION) {
+                    console.log('Phát hiện bản cập nhật mới, đang tải lại...');
                     window.location.reload(true);
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.log('Lỗi kiểm tra cập nhật:', e);
+            }
         }
-        window.addEventListener('load', checkForUpdates);
+
+        window.addEventListener('load', () => {
+            forceAutoUpdate();
+        });
     </script>
 
     <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
     <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-3">
-        <!-- Top Navigation -->
         <div class="flex justify-between items-center z-30">
             <div class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
                 <span id="weather-icon" class="text-base">☀️</span>
@@ -99,7 +115,6 @@
         let eggSteps = parseInt(localStorage.getItem('ar_egg_steps') || '0');
         let playerCoins = parseInt(localStorage.getItem('ar_coins') || '500');
 
-        // Thời tiết thực tế (Ngẫu nhiên giả lập hoặc API)
         let currentWeather = { name: 'Trời quang', icon: '☀️', effect: 'ATK +10%', buffAtk: 1.1 };
 
         const categories = {
@@ -131,7 +146,6 @@
         const allMonsters = Object.values(categories).flat();
         let currentWildMonster = null;
 
-        // Khởi tạo thời tiết ngẫu nhiên thực tế
         function initWeather() {
             const weathers = [
                 { name: 'Trời quang', icon: '☀️', effect: 'ATK +10%', buffAtk: 1.1 },
@@ -144,7 +158,6 @@
             document.getElementById('weather-status').innerText = `${currentWeather.name} (${currentWeather.effect})`;
         }
 
-        // --- 1. HỆ THỐNG ĐẤU TRƯỜNG PVP (SINH TỬ) ---
         function openArenaMenu() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
@@ -178,9 +191,8 @@
                 alert(`🎉 Trận chiến khốc liệt!\n\n${myPet.emoji} ${myPet.name} đã đánh bại ${enemy.emoji} ${enemy.name}!\n🎁 Thưởng: +150 Vàng.`);
                 closeModal();
             } else {
-                // Thất bại -> Thú cưng chết và biến mất khỏi túi
                 let deadPetName = myPet.name;
-                team.shift(); // Xóa con đầu tiên
+                team.shift();
                 localStorage.setItem('ar_team', JSON.stringify(team));
                 updateTeamCount();
 
@@ -189,7 +201,6 @@
             }
         }
 
-        // --- 2. THỊ TRƯỜNG & CHỢ ĐEN ẢO ---
         function openMarketMenu() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
@@ -229,20 +240,19 @@
                     team[0].hp = team[0].maxHp;
                     team[0].hunger = 100;
                     localStorage.setItem('ar_team', JSON.stringify(team));
-                    alert('🍖 Đã mua và sử dụng thức ăn thành công! Thú cưng đã hồi phục.');
+                    alert('🍖 Đã mua và sử dụng thức ăn thành công!');
                 } else {
-                    alert('Bạn chưa có thú cưng nào trong đội hình để cho ăn!');
+                    alert('Bạn chưa có thú cưng nào trong đội hình!');
                 }
             } else if (type === 'egg') {
-                eggSteps += 50; // Đủ ấp nở ngay
+                eggSteps += 50;
                 localStorage.setItem('ar_egg_steps', eggSteps);
                 document.getElementById('egg-steps-count').innerText = eggSteps;
-                alert('🥚 Đã mua trứng thành công! Vào mục Trứng để ấp nở ngay.');
+                alert('🥚 Đã mua trứng thành công! Vào mục Trứng để ấp.');
             }
             closeModal();
         }
 
-        // --- 3. TRẠI NUÔI DƯỠNG & TAMAGOTCHI PET CARE ---
         function openTeamMenu() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
@@ -320,16 +330,16 @@
             if (action === 'feed') {
                 pet.hunger = Math.min(100, (pet.hunger || 80) + 20);
                 pet.hp = Math.min(pet.maxHp, pet.hp + 15);
-                alert(`🍖 Bạn đã cho ${pet.name} ăn! Độ no và HP tăng lên.`);
+                alert(`🍖 Bạn đã cho ${pet.name} ăn!`);
             } else if (action === 'play') {
                 pet.happiness = Math.min(100, (pet.happiness || 80) + 25);
-                alert(`🎾 ${pet.name} rất vui vẻ khi chơi đùa cùng bạn!`);
+                alert(`🎾 ${pet.name} rất vui vẻ!`);
             } else if (action === 'train') {
                 pet.level = (pet.level || 1) + 1;
                 pet.atk += 12;
                 pet.maxHp += 20;
                 pet.hp = pet.maxHp;
-                alert(`🏋️ Luyện tập cực khổ! ${pet.name} đã thăng cấp Lv.${pet.level}!`);
+                alert(`🏋️ Luyện tập thành công! Thăng cấp Lv.${pet.level}!`);
             }
             localStorage.setItem('ar_team', JSON.stringify(team));
             openPetDetail(index);
@@ -344,7 +354,6 @@
             }
         }
 
-        // --- 4. BẢN ĐỒ GPS & SỐ TAY ---
         let map, userMarker;
         let activeMarkers = [];
         let userLat = 10.0452, userLng = 105.7469; 
@@ -401,7 +410,6 @@
             }
         }
 
-        // --- 5. MINIGAME CANVAS & DÂY THỪNG CAO BỒI ---
         let canvas, ctx;
         let isARActive = false;
         let rope = { x: 0, y: 0, vx: 0, vy: 0, radius: 30, flying: false };
