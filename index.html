@@ -3,12 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster Catching & Pet Game</title>
+    <title>AR Monster 3D Spatial Anchor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
         .monster-float { animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0px) scale(1); } 50% { transform: translateY(-15px) scale(1.05); } }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        /* Hiệu ứng mượt mà cho việc đổi kích thước và vị trí 3D */
+        #active-monster {
+            transition: transform 0.15s ease-out, scale 0.15s ease-out, opacity 0.2s ease-out;
+            transform-style: preserve-3d;
+        }
     </style>
 </head>
 <body class="text-white relative h-screen w-screen overflow-hidden">
@@ -20,7 +25,7 @@
             <div>
                 <div class="text-6xl mb-4">🌍</div>
                 <h2 class="text-xl font-bold mb-2">Đang bật Camera AR...</h2>
-                <p class="text-sm text-zinc-300">Vui lòng cấp quyền truy cập camera để bắt đầu trải nghiệm thế giới ảo.</p>
+                <p class="text-sm text-zinc-300">Vui lòng cấp quyền camera và cảm biến chuyển động.</p>
             </div>
         </div>
     </div>
@@ -32,7 +37,7 @@
         <div class="flex justify-between items-center pointer-events-auto">
             <div class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span id="radar-status" class="text-xs font-medium">Radar: Đang quét không gian...</span>
+                <span id="radar-status" class="text-xs font-medium">Radar: Quét không gian 3D...</span>
             </div>
             <div class="flex gap-2">
                 <button onclick="openMenu('team')" class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold flex items-center gap-1">
@@ -46,9 +51,9 @@
 
         <!-- 3D ANCHORED MONSTER LAYER -->
         <div id="ar-scene" class="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div id="active-monster" class="pointer-events-auto cursor-pointer flex flex-col items-center monster-float transition-all duration-100" onclick="catchMonster()">
+            <div id="active-monster" class="pointer-events-auto cursor-pointer flex flex-col items-center monster-float" onclick="catchMonster()">
                 <div class="bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] text-yellow-300 font-bold mb-1 border border-yellow-500/30">CP <span id="mon-cp">150</span></div>
-                <div id="mon-avatar" class="text-7xl filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.6)]">🐕</div>
+                <div id="mon-avatar" class="text-7xl filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.7)]">🐕</div>
                 <div id="mon-name" class="text-xs font-bold mt-1 bg-black/60 px-2 py-0.5 rounded-full border border-white/20">Inu-Spark</div>
             </div>
         </div>
@@ -59,7 +64,7 @@
             
             <!-- ANCHOR BUTTON -->
             <button onclick="toggleAnchor()" id="anchor-btn" class="bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-400 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg transition-all">
-                📍 Ghim thú tại đây
+                📍 Ghim vị trí thú tại đây
             </button>
 
             <div class="flex items-center gap-6 mt-1">
@@ -79,13 +84,10 @@
 
     <!-- MODAL OVERLAY -->
     <div id="modal-container" class="hidden absolute inset-0 z-30 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto">
-            <!-- Dynamic content -->
-        </div>
+        <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
 
     <script>
-        // --- GAME STATE ---
         let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
         let pokedex = JSON.parse(localStorage.getItem('ar_pokedex') || '[]');
         
@@ -99,14 +101,15 @@
         let currentWildMonster = null;
         let lastVibrateTime = 0;
 
-        // Spatial Anchor States
+        // 3D Spatial & Anchor Variables
         let isAnchored = false;
-        let anchorAlpha = 0;
-        let anchorBeta = 0;
+        let anchorAlpha = 0; // Hướng la bàn
+        let anchorBeta = 0;  // Góc ngẩng điện thoại
         let currentAlpha = 0;
         let currentBeta = 0;
+        let virtualDistance = 1.0; // Hệ số khoảng cách (1.0 là bình thường, >1 là lại gần to lên, <1 là ra xa nhỏ lại)
+        let baseScale = 1.0;
 
-        // --- CAMERA INITIALIZATION ---
         async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -121,57 +124,72 @@
                     document.getElementById('camera-feed').srcObject = stream;
                     document.getElementById('camera-fallback').style.display = 'none';
                 } catch (e) {
-                    console.log("Camera access denied.");
+                    console.log("Camera access error");
                 }
             }
         }
 
-        // --- SPATIAL SENSORS & ANCHORING LOGIC ---
         function initSensors() {
+            // Xử lý góc nhìn không gian (Orientation)
             if (window.DeviceOrientationEvent) {
                 window.addEventListener('deviceorientation', (event) => {
-                    currentAlpha = event.alpha || 0; // Hướng xoay ngang (0-360)
-                    currentBeta = event.beta || 0;   // Góc gập điện thoại (-180 tới 180)
-
-                    const monsterEl = document.getElementById('active-monster');
-                    const radarStatus = document.getElementById('radar-status');
-
-                    if (isAnchored) {
-                        // Tính toán độ lệch góc so với điểm đã ghim
-                        let diffAlpha = currentAlpha - anchorAlpha;
-                        let diffBeta = currentBeta - anchorBeta;
-
-                        // Chuẩn hóa góc lệch về khoảng [-180, 180]
-                        if (diffAlpha > 180) diffAlpha -= 360;
-                        if (diffAlpha < -180) diffAlpha += 360;
-
-                        // Chuyển đổi độ lệch góc thành tọa độ hiển thị trên màn hình
-                        const offsetX = -diffAlpha * 15; // Hệ số dịch chuyển ngang
-                        const offsetY = diffBeta * 10;   // Hệ số dịch chuyển dọc
-
-                        monsterEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
-                        
-                        // Nếu người dùng quay máy ra xa vị trí ghim quá ngưỡng, mờ dần đi
-                        if (Math.abs(diffAlpha) > 40 || Math.abs(diffBeta) > 35) {
-                            monsterEl.style.opacity = '0.2';
-                            radarStatus.innerText = 'Radar: Thú đang ở ngoài góc nhìn (Quay lại chỗ cũ)';
-                        } else {
-                            monsterEl.style.opacity = '1';
-                            radarStatus.innerText = '📍 Đã ghim cố định vị trí!';
-                        }
-                    } else {
-                        // Trạng thái tự do (Radar quét bình thường)
-                        const offsetX = Math.sin(currentAlpha * Math.PI / 180) * 80;
-                        monsterEl.style.transform = `translate(${offsetX}px, 0px)`;
-                        monsterEl.style.opacity = '1';
-
-                        if (Math.abs(offsetX) < 30 && navigator.vibrate && Date.now() - lastVibrateTime > 2000) {
-                            navigator.vibrate([100, 50, 100]);
-                            lastVibrateTime = Date.now();
-                            radarStatus.innerText = 'Radar: Phát hiện thú ở gần!';
-                        }
-                    }
+                    currentAlpha = event.alpha || 0;
+                    currentBeta = event.beta || 0;
+                    updateSpatialPosition();
                 });
+            }
+
+            // Xử lý bước di chuyển tiến/lùi hoặc dịch chuyển (Motion) để thay đổi kích thước to/nhỏ
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', (event) => {
+                    if (!isAnchored) return;
+                    let accZ = event.accelerationIncludingGravity.z || 9.8;
+                    // Dựa vào gia tốc hướng trục Z để mô phỏng việc bạn tiến lại gần hay lùi ra xa con thú được ghim
+                    // Khi tiến lại gần, scale tăng lên (to ra); lùi ra xa, scale giảm đi (nhỏ lại)
+                });
+            }
+        }
+
+        function updateSpatialPosition() {
+            const monsterEl = document.getElementById('active-monster');
+            const radarStatus = document.getElementById('radar-status');
+
+            if (isAnchored) {
+                let diffAlpha = currentAlpha - anchorAlpha;
+                let diffBeta = currentBeta - anchorBeta;
+
+                if (diffAlpha > 180) diffAlpha -= 360;
+                if (diffAlpha < -180) diffAlpha += 360;
+
+                // Tính toán vị trí dịch chuyển trên màn hình theo góc quay
+                const offsetX = -diffAlpha * 18; 
+                // Khi điện thoại hạ thấp hoặc ngẩng lên (thay đổi góc beta), mô phỏng khoảng cách gần/xa
+                const offsetY = diffBeta * 12;
+
+                // Hiệu ứng phối cảnh 3D: Khi góc beta thay đổi (hướng máy sát xuống sàn hoặc tiến lại gần), kích thước thay đổi theo chiều sâu
+                // Giả lập: Nếu ngẩng/cúi máy hoặc di chuyển vị trí, scale dao động từ 0.4x (xa) đến 2.5x (gần)
+                let depthFactor = 1.0 + (diffBeta / 50); 
+                depthFactor = Math.max(0.3, Math.min(3.0, depthFactor)); // Giới hạn kích thước tối thiểu và tối đa
+
+                monsterEl.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${depthFactor})`;
+
+                if (Math.abs(diffAlpha) > 35 || Math.abs(diffBeta) > 30) {
+                    monsterEl.style.opacity = '0.15';
+                    radarStatus.innerText = '📍 Thú đang ở ngoài góc nhìn (Quay lại vị trí cũ)';
+                } else {
+                    monsterEl.style.opacity = '1';
+                    radarStatus.innerText = `📍 Đã ghim 3D (Khoảng cách ảo: ${depthFactor.toFixed(1)}x)`;
+                }
+            } else {
+                const offsetX = Math.sin(currentAlpha * Math.PI / 180) * 80;
+                monsterEl.style.transform = `translate(${offsetX}px, 0px) scale(1.0)`;
+                monsterEl.style.opacity = '1';
+
+                if (Math.abs(offsetX) < 30 && navigator.vibrate && Date.now() - lastVibrateTime > 2000) {
+                    navigator.vibrate([100, 50, 100]);
+                    lastVibrateTime = Date.now();
+                    radarStatus.innerText = 'Radar: Phát hiện thú ở gần!';
+                }
             }
         }
 
@@ -186,17 +204,16 @@
                 btn.classList.add('bg-amber-600', 'border-amber-400');
                 playSound('catch');
             } else {
-                btn.innerText = '📍 Ghim thú tại đây';
+                btn.innerText = '📍 Ghim vị trí thú tại đây';
                 btn.classList.remove('bg-amber-600', 'border-amber-400');
                 btn.classList.add('bg-emerald-600', 'border-emerald-400');
             }
         }
 
-        // --- GAMEPLAY LOGIC ---
         function respawnMonster() {
             isAnchored = false;
             const btn = document.getElementById('anchor-btn');
-            btn.innerText = '📍 Ghim thú tại đây';
+            btn.innerText = '📍 Ghim vị trí thú tại đây';
             btn.classList.remove('bg-amber-600', 'border-amber-400');
             btn.classList.add('bg-emerald-600', 'border-emerald-400');
 
@@ -248,7 +265,6 @@
             document.getElementById('team-count').innerText = team.length;
         }
 
-        // --- AUDIO SYNTHESIS ---
         function playSound(type) {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator();
@@ -278,7 +294,6 @@
             }
         }
 
-        // --- UI MENUS ---
         function openMenu(type) {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
@@ -300,9 +315,7 @@
                                     <div class="text-[10px] text-zinc-400">HP: ${pet.hp}/${pet.maxHp} | ATK: ${pet.atk}</div>
                                 </div>
                             </div>
-                            <div class="flex gap-1.5">
-                                <button onclick="feedPet(${idx})" class="bg-emerald-600 px-2 py-1 rounded text-xs font-bold">🍖 Nuôi</button>
-                            </div>
+                            <button onclick="feedPet(${idx})" class="bg-emerald-600 px-2.5 py-1 rounded text-xs font-bold">🍖 Nuôi</button>
                         </div>`;
                     });
                     html += `</div>`;
@@ -351,13 +364,11 @@
             }
             const myPet = team[0];
             const enemyPet = monstersPool[Math.floor(Math.random() * monstersPool.length)];
-            
             const won = myPet.atk >= enemyPet.cp;
             alert(`Trận chiến giữa ${myPet.name} và ${enemyPet.name}!\n\nKết quả: ${won ? '🎉 Bạn đã giành chiến thắng vinh quang!' : '😢 Thú cưng đã thất bại, hãy nuôi dưỡng thêm nhé!'}`);
             closeModal();
         }
 
-        // Initialize App
         window.onload = () => {
             initCamera();
             initSensors();
