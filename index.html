@@ -3,20 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster - Hatching & Canvas Throwing</title>
+    <title>AR Monster - Ultimate World Edition v2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
         #map { height: 100%; width: 100%; border-radius: 1rem; z-index: 10; }
         .leaflet-control-attribution { display: none !important; }
+        @keyframes petBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .pet-animate { animation: petBounce 2s ease-in-out infinite; }
     </style>
 </head>
 <body class="text-white relative h-screen w-screen overflow-hidden">
 
     <!-- QUẢN LÝ PHIÊN BẢN (AUTO UPDATE CACHE) -->
     <script>
-        const APP_VERSION = '1.8'; // Phiên bản mới tích hợp Trứng, Túi đồ & Canvas Minigame
+        const APP_VERSION = '2.0'; 
 
         async function checkForUpdates() {
             try {
@@ -31,51 +33,46 @@
         window.addEventListener('load', checkForUpdates);
     </script>
 
-    <!-- MÀN HÌNH BẢN ĐỒ GPS & NHỮNG CHÚ THÚ XUNG QUANH -->
+    <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
     <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-3">
+        <!-- Top Navigation -->
         <div class="flex justify-between items-center z-30">
             <div class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full bg-blue-500 animate-ping"></span>
-                <span id="gps-status" class="text-xs font-medium">GPS: Đang quét khu vực...</span>
+                <span id="weather-icon" class="text-base">☀️</span>
+                <span id="weather-status" class="text-xs font-medium">Trời quang (ATK +10%)</span>
             </div>
-            <div class="flex gap-2">
-                <button onclick="openEggsMenu()" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold flex items-center gap-1">
-                    🥚 Trứng (<span id="egg-steps-count">0</span>/50)
-                </button>
-                <button onclick="openTeamMenu()" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold">
-                    🎒 Đội hình (<span id="team-count">0</span>/3)
-                </button>
-                <button onclick="openPokedexMenu()" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold">
-                    📖 Sổ tay
-                </button>
+            <div class="flex gap-1.5 overflow-x-auto py-1">
+                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow-lg">🛒 Chợ đen</button>
+                <button onclick="openArenaMenu()" class="bg-red-600/90 px-3 py-1.5 rounded-full border border-red-400 text-xs font-bold shadow-lg">⚔️ Đấu trường</button>
+                <button onclick="openEggsMenu()" class="bg-black/80 px-2.5 py-1.5 rounded-full border border-white/20 text-xs font-bold">🥚 (<span id="egg-steps-count">0</span>)</button>
+                <button onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1.5 rounded-full border border-white/20 text-xs font-bold">🎒 (<span id="team-count">0</span>/3)</button>
+                <button onclick="openPokedexMenu()" class="bg-black/80 px-2.5 py-1.5 rounded-full border border-white/20 text-xs font-bold">📖</button>
             </div>
         </div>
 
         <div class="absolute inset-0 pt-16 pb-24 px-3">
             <div id="map" class="shadow-2xl border border-zinc-800"></div>
+            <button onclick="recenterMap()" class="absolute bottom-28 right-6 z-30 bg-blue-600 hover:bg-blue-500 text-white p-3.5 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-xl" title="Về vị trí của tôi">
+                📍
+            </button>
         </div>
 
         <div class="flex flex-col items-center z-30 pb-2">
             <div id="distance-info" class="text-xs font-bold text-yellow-300 bg-black/80 px-4 py-1.5 rounded-full border border-white/20 mb-2 shadow-lg">
-                📍 Chạm vào icon thú trên bản đồ để ném bóng bắt!
+                🤠 Chạm vào icon thú trên bản đồ để dùng dây thừng bắt!
             </div>
-            <button onclick="spawnMultipleMonsters()" class="w-full max-w-sm bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-2xl shadow-xl transition-all">
+            <button onclick="spawnMultipleMonsters()" class="w-full max-w-sm bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-2xl border border-zinc-700 shadow-xl transition-all">
                 🔄 Quét lại khu vực (Tìm thú mới)
             </button>
         </div>
     </div>
 
-    <!-- MÀN HÌNH MINIGAME CANVAS BẮT THÚ (VUỐT NÉM BÓNG) -->
+    <!-- MÀN HÌNH MINIGAME CANVAS CAO BỒI BẮT THÚ -->
     <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
-        <!-- Camera Background -->
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
         </div>
-
-        <!-- Canvas Minigame Layer -->
         <canvas id="gameCanvas" class="absolute inset-0 z-10 touch-none"></canvas>
-
-        <!-- Top bar AR -->
         <div class="flex justify-between items-center z-20 p-4 pointer-events-auto">
             <button onclick="exitARScreen()" class="bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">
                 ⬅️ Quay lại bản đồ
@@ -84,119 +81,270 @@
                 Mục tiêu: Đang tải...
             </div>
         </div>
-
-        <!-- Hướng dẫn dưới màn hình -->
         <div class="flex flex-col items-center z-20 pb-8 pointer-events-none">
-            <div id="throw-feedback" class="text-sm font-bold bg-black/80 px-4 py-2 rounded-full border border-white/20 opacity-0 transition-opacity shadow-lg">Ném hụt rồi!</div>
-            <div class="text-[11px] text-zinc-300 mt-2 bg-black/60 px-3 py-1 rounded-full border border-white/10">👆 Vuốt ngón tay hướng lên trên để ném bóng bắt thú!</div>
+            <div id="throw-feedback" class="text-sm font-bold bg-black/80 px-4 py-2 rounded-full border border-white/20 opacity-0 transition-opacity shadow-lg">Bắt hụt rồi!</div>
+            <div class="text-[11px] text-zinc-300 mt-2 bg-black/60 px-3 py-1 rounded-full border border-white/10">🤠 Vuốt ngón tay hướng lên trên để quăng vòng dây thừng bắt thú!</div>
         </div>
     </div>
 
-    <!-- MODAL OVERLAY CHUNG (SỔ TAY, ĐỘI HÌNH, ẤP TRỨNG) -->
+    <!-- MODAL OVERLAY CHUNG -->
     <div id="modal-container" class="hidden absolute inset-0 z-40 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- 1. HỆ THỐNG LOCALSTORAGE & DỮ LIỆU ---
         let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
         let pokedex = JSON.parse(localStorage.getItem('ar_pokedex') || '[]');
         let eggSteps = parseInt(localStorage.getItem('ar_egg_steps') || '0');
+        let playerCoins = parseInt(localStorage.getItem('ar_coins') || '500');
+
+        // Thời tiết thực tế (Ngẫu nhiên giả lập hoặc API)
+        let currentWeather = { name: 'Trời quang', icon: '☀️', effect: 'ATK +10%', buffAtk: 1.1 };
 
         const categories = {
             'Gia cầm': [
-                { id: 101, name: 'Gà Ta', emoji: '🐔', cp: 120, hp: 60, maxHp: 60, atk: 70, level: 1 },
-                { id: 102, name: 'Vịt Cỏ', emoji: '🦆', cp: 110, hp: 55, maxHp: 55, atk: 65, level: 1 },
-                { id: 103, name: 'Ngỗng Trắng', emoji: '🦢', cp: 140, hp: 80, maxHp: 80, atk: 85, level: 1 },
-                { id: 104, name: 'Ngan Đen', emoji: '🦃', cp: 130, hp: 75, maxHp: 75, atk: 80, level: 1 }
+                { id: 101, name: 'Gà Ta', emoji: '🐔', cp: 120, hp: 60, maxHp: 60, atk: 70, level: 1, hunger: 80, happiness: 80 },
+                { id: 102, name: 'Vịt Cỏ', emoji: '🦆', cp: 110, hp: 55, maxHp: 55, atk: 65, level: 1, hunger: 80, happiness: 80 },
+                { id: 103, name: 'Ngỗng Trắng', emoji: '🦢', cp: 140, hp: 80, maxHp: 80, atk: 85, level: 1, hunger: 80, happiness: 80 },
+                { id: 104, name: 'Ngan Đen', emoji: '🦃', cp: 130, hp: 75, maxHp: 75, atk: 80, level: 1, hunger: 80, happiness: 80 }
             ],
             'Gia súc': [
-                { id: 201, name: 'Chó Vàng', emoji: '🐕', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1 },
-                { id: 202, name: 'Mèo Mướp', emoji: '🐈', cp: 135, hp: 70, maxHp: 70, atk: 95, level: 1 },
-                { id: 203, name: 'Heo Ủn Ỉn', emoji: '🐖', cp: 150, hp: 100, maxHp: 100, atk: 75, level: 1 },
-                { id: 204, name: 'Bò Sữa', emoji: '🐂', cp: 180, hp: 120, maxHp: 120, atk: 110, level: 1 }
+                { id: 201, name: 'Chó Vàng', emoji: '🐕', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1, hunger: 80, happiness: 80 },
+                { id: 202, name: 'Mèo Mướp', emoji: '🐈', cp: 135, hp: 70, maxHp: 70, atk: 95, level: 1, hunger: 80, happiness: 80 },
+                { id: 203, name: 'Heo Ủn Ỉn', emoji: '🐖', cp: 150, hp: 100, maxHp: 100, atk: 75, level: 1, hunger: 80, happiness: 80 },
+                { id: 204, name: 'Bò Sữa', emoji: '🐂', cp: 180, hp: 120, maxHp: 120, atk: 110, level: 1, hunger: 80, happiness: 80 }
             ],
             'Tự nhiên': [
-                { id: 301, name: 'Chuột Nước', emoji: '🐹', cp: 110, hp: 60, maxHp: 60, atk: 65, level: 1 },
-                { id: 302, name: 'Chim Lửa', emoji: '🐦', cp: 185, hp: 50, maxHp: 50, atk: 140, level: 1 },
-                { id: 303, name: 'Cáo Đỏ', emoji: '🦊', cp: 160, hp: 65, maxHp: 65, atk: 115, level: 1 },
-                { id: 304, name: 'Sói Xám', emoji: '🐺', cp: 175, hp: 90, maxHp: 90, atk: 125, level: 1 }
+                { id: 301, name: 'Chuột Nước', emoji: '🐹', cp: 110, hp: 60, maxHp: 60, atk: 65, level: 1, hunger: 80, happiness: 80 },
+                { id: 302, name: 'Chim Lửa', emoji: '🐦', cp: 185, hp: 50, maxHp: 50, atk: 140, level: 1, hunger: 80, happiness: 80 },
+                { id: 303, name: 'Cáo Đỏ', emoji: '🦊', cp: 160, hp: 65, maxHp: 65, atk: 115, level: 1, hunger: 80, happiness: 80 },
+                { id: 304, name: 'Sói Xám', emoji: '🐺', cp: 175, hp: 90, maxHp: 90, atk: 125, level: 1, hunger: 80, happiness: 80 }
             ],
             'Sách đỏ': [
-                { id: 401, name: 'Rồng Nước', emoji: '🐉', cp: 250, hp: 150, maxHp: 150, atk: 180, level: 1 },
-                { id: 402, name: 'Phượng Hoàng', emoji: '🦅', cp: 270, hp: 140, maxHp: 140, atk: 195, level: 1 },
-                { id: 403, name: 'Kỳ Lân', emoji: '🦄', cp: 260, hp: 160, maxHp: 160, atk: 175, level: 1 }
+                { id: 401, name: 'Rồng Nước', emoji: '🐉', cp: 250, hp: 150, maxHp: 150, atk: 180, level: 1, hunger: 80, happiness: 80 },
+                { id: 402, name: 'Phượng Hoàng', emoji: '🦅', cp: 270, hp: 140, maxHp: 140, atk: 195, level: 1, hunger: 80, happiness: 80 },
+                { id: 403, name: 'Kỳ Lân', emoji: '🦄', cp: 260, hp: 160, maxHp: 160, atk: 175, level: 1, hunger: 80, happiness: 80 }
             ]
         };
 
         const allMonsters = Object.values(categories).flat();
         let currentWildMonster = null;
 
-        // --- 2. HỆ THỐNG ẤP TRỨNG BẰNG BƯỚC CHÂN (DEVICEMOTION) ---
-        function initStepCounter() {
-            document.getElementById('egg-steps-count').innerText = eggSteps;
-            
-            if (window.DeviceMotionEvent) {
-                let lastAcc = { x: 0, y: 0, z: 0 };
-                window.addEventListener('devicemotion', (event) => {
-                    let acc = event.accelerationIncludingGravity;
-                    if (!acc) return;
-
-                    let delta = Math.abs(acc.x - lastAcc.x) + Math.abs(acc.y - lastAcc.y) + Math.abs(acc.z - lastAcc.z);
-                    if (delta > 12) { // Ngưỡng nhận diện bước chân đi bộ
-                        eggSteps++;
-                        localStorage.setItem('ar_egg_steps', eggSteps);
-                        document.getElementById('egg-steps-count').innerText = eggSteps;
-                    }
-                    lastAcc = { x: acc.x, y: acc.y, z: acc.z };
-                });
-            }
+        // Khởi tạo thời tiết ngẫu nhiên thực tế
+        function initWeather() {
+            const weathers = [
+                { name: 'Trời quang', icon: '☀️', effect: 'ATK +10%', buffAtk: 1.1 },
+                { name: 'Mưa dông', icon: '🌧️', effect: 'HP +15%', buffAtk: 1.0 },
+                { name: 'Sương mù', icon: '🌫️', effect: 'Né tránh +10%', buffAtk: 1.05 },
+                { name: 'Nắng gắt', icon: '🔥', effect: 'ATK +20%', buffAtk: 1.2 }
+            ];
+            currentWeather = weathers[Math.floor(Math.random() * weathers.length)];
+            document.getElementById('weather-icon').innerText = currentWeather.icon;
+            document.getElementById('weather-status').innerText = `${currentWeather.name} (${currentWeather.effect})`;
         }
 
-        function openEggsMenu() {
+        // --- 1. HỆ THỐNG ĐẤU TRƯỜNG PVP (SINH TỬ) ---
+        function openArenaMenu() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
 
-            const targetSteps = 50; // 50 bước để nở trứng
-            let progress = Math.min(100, (eggSteps / targetSteps) * 100);
-            let canHatch = eggSteps >= targetSteps;
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Đấu Trường Sinh Tử</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
+            <p class="text-xs text-zinc-300 mb-4">Thú cưng đầu tiên trong đội hình sẽ đại diện xuất chiến. <strong class="text-red-400">Cảnh báo: Nếu thất bại, thú cưng sẽ chết và vĩnh viễn biến mất!</strong></p>
+            <button onclick="startPvPBattle()" class="w-full bg-red-600 hover:bg-red-500 py-3.5 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-all">🔥 Tìm Đối Thủ & Khiêu Chiến</button>
+            `;
+        }
+
+        function startPvPBattle() {
+            if (team.length === 0) {
+                alert('Bạn không có linh thú nào trong đội hình để xuất chiến!');
+                closeModal();
+                return;
+            }
+
+            let myPet = team[0];
+            let enemy = { ...allMonsters[Math.floor(Math.random() * allMonsters.length)], level: myPet.level };
+            
+            let myPower = (myPet.atk * (myPet.level || 1)) * currentWeather.buffAtk;
+            let enemyPower = enemy.atk * enemy.level * (0.9 + Math.random() * 0.3);
+
+            let won = myPower >= enemyPower;
+
+            if (won) {
+                playerCoins += 150;
+                localStorage.setItem('ar_coins', playerCoins);
+                alert(`🎉 Trận chiến khốc liệt!\n\n${myPet.emoji} ${myPet.name} đã đánh bại ${enemy.emoji} ${enemy.name}!\n🎁 Thưởng: +150 Vàng.`);
+                closeModal();
+            } else {
+                // Thất bại -> Thú cưng chết và biến mất khỏi túi
+                let deadPetName = myPet.name;
+                team.shift(); // Xóa con đầu tiên
+                localStorage.setItem('ar_team', JSON.stringify(team));
+                updateTeamCount();
+
+                alert(`💀 Thảm bại!\n\n${enemy.emoji} ${enemy.name} quá mạnh. ${deadPetName} đã hy sinh trong trận chiến và vĩnh viễn biến mất khỏi đội hình!`);
+                closeModal();
+            }
+        }
+
+        // --- 2. THỊ TRƯỜNG & CHỢ ĐEN ẢO ---
+        function openMarketMenu() {
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
 
             content.innerHTML = `
-            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🥚 Ấp Trứng Linh Thú</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
-            <div class="flex flex-col items-center bg-zinc-800 p-6 rounded-2xl border border-zinc-700 text-center">
-                <div class="text-7xl mb-3 animate-pulse">🥚</div>
-                <div class="font-bold text-sm mb-1">Trứng Đặc Biệt</div>
-                <div class="text-xs text-zinc-400 mb-4">Đi bộ ngoài đời thực để tích lũy bước chân ấp nở!</div>
-                <div class="w-full bg-zinc-900 rounded-full h-4 overflow-hidden border border-zinc-700 mb-2">
-                    <div class="bg-amber-500 h-full transition-all" style="width: ${progress}%"></div>
+            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🛒 Chợ Đen & Trao Đổi</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
+            <div class="text-xs text-yellow-400 font-bold mb-3">💰 Vàng hiện có: ${playerCoins} 🪙</div>
+            <div class="space-y-3">
+                <div class="bg-zinc-800 p-3 rounded-xl flex items-center justify-between border border-zinc-700">
+                    <div>
+                        <div class="font-bold text-sm">🍖 Thức Ăn Thần Kỳ</div>
+                        <div class="text-[10px] text-zinc-400">Hồi phục hoàn toàn HP & Độ đói</div>
+                    </div>
+                    <button onclick="buyItem(100, 'food')" class="bg-amber-600 hover:bg-amber-500 px-3 py-1.5 rounded text-xs font-bold">100 🪙</button>
                 </div>
-                <div class="text-xs font-bold text-yellow-300 mb-4">Tiến độ: ${eggSteps} / ${targetSteps} bước</div>
+                <div class="bg-zinc-800 p-3 rounded-xl flex items-center justify-between border border-zinc-700">
+                    <div>
+                        <div class="font-bold text-sm">🥚 Trứng Linh Thú Hiếm</div>
+                        <div class="text-[10px] text-zinc-400">Nhận ngay trứng ấp nở đặc biệt</div>
+                    </div>
+                    <button onclick="buyItem(300, 'egg')" class="bg-amber-600 hover:bg-amber-500 px-3 py-1.5 rounded text-xs font-bold">300 🪙</button>
+                </div>
+            </div>`;
+        }
+
+        function buyItem(price, type) {
+            if (playerCoins < price) {
+                alert('Bạn không đủ vàng để mua vật phẩm này!');
+                return;
+            }
+            playerCoins -= price;
+            localStorage.setItem('ar_coins', playerCoins);
+
+            if (type === 'food') {
+                if (team.length > 0) {
+                    team[0].hp = team[0].maxHp;
+                    team[0].hunger = 100;
+                    localStorage.setItem('ar_team', JSON.stringify(team));
+                    alert('🍖 Đã mua và sử dụng thức ăn thành công! Thú cưng đã hồi phục.');
+                } else {
+                    alert('Bạn chưa có thú cưng nào trong đội hình để cho ăn!');
+                }
+            } else if (type === 'egg') {
+                eggSteps += 50; // Đủ ấp nở ngay
+                localStorage.setItem('ar_egg_steps', eggSteps);
+                document.getElementById('egg-steps-count').innerText = eggSteps;
+                alert('🥚 Đã mua trứng thành công! Vào mục Trứng để ấp nở ngay.');
+            }
+            closeModal();
+        }
+
+        // --- 3. TRẠI NUÔI DƯỠNG & TAMAGOTCHI PET CARE ---
+        function openTeamMenu() {
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Đội Hình & Trại Nuôi (${team.length}/3)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>`;
+            if (team.length === 0) {
+                html += `<p class="text-zinc-400 text-sm text-center py-6">Trại nuôi đang trống. Hãy bắt thú hoặc ấp trứng!</p>`;
+            } else {
+                html += `<div class="space-y-3">`;
+                team.forEach((pet, idx) => {
+                    html += `
+                    <div onclick="openPetDetail(${idx})" class="bg-zinc-800 hover:bg-zinc-750 cursor-pointer p-3 rounded-xl flex items-center justify-between border border-zinc-700 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <span class="text-4xl bg-zinc-900 p-2 rounded-xl pet-animate">${pet.emoji}</span>
+                            <div>
+                                <div class="font-bold text-sm">${pet.name} <span class="text-xs text-yellow-400">Lv.${pet.level || 1}</span></div>
+                                <div class="text-[11px] text-zinc-300">HP: ${pet.hp}/${pet.maxHp} | Vui vẻ: ${pet.happiness || 80}%</div>
+                                <div class="text-[10px] text-emerald-400 mt-0.5">Vào trại chăm sóc Tamagotchi 👉</div>
+                            </div>
+                        </div>
+                        <button onclick="event.stopPropagation(); removePet(${idx})" class="text-red-400 text-xs px-2 py-1 bg-red-950/40 rounded">Thả</button>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+            content.innerHTML = html;
+        }
+
+        function openPetDetail(index) {
+            let pet = team[index];
+            const content = document.getElementById('modal-content');
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg">🐾 Trại Chăm Sóc Tamagotchi</h3>
+                <button onclick="openTeamMenu()" class="text-zinc-400 font-bold">‹ Quay lại</button>
+            </div>
+            <div class="flex flex-col items-center bg-zinc-800 p-6 rounded-2xl border border-zinc-700 mb-4 text-center">
+                <div class="text-9xl mb-3 pet-animate filter drop-shadow-xl">${pet.emoji}</div>
+                <div class="text-xl font-bold text-yellow-300">${pet.name}</div>
+                <div class="text-xs text-zinc-400 mt-1">Cấp độ: Lv.${pet.level || 1} | CP: ${pet.cp}</div>
                 
-                <button onclick="hatchEgg()" ${canHatch ? '' : 'disabled'} class="w-full py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${canHatch ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer' : 'bg-zinc-700 text-zinc-400 opacity-50 cursor-not-allowed'}">
-                    ${canHatch ? '🎉 ẤP NỞ NGAY!' : '🔒 Chưa đủ bước chân'}
+                <div class="w-full space-y-2 mt-4 text-left">
+                    <div>
+                        <div class="flex justify-between text-[11px] mb-1"><span>Sức khỏe (HP)</span><span>${pet.hp}/${pet.maxHp}</span></div>
+                        <div class="w-full bg-zinc-900 rounded-full h-2 overflow-hidden border border-zinc-700"><div class="bg-emerald-500 h-full" style="width: ${(pet.hp/pet.maxHp)*100}%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[11px] mb-1"><span>Độ no (Hunger)</span><span>${pet.hunger || 80}%</span></div>
+                        <div class="w-full bg-zinc-900 rounded-full h-2 overflow-hidden border border-zinc-700"><div class="bg-amber-500 h-full" style="width: ${pet.hunger || 80}%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[11px] mb-1"><span>Độ hạnh phúc (Happiness)</span><span>${pet.happiness || 80}%</span></div>
+                        <div class="w-full bg-zinc-900 rounded-full h-2 overflow-hidden border border-zinc-700"><div class="bg-pink-500 h-full" style="width: ${pet.happiness || 80}%"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="petAction(${index}, 'feed')" class="bg-emerald-600 hover:bg-emerald-500 p-3 rounded-xl flex flex-col items-center gap-1 font-bold text-xs shadow-lg active:scale-95 transition-all">
+                    <span class="text-xl">🍖</span> Cho ăn
+                </button>
+                <button onclick="petAction(${index}, 'play')" class="bg-amber-600 hover:bg-amber-500 p-3 rounded-xl flex flex-col items-center gap-1 font-bold text-xs shadow-lg active:scale-95 transition-all">
+                    <span class="text-xl">🎾</span> Chơi đùa
+                </button>
+                <button onclick="petAction(${index}, 'train')" class="bg-indigo-600 hover:bg-indigo-500 p-3 rounded-xl flex flex-col items-center gap-1 font-bold text-xs shadow-lg active:scale-95 transition-all">
+                    <span class="text-xl">🏋️</span> Luyện tập
                 </button>
             </div>`;
         }
 
-        function hatchEgg() {
-            if (eggSteps < 50) return;
-            eggSteps -= 50;
-            localStorage.setItem('ar_egg_steps', eggSteps);
-            document.getElementById('egg-steps-count').innerText = eggSteps;
-
-            // Nhận ngẫu nhiên 1 linh thú từ trứng
-            const hatchedPet = allMonsters[Math.floor(Math.random() * allMonsters.length)];
-            team.push({ ...hatchedPet, uniqueId: Date.now(), level: 1 });
+        function petAction(index, action) {
+            let pet = team[index];
+            if (action === 'feed') {
+                pet.hunger = Math.min(100, (pet.hunger || 80) + 20);
+                pet.hp = Math.min(pet.maxHp, pet.hp + 15);
+                alert(`🍖 Bạn đã cho ${pet.name} ăn! Độ no và HP tăng lên.`);
+            } else if (action === 'play') {
+                pet.happiness = Math.min(100, (pet.happiness || 80) + 25);
+                alert(`🎾 ${pet.name} rất vui vẻ khi chơi đùa cùng bạn!`);
+            } else if (action === 'train') {
+                pet.level = (pet.level || 1) + 1;
+                pet.atk += 12;
+                pet.maxHp += 20;
+                pet.hp = pet.maxHp;
+                alert(`🏋️ Luyện tập cực khổ! ${pet.name} đã thăng cấp Lv.${pet.level}!`);
+            }
             localStorage.setItem('ar_team', JSON.stringify(team));
-            updateTeamCount();
-
-            alert(`🎉 Chúc mừng! Trứng đã nở ra linh thú hiếm: ${hatchedPet.emoji} ${hatchedPet.name}!`);
-            closeModal();
+            openPetDetail(index);
         }
 
-        // --- 3. BẢN ĐỒ LEAFLET & NHIỀU THÚ XUẤT HIỆN ---
+        function removePet(index) {
+            if (confirm('Bạn có chắc muốn thả con thú này về tự nhiên?')) {
+                team.splice(index, 1);
+                localStorage.setItem('ar_team', JSON.stringify(team));
+                updateTeamCount();
+                openTeamMenu();
+            }
+        }
+
+        // --- 4. BẢN ĐỒ GPS & SỐ TAY ---
         let map, userMarker;
         let activeMarkers = [];
         let userLat = 10.0452, userLng = 105.7469; 
@@ -219,13 +367,11 @@
                     userLat = position.coords.latitude;
                     userLng = position.coords.longitude;
                     userMarker.setLatLng([userLat, userLng]);
-                    map.setView([userLat, userLng], map.getZoom());
-                    document.getElementById('gps-status').innerText = `GPS: Đang hoạt động`;
-                }, (error) => {
-                    document.getElementById('gps-status').innerText = `GPS: Vị trí giả lập`;
-                }, { enableHighAccuracy: true });
+                }, (error) => {}, { enableHighAccuracy: true });
             }
         }
+
+        function recenterMap() { map.setView([userLat, userLng], 17); }
 
         function spawnMultipleMonsters() {
             activeMarkers.forEach(m => map.removeLayer(m));
@@ -255,10 +401,10 @@
             }
         }
 
-        // --- 4. MINIGAME CANVAS & VUỐT NÉM BÓNG VẬT LÝ ---
+        // --- 5. MINIGAME CANVAS & DÂY THỪNG CAO BỒI ---
         let canvas, ctx;
         let isARActive = false;
-        let ball = { x: 0, y: 0, vx: 0, vy: 0, radius: 25, active: false, flying: false };
+        let rope = { x: 0, y: 0, vx: 0, vy: 0, radius: 30, flying: false };
         let monsterPos = { x: 0, y: 0, vx: 2 };
         let touchStart = { x: 0, y: 0 };
         let touchEnd = { x: 0, y: 0 };
@@ -299,117 +445,104 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
 
-            // Vị trí ban đầu của quái vật trên canvas
             monsterPos.x = canvas.width / 2;
             monsterPos.y = canvas.height * 0.35;
+            resetRope();
 
-            // Đặt bóng ở vị trí xuất phát phía dưới màn hình
-            resetBall();
-
-            // Đăng ký sự kiện cảm ứng vuốt màn hình (Touch & Mouse)
             canvas.onpointerdown = (e) => {
-                if (ball.flying) return;
+                if (rope.flying) return;
                 touchStart.x = e.clientX;
                 touchStart.y = e.clientY;
             };
 
             canvas.onpointerup = (e) => {
-                if (ball.flying) return;
+                if (rope.flying) return;
                 touchEnd.x = e.clientX;
                 touchEnd.y = e.clientY;
 
                 let dx = touchEnd.x - touchStart.x;
                 let dy = touchEnd.y - touchStart.y;
 
-                // Nếu vuốt hướng lên trên (dy < 0) thì kích hoạt ném bóng
                 if (dy < -30) {
                     playSound('throw');
-                    ball.vx = dx * 0.12;
-                    ball.vy = dy * 0.15;
-                    ball.flying = true;
+                    rope.vx = dx * 0.12;
+                    rope.vy = dy * 0.15;
+                    rope.flying = true;
                 }
             };
 
             requestAnimationFrame(updateCanvasGame);
         }
 
-        function resetBall() {
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height * 0.82;
-            ball.vx = 0;
-            ball.vy = 0;
-            ball.flying = false;
+        function resetRope() {
+            rope.x = canvas.width / 2;
+            rope.y = canvas.height * 0.85;
+            rope.vx = 0; rope.vy = 0;
+            rope.flying = false;
         }
 
         function updateCanvasGame() {
             if (!isARActive) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Cập nhật và vẽ Quái vật di chuyển qua lại
             monsterPos.x += monsterPos.vx;
-            if (monsterPos.x < 60 || monsterPos.x > canvas.width - 60) {
-                monsterPos.vx *= -1;
-            }
+            if (monsterPos.x < 60 || monsterPos.x > canvas.width - 60) monsterPos.vx *= -1;
 
             ctx.font = "80px sans-serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y);
 
-            // 2. Cập nhật và vẽ Quả bóng Pokéball khi ném
-            if (ball.flying) {
-                ball.x += ball.vx;
-                ball.y += ball.vy;
-                ball.vy += 0.3; // Trọng lực hút bóng rơi xuống
+            if (rope.flying) {
+                rope.x += rope.vx;
+                rope.y += rope.vy;
+                rope.vy += 0.25;
 
-                // Kiểm tra va chạm bóng với quái vật
-                let dist = Math.hypot(ball.x - monsterPos.x, ball.y - monsterPos.y);
-                if (dist < 60) {
-                    ball.flying = false;
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 2, canvas.height * 0.85);
+                ctx.lineTo(rope.x, rope.y);
+                ctx.strokeStyle = "#d4a373";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                let dist = Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y);
+                if (dist < 65) {
+                    rope.flying = false;
                     handleCatchResult();
                 }
 
-                // Nếu bóng bay ra ngoài màn hình -> Ném hụt
-                if (ball.y < 0 || ball.x < 0 || ball.x > canvas.width) {
-                    ball.flying = false;
-                    showThrowFeedback(false, "Ném hụt rồi!");
-                    resetBall();
+                if (rope.y < 0 || rope.x < 0 || rope.x > canvas.width) {
+                    rope.flying = false;
+                    resetRope();
                 }
             }
 
-            // Vẽ Pokéball tại vị trí hiện tại
-            ctx.font = "45px sans-serif";
-            ctx.fillText("🔴", ball.x, ball.y);
-
+            ctx.font = "40px sans-serif";
+            ctx.fillText("🪢", rope.x, rope.y);
             requestAnimationFrame(updateCanvasGame);
         }
 
         function handleCatchResult() {
-            // Tỷ lệ bắt hụt/thành công: 30% trượt
             let isFailed = Math.random() < 0.30;
             const feedback = document.getElementById('throw-feedback');
 
             if (isFailed) {
                 playSound('miss');
-                feedback.innerText = `💥 Trúng nhưng ${currentWildMonster.name} đã vùng vẫy thoát ra!`;
-                feedback.classList.remove('text-emerald-400');
-                feedback.classList.add('text-red-400');
+                feedback.innerText = `💥 ${currentWildMonster.name} vùng vẫy đứt dây thoát!`;
                 feedback.style.opacity = '1';
                 setTimeout(() => { feedback.style.opacity = '0'; }, 2000);
-                resetBall();
+                resetRope();
             } else {
                 playSound('catch');
                 feedback.innerText = `🎉 Bắt thành công ${currentWildMonster.name}!`;
-                feedback.classList.remove('text-red-400');
-                feedback.classList.add('text-emerald-400');
                 feedback.style.opacity = '1';
 
                 if (team.length < 3) {
-                    team.push({ ...currentWildMonster, uniqueId: Date.now() });
+                    team.push({ ...currentWildMonster, uniqueId: Date.now(), level: 1, hp: currentWeather.name === 'Mưa dông' ? currentWildMonster.maxHp * 1.15 : currentWildMonster.maxHp });
                     localStorage.setItem('ar_team', JSON.stringify(team));
                     updateTeamCount();
                 } else {
-                    alert(`Đội hình đã đầy (3/3). Thú tự động lưu vào bộ nhớ.`);
+                    alert(`Đội hình đã đầy (3/3). Thú tự động lưu vào kho.`);
                 }
 
                 if (!pokedex.includes(currentWildMonster.id)) {
@@ -425,17 +558,7 @@
             }
         }
 
-        function showThrowFeedback(success, text) {
-            const feedback = document.getElementById('throw-feedback');
-            feedback.innerText = text;
-            feedback.style.opacity = '1';
-            setTimeout(() => { feedback.style.opacity = '0'; }, 1500);
-        }
-
-        // --- 5. QUẢN LÝ ĐỘI HÌNH & SỔ TAY ---
-        function updateTeamCount() {
-            document.getElementById('team-count').innerText = team.length;
-        }
+        function updateTeamCount() { document.getElementById('team-count').innerText = team.length; }
 
         function openPokedexMenu() {
             const modal = document.getElementById('modal-container');
@@ -444,19 +567,11 @@
 
             let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">📖 Sổ Tay Phân Loại</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>`;
             html += `<div class="space-y-4">`;
-
             for (let [catName, list] of Object.entries(categories)) {
-                html += `<div class="bg-zinc-800/80 p-3 rounded-xl border border-zinc-700">`;
-                html += `<div class="text-yellow-400 font-bold text-sm mb-2">📁 Nhóm: ${catName}</div>`;
-                html += `<div class="grid grid-cols-4 gap-2">`;
-                
+                html += `<div class="bg-zinc-800/80 p-3 rounded-xl border border-zinc-700"><div class="text-yellow-400 font-bold text-sm mb-2">📁 ${catName}</div><div class="grid grid-cols-4 gap-2">`;
                 list.forEach(m => {
                     const caught = pokedex.includes(m.id);
-                    html += `
-                    <div class="bg-zinc-900 p-2 rounded-lg flex flex-col items-center border ${caught ? 'border-emerald-500/60' : 'border-zinc-800 opacity-40'}">
-                        <span class="text-3xl mb-1">${caught ? m.emoji : '❓'}</span>
-                        <div class="text-[10px] text-center font-bold truncate w-full">${m.name}</div>
-                    </div>`;
+                    html += `<div class="bg-zinc-900 p-2 rounded-lg flex flex-col items-center border ${caught ? 'border-emerald-500/60' : 'border-zinc-800 opacity-40'}"><span class="text-3xl mb-1">${caught ? m.emoji : '❓'}</span><div class="text-[10px] text-center font-bold truncate w-full">${m.name}</div></div>`;
                 });
                 html += `</div></div>`;
             }
@@ -464,106 +579,13 @@
             content.innerHTML = html;
         }
 
-        function openTeamMenu() {
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-
-            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Đội Hình Thú Cưng (${team.length}/3)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>`;
-            if (team.length === 0) {
-                html += `<p class="text-zinc-400 text-sm text-center py-6">Chưa có thú nào trong đội hình. Hãy ra bản đồ bắt thú hoặc ấp trứng nhé!</p>`;
-            } else {
-                html += `<div class="space-y-3">`;
-                team.forEach((pet, idx) => {
-                    html += `
-                    <div onclick="openPetDetail(${idx})" class="bg-zinc-800 hover:bg-zinc-750 cursor-pointer p-3 rounded-xl flex items-center justify-between border border-zinc-700 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <span class="text-4xl bg-zinc-900 p-2 rounded-xl">${pet.emoji}</span>
-                            <div>
-                                <div class="font-bold text-sm">${pet.name} <span class="text-xs text-yellow-400">Lv.${pet.level || 1}</span></div>
-                                <div class="text-[11px] text-zinc-300">HP: ${pet.hp}/${pet.maxHp} | ATK: ${pet.atk}</div>
-                                <div class="text-[10px] text-emerald-400 mt-0.5">Bấm để chăm sóc & chơi cùng 👉</div>
-                            </div>
-                        </div>
-                        <button onclick="event.stopPropagation(); removePet(${idx})" class="text-red-400 text-xs px-2 py-1 bg-red-950/40 rounded">Thả</button>
-                    </div>`;
-                });
-                html += `</div>`;
-            }
-            content.innerHTML = html;
-        }
-
-        function openPetDetail(index) {
-            let pet = team[index];
-            const content = document.getElementById('modal-content');
-
-            content.innerHTML = `
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-lg">🐾 Chăm Sóc Thú Cưng</h3>
-                <button onclick="openTeamMenu()" class="text-zinc-400 font-bold">‹ Quay lại</button>
-            </div>
-            <div class="flex flex-col items-center bg-zinc-800 p-5 rounded-2xl border border-zinc-700 mb-4 text-center">
-                <div class="text-8xl mb-2 filter drop-shadow-md animate-bounce">${pet.emoji}</div>
-                <div class="text-lg font-bold text-yellow-300">${pet.name}</div>
-                <div class="text-xs text-zinc-400 mt-1">Cấp độ: Lv.${pet.level || 1} | CP: ${pet.cp}</div>
-                <div class="w-full bg-zinc-900 rounded-full h-3 mt-3 overflow-hidden border border-zinc-700">
-                    <div class="bg-emerald-500 h-full transition-all" style="width: ${(pet.hp / pet.maxHp) * 100}%"></div>
-                </div>
-                <div class="text-[11px] text-zinc-300 mt-1">HP: ${pet.hp}/${pet.maxHp}</div>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2">
-                <button onclick="petAction(${index}, 'feed')" class="bg-emerald-600 hover:bg-emerald-500 p-3 rounded-xl flex flex-col items-center gap-1 font-bold text-xs shadow-lg active:scale-95 transition-all">
-                    <span class="text-xl">🍖</span> Cho ăn
-                </button>
-                <button onclick="petAction(${index}, 'play')" class="bg-amber-600 hover:bg-amber-500 p-3 rounded-xl flex flex-col items-center gap-1 font-bold text-xs shadow-lg active:scale-95 transition-all">
-                    <span class="text-xl">🎾</span> Chơi cùng
-                </button>
-                <button onclick="petAction(${index}, 'train')" class="bg-indigo-600 hover:bg-indigo-500 p-3 rounded-xl flex flex-col items-center gap-1 font-bold text-xs shadow-lg active:scale-95 transition-all">
-                    <span class="text-xl">🏋️</span> Luyện tập
-                </button>
-            </div>`;
-        }
-
-        function petAction(index, action) {
-            let pet = team[index];
-            if (action === 'feed') {
-                pet.hp = Math.min(pet.maxHp, pet.hp + 25);
-                alert(`🍖 Bạn đã cho ${pet.name} ăn ngon lành!`);
-            } else if (action === 'play') {
-                pet.atk += 3;
-                alert(`🎾 Bạn cùng chơi đùa với ${pet.name}!`);
-            } else if (action === 'train') {
-                pet.level = (pet.level || 1) + 1;
-                pet.atk += 10;
-                pet.maxHp += 15;
-                pet.hp = pet.maxHp;
-                alert(`🏋️ Luyện tập thành công! ${pet.name} thăng cấp Lv.${pet.level}!`);
-            }
-            localStorage.setItem('ar_team', JSON.stringify(team));
-            openPetDetail(index);
-        }
-
-        function removePet(index) {
-            if (confirm('Bạn có chắc muốn thả con thú này về tự nhiên?')) {
-                team.splice(index, 1);
-                localStorage.setItem('ar_team', JSON.stringify(team));
-                updateTeamCount();
-                openTeamMenu();
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('modal-container').classList.add('hidden');
-        }
+        function closeModal() { document.getElementById('modal-container').classList.add('hidden'); }
 
         function playSound(type) {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
+            osc.connect(gain); gain.connect(ctx.destination);
             if (type === 'throw') {
                 osc.frequency.setValueAtTime(300, ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.3);
@@ -593,10 +615,29 @@
         }
 
         window.onload = () => {
+            initWeather();
             initMap();
             initStepCounter();
             updateTeamCount();
         };
+
+        function initStepCounter() {
+            document.getElementById('egg-steps-count').innerText = eggSteps;
+            if (window.DeviceMotionEvent) {
+                let lastAcc = { x: 0, y: 0, z: 0 };
+                window.addEventListener('devicemotion', (event) => {
+                    let acc = event.accelerationIncludingGravity;
+                    if (!acc) return;
+                    let delta = Math.abs(acc.x - lastAcc.x) + Math.abs(acc.y - lastAcc.y) + Math.abs(acc.z - lastAcc.z);
+                    if (delta > 12) {
+                        eggSteps++;
+                        localStorage.setItem('ar_egg_steps', eggSteps);
+                        document.getElementById('egg-steps-count').innerText = eggSteps;
+                    }
+                    lastAcc = { x: acc.x, y: acc.y, z: acc.z };
+                });
+            }
+        }
     </script>
 </body>
 </html>
