@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster 3D Spatial Anchor</title>
+    <title>AR Monster - Real World Spatial</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
         .monster-float { animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-        /* Hiệu ứng mượt mà cho việc đổi kích thước và vị trí 3D */
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
         #active-monster {
-            transition: transform 0.15s ease-out, scale 0.15s ease-out, opacity 0.2s ease-out;
+            transition: transform 0.1s ease-out, opacity 0.15s ease-out;
             transform-style: preserve-3d;
+            will-change: transform, opacity;
         }
     </style>
 </head>
@@ -37,7 +37,7 @@
         <div class="flex justify-between items-center pointer-events-auto">
             <div class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span id="radar-status" class="text-xs font-medium">Radar: Quét không gian 3D...</span>
+                <span id="radar-status" class="text-xs font-medium">Radar: Đang quét không gian thực...</span>
             </div>
             <div class="flex gap-2">
                 <button onclick="openMenu('team')" class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold flex items-center gap-1">
@@ -49,7 +49,7 @@
             </div>
         </div>
 
-        <!-- 3D ANCHORED MONSTER LAYER -->
+        <!-- 3D REAL-WORLD MONSTER LAYER -->
         <div id="ar-scene" class="absolute inset-0 pointer-events-none flex items-center justify-center">
             <div id="active-monster" class="pointer-events-auto cursor-pointer flex flex-col items-center monster-float" onclick="catchMonster()">
                 <div class="bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] text-yellow-300 font-bold mb-1 border border-yellow-500/30">CP <span id="mon-cp">150</span></div>
@@ -62,12 +62,7 @@
         <div class="flex flex-col items-center gap-3 pointer-events-auto pb-6">
             <div id="throw-feedback" class="text-xs font-bold text-yellow-300 bg-black/60 px-3 py-1 rounded-full opacity-0 transition-opacity">Ném bóng chính xác!</div>
             
-            <!-- ANCHOR BUTTON -->
-            <button onclick="toggleAnchor()" id="anchor-btn" class="bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-400 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg transition-all">
-                📍 Ghim vị trí thú tại đây
-            </button>
-
-            <div class="flex items-center gap-6 mt-1">
+            <div class="flex items-center gap-6">
                 <button onclick="openMenu('arena')" class="w-12 h-12 rounded-full bg-red-600/80 border-2 border-red-400 flex items-center justify-center text-xl shadow-lg active:scale-95 transition-transform" title="Đấu trường">
                     ⚔️
                 </button>
@@ -101,14 +96,10 @@
         let currentWildMonster = null;
         let lastVibrateTime = 0;
 
-        // 3D Spatial & Anchor Variables
-        let isAnchored = false;
-        let anchorAlpha = 0; // Hướng la bàn
-        let anchorBeta = 0;  // Góc ngẩng điện thoại
-        let currentAlpha = 0;
-        let currentBeta = 0;
-        let virtualDistance = 1.0; // Hệ số khoảng cách (1.0 là bình thường, >1 là lại gần to lên, <1 là ra xa nhỏ lại)
-        let baseScale = 1.0;
+        // Tọa độ ngẫu nhiên cố định trong không gian thực cho con thú hiện tại (Góc la bàn 0-360 và góc cao độ)
+        let monsterWorldAngle = 0; 
+        let monsterWorldBeta = 0;
+        let monsterDistanceScale = 1.0;
 
         async function initCamera() {
             try {
@@ -130,96 +121,70 @@
         }
 
         function initSensors() {
-            // Xử lý góc nhìn không gian (Orientation)
             if (window.DeviceOrientationEvent) {
                 window.addEventListener('deviceorientation', (event) => {
-                    currentAlpha = event.alpha || 0;
-                    currentBeta = event.beta || 0;
-                    updateSpatialPosition();
-                });
-            }
+                    let currentAlpha = event.alpha || 0; // Hướng xoay ngang của điện thoại (0 - 360)
+                    let currentBeta = event.beta || 0;   // Góc ngẩng điện thoại (-180 tới 180)
 
-            // Xử lý bước di chuyển tiến/lùi hoặc dịch chuyển (Motion) để thay đổi kích thước to/nhỏ
-            if (window.DeviceMotionEvent) {
-                window.addEventListener('devicemotion', (event) => {
-                    if (!isAnchored) return;
-                    let accZ = event.accelerationIncludingGravity.z || 9.8;
-                    // Dựa vào gia tốc hướng trục Z để mô phỏng việc bạn tiến lại gần hay lùi ra xa con thú được ghim
-                    // Khi tiến lại gần, scale tăng lên (to ra); lùi ra xa, scale giảm đi (nhỏ lại)
+                    updateRealWorldPosition(currentAlpha, currentBeta);
                 });
             }
         }
 
-        function updateSpatialPosition() {
+        function updateRealWorldPosition(currAlpha, currBeta) {
             const monsterEl = document.getElementById('active-monster');
             const radarStatus = document.getElementById('radar-status');
 
-            if (isAnchored) {
-                let diffAlpha = currentAlpha - anchorAlpha;
-                let diffBeta = currentBeta - anchorBeta;
+            // Tính độ lệch góc giữa hướng camera điện thoại và vị trí thực tế của con thú trong không gian
+            let diffAlpha = currAlpha - monsterWorldAngle;
+            let diffBeta = currBeta - monsterWorldBeta;
 
-                if (diffAlpha > 180) diffAlpha -= 360;
-                if (diffAlpha < -180) diffAlpha += 360;
+            // Chuẩn hóa góc lệch vòng tròn 360 độ
+            if (diffAlpha > 180) diffAlpha -= 360;
+            if (diffAlpha < -180) diffAlpha += 360;
 
-                // Tính toán vị trí dịch chuyển trên màn hình theo góc quay
-                const offsetX = -diffAlpha * 18; 
-                // Khi điện thoại hạ thấp hoặc ngẩng lên (thay đổi góc beta), mô phỏng khoảng cách gần/xa
-                const offsetY = diffBeta * 12;
+            // Chuyển đổi độ lệch góc thành tọa độ pixel trên màn hình
+            const screenX = -diffAlpha * 20; 
+            const screenY = diffBeta * 15;
 
-                // Hiệu ứng phối cảnh 3D: Khi góc beta thay đổi (hướng máy sát xuống sàn hoặc tiến lại gần), kích thước thay đổi theo chiều sâu
-                // Giả lập: Nếu ngẩng/cúi máy hoặc di chuyển vị trí, scale dao động từ 0.4x (xa) đến 2.5x (gần)
-                let depthFactor = 1.0 + (diffBeta / 50); 
-                depthFactor = Math.max(0.3, Math.min(3.0, depthFactor)); // Giới hạn kích thước tối thiểu và tối đa
+            // Hiệu ứng 3D: Khi góc ngẩng thay đổi hoặc khoảng cách ngẫu nhiên, thay đổi kích thước to/nhỏ
+            let scale = monsterDistanceScale + (diffBeta / 60);
+            scale = Math.max(0.3, Math.min(2.8, scale)); // Giới hạn kích thước hiển thị
 
-                monsterEl.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${depthFactor})`;
+            monsterEl.style.transform = `translate(${screenX}px, ${screenY}px) scale(${scale})`;
 
-                if (Math.abs(diffAlpha) > 35 || Math.abs(diffBeta) > 30) {
-                    monsterEl.style.opacity = '0.15';
-                    radarStatus.innerText = '📍 Thú đang ở ngoài góc nhìn (Quay lại vị trí cũ)';
+            // Nếu người dùng quay mặt đi hướng khác (lệch quá góc nhìn màn hình), con thú sẽ ẩn đi tự nhiên
+            if (Math.abs(diffAlpha) > 45 || Math.abs(diffBeta) > 40) {
+                monsterEl.style.opacity = '0';
+                radarStatus.innerText = '🧭 Hãy xoay điện thoại tìm thú quanh phòng...';
+            } else {
+                // Khi quay lại đúng hướng, con thú hiện rõ nguyên hình trong không gian thực
+                // Càng nhìn trực diện, độ đậm càng rõ
+                let opacityFactor = 1 - (Math.abs(diffAlpha) / 45);
+                monsterEl.style.opacity = Math.max(0.3, opacityFactor);
+                
+                if (Math.abs(diffAlpha) < 15) {
+                    radarStatus.innerText = '🎯 Đã tìm thấy mục tiêu trong tầm ngắm!';
+                    if (navigator.vibrate && Date.now() - lastVibrateTime > 3000) {
+                        navigator.vibrate(100);
+                        lastVibrateTime = Date.now();
+                    }
                 } else {
-                    monsterEl.style.opacity = '1';
-                    radarStatus.innerText = `📍 Đã ghim 3D (Khoảng cách ảo: ${depthFactor.toFixed(1)}x)`;
+                    radarStatus.innerText = '👀 Thú đang ở gần hướng này...';
                 }
-            } else {
-                const offsetX = Math.sin(currentAlpha * Math.PI / 180) * 80;
-                monsterEl.style.transform = `translate(${offsetX}px, 0px) scale(1.0)`;
-                monsterEl.style.opacity = '1';
-
-                if (Math.abs(offsetX) < 30 && navigator.vibrate && Date.now() - lastVibrateTime > 2000) {
-                    navigator.vibrate([100, 50, 100]);
-                    lastVibrateTime = Date.now();
-                    radarStatus.innerText = 'Radar: Phát hiện thú ở gần!';
-                }
-            }
-        }
-
-        function toggleAnchor() {
-            isAnchored = !isAnchored;
-            const btn = document.getElementById('anchor-btn');
-            if (isAnchored) {
-                anchorAlpha = currentAlpha;
-                anchorBeta = currentBeta;
-                btn.innerText = '🔓 Hủy ghim (Di chuyển tự do)';
-                btn.classList.remove('bg-emerald-600', 'border-emerald-400');
-                btn.classList.add('bg-amber-600', 'border-amber-400');
-                playSound('catch');
-            } else {
-                btn.innerText = '📍 Ghim vị trí thú tại đây';
-                btn.classList.remove('bg-amber-600', 'border-amber-400');
-                btn.classList.add('bg-emerald-600', 'border-emerald-400');
             }
         }
 
         function respawnMonster() {
-            isAnchored = false;
-            const btn = document.getElementById('anchor-btn');
-            btn.innerText = '📍 Ghim vị trí thú tại đây';
-            btn.classList.remove('bg-amber-600', 'border-amber-400');
-            btn.classList.add('bg-emerald-600', 'border-emerald-400');
-
+            // Sinh ngẫu nhiên một con thú mới trong pool
             const template = monstersPool[Math.floor(Math.random() * monstersPool.length)];
             currentWildMonster = { ...template, cp: Math.floor(template.cp * (0.9 + Math.random() * 0.3)) };
             
+            // Đặt tọa độ ngẫu nhiên hoàn toàn trong không gian quanh người chơi (Góc quay từ 0 đến 360 độ)
+            monsterWorldAngle = Math.random() * 360;
+            monsterWorldBeta = (Math.random() * 30) - 15; // Dao động tầm nhìn ngang mắt
+            monsterDistanceScale = 0.7 + (Math.random() * 0.8); // Kích thước xa gần ngẫu nhiên
+
             document.getElementById('mon-avatar').innerText = currentWildMonster.emoji;
             document.getElementById('mon-name').innerText = currentWildMonster.name;
             document.getElementById('mon-cp').innerText = currentWildMonster.cp;
@@ -322,7 +287,7 @@
                 }
                 content.innerHTML = html;
             } else if (type === 'pokedex') {
-                let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">📖 Sổ Tay Pokedex</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>`;
+                let html = `<div class="flex justify-between items-center mb-4"><h3 class="flex items-center justify-between font-bold text-lg">📖 Sổ Tay Pokedex</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>`;
                 html += `<div class="grid grid-cols-2 gap-3">`;
                 monstersPool.forEach(m => {
                     const caught = pokedex.some(p => p.id === m.id);
@@ -359,7 +324,7 @@
 
         function startBattle() {
             if (team.length === 0) {
-                alert('Bạn cần bắt ít nhất 1 con thú để tham gia đấu trường!');
+                alert('Cách bắt ít nhất 1 con thú để tham gia đấu trường!');
                 return;
             }
             const myPet = team[0];
