@@ -32,7 +32,7 @@
         <div class="flex justify-between items-center pointer-events-auto">
             <div class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span id="radar-status" class="text-xs font-medium">Radar: Quét xung quanh...</span>
+                <span id="radar-status" class="text-xs font-medium">Radar: Đang quét không gian...</span>
             </div>
             <div class="flex gap-2">
                 <button onclick="openMenu('team')" class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold flex items-center gap-1">
@@ -46,8 +46,7 @@
 
         <!-- 3D ANCHORED MONSTER LAYER -->
         <div id="ar-scene" class="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <!-- Monster will be injected dynamically here based on spatial rotation -->
-            <div id="active-monster" class="pointer-events-auto cursor-pointer flex flex-col items-center monster-float transition-all duration-300" onclick="catchMonster()">
+            <div id="active-monster" class="pointer-events-auto cursor-pointer flex flex-col items-center monster-float transition-all duration-100" onclick="catchMonster()">
                 <div class="bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] text-yellow-300 font-bold mb-1 border border-yellow-500/30">CP <span id="mon-cp">150</span></div>
                 <div id="mon-avatar" class="text-7xl filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.6)]">🐕</div>
                 <div id="mon-name" class="text-xs font-bold mt-1 bg-black/60 px-2 py-0.5 rounded-full border border-white/20">Inu-Spark</div>
@@ -57,7 +56,13 @@
         <!-- BOTTOM CONTROLS -->
         <div class="flex flex-col items-center gap-3 pointer-events-auto pb-6">
             <div id="throw-feedback" class="text-xs font-bold text-yellow-300 bg-black/60 px-3 py-1 rounded-full opacity-0 transition-opacity">Ném bóng chính xác!</div>
-            <div class="flex items-center gap-6">
+            
+            <!-- ANCHOR BUTTON -->
+            <button onclick="toggleAnchor()" id="anchor-btn" class="bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-400 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg transition-all">
+                📍 Ghim thú tại đây
+            </button>
+
+            <div class="flex items-center gap-6 mt-1">
                 <button onclick="openMenu('arena')" class="w-12 h-12 rounded-full bg-red-600/80 border-2 border-red-400 flex items-center justify-center text-xl shadow-lg active:scale-95 transition-transform" title="Đấu trường">
                     ⚔️
                 </button>
@@ -75,7 +80,7 @@
     <!-- MODAL OVERLAY -->
     <div id="modal-container" class="hidden absolute inset-0 z-30 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto">
-            <!-- Dynamic modal content inserted via JS -->
+            <!-- Dynamic content -->
         </div>
     </div>
 
@@ -85,14 +90,21 @@
         let pokedex = JSON.parse(localStorage.getItem('ar_pokedex') || '[]');
         
         const monstersPool = [
-            { id: 1, name: 'Inu-Spark', emoji: '🐕', type: 'Electric', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1, exp: 0, hunger: 80, thirst: 80 },
-            { id: 2, name: 'Neko-Leaf', emoji: '🐈', type: 'Grass', cp: 160, hp: 70, maxHp: 70, atk: 120, level: 1, exp: 0, hunger: 80, thirst: 80 },
-            { id: 3, name: 'Chu-Rats', emoji: '🐹', type: 'Water', cp: 110, hp: 60, maxHp: 60, atk: 65, level: 1, exp: 0, hunger: 80, thirst: 80 },
-            { id: 4, name: 'Tori-Flame', emoji: '🐦', type: 'Fire', cp: 185, hp: 50, maxHp: 50, atk: 140, level: 1, exp: 0, hunger: 80, thirst: 80 }
+            { id: 1, name: 'Inu-Spark', emoji: '🐕', type: 'Electric', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1 },
+            { id: 2, name: 'Neko-Leaf', emoji: '🐈', type: 'Grass', cp: 160, hp: 70, maxHp: 70, atk: 120, level: 1 },
+            { id: 3, name: 'Chu-Rats', emoji: '🐹', type: 'Water', cp: 110, hp: 60, maxHp: 60, atk: 65, level: 1 },
+            { id: 4, name: 'Tori-Flame', emoji: '🐦', type: 'Fire', cp: 185, hp: 50, maxHp: 50, atk: 140, level: 1 }
         ];
 
         let currentWildMonster = null;
         let lastVibrateTime = 0;
+
+        // Spatial Anchor States
+        let isAnchored = false;
+        let anchorAlpha = 0;
+        let anchorBeta = 0;
+        let currentAlpha = 0;
+        let currentBeta = 0;
 
         // --- CAMERA INITIALIZATION ---
         async function initCamera() {
@@ -101,44 +113,93 @@
                     video: { facingMode: { exact: "environment" } },
                     audio: false
                 });
-                const video = document.getElementById('camera-feed');
-                video.srcObject = stream;
+                document.getElementById('camera-feed').srcObject = stream;
                 document.getElementById('camera-fallback').style.display = 'none';
             } catch (err) {
-                // Fallback to any available camera if environment fails
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                     document.getElementById('camera-feed').srcObject = stream;
                     document.getElementById('camera-fallback').style.display = 'none';
                 } catch (e) {
-                    console.log("Camera access denied or unavailable.");
+                    console.log("Camera access denied.");
                 }
             }
         }
 
-        // --- SPATIAL ORIENTATION & RADAR VIBRATION ---
+        // --- SPATIAL SENSORS & ANCHORING LOGIC ---
         function initSensors() {
             if (window.DeviceOrientationEvent) {
                 window.addEventListener('deviceorientation', (event) => {
-                    const alpha = event.alpha || 0; // Compass direction
-                    const monsterEl = document.getElementById('active-monster');
-                    
-                    // Map alpha rotation to translation offset for spatial anchoring feel
-                    const offsetX = Math.sin(alpha * Math.PI / 180) * 80;
-                    monsterEl.style.transform = `translate(${offsetX}px, 0px)`;
+                    currentAlpha = event.alpha || 0; // Hướng xoay ngang (0-360)
+                    currentBeta = event.beta || 0;   // Góc gập điện thoại (-180 tới 180)
 
-                    // Simulated radar proximity vibration when turning towards monster
-                    if (Math.abs(offsetX) < 30 && navigator.vibrate && Date.now() - lastVibrateTime > 2000) {
-                        navigator.vibrate([100, 50, 100]);
-                        lastVibrateTime = Date.now();
-                        document.getElementById('radar-status').innerText = 'Radar: Phát hiện thú ở gần!';
+                    const monsterEl = document.getElementById('active-monster');
+                    const radarStatus = document.getElementById('radar-status');
+
+                    if (isAnchored) {
+                        // Tính toán độ lệch góc so với điểm đã ghim
+                        let diffAlpha = currentAlpha - anchorAlpha;
+                        let diffBeta = currentBeta - anchorBeta;
+
+                        // Chuẩn hóa góc lệch về khoảng [-180, 180]
+                        if (diffAlpha > 180) diffAlpha -= 360;
+                        if (diffAlpha < -180) diffAlpha += 360;
+
+                        // Chuyển đổi độ lệch góc thành tọa độ hiển thị trên màn hình
+                        const offsetX = -diffAlpha * 15; // Hệ số dịch chuyển ngang
+                        const offsetY = diffBeta * 10;   // Hệ số dịch chuyển dọc
+
+                        monsterEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+                        
+                        // Nếu người dùng quay máy ra xa vị trí ghim quá ngưỡng, mờ dần đi
+                        if (Math.abs(diffAlpha) > 40 || Math.abs(diffBeta) > 35) {
+                            monsterEl.style.opacity = '0.2';
+                            radarStatus.innerText = 'Radar: Thú đang ở ngoài góc nhìn (Quay lại chỗ cũ)';
+                        } else {
+                            monsterEl.style.opacity = '1';
+                            radarStatus.innerText = '📍 Đã ghim cố định vị trí!';
+                        }
+                    } else {
+                        // Trạng thái tự do (Radar quét bình thường)
+                        const offsetX = Math.sin(currentAlpha * Math.PI / 180) * 80;
+                        monsterEl.style.transform = `translate(${offsetX}px, 0px)`;
+                        monsterEl.style.opacity = '1';
+
+                        if (Math.abs(offsetX) < 30 && navigator.vibrate && Date.now() - lastVibrateTime > 2000) {
+                            navigator.vibrate([100, 50, 100]);
+                            lastVibrateTime = Date.now();
+                            radarStatus.innerText = 'Radar: Phát hiện thú ở gần!';
+                        }
                     }
                 });
             }
         }
 
+        function toggleAnchor() {
+            isAnchored = !isAnchored;
+            const btn = document.getElementById('anchor-btn');
+            if (isAnchored) {
+                anchorAlpha = currentAlpha;
+                anchorBeta = currentBeta;
+                btn.innerText = '🔓 Hủy ghim (Di chuyển tự do)';
+                btn.classList.remove('bg-emerald-600', 'border-emerald-400');
+                btn.classList.add('bg-amber-600', 'border-amber-400');
+                playSound('catch');
+            } else {
+                btn.innerText = '📍 Ghim thú tại đây';
+                btn.classList.remove('bg-amber-600', 'border-amber-400');
+                btn.classList.add('bg-emerald-600', 'border-emerald-400');
+            }
+        }
+
         // --- GAMEPLAY LOGIC ---
         function respawnMonster() {
+            isAnchored = false;
+            const btn = document.getElementById('anchor-btn');
+            btn.innerText = '📍 Ghim thú tại đây';
+            btn.classList.remove('bg-amber-600', 'border-amber-400');
+            btn.classList.add('bg-emerald-600', 'border-emerald-400');
+
             const template = monstersPool[Math.floor(Math.random() * monstersPool.length)];
             currentWildMonster = { ...template, cp: Math.floor(template.cp * (0.9 + Math.random() * 0.3)) };
             
@@ -146,8 +207,7 @@
             document.getElementById('mon-name').innerText = currentWildMonster.name;
             document.getElementById('mon-cp').innerText = currentWildMonster.cp;
             
-            const monsterEl = document.getElementById('active-monster');
-            monsterEl.style.display = 'flex';
+            document.getElementById('active-monster').style.display = 'flex';
             playSound('spawn');
         }
 
@@ -188,7 +248,7 @@
             document.getElementById('team-count').innerText = team.length;
         }
 
-        // --- AUDIO SYNTHESIS (WEB AUDIO API) ---
+        // --- AUDIO SYNTHESIS ---
         function playSound(type) {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator();
@@ -218,7 +278,7 @@
             }
         }
 
-        // --- UI MENUS & MODALS ---
+        // --- UI MENUS ---
         function openMenu(type) {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
@@ -241,8 +301,7 @@
                                 </div>
                             </div>
                             <div class="flex gap-1.5">
-                                <button onclick="feedPet(${idx}, 'food')" class="bg-emerald-600 px-2 py-1 rounded text-xs font-bold">🍖 Ăn</button>
-                                <button onclick="feedPet(${idx}, 'water')" class="bg-blue-600 px-2 py-1 rounded text-xs font-bold">💧 Uống</button>
+                                <button onclick="feedPet(${idx})" class="bg-emerald-600 px-2 py-1 rounded text-xs font-bold">🍖 Nuôi</button>
                             </div>
                         </div>`;
                     });
@@ -276,7 +335,7 @@
             document.getElementById('modal-container').classList.add('hidden');
         }
 
-        function feedPet(index, type) {
+        function feedPet(index) {
             let pet = team[index];
             pet.hp = Math.min(pet.maxHp, pet.hp + 20);
             pet.level = (pet.level || 1) + 1;
@@ -294,7 +353,7 @@
             const enemyPet = monstersPool[Math.floor(Math.random() * monstersPool.length)];
             
             const won = myPet.atk >= enemyPet.cp;
-            alert(`Trận chiến giữa ${myPet.name} (ATK: ${myPet.atk}) và ${enemyPet.name} (CP: ${enemyPet.cp})!\n\nKết quả: ${won ? '🎉 Bạn đã giành chiến thắng vinh quang!' : '😢 Thú cưng đã thất bại, hãy cho ăn và tăng cấp thêm nhé!'}`);
+            alert(`Trận chiến giữa ${myPet.name} và ${enemyPet.name}!\n\nKết quả: ${won ? '🎉 Bạn đã giành chiến thắng vinh quang!' : '😢 Thú cưng đã thất bại, hãy nuôi dưỡng thêm nhé!'}`);
             closeModal();
         }
 
