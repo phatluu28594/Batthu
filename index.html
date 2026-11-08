@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster - GPS & Map Edition</title>
+    <title>AR Monster - Multi-Monster Map</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Leaflet CSS cho Bản đồ mã nguồn mở -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
@@ -33,7 +32,7 @@
 
     <!-- QUẢN LÝ PHIÊN BẢN (AUTO UPDATE CACHE) -->
     <script>
-        const APP_VERSION = '1.6'; // Đã cập nhật phiên bản để fix lỗi bản đồ
+        const APP_VERSION = '1.7'; // Tăng số phiên bản để tự động cập nhật cache
 
         async function checkForUpdates() {
             try {
@@ -53,7 +52,7 @@
         <div class="flex justify-between items-center z-30">
             <div class="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full bg-blue-500 animate-ping"></span>
-                <span id="gps-status" class="text-xs font-medium">GPS: Đang lấy tọa độ thực tế...</span>
+                <span id="gps-status" class="text-xs font-medium">GPS: Đang quét khu vực...</span>
             </div>
             <div class="flex gap-2">
                 <button onclick="openTeamMenu()" class="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold">
@@ -71,10 +70,10 @@
 
         <div class="flex flex-col items-center z-30 pb-2">
             <div id="distance-info" class="text-xs font-bold text-yellow-300 bg-black/70 px-4 py-1.5 rounded-full border border-white/20 mb-2 shadow-lg">
-                📍 Di chuyển lại gần thú (dưới 50m) để bật nút Bắt!
+                📍 Chạm vào bất kỳ con thú nào trên bản đồ để bắt!
             </div>
-            <button id="catch-btn" onclick="enterARScreen()" disabled class="w-full max-w-sm bg-zinc-700 text-zinc-400 font-bold py-3.5 rounded-2xl shadow-xl transition-all opacity-50 cursor-not-allowed">
-                🔴 BẮT THÚ (Hãy lại gần hơn)
+            <button onclick="spawnMultipleMonsters()" class="w-full max-w-sm bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-2xl shadow-xl transition-all">
+                🔄 Quét lại khu vực (Tìm thú mới)
             </button>
         </div>
     </div>
@@ -147,14 +146,13 @@
         const allMonsters = Object.values(categories).flat();
         let currentWildMonster = null;
 
-        let map, userMarker, monsterMarker;
+        let map, userMarker;
+        let activeMarkers = []; // Danh sách các marker quái vật trên bản đồ
         let userLat = 10.0452, userLng = 105.7469; 
-        let monsterLat = 10.0458, monsterLng = 105.7475; 
 
         function initMap() {
             map = L.map('map', { zoomControl: false }).setView([userLat, userLng], 17);
 
-            // SỬ DỤNG OPENSTREETMAP TIÊU CHUẨN (KHÔNG CẦN API KEY)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '© OpenStreetMap contributors'
@@ -168,7 +166,7 @@
             });
 
             userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
-            spawnRandomMonsterOnMap();
+            spawnMultipleMonsters();
 
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition((position) => {
@@ -176,72 +174,46 @@
                     userLng = position.coords.longitude;
                     userMarker.setLatLng([userLat, userLng]);
                     map.setView([userLat, userLng], map.getZoom());
-
-                    document.getElementById('gps-status').innerText = `GPS: Đã định vị chính xác`;
-                    checkDistanceAndEnableCatch();
+                    document.getElementById('gps-status').innerText = `GPS: Đang hoạt động`;
                 }, (error) => {
-                    document.getElementById('gps-status').innerText = `GPS: Dùng vị trí giả lập`;
-                    checkDistanceAndEnableCatch();
+                    document.getElementById('gps-status').innerText = `GPS: Vị trí giả lập`;
                 }, { enableHighAccuracy: true });
             }
         }
 
-        function spawnRandomMonsterOnMap() {
-            const template = allMonsters[Math.floor(Math.random() * allMonsters.length)];
-            currentWildMonster = { ...template, cp: Math.floor(template.cp * (0.9 + Math.random() * 0.3)) };
+        // Sinh nhiều con thú xuất hiện cùng lúc trên bản đồ quanh vị trí người chơi
+        function spawnMultipleMonsters() {
+            // Xóa các marker cũ nếu có
+            activeMarkers.forEach(m => map.removeLayer(m));
+            activeMarkers = [];
 
-            monsterLat = userLat + (Math.random() - 0.5) * 0.0015;
-            monsterLng = userLng + (Math.random() - 0.5) * 0.0015;
+            // Tạo ngẫu nhiên 8-10 con thú quanh vị trí người chơi
+            const count = 8;
+            for (let i = 0; i < count; i++) {
+                const template = allMonsters[Math.floor(Math.random() * allMonsters.length)];
+                const monsterData = { 
+                    ...template, 
+                    cp: Math.floor(template.cp * (0.9 + Math.random() * 0.3)),
+                    lat: userLat + (Math.random() - 0.5) * 0.0025,
+                    lng: userLng + (Math.random() - 0.5) * 0.0025
+                };
 
-            const monsterIcon = L.divIcon({
-                className: 'custom-monster-icon',
-                html: `<div style="font-size: 34px; filter: drop-shadow(0 0 10px rgba(234,179,8,0.9));">${currentWildMonster.emoji}</div>`,
-                iconSize: [35, 35],
-                iconAnchor: [17, 17]
-            });
+                const monsterIcon = L.divIcon({
+                    className: 'custom-monster-icon',
+                    html: `<div style="font-size: 32px; animation: bounce 1.5s infinite; filter: drop-shadow(0 0 8px rgba(234,179,8,0.9));">${monsterData.emoji}</div>`,
+                    iconSize: [35, 35],
+                    iconAnchor: [17, 17]
+                });
 
-            if (monsterMarker) {
-                map.removeLayer(monsterMarker);
-            }
-            monsterMarker = L.marker([monsterLat, monsterLng], { icon: monsterIcon }).addTo(map);
-            checkDistanceAndEnableCatch();
-        }
-
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
-        function checkDistanceAndEnableCatch() {
-            const distance = calculateDistance(userLat, userLng, monsterLat, monsterLng);
-            const distanceInfo = document.getElementById('distance-info');
-            const catchBtn = document.getElementById('catch-btn');
-
-            distanceInfo.innerText = `📏 Khoảng cách đến ${currentWildMonster.name}: ${Math.round(distance)} mét`;
-
-            if (distance <= 50) {
-                distanceInfo.classList.remove('text-yellow-300');
-                distanceInfo.classList.add('text-emerald-400');
-                distanceInfo.innerText = `✨ Đã đến gần ${currentWildMonster.name}! Có thể bắt ngay!`;
-
-                catchBtn.disabled = false;
-                catchBtn.classList.remove('bg-zinc-700', 'text-zinc-400', 'cursor-not-allowed', 'opacity-50');
-                catchBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-500', 'text-white', 'shadow-emerald-900/50');
-                catchBtn.innerText = `🔴 BẮT ${currentWildMonster.name.toUpperCase()} NGAY!`;
-            } else {
-                distanceInfo.classList.remove('text-emerald-400');
-                distanceInfo.classList.add('text-yellow-300');
+                const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(map);
                 
-                catchBtn.disabled = true;
-                catchBtn.classList.add('bg-zinc-700', 'text-zinc-400', 'cursor-not-allowed', 'opacity-50');
-                catchBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500', 'text-white');
-                catchBtn.innerText = `🔴 HÃY DI CHUYỂN LẠI GẦN HƠN (<50m)`;
+                // Khi bấm vào con thú nào trên bản đồ, lập tức mở camera bắt con đó
+                marker.on('click', () => {
+                    currentWildMonster = monsterData;
+                    enterARScreen();
+                });
+
+                activeMarkers.push(marker);
             }
         }
 
@@ -324,7 +296,7 @@
                     setTimeout(() => {
                         feedback.style.opacity = '0';
                         exitARScreen();
-                        spawnRandomMonsterOnMap();
+                        spawnMultipleMonsters(); // Làm mới lại bản đồ
                     }, 1500);
                 }
             }, 500);
@@ -368,7 +340,7 @@
 
             let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Đội Hình Thú Cưng (${team.length}/3)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>`;
             if (team.length === 0) {
-                html += `<p class="text-zinc-400 text-sm text-center py-6">Chưa có thú nào trong đội hình. Hãy ra bản đồ tìm và đến gần thú để bắt!</p>`;
+                html += `<p class="text-zinc-400 text-sm text-center py-6">Chưa có thú nào trong đội hình. Hãy bấm vào các con thú trên bản đồ để bắt!</p>`;
             } else {
                 html += `<div class="space-y-3">`;
                 team.forEach((pet, idx) => {
