@@ -1,7 +1,16 @@
-// Cấu hình chung và Danh mục Linh thú
-const APP_VERSION = '3.1';
+// js/config.js - Cấu hình chung và Danh mục Linh thú
+export const APP_VERSION = '3.1';
 
-const elements = [
+// Khởi tạo và quản lý trạng thái dữ liệu lưu trong localStorage (có export đầy đủ)
+export let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
+export let farm = JSON.parse(localStorage.getItem('ar_farm') || '[]');
+export let pokedex = JSON.parse(localStorage.getItem('ar_pokedex') || '[]');
+export let eggSteps = parseInt(localStorage.getItem('ar_egg_steps') || '0');
+export let playerCoins = parseInt(localStorage.getItem('ar_coins') || '500');
+export let stamina = parseInt(localStorage.getItem('ar_stamina') || '15');
+export let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ food: 5, toy: 5, trainer: 3 }));
+
+export const elements = [
     { name: 'Kim', icon: '⚔️', color: 'text-yellow-300' },
     { name: 'Mộc', icon: '🌿', color: 'text-emerald-400' },
     { name: 'Thủy', icon: '💧', color: 'text-blue-400' },
@@ -9,13 +18,13 @@ const elements = [
     { name: 'Thổ', icon: '🪨', color: 'text-amber-600' }
 ];
 
-function checkElementAdvantage(attackerElem, defenderElem) {
+export function checkElementAdvantage(attackerElem, defenderElem) {
     if (!attackerElem || !defenderElem) return false;
     let rules = { 'Kim': 'Mộc', 'Mộc': 'Thổ', 'Thổ': 'Thủy', 'Thủy': 'Hỏa', 'Hỏa': 'Kim' };
     return rules[attackerElem] === defenderElem;
 }
 
-const categories = {
+export const categories = {
     'Gia cầm': [
         { id: 101, name: 'Gà Ta', emoji: '🐔', cp: 120, hp: 60, maxHp: 60, atk: 70, level: 1, rarePrice: 100, attackType: 'melee' },
         { id: 102, name: 'Vịt Cỏ', emoji: '🦆', cp: 110, hp: 55, maxHp: 55, atk: 65, level: 1, rarePrice: 90, attackType: 'magic' },
@@ -41,4 +50,9 @@ const categories = {
     ]
 };
 
-const allMonsters = Object.values(categories).flat();
+export const allMonsters = Object.values(categories).flat();
+
+// Hàm hỗ trợ lưu trữ nhanh
+export function saveInventory() {
+    localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+}
