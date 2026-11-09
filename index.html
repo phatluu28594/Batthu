@@ -92,7 +92,36 @@
     <div id="modal-container" class="hidden absolute inset-0 z-40 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
-
+    <!-- MÀN HÌNH NHẬP TÊN, TUỔI, GIỚI TÍNH LẦN ĐẦU -->
+    <div id="player-setup-modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-amber-500/50 w-full max-w-sm rounded-2xl p-5 text-zinc-100 shadow-2xl">
+            <h3 class="font-bold text-lg text-yellow-300 mb-3 text-center">🤠 Hồ Sơ Nhà Thám Hiểm</h3>
+            <p class="text-xs text-zinc-300 mb-4 text-center">Hãy nhập thông tin của bạn để bắt đầu hành trình săn thú!</p>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-zinc-400 mb-1">Tên nhân vật:</label>
+                    <input type="text" id="setup-name" placeholder="Nhập tên của bạn..." class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-zinc-400 mb-1">Tuổi:</label>
+                    <input type="number" id="setup-age" placeholder="Ví dụ: 20" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-zinc-400 mb-1">Giới tính:</label>
+                    <select id="setup-gender" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                        <option value="Nam">Nam 👦</option>
+                        <option value="Nữ">Nữ 👧</option>
+                        <option value="Khác">Khác 🌟</option>
+                    </select>
+                </div>
+            </div>
+    
+            <button onclick="savePlayerProfile()" class="w-full mt-5 bg-amber-600 hover:bg-amber-500 py-3 rounded-xl font-bold text-xs shadow-lg text-white">
+                💾 Xác Nhận & Vào Game
+            </button>
+        </div>
+    </div>
     <!-- THƯ VIỆN LEAFLET BẢN ĐỒ -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
