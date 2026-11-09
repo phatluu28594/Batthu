@@ -1,6 +1,6 @@
-export let currentWildMonster = null;
-export let catchAttempts = 0;
-export let capturedTempMonster = null;
+let currentWildMonster = null;
+let catchAttempts = 0;
+let capturedTempMonster = null;
 let canvas, ctx;
 let isARActive = false;
 let rope = { x: 0, y: 0, vx: 0, vy: 0, radius: 30, flying: false };
