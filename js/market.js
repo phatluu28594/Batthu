@@ -13,6 +13,13 @@ function openMarketMenu() {
     renderMarketContent();
 }
 
+function closeModal() {
+    const modal = document.getElementById('modal-container');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
 function renderMarketContent() {
     const content = document.getElementById('modal-content');
     content.innerHTML = `
@@ -117,10 +124,4 @@ function buyStaminaBatch(unitPrice) {
     document.getElementById('stamina-count').innerText = stamina;
     alert(`⚡ Hồi phục +${qty * 5} Năng lượng!`);
     renderMarketContent();
-}
-function closeModal() {
-    const modal = document.getElementById('modal-container');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
 }
