@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster - Player Profile & EXP</title>
+    <title>AR Monster - Full Version v3.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -157,10 +157,12 @@
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
 
-    <!-- NHÚNG CÁC FILE JS TÁCH RỜI -->
+    <!-- NHÚNG ĐẦY ĐỦ CÁC FILE JS TÁCH RỜI -->
     <script src="js/market.js"></script>
     <script src="js/arena.js"></script>
     <script src="js/ar_catch.js"></script>
+    <script src="js/team.js"></script>
+    <script src="js/farm.js"></script>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -202,7 +204,6 @@
             document.getElementById('header-exp-bar').style.width = expPercent + '%';
         }
 
-        // Kiểm tra xem đã thiết lập hồ sơ chưa
         function checkPlayerProfile() {
             let profileRaw = localStorage.getItem('ar_player_profile');
             const setupModal = document.getElementById('player-setup-modal');
@@ -232,7 +233,6 @@
             alert(`Chào mừng ${name} đến với thế giới linh thú!`);
         }
 
-        // Mở bảng thông tin chi tiết người chơi
         function openPlayerProfileModal() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
@@ -302,7 +302,6 @@
             openPlayerProfileModal();
         }
 
-        // Tăng EXP từ bước đi (Mỗi bước đi cộng EXP, đủ EXP tự tăng cấp & đổi danh hiệu)
         function addPlayerExp(amount) {
             playerProfile.exp += amount;
             while (playerProfile.exp >= playerProfile.maxExp) {
@@ -310,7 +309,6 @@
                 playerProfile.level++;
                 playerProfile.maxExp = Math.floor(playerProfile.maxExp * 1.5);
                 
-                // Cập nhật danh hiệu theo cấp độ
                 if (playerProfile.level >= 10) playerProfile.title = '👑 Đại Sư Linh Thú';
                 else if (playerProfile.level >= 5) playerProfile.title = '⚔️ Huấn Luyện Viên Kỳ Cựu';
                 else playerProfile.title = '🌟 Tân Thủ Tập Sự';
@@ -511,7 +509,6 @@
         // --- BẢN ĐỒ & QUÉT THÚ (CÓ TÍCH LŨY EXP BƯỚC ĐI) ---
         let map, userMarker;
         let activeMarkers = [];
-        let otherPlayersMarkers = [];
         let userLat = 10.0452, userLng = 105.7469; 
 
         function initMap() {
@@ -532,15 +529,13 @@
                     let newLat = position.coords.latitude;
                     let newLng = position.coords.longitude;
                     
-                    // Tính khoảng cách di chuyển để tăng EXP & Bước chân
-                    let distance = Math.hypot(newLat - userLat, newLng - userLng) * 111000; // mét
+                    let distance = Math.hypot(newLat - userLat, newLng - userLng) * 111000;
                     if (distance > 3) {
-                        let stepsEarned = Math.floor(distance / 1); // 1 mét = 1 bước
+                        let stepsEarned = Math.floor(distance / 1);
                         eggSteps += stepsEarned;
                         localStorage.setItem('ar_egg_steps', eggSteps);
                         document.getElementById('egg-steps-count').innerText = eggSteps;
 
-                        // Tăng EXP nhân vật theo bước đi
                         addPlayerExp(stepsEarned * 2);
                     }
 
