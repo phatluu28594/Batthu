@@ -49,74 +49,6 @@
         </div>
     </div>
 
-    <!-- QUẢN LÝ PHIÊN BẢN & AUTO UPDATE -->
-    <script>
-        const APP_VERSION = '3.1'; 
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) { registration.unregister(); }
-            });
-        }
-
-        async function forceAutoUpdate() {
-            try {
-                const response = await fetch(window.location.pathname + '?v=' + APP_VERSION + '&t=' + new Date().getTime(), { cache: 'no-store' });
-                const text = await response.text();
-                const match = text.match(/const APP_VERSION = '([^']+)'/);
-                if (match && match[1] && match[1] !== APP_VERSION) {
-                    window.location.reload(true);
-                }
-            } catch (e) {}
-        }
-
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            showInstallPromptBanner();
-        });
-
-        window.addEventListener('load', () => {
-            forceAutoUpdate();
-            setTimeout(() => {
-                const banner = document.getElementById('pwa-install-banner');
-                if (banner) banner.classList.remove('hidden');
-            }, 1000);
-        });
-
-        function showInstallPromptBanner() {
-            const banner = document.getElementById('pwa-install-banner');
-            if (banner) banner.classList.remove('hidden');
-        }
-
-        function installPWAApp() {
-            const banner = document.getElementById('pwa-install-banner');
-            if (banner) banner.classList.add('hidden');
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
-            } else {
-                alert('Mẹo: Bấm menu trình duyệt chọn "Thêm vào màn hình chính" (Add to Home Screen) để cài app!');
-            }
-        }
-    </script>
-
-    <!-- BANNER CÀI ĐẶT APP -->
-    <div id="pwa-install-banner" class="hidden absolute top-3 inset-x-3 z-50 bg-amber-600 border border-amber-400 p-3 rounded-2xl shadow-2xl flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <span class="text-2xl">📱</span>
-            <div>
-                <div class="font-bold text-xs">Cài đặt AR Monster ra màn hình chính?</div>
-                <div class="text-[10px] text-amber-100">Vào game mượt mà như ứng dụng độc lập!</div>
-            </div>
-        </div>
-        <div class="flex gap-1.5">
-            <button onclick="installPWAApp()" class="bg-black px-3 py-1.5 rounded-xl font-bold text-xs shadow cursor-pointer">Tải ngay</button>
-            <button onclick="document.getElementById('pwa-install-banner').classList.add('hidden')" class="bg-amber-900 px-2.5 py-1.5 rounded-xl font-bold text-xs cursor-pointer">✕</button>
-        </div>
-    </div>
-
     <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
     <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-3">
         <div class="flex justify-between items-center z-30 pt-1">
@@ -151,7 +83,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH MINIGAME CANVAS CAO BỒI BẮT THÚ -->
+    <!-- MÀN HÌNH MINIGAME CANVAS BẮT THÚ -->
     <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -206,6 +138,36 @@
         let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ food: 5, toy: 5, trainer: 3, meat: 0, stoneKim: 0, stoneMoc: 0, stoneThuy: 0, stoneHoa: 0, stoneTho: 0 }));
         let currentWeather = { name: 'Trời quang', icon: '☀️', effect: 'ATK +10%', buffAtk: 1.1 };
 
+        // --- QUẢN LÝ ÂM THANH TRONG GAME ---
+        const lobbyMusic = new Audio('https://actions.google.com/sounds/v1/ambiences/rain_heavy.ogg'); // Nhạc chờ nhẹ nhàng bản đồ
+        const battleMusic = new Audio('https://actions.google.com/sounds/v1/science_fiction/laser_charge.ogg'); // Nhạc đấu trường dồn dập
+
+        lobbyMusic.loop = true;
+        battleMusic.loop = true;
+        lobbyMusic.volume = 0.4;
+        battleMusic.volume = 0.5;
+
+        let isMusicPlaying = false;
+
+        document.addEventListener('click', () => {
+            if (!isMusicPlaying) {
+                isMusicPlaying = true;
+                lobbyMusic.play().catch(e => {});
+            }
+        }, { once: true });
+
+        function switchGameMusic(scene) {
+            if (!isMusicPlaying) return;
+            if (scene === 'battle') {
+                lobbyMusic.pause();
+                battleMusic.currentTime = 0;
+                battleMusic.play().catch(e => {});
+            } else if (scene === 'map') {
+                battleMusic.pause();
+                lobbyMusic.play().catch(e => {});
+            }
+        }
+
         // --- HỆ THỐNG KIỂM TRA HỒ SƠ NGƯỜI CHƠI ---
         function checkPlayerProfile() {
             let profile = JSON.parse(localStorage.getItem('ar_player_profile') || 'null');
@@ -236,13 +198,11 @@
             if (setupModal) setupModal.classList.add('hidden');
 
             alert(`Chào mừng nhà thám hiểm ${name} đã tham gia game!`);
-            // Đảm bảo sau khi lưu xong map được load mượt mà không bị đen màn hình
             setTimeout(() => {
                 if (map) map.invalidateSize();
             }, 200);
         }
 
-        // Chuẩn hóa dữ liệu thú cưng để đảm bảo không bị thiếu chỉ số
         function sanitizePetsData(petList) {
             return petList.map(p => ({
                 ...p,
@@ -314,7 +274,6 @@
             updateTeamCount();
         }
 
-        // --- NĂNG LƯỢNG ---
         function initStaminaSystem() {
             setInterval(() => {
                 let now = Date.now();
@@ -342,7 +301,6 @@
             }, 1000);
         }
 
-        // --- THỜI TIẾT & ẤP TRỨNG ---
         function initWeather() {
             const weathers = [
                 { name: 'Trời quang', icon: '☀️', effect: 'ATK +10%', buffAtk: 1.1 },
@@ -415,7 +373,6 @@
             closeModal();
         }
 
-        // --- CHỢ ĐEN ---
         function openMarketMenu() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
@@ -531,7 +488,6 @@
             renderMarketContent();
         }
 
-        // --- TRANG TRẠI SINH ĐỘNG ---
         let farmCanvas, farmCtx, farmAnimInterval;
         let farmPetsState = [];
 
@@ -646,7 +602,6 @@
             }
         }
 
-        // --- ĐỘI HÌNH & NÂNG CẤP ĐÁ ---
         function openTeamMenu() {
             checkPetSurvival();
             const modal = document.getElementById('modal-container');
@@ -784,7 +739,6 @@
             openTeamMenu();
         }
 
-        // --- BẮT THÚ & FIX LỖI ĐƯA VÀO ĐỘI HÌNH ---
         let capturedTempMonster = null;
 
         function promptCatchChoice(monster) {
@@ -854,7 +808,6 @@
             spawnMultipleMonsters();
         }
 
-        // --- PVP NGƯỜI THẬT & 30S TIMEOUT ---
         function openArenaMenu() {
             checkPetSurvival();
             const modal = document.getElementById('modal-container');
@@ -934,6 +887,7 @@
         let myStunTurns = 0, enemyStunTurns = 0;
 
         function startCanvasBattle(opponentObj = null) {
+            switchGameMusic('battle'); // Kích hoạt nhạc đấu trường dồn dập
             checkPetSurvival();
             if (team.length === 0) { alert('Đội hình trống! Không có thú để chiến đấu.'); closeModal(); return; }
             if (team[0].happiness < 30) { alert(`⚠️ ${team[0].name} đang bất mãn và từ chối chiến đấu!`); closeModal(); return; }
@@ -975,6 +929,7 @@
         }
 
         function exitBattleScreen() {
+            switchGameMusic('map'); // Quay lại nhạc bản đồ nhẹ nhàng
             clearInterval(battleInterval);
             document.getElementById('battle-screen').classList.add('hidden');
             document.getElementById('map-screen').classList.remove('hidden');
@@ -1100,6 +1055,7 @@
         }
 
         function showBattleResultModal(isWon, coinsEarned, hpLostPct, petName) {
+            switchGameMusic('map'); // Quay lại nhạc bản đồ khi kết thúc trận
             exitBattleScreen();
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
@@ -1118,7 +1074,6 @@
             </div>`;
         }
 
-        // --- BẢN ĐỒ & MULTIPLAYER ---
         let map, userMarker;
         let activeMarkers = [];
         let otherPlayersMarkers = [];
@@ -1403,42 +1358,5 @@
             updateTeamCount();
         };
     </script>
-<script>
-    // --- QUẢN LÝ ÂM THANH TRONG GAME ---
-    // Nhạc chờ nhẹ nhàng ở bản đồ
-    const lobbyMusic = new Audio('https://actions.google.com/sounds/v1/ambiences/rain_heavy.ogg'); 
-    // Nhạc đấu trường dồn dập
-    const battleMusic = new Audio('https://actions.google.com/sounds/v1/science_fiction/laser_charge.ogg'); 
-
-    lobbyMusic.loop = true;
-    battleMusic.loop = true;
-    lobbyMusic.volume = 0.4;
-    battleMusic.volume = 0.5;
-
-    let isMusicPlaying = false;
-
-    // Tự động phát nhạc khi người chơi tương tác lần đầu với trang web
-    document.addEventListener('click', () => {
-        if (!isMusicPlaying) {
-            isMusicPlaying = true;
-            lobbyMusic.play().catch(e => {});
-        }
-    }, { once: true });
-
-    // Hàm chuyển đổi nhạc giữa Bản đồ và Đấu trường
-    function switchGameMusic(scene) {
-        if (!isMusicPlaying) return;
-        
-        if (scene === 'battle') {
-            lobbyMusic.pause();
-            battleMusic.currentTime = 0;
-            battleMusic.play().catch(e => {});
-        } else if (scene === 'map') {
-            battleMusic.pause();
-            lobbyMusic.play().catch(e => {});
-        }
-    }
-</script>
-
 </body>
 </html>
