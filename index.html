@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Ghost & Idle Update v3.4</title>
+    <title>Batthu - Fix Map Screen v3.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
-        #map { height: 100%; width: 100%; border-radius: 1rem; z-index: 10; }
+        #map-screen { display: flex; flex-direction: column; height: 100vh; width: 100vw; position: absolute; inset: 0; background: #09090b; }
+        #map-container-wrap { flex: 1; position: relative; width: 100%; height: 100%; }
+        #map { height: 100% !important; width: 100% !important; z-index: 10; }
         .leaflet-control-attribution { display: none !important; }
         @keyframes petBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         .pet-animate { animation: petBounce 2s ease-in-out infinite; }
@@ -50,36 +52,36 @@
     </div>
 
     <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
-    <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-3">
-        <div class="flex justify-between items-center z-30 pt-1">
-            <div class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
-                <span id="weather-icon" class="text-base">☀️</span>
-                <span id="weather-status" class="text-xs font-medium">Trời quang</span>
+    <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2">
+        <div class="flex justify-between items-center z-30 pt-1 pb-1">
+            <div class="bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 flex items-center gap-1.5">
+                <span id="weather-icon" class="text-sm">☀️</span>
+                <span id="weather-status" class="text-[11px] font-medium">Trời quang</span>
             </div>
             <div class="flex gap-1 overflow-x-auto py-1">
-                <button onclick="openBountyMenu()" class="bg-orange-600/90 px-2.5 py-1 rounded-full border border-orange-400 text-[11px] font-bold shadow cursor-pointer">🎯 Truy nã</button>
-                <button onclick="openIdleMenu()" class="bg-indigo-600/90 px-2.5 py-1 rounded-full border border-indigo-400 text-[11px] font-bold shadow cursor-pointer">⏳ Thám hiểm</button>
-                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2.5 py-1 rounded-full border border-amber-400 text-[11px] font-bold shadow cursor-pointer">🛒 Chợ</button>
-                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2.5 py-1 rounded-full border border-red-400 text-[11px] font-bold shadow cursor-pointer">⚔️ PvP</button>
-                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2.5 py-1 rounded-full border border-emerald-400 text-[11px] font-bold shadow cursor-pointer">🏡 Trại</button>
-                <button onclick="openEggsMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold cursor-pointer">🥚(<span id="egg-steps-count">0</span>)</button>
-                <button onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold cursor-pointer">🎒(<span id="team-count">0</span>/3)</button>
-                <button onclick="openPokedexMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold cursor-pointer">📖</button>
+                <button onclick="openBountyMenu()" class="bg-orange-600/90 px-2 py-1 rounded-full border border-orange-400 text-[10px] font-bold shadow cursor-pointer">🎯 Truy nã</button>
+                <button onclick="openIdleMenu()" class="bg-indigo-600/90 px-2 py-1 rounded-full border border-indigo-400 text-[10px] font-bold shadow cursor-pointer">⏳ Thám hiểm</button>
+                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2 py-1 rounded-full border border-amber-400 text-[10px] font-bold shadow cursor-pointer">🛒 Chợ</button>
+                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2 py-1 rounded-full border border-red-400 text-[10px] font-bold shadow cursor-pointer">⚔️ PvP</button>
+                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2 py-1 rounded-full border border-emerald-400 text-[10px] font-bold shadow cursor-pointer">🏡 Trại</button>
+                <button onclick="openEggsMenu()" class="bg-black/80 px-2 py-1 rounded-full border border-white/20 text-[10px] font-bold cursor-pointer">🥚(<span id="egg-steps-count">0</span>)</button>
+                <button onclick="openTeamMenu()" class="bg-black/80 px-2 py-1 rounded-full border border-white/20 text-[10px] font-bold cursor-pointer">🎒(<span id="team-count">0</span>/3)</button>
+                <button onclick="openPokedexMenu()" class="bg-black/80 px-2 py-1 rounded-full border border-white/20 text-[10px] font-bold cursor-pointer">📖</button>
             </div>
         </div>
 
-        <div class="absolute inset-0 pt-16 pb-24 px-3">
-            <div id="map" class="shadow-2xl border border-zinc-800"></div>
-            <button onclick="recenterMap()" class="absolute bottom-28 right-6 z-30 bg-blue-600 hover:bg-blue-500 text-white p-3.5 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-xl cursor-pointer" title="Về vị trí của tôi">
+        <div id="map-container-wrap" class="my-1 rounded-xl overflow-hidden border border-zinc-800 relative">
+            <div id="map"></div>
+            <button onclick="recenterMap()" class="absolute bottom-6 right-4 z-30 bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-lg cursor-pointer" title="Về vị trí của tôi">
                 📍
             </button>
         </div>
 
-        <div class="flex flex-col items-center z-30 pb-2">
-            <div id="stamina-info" class="text-xs font-bold text-amber-300 bg-black/80 px-4 py-1.5 rounded-full border border-white/20 mb-2 shadow-lg flex items-center gap-2">
+        <div class="flex flex-col items-center z-30 pb-1">
+            <div id="stamina-info" class="text-[11px] font-bold text-amber-300 bg-black/80 px-3 py-1 rounded-full border border-white/20 mb-1 shadow-lg flex items-center gap-1.5">
                 ⚡ Năng lượng: <span id="stamina-count">15</span>/15 (<span id="stamina-timer">10:00</span>)
             </div>
-            <button onclick="spawnMultipleMonsters()" class="w-full max-w-sm bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-2xl border border-zinc-700 shadow-xl transition-all text-xs cursor-pointer">
+            <button onclick="spawnMultipleMonsters()" class="w-full max-w-xs bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-xl border border-zinc-700 shadow-xl transition-all text-[11px] cursor-pointer">
                 🔄 Quét lại khu vực (Thú, Boss & Bóng Ma)
             </button>
         </div>
@@ -109,7 +111,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP REALTIME -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V3.4</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V3.5</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -126,7 +128,7 @@
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
         let farm = JSON.parse(localStorage.getItem('ar_farm') || '[]');
@@ -139,7 +141,6 @@
 
         let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ food: 5, toy: 5, trainer: 3, meat: 0, stoneKim: 0, stoneMoc: 0, stoneThuy: 0, stoneHoa: 0, stoneTho: 0 }));
         
-        // --- HỆ THỐNG IDLE THÁM HIỂM ---
         let idleExpedition = JSON.parse(localStorage.getItem('ar_idle_exp') || 'null');
 
         function openIdleMenu() {
@@ -197,7 +198,7 @@
 
             idleExpedition = {
                 pet: pet,
-                endTime: Date.now() + (4 * 60 * 60 * 1000) // 4 tiếng thực tế (hoặc test nhanh bạn có thể giảm xuống)
+                endTime: Date.now() + (4 * 60 * 60 * 1000)
             };
             localStorage.setItem('ar_idle_exp', JSON.stringify(idleExpedition));
             alert(`🚀 Đã cử ${pet.name} lên đường thám hiểm!`);
@@ -212,7 +213,7 @@
             
             playerCoins += rewardCoins;
             inventory.food += rewardFood;
-            pet.level += 5; // Tăng cấp khi thám hiểm về
+            pet.level += 5;
 
             if (team.length < 3) {
                 team.push(pet);
@@ -233,7 +234,6 @@
             closeModal();
         }
 
-        // --- HỆ THỐNG SĂN TIỀN THƯỞNG TRUY NÃ ---
         let bounties = [
             { id: 1, name: 'Sư Tử Ma Quái', emoji: '🦁', cp: 350, reward: 500, hp: 200, atk: 110, element: 'Hỏa', completed: false },
             { id: 2, name: 'Hắc Hổ Đột Biến', emoji: '🐯', cp: 420, reward: 700, hp: 250, atk: 130, element: 'Kim', completed: false }
@@ -957,7 +957,7 @@
         let battleState = 'fighting';
         let battleModeTitle = '⚔️ ĐẤU TRƯỜNG';
         let animActionTick = 0;
-        let activeBattleType = 'normal'; // 'normal', 'boss', 'ghost', 'bounty'
+        let activeBattleType = 'normal';
 
         function startCanvasBattle(opponentObj = null, isWorldBoss = false, customEnemy = null, type = 'normal') {
             switchGameMusic('battle');
@@ -1010,7 +1010,9 @@
             clearInterval(battleInterval);
             document.getElementById('battle-screen').classList.add('hidden');
             document.getElementById('map-screen').classList.remove('hidden');
-            if (map) map.invalidateSize();
+            if (map) {
+                map.invalidateSize();
+            }
         }
 
         function showDamagePopup(text, isCrit, x, y) {
@@ -1168,7 +1170,11 @@
                 }, (error) => {}, { enableHighAccuracy: true });
             }
 
-            setTimeout(() => { if(map) map.invalidateSize(); }, 300);
+            setTimeout(() => { 
+                if(map) {
+                    map.invalidateSize();
+                }
+            }, 300);
         }
 
         function recenterMap() { 
@@ -1178,7 +1184,6 @@
             }
         }
 
-        // --- HỆ THỐNG BÓNG MA NGƯỜI CHƠI (GHOST REPLAYS) ---
         let ghostPlayers = [
             { id: 'g1', name: 'Ghost_Viper', avatar: '👻', pet: { name: 'Xà Vương', emoji: '🐍', cp: 180, hp: 95, maxHp: 95, atk: 110, level: 65, element: 'Mộc', critRate: 20, dodgeRate: 25, accuracy: 25, attackSpeed: 1.4 } },
             { id: 'g2', name: 'Ghost_Shadow', avatar: '👤', pet: { name: 'Dơi Bóng Tối', emoji: '🦇', cp: 165, hp: 75, maxHp: 75, atk: 115, level: 50, element: 'Thủy', critRate: 18, dodgeRate: 30, accuracy: 20, attackSpeed: 1.5 } }
@@ -1243,7 +1248,6 @@
             activeMarkers.forEach(m => map.removeLayer(m));
             activeMarkers = [];
 
-            // Boss Thế Giới
             const bossData = {
                 name: 'Rồng Khổng Lồ', emoji: '🐲', cp: 500, element: 'Hỏa', isBoss: true,
                 lat: userLat + (Math.random() - 0.5) * 0.003,
@@ -1262,7 +1266,6 @@
             });
             activeMarkers.push(bossMarker);
 
-            // Thú hoang dã
             for (let i = 0; i < 6; i++) {
                 const baseTemplate = allMonsters[Math.floor(Math.random() * allMonsters.length)];
                 const randomElem = elements[Math.floor(Math.random() * elements.length)];
@@ -1330,7 +1333,9 @@
             if (videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
             document.getElementById('ar-screen').classList.add('hidden');
             document.getElementById('map-screen').classList.remove('hidden');
-            if(map) map.invalidateSize();
+            if(map) {
+                map.invalidateSize();
+            }
         }
 
         function initCanvasGame() {
@@ -1433,6 +1438,7 @@
         function openPokedexMenu() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
+            modal.classList.0 && modal.classList.remove('hidden');
             modal.classList.remove('hidden');
 
             let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">📖 Sổ Tay Phân Loại</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>`;
@@ -1455,6 +1461,12 @@
             initMap();
             initStaminaSystem();
             updateTeamCount();
+        };
+
+        window.onresize = () => {
+            if (map) {
+                setTimeout(() => map.invalidateSize(), 200);
+            }
         };
     </script>
 </body>
