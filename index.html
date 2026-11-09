@@ -795,21 +795,6 @@
         }
 
         function spawnMultipleMonsters() {
-            let lastScanTime = parseInt(localStorage.getItem('ar_last_scan_time') || '0');
-            let now = Date.now();
-            let cooldownTime = 60 * 60 * 1000; // 60 phút (tính bằng mili-giây)
-
-            if (now - lastScanTime < cooldownTime) {
-                let remainingMs = cooldownTime - (now - lastScanTime);
-                let minutes = Math.floor(remainingMs / (1000 * 60));
-                let seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
-                alert(`⏳ Chưa đến thời gian quét! Vui lòng đợi ${minutes} phút ${s = seconds} giây nữa.`);
-                return;
-            }
-
-            // Lưu mốc thời gian quét mới
-            localStorage.setItem('ar_last_scan_time', now);
-
             activeMarkers.forEach(m => map.removeLayer(m));
             activeMarkers = [];
 
@@ -849,7 +834,6 @@
                 });
                 activeMarkers.push(marker);
             }
-            alert('🔄 Quét thành công! Các linh thú mới đã xuất hiện trên bản đồ.');
         }
 
         function updateTeamCount() { document.getElementById('team-count').innerText = team.length; }
