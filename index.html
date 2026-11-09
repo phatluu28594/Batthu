@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster - Fixed v3.3</title>
+    <title>AR Monster - Modular v3.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -26,17 +26,17 @@
                 <span id="weather-status" class="text-xs font-medium">Trời quang</span>
             </div>
             <div class="flex gap-1 overflow-x-auto py-1">
-                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2.5 py-1 rounded-full border border-amber-400 text-[11px] font-bold shadow">🛒 Chợ</button>
-                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2.5 py-1 rounded-full border border-red-400 text-[11px] font-bold shadow">⚔️ Đấu PvP</button>
-                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2.5 py-1 rounded-full border border-emerald-400 text-[11px] font-bold shadow">🏡 Trại</button>
-                <button onclick="openEggsMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🥚(<span id="egg-steps-count">0</span>)</button>
-                <button onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🎒(<span id="team-count">0</span>/3)</button>
+                <button id="btn-market" class="bg-amber-600/90 px-2.5 py-1 rounded-full border border-amber-400 text-[11px] font-bold shadow">🛒 Chợ</button>
+                <button id="btn-arena" class="bg-red-600/90 px-2.5 py-1 rounded-full border border-red-400 text-[11px] font-bold shadow">⚔️ Đấu PvP</button>
+                <button id="btn-farm" class="bg-emerald-600/90 px-2.5 py-1 rounded-full border border-emerald-400 text-[11px] font-bold shadow">🏡 Trại</button>
+                <button id="btn-eggs" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🥚(<span id="egg-steps-count">0</span>)</button>
+                <button id="btn-team" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🎒(<span id="team-count">0</span>/3)</button>
             </div>
         </div>
 
         <div class="absolute inset-0 pt-16 pb-24 px-3">
             <div id="map" class="shadow-2xl border border-zinc-800"></div>
-            <button onclick="recenterMap()" class="absolute bottom-28 right-6 z-30 bg-blue-600 text-white p-3.5 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-xl">
+            <button id="btn-recenter" class="absolute bottom-28 right-6 z-30 bg-blue-600 text-white p-3.5 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-xl">
                 📍
             </button>
         </div>
@@ -45,7 +45,7 @@
             <div id="stamina-info" class="text-xs font-bold text-amber-300 bg-black/80 px-4 py-1.5 rounded-full border border-white/20 mb-2 shadow-lg flex items-center gap-2">
                 ⚡ Năng lượng: <span id="stamina-count">15</span>/15 (<span id="stamina-timer">10:00</span>)
             </div>
-            <button onclick="spawnMultipleMonsters()" class="w-full max-w-sm bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-2xl border border-zinc-700 shadow-xl text-xs">
+            <button id="btn-spawn" class="w-full max-w-sm bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-2xl border border-zinc-700 shadow-xl text-xs">
                 🔄 Quét lại khu vực
             </button>
         </div>
@@ -58,7 +58,7 @@
         </div>
         <canvas id="gameCanvas" class="absolute inset-0 z-10 touch-none"></canvas>
         <div class="flex justify-between items-center z-20 p-4 pointer-events-auto">
-            <button onclick="exitARScreen()" class="bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">
+            <button id="btn-exit-ar" class="bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">
                 ⬅️ Quay lại bản đồ
             </button>
             <div id="ar-mon-info" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold text-yellow-300">
@@ -76,7 +76,7 @@
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
             <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ PVP REALTIME</div>
-            <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">Rút lui</button>
+            <button id="btn-exit-battle" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
             <canvas id="battleCanvas" class="absolute inset-0 w-full h-full"></canvas>
@@ -92,146 +92,47 @@
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
 
+    <!-- TẢI THƯ VIỆN LEAFLET & CÁC MODULE JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
-        let farm = JSON.parse(localStorage.getItem('ar_farm') || '[]');
-        let pokedex = JSON.parse(localStorage.getItem('ar_pokedex') || '[]');
-        let eggSteps = parseInt(localStorage.getItem('ar_egg_steps') || '0');
-        let playerCoins = parseInt(localStorage.getItem('ar_coins') || '500');
-        let stamina = parseInt(localStorage.getItem('ar_stamina') || '15');
-        let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ food: 5, toy: 5, trainer: 3, stoneKim: 0, stoneMoc: 0, stoneThuy: 0, stoneHoa: 0, stoneTho: 0 }));
+    <script type="module" src="./js/config.js"></script>
+    <script type="module" src="./js/market.js"></script>
+    <script type="module" src="./js/farm.js"></script>
+    <script type="module" src="./js/team.js"></script>
+    <script type="module" src="./js/eggs.js"></script>
+    <script type="module" src="./js/ar_catch.js"></script>
+    <script type="module" src="./js/arena.js"></script>
+    <script type="module" src="./js/map.js"></script>
 
-        const elements = [
-            { name: 'Kim', icon: '⚔️', color: 'text-yellow-300' },
-            { name: 'Mộc', icon: '🌿', color: 'text-emerald-400' },
-            { name: 'Thủy', icon: '💧', color: 'text-blue-400' },
-            { name: 'Hỏa', icon: '🔥', color: 'text-red-500' },
-            { name: 'Thổ', icon: '🪨', color: 'text-amber-600' }
-        ];
+    <script type="module">
+        import { openMarketMenu } from './js/market.js';
+        import { openArenaMenu } from './js/arena.js';
+        import { openFarmMenu } from './js/farm.js';
+        import { openEggsMenu } from './js/eggs.js';
+        import { openTeamMenu } from './js/team.js';
+        import { initMap, recenterMap, spawnMultipleMonsters } from './js/map.js';
+        import { exitARScreen } from './js/ar_catch.js';
+        import { exitBattleScreen } from './js/arena.js';
 
-        const categories = {
-            'Gia cầm': [
-                { id: 101, name: 'Gà Ta', emoji: '🐔', cp: 120, hp: 60, maxHp: 60, atk: 70, level: 1, rarePrice: 100 },
-                { id: 102, name: 'Vịt Cỏ', emoji: '🦆', cp: 110, hp: 55, maxHp: 55, atk: 65, level: 1, rarePrice: 90 }
-            ],
-            'Gia súc': [
-                { id: 201, name: 'Chó Vàng', emoji: '🐕', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1, rarePrice: 150 },
-                { id: 202, name: 'Mèo Mướp', emoji: '🐈', cp: 135, hp: 70, maxHp: 70, atk: 95, level: 1, rarePrice: 140 }
-            ]
-        };
-        const allMonsters = Object.values(categories).flat();
+        // Gắn sự kiện click cho các nút qua JS (giữ sạch file HTML, dùng chuẩn module)
+        document.getElementById('btn-market').onclick = openMarketMenu;
+        document.getElementById('btn-arena').onclick = openArenaMenu;
+        document.getElementById('btn-farm').onclick = openFarmMenu;
+        document.getElementById('btn-eggs').onclick = openEggsMenu;
+        document.getElementById('btn-team').onclick = openTeamMenu;
+        document.getElementById('btn-recenter').onclick = recenterMap;
+        document.getElementById('btn-spawn').onclick = spawnMultipleMonsters;
+        document.getElementById('btn-exit-ar').onclick = exitARScreen;
+        document.getElementById('btn-exit-battle').onclick = exitBattleScreen;
 
-        function closeModal() {
+        window.closeModal = function() {
             document.getElementById('modal-container').classList.add('hidden');
-        }
-        function updateTeamCount() {
-            document.getElementById('team-count').innerText = team.length;
-            document.getElementById('egg-steps-count').innerText = eggSteps;
-        }
-
-        // --- CHỢ ---
-        function openMarketMenu() {
-            const modal = document.getElementById('modal-container');
-            modal.classList.remove('hidden');
-            document.getElementById('modal-content').innerHTML = `
-                <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🛒 Chợ Đen</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
-                <div class="text-xs text-yellow-400 font-bold mb-3">💰 Vàng: ${playerCoins} 🪙</div>
-                <div class="space-y-3">
-                    <div class="bg-zinc-800 p-3 rounded-xl flex items-center justify-between">
-                        <span>🍖 Thức Ăn (50🪙)</span>
-                        <button onclick="buyItem('food', 50)" class="bg-amber-600 px-3 py-1.5 rounded text-xs font-bold">Mua</button>
-                    </div>
-                    <div class="bg-zinc-800 p-3 rounded-xl flex items-center justify-between">
-                        <span>🎾 Đồ Chơi (50🪙)</span>
-                        <button onclick="buyItem('toy', 50)" class="bg-amber-600 px-3 py-1.5 rounded text-xs font-bold">Mua</button>
-                    </div>
-                </div>`;
-        }
-        function buyItem(type, price) {
-            if (playerCoins < price) { alert('Không đủ vàng!'); return; }
-            playerCoins -= price;
-            inventory[type]++;
-            localStorage.setItem('ar_coins', playerCoins);
-            localStorage.setItem('ar_inventory', JSON.stringify(inventory));
-            alert('Mua thành công!');
-            openMarketMenu();
-        }
-
-        // --- ĐẤU TRƯỜNG ---
-        function openArenaMenu() {
-            const modal = document.getElementById('modal-container');
-            modal.classList.remove('hidden');
-            document.getElementById('modal-content').innerHTML = `
-                <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Đấu Trường</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
-                <button onclick="alert('Đang tìm trận...'); closeModal();" class="w-full bg-red-600 py-3 rounded-xl font-bold text-sm mb-2">🌐 Tìm Trận PvP</button>
-                <button onclick="closeModal();" class="w-full bg-zinc-700 py-3 rounded-xl font-bold text-xs">Đóng</button>`;
-        }
-
-        // --- TRẠI ---
-        function openFarmMenu() {
-            const modal = document.getElementById('modal-container');
-            modal.classList.remove('hidden');
-            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-lg">🏡 Trang Trại (${farm.length})</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2 max-h-48 overflow-y-auto">`;
-            if (farm.length === 0) html += `<div class="text-zinc-400 text-xs text-center py-4">Trang trại trống.</div>`;
-            else farm.forEach((p, i) => html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex justify-between items-center"><span>${p.emoji} ${p.name}</span><button onclick="moveFarmToTeam(${i})" class="bg-blue-600 text-xs px-2 py-1 rounded">Đưa đội</button></div>`);
-            html += `</div>`;
-            document.getElementById('modal-content').innerHTML = html;
-        }
-        function moveFarmToTeam(i) {
-            if (team.length >= 3) { alert('Đội hình đầy!'); return; }
-            team.push(farm.splice(i, 1)[0]);
-            localStorage.setItem('ar_team', JSON.stringify(team));
-            localStorage.setItem('ar_farm', JSON.stringify(farm));
-            updateTeamCount();
-            openFarmMenu();
-        }
-
-        // --- TRỨNG ---
-        function openEggsMenu() {
-            const modal = document.getElementById('modal-container');
-            modal.classList.remove('hidden');
-            document.getElementById('modal-content').innerHTML = `
-                <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🥚 Ấp Trứng</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
-                <div class="text-center py-4"><div class="text-6xl mb-2">🥚</div><div class="text-xs text-yellow-300">Tiến độ: ${eggSteps}/50 bước</div></div>`;
-        }
-
-        // --- ĐỘI HÌNH ---
-        function openTeamMenu() {
-            const modal = document.getElementById('modal-container');
-            modal.classList.remove('hidden');
-            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Đội Hình (${team.length}/3)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2">`;
-            if (team.length === 0) html += `<div class="text-zinc-400 text-xs text-center">Đội hình trống.</div>`;
-            else team.forEach((p, i) => html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex justify-between items-center"><span>${p.emoji} ${p.name} (Lv.${p.level})</span><button onclick="removeTeam(${i})" class="bg-red-600 text-xs px-2 py-1 rounded">Về trại</button></div>`);
-            html += `</div>`;
-            document.getElementById('modal-content').innerHTML = html;
-        }
-        function removeTeam(i) {
-            farm.push(team.splice(i, 1)[0]);
-            localStorage.setItem('ar_team', JSON.stringify(team));
-            localStorage.setItem('ar_farm', JSON.stringify(farm));
-            updateTeamCount();
-            openTeamMenu();
-        }
-
-        // --- BẢN ĐỒ MAP ---
-        let map;
-        function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([10.0452, 105.7469], 17);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-            spawnMultipleMonsters();
-            setTimeout(() => map.invalidateSize(), 300);
-        }
-        function recenterMap() {
-            if (map) map.setView([10.0452, 105.7469], 17);
-        }
-        function spawnMultipleMonsters() {
-            alert('Đã quét lại khu vực tìm thú!');
-        }
+        };
 
         window.onload = () => {
-            updateTeamCount();
-            initMap();
+            let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
+            let countEl = document.getElementById('team-count');
+            if (countEl) countEl.innerText = team.length;
+            if (initMap) initMap();
         };
     </script>
 </body>
