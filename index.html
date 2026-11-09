@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Tug of War Capture v4.0</title>
+    <title>Batthu - Tug Fix v4.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -118,7 +118,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP / LEO THÁP -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V4.0</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V4.1</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -1414,9 +1414,8 @@
         let monsterPos = { x: 0, y: 0, vx: 2 };
         let touchStart = { x: 0, y: 0 }, touchEnd = { x: 0, y: 0 };
 
-        // BIẾN QUẢN LÝ TRẠNG THÁI GIẰNG CO (TUG OF WAR)
         let isTugOfWarActive = false;
-        let tugProgress = 50; // 0: thú kéo sổng | 100: bạn kéo về bắt thành công
+        let tugProgress = 50; 
         let tugTimerInterval = null;
 
         async function enterARScreen() {
@@ -1468,13 +1467,18 @@
 
             canvas.onpointerdown = (e) => {
                 if (isTugOfWarActive) {
-                    // Khi đang giằng co, mỗi click/chạm sẽ kéo thanh tiến độ về phía bạn (+4%)
-                    tugProgress = Math.min(100, tugProgress + 4);
+                    if (tugProgress >= 100) return; // Đã thắng thì không nhận click nữa tránh gọi lặp
+                    
+                    tugProgress = Math.min(100, tugProgress + 6); // Tăng lực kéo mỗi cú click
                     document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
                     
-                    // Hiệu ứng thú bị giật về phía người chơi khi click
                     monsterPos.y += 12;
                     setTimeout(() => { monsterPos.y -= 12; }, 60);
+
+                    // KIỂM TRA ĐIỀU KIỆN THẮNG LẬP TỨC NGAY KHI CLICK
+                    if (tugProgress >= 100) {
+                        triggerTugWin();
+                    }
                     return;
                 }
 
@@ -1515,7 +1519,6 @@
                 monsterPos.x += monsterPos.vx;
                 if (monsterPos.x < 60 || monsterPos.x > canvas.width - 60) monsterPos.vx *= -1;
             } else {
-                // Hiệu ứng thú giằng co kéo tới kéo lui liên tục theo hàm Sin
                 let pullOscillation = Math.sin(Date.now() * 0.01) * 35;
                 monsterPos.y = (canvas.height * 0.4) + pullOscillation;
             }
@@ -1533,12 +1536,11 @@
                 let dist = Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y);
                 if (dist < 65) { 
                     rope.flying = false; 
-                    startTugOfWarSession(); // BẮT ĐẦU MINI GAME GIẰNG CO KHI NÉM TRÚNG THÚ
+                    startTugOfWarSession(); 
                 }
                 if (rope.y < 0 || rope.x < 0 || rope.x > canvas.width) { rope.flying = false; handleMissAttempt("Quăng hụt!"); resetRope(); }
             }
 
-            // Vẽ dây thừng giữ thú khi đang giằng co
             if (isTugOfWarActive) {
                 ctx.beginPath(); 
                 ctx.moveTo(canvas.width / 2, canvas.height * 0.85); 
@@ -1567,30 +1569,17 @@
 
             if (tugTimerInterval) clearInterval(tugTimerInterval);
             
-            // Mỗi 50ms thú sẽ kéo ngược lại dựa theo CP của thú
-            let monsterPullPower = 1.8 + (currentWildMonster.cp * 0.003);
+            let monsterPullPower = 1.6 + (currentWildMonster.cp * 0.0025);
 
             tugTimerInterval = setInterval(() => {
-                if (!isARActive) { clearInterval(tugTimerInterval); return; }
+                if (!isARActive || !isTugOfWarActive) { clearInterval(tugTimerInterval); return; }
 
                 tugProgress -= monsterPullPower;
                 document.getElementById('tug-progress-bar').style.width = Math.max(0, tugProgress) + '%';
 
                 if (tugProgress >= 100) {
-                    // NGƯỜI CHƠI THẮNG GIẰNG CO -> BẮT THÀNH CÔNG
-                    clearInterval(tugTimerInterval);
-                    isTugOfWarActive = false;
-                    document.getElementById('tug-of-war-ui').classList.add('hidden');
-
-                    feedback.innerText = `🎉 Giằng co thắng! Bắt thành công ${currentWildMonster.name}!`;
-                    feedback.style.opacity = '1';
-                    setTimeout(() => { 
-                        feedback.style.opacity = '0'; 
-                        exitARScreen(); 
-                        promptCatchChoice(currentWildMonster); 
-                    }, 1200);
+                    triggerTugWin();
                 } else if (tugProgress <= 0) {
-                    // THÚ THẮNG GIẰNG CO -> THÚ CHẠY THOÁT
                     clearInterval(tugTimerInterval);
                     isTugOfWarActive = false;
                     document.getElementById('tug-of-war-ui').classList.add('hidden');
@@ -1604,6 +1593,22 @@
                     }, 1500);
                 }
             }, 50);
+        }
+
+        function triggerTugWin() {
+            if (!isTugOfWarActive) return;
+            isTugOfWarActive = false;
+            clearInterval(tugTimerInterval);
+            document.getElementById('tug-of-war-ui').classList.add('hidden');
+
+            const feedback = document.getElementById('throw-feedback');
+            feedback.innerText = `🎉 Giằng co thắng! Bắt thành công ${currentWildMonster.name}!`;
+            feedback.style.opacity = '1';
+            setTimeout(() => { 
+                feedback.style.opacity = '0'; 
+                exitARScreen(); 
+                promptCatchChoice(currentWildMonster); 
+            }, 1000);
         }
 
         function handleMissAttempt(reasonMsg) {
