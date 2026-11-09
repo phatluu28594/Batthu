@@ -794,18 +794,37 @@
             return 'Trắng';                 // 50% Thường
         }
 
+        let isScanningCooldown = false;
+
         function spawnMultipleMonsters() {
+            if (isScanningCooldown) return; // Đang trong thời gian chờ 10s thì không cho bấm
+
+            // 1. Kiểm tra xác suất xuất hiện thú (Ví dụ: 75% tỷ lệ có thú, 25% tỷ lệ không tìm thấy gì)
+            let hasMonsterChance = Math.random() < 0.75; 
+
+            // Xóa bỏ các marker cũ trên bản đồ trước khi quét mới
             activeMarkers.forEach(m => map.removeLayer(m));
             activeMarkers = [];
 
-            for (let i = 0; i < 8; i++) {
+            if (!hasMonsterChance) {
+                // Trường hợp quét không ra thú
+                alert('📡 Tín hiệu radar: Không tìm thấy linh thú nào trong khu vực này. Hãy thử lại sau!');
+                startScanCooldown();
+                return;
+            }
+
+            // 2. Random số lượng thú xuất hiện ngẫu nhiên từ 1 đến 5 con mỗi lần quét thành công
+            let foundCount = Math.floor(Math.random() * 5) + 1;
+            let spawnedList = [];
+
+            for (let i = 0; i < foundCount; i++) {
                 let chosenRarity = rollMonsterRarity();
                 let filteredList = allMonsters.filter(m => m.rarity === chosenRarity);
                 if (filteredList.length === 0) filteredList = allMonsters;
-                
+        
                 const baseTemplate = filteredList[Math.floor(Math.random() * filteredList.length)];
                 const randomElem = elements[Math.floor(Math.random() * elements.length)];
-                
+        
                 const monsterData = { 
                     ...baseTemplate, 
                     element: randomElem.name,
@@ -823,7 +842,7 @@
                     html: `<div style="font-size: 32px; animation: bounce 1.5s infinite; filter: drop-shadow(0 0 8px rgba(234,179,8,0.9));">${monsterData.emoji}</div>`,
                     iconSize: [35, 35], iconAnchor: [17, 17]
                 });
-
+        
                 const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(map);
                 marker.on('click', () => {
                     if (stamina <= 0) { alert('⚡ Hết Năng Lượng!'); return; }
@@ -833,8 +852,44 @@
                     enterARScreen();
                 });
                 activeMarkers.push(marker);
+                spawnedList.push(monsterData);
+            }
+
+            // 3. Thông báo số lượng thú quét được
+            alert(`🎉 Quét thành công! Đã tìm thấy ${foundCount} linh thú xuất hiện quanh đây.`);
+    
+            // Kích hoạt thời gian hồi 10 giây cho nút quét
+            startScanCooldown();
+        }
+
+// Hàm quản lý đếm ngược 10 giây cho nút quét
+function startScanCooldown() {
+    isScanningCooldown = true;
+    let scanButton = document.querySelector('button[onclick="spawnMultipleMonsters()"]');
+    let timeLeft = 10;
+
+    if (scanButton) {
+        scanButton.disabled = true;
+        scanButton.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+
+    let cdInterval = setInterval(() => {
+        if (scanButton) {
+            scanButton.innerText = `⏳ Đang hồi radar (${timeLeft}s)`;
+        }
+        timeLeft--;
+
+        if (timeLeft < 0) {
+            clearInterval(cdInterval);
+            isScanningCooldown = false;
+            if (scanButton) {
+                scanButton.disabled = false;
+                scanButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                scanButton.innerText = '🔄 Quét tìm thú (Hồi 10s/lần)';
             }
         }
+    }, 1000);
+}
 
         function updateTeamCount() { document.getElementById('team-count').innerText = team.length; }
 
