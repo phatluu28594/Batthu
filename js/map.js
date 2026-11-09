@@ -1,14 +1,11 @@
-import { allMonsters, elements } from './config.js';
-import { enterARScreen } from './ar_catch.js';
-
 let map, userMarker;
 let activeMarkers = [];
 let otherPlayersMarkers = [];
 let userLat = 10.0452, userLng = 105.7469; 
 
-export function initMap() {
-    window.map = L.map('map', { zoomControl: false }).setView([userLat, userLng], 17);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(window.map);
+function initMap() {
+    map = L.map('map', { zoomControl: false }).setView([userLat, userLng], 17);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
     const userIcon = L.divIcon({
         className: 'custom-user-icon',
@@ -16,8 +13,8 @@ export function initMap() {
         iconSize: [30, 30], iconAnchor: [15, 15]
     });
 
-    userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(window.map);
-    window.spawnMultipleMonsters();
+    userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
+    spawnMultipleMonsters();
     spawnOtherPlayers();
 
     if (navigator.geolocation) {
@@ -28,22 +25,20 @@ export function initMap() {
         }, (error) => {}, { enableHighAccuracy: true });
     }
 
-    setTimeout(() => { window.map.invalidateSize(); }, 300);
+    setTimeout(() => { map.invalidateSize(); }, 300);
 }
 
-window.recenterMap = function() {
-    if (window.map) {
-        window.map.setView([userLat, userLng], 17);
-        window.map.invalidateSize();
-    }
-};
+function recenterMap() { 
+    map.setView([userLat, userLng], 17); 
+    map.invalidateSize(); 
+}
 
 let mockRealPlayers = [
     { id: 'p1', name: 'Cao Bồi Ken', avatar: '🤠', pet: { name: 'Chó Vàng', emoji: '🐕', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1, element: 'Kim', critRate: 20, dodgeRate: 15, accuracy: 20, attackSpeed: 1.3 } }
 ];
 
 function spawnOtherPlayers() {
-    otherPlayersMarkers.forEach(m => window.map.removeLayer(m));
+    otherPlayersMarkers.forEach(m => map.removeLayer(m));
     otherPlayersMarkers = [];
 
     mockRealPlayers.forEach((player) => {
@@ -56,7 +51,7 @@ function spawnOtherPlayers() {
             iconSize: [32, 32], iconAnchor: [16, 16]
         });
 
-        const marker = L.marker([pLat, pLng], { icon: playerIcon }).addTo(window.map);
+        const marker = L.marker([pLat, pLng], { icon: playerIcon }).addTo(map);
         marker.on('click', () => { openOtherPlayerModal(player); });
         otherPlayersMarkers.push(marker);
     });
@@ -82,15 +77,21 @@ function openOtherPlayerModal(player) {
             <span class="text-4xl">${petInfo.emoji}</span>
             <div class="text-left">
                 <div class="font-bold text-sm">${petInfo.name} <span class="${elemObj.color}">(${elemObj.icon}${petInfo.element})</span></div>
-                <div class="text-xs text-zinc-300">Lv.${petInfo.level} | CP: ${petInfo.cp}</div>
+                <div class="text-xs text-zinc-300">Lv.${petInfo.level} | CP: ${petInfo.cp} | Crit: ${petInfo.critRate}%</div>
             </div>
         </div>
     </div>
-    <button onclick="startCanvasBattle(${JSON.stringify(player).replace(/"/g, '&quot;')})" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs shadow-lg">⚔️ Thách Đấu Realtime</button>`;
+    <button onclick="attackRealPlayer('${player.name}')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs shadow-lg">⚔️ Thách Đấu Realtime</button>`;
 }
 
-window.spawnMultipleMonsters = function() {
-    activeMarkers.forEach(m => window.map.removeLayer(m));
+function attackRealPlayer(playerName) {
+    closeModal();
+    let foundP = mockRealPlayers.find(p => p.name === playerName);
+    startCanvasBattle(foundP);
+}
+
+function spawnMultipleMonsters() {
+    activeMarkers.forEach(m => map.removeLayer(m));
     activeMarkers = [];
 
     for (let i = 0; i < 8; i++) {
@@ -114,12 +115,21 @@ window.spawnMultipleMonsters = function() {
             iconSize: [35, 35], iconAnchor: [17, 17]
         });
 
-        const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(window.map);
+        const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(map);
         marker.on('click', () => {
-            let staminaVal = parseInt(localStorage.getItem('ar_stamina') || '15');
-            if (staminaVal <= 0) { alert('⚡ Hết Năng Lượng!'); return; }
-            enterARScreen(monsterData);
+            if (stamina <= 0) { alert('⚡ Hết Năng Lượng!'); return; }
+            currentWildMonster = monsterData;
+            catchAttempts = 0;
+            document.getElementById('throw-attempt-count').innerText = `Lượt quăng: 0/3`;
+            enterARScreen();
         });
         activeMarkers.push(marker);
     }
+}
+
+window.onload = () => {
+    initWeather();
+    initMap();
+    initStaminaSystem();
+    updateTeamCount();
 };
