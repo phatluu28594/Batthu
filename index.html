@@ -1,30 +1,36 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
-        #map { height: 100%; width: 100%; border-radius: 1rem; z-index: 10; }
-        .leaflet-control-attribution { display: none !important; }
-        @keyframes petBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .pet-animate { animation: petBounce 2s ease-in-out infinite; }
-        @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
-        .damage-popup { animation: floatText 0.7s ease-out forwards; }
-    </style>
-</head>
-<body class="text-white relative h-screen w-screen overflow-hidden">
+<!-- TẢI THƯ VIỆN & CÁC FILE JS THEO ĐÚNG THỨ TỰ -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
-    <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-3">
-        <div class="flex justify-between items-center z-30 pt-1">
-            <div class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
-                <span id="weather-icon" class="text-base">☀️</span>
-                <span id="weather-status" class="text-xs font-medium">Trời quang</span>
-            </div>
-            <div class="flex gap-1 overflow-x-auto py-1">
-                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2.5 py-1 rounded-full border border-amber-400 text-[11px] font-bold shadow">🛒 Chợ</button>
-                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2.5 py-1 rounded-full border border-red-400 text-[11px] font-bold shad
+    <!-- 1. File cấu hình và dữ liệu nền tảng -->
+    <script src="./js/config.js"></script>
+
+    <!-- 2. Các file hệ thống & quản lý tài nguyên -->
+    <script src="./js/stamina.js"></script>
+    <script src="./js/market.js"></script>
+    <script src="./js/eggs.js"></script>
+
+    <!-- 3. Các file tính năng giao diện (Trang trại, Đội hình) -->
+    <script src="./js/farm.js"></script>
+    <script src="./js/team.js"></script>
+
+    <!-- 4. Các file minigame, đấu trường và bản đồ -->
+    <script src="./js/ar_catch.js"></script>
+    <script src="./js/arena.js"></script>
+    <script src="./js/map.js"></script>
+
+    <script>
+        function closeModal() {
+            document.getElementById('modal-container').classList.add('hidden');
+        }
+        function updateTeamCount() {
+            let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
+            let countEl = document.getElementById('team-count');
+            if (countEl) countEl.innerText = team.length;
+        }
+        window.onload = () => {
+            updateTeamCount();
+            if (typeof initMap === 'function') initMap();
+            if (typeof initStaminaSystem === 'function') initStaminaSystem();
+        };
+    </script>
