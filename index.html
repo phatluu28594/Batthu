@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Tug Fix v4.1</title>
+    <title>Batthu - Advanced AI Escape v4.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -118,7 +118,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP / LEO THÁP -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V4.1</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V4.2</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -1411,7 +1411,7 @@
         let canvas, ctx;
         let isARActive = false;
         let rope = { x: 0, y: 0, vx: 0, vy: 0, radius: 30, flying: false };
-        let monsterPos = { x: 0, y: 0, vx: 2 };
+        let monsterPos = { x: 0, y: 0, vx: 2, vy: 1.5 };
         let touchStart = { x: 0, y: 0 }, touchEnd = { x: 0, y: 0 };
 
         let isTugOfWarActive = false;
@@ -1461,21 +1461,24 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
 
-            monsterPos.x = canvas.width / 2;
-            monsterPos.y = canvas.height * 0.35;
+            // Khởi tạo vị trí ngẫu nhiên trên màn hình
+            monsterPos.x = Math.random() * (canvas.width - 120) + 60;
+            monsterPos.y = Math.random() * (canvas.height * 0.4) + 80;
+            monsterPos.vx = (Math.random() - 0.5) * 3.5;
+            monsterPos.vy = (Math.random() - 0.5) * 2.5;
+
             resetRope();
 
             canvas.onpointerdown = (e) => {
                 if (isTugOfWarActive) {
-                    if (tugProgress >= 100) return; // Đã thắng thì không nhận click nữa tránh gọi lặp
+                    if (tugProgress >= 100) return;
                     
-                    tugProgress = Math.min(100, tugProgress + 6); // Tăng lực kéo mỗi cú click
+                    tugProgress = Math.min(100, tugProgress + 6);
                     document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
                     
                     monsterPos.y += 12;
                     setTimeout(() => { monsterPos.y -= 12; }, 60);
 
-                    // KIỂM TRA ĐIỀU KIỆN THẮNG LẬP TỨC NGAY KHI CLICK
                     if (tugProgress >= 100) {
                         triggerTugWin();
                     }
@@ -1516,8 +1519,23 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (!isTugOfWarActive) {
+                // DI CHUYỂN TỰ DO NGẪU NHIÊN 4 HƯỚNG (LÊN, XUỐNG, TRÁI, PHẢI)
                 monsterPos.x += monsterPos.vx;
+                monsterPos.y += monsterPos.vy;
+
+                // Giới hạn biên màn hình
                 if (monsterPos.x < 60 || monsterPos.x > canvas.width - 60) monsterPos.vx *= -1;
+                if (monsterPos.y < 60 || monsterPos.y > canvas.height * 0.6) monsterPos.vy *= -1;
+
+                // THÔNG MINH: NÉ DÂY THỪNG (Nếu dây đang bay tới gần, thú sẽ tự động nhảy lách sang hướng khác)
+                if (rope.flying) {
+                    let distToRope = Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y);
+                    if (distToRope < 180) {
+                        // Thú đánh hơi thấy dây thừng bay tới -> bẻ lái né khẩn cấp
+                        monsterPos.vx += (rope.x > monsterPos.x ? -0.4 : 0.4);
+                        monsterPos.vy += (rope.y > monsterPos.y ? -0.4 : 0.4);
+                    }
+                }
             } else {
                 let pullOscillation = Math.sin(Date.now() * 0.01) * 35;
                 monsterPos.y = (canvas.height * 0.4) + pullOscillation;
@@ -1569,7 +1587,8 @@
 
             if (tugTimerInterval) clearInterval(tugTimerInterval);
             
-            let monsterPullPower = 1.6 + (currentWildMonster.cp * 0.0025);
+            // TỶ LỆ KÉO LẠI DỰA TRÊN ĐỘ HIẾM (CP CỦA THÚ): Thú CP càng cao kéo càng khủng khiếp!
+            let monsterPullPower = 1.2 + (currentWildMonster.cp * 0.007);
 
             tugTimerInterval = setInterval(() => {
                 if (!isARActive || !isTugOfWarActive) { clearInterval(tugTimerInterval); return; }
@@ -1584,7 +1603,7 @@
                     isTugOfWarActive = false;
                     document.getElementById('tug-of-war-ui').classList.add('hidden');
 
-                    feedback.innerText = `💨 Thú đã giật đứt dây và chạy thoát!`;
+                    feedback.innerText = `💨 Thú quá mạnh, đã giật đứt dây và chạy thoát!`;
                     feedback.style.opacity = '1';
                     setTimeout(() => { 
                         feedback.style.opacity = '0'; 
