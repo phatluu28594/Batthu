@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster - Fixed & Stable v3.0</title>
+    <title>AR Monster - Team Fix v3.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -20,7 +20,7 @@
 
     <!-- QUẢN LÝ PHIÊN BẢN & AUTO UPDATE -->
     <script>
-        const APP_VERSION = '3.0'; 
+        const APP_VERSION = '3.1'; 
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -99,7 +99,7 @@
                 <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2.5 py-1 rounded-full border border-emerald-400 text-[11px] font-bold shadow">🏡 Trại</button>
                 <button onclick="openEggsMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🥚(<span id="egg-steps-count">0</span>)</button>
                 <button onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🎒(<span id="team-count">0</span>/3)</button>
-                <button onclick="openPokedexMenu()" class="bg-black/80 px-2 py-1 rounded-full border border-white/20 text-[11px] font-bold">📖</button>
+                <button onclick="openPokedexMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">📖</button>
             </div>
         </div>
 
@@ -144,7 +144,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP REALTIME -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ PVP REALTIME V3.0</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ PVP REALTIME V3.1</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -175,17 +175,19 @@
         let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ food: 5, toy: 5, trainer: 3, meat: 0, stoneKim: 0, stoneMoc: 0, stoneThuy: 0, stoneHoa: 0, stoneTho: 0 }));
         let currentWeather = { name: 'Trời quang', icon: '☀️', effect: 'ATK +10%', buffAtk: 1.1 };
 
-        // Tự động vá lỗi các dữ liệu cũ bị thiếu chỉ số (tránh undefined và NaN)
+        // Chuẩn hóa dữ liệu thú cưng để đảm bảo không bị thiếu chỉ số
         function sanitizePetsData(petList) {
             return petList.map(p => ({
                 ...p,
+                maxHp: p.maxHp || p.hp || 80,
+                hp: (p.hp !== undefined && p.hp > 0) ? p.hp : (p.maxHp || 80),
+                level: p.level || 1,
                 critRate: p.critRate !== undefined ? p.critRate : Math.floor(10 + Math.random() * 20),
                 dodgeRate: p.dodgeRate !== undefined ? p.dodgeRate : Math.floor(5 + Math.random() * 15),
                 accuracy: p.accuracy !== undefined ? p.accuracy : Math.floor(10 + Math.random() * 20),
                 attackSpeed: p.attackSpeed !== undefined ? p.attackSpeed : parseFloat((1.2 + Math.random() * 0.5).toFixed(1)),
                 hunger: p.hunger !== undefined ? p.hunger : 80,
-                happiness: p.happiness !== undefined ? p.happiness : 80,
-                hp: p.hp !== undefined ? p.hp : p.maxHp
+                happiness: p.happiness !== undefined ? p.happiness : 80
             }));
         }
         team = sanitizePetsData(team);
@@ -346,7 +348,7 @@
             closeModal();
         }
 
-        // --- CHỢ ĐEN (ĐẦY ĐỦ CHỨC NĂNG MUA SẮM SỐ LƯỢNG) ---
+        // --- CHỢ ĐEN ---
         function openMarketMenu() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
@@ -715,11 +717,25 @@
             openTeamMenu();
         }
 
-        // --- BẮT THÚ ---
+        // --- BẮT THÚ & FIX LỖI ĐƯA VÀO ĐỘI HÌNH ---
         let capturedTempMonster = null;
 
         function promptCatchChoice(monster) {
-            capturedTempMonster = monster;
+            // Đảm bảo khởi tạo đầy đủ chỉ số cho thú vừa bắt
+            capturedTempMonster = {
+                ...monster,
+                maxHp: monster.maxHp || monster.hp || 80,
+                hp: monster.maxHp || monster.hp || 80,
+                level: 1,
+                hunger: 80,
+                happiness: 80,
+                critRate: Math.floor(1 + Math.random() * 34),
+                dodgeRate: Math.floor(1 + Math.random() * 34),
+                accuracy: Math.floor(1 + Math.random() * 34),
+                attackSpeed: parseFloat((1.0 + Math.random() * 1.0).toFixed(1)),
+                buffEffect: null
+            };
+
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
@@ -730,10 +746,10 @@
             <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-zinc-700 mb-4 text-center">
                 <span class="text-7xl mb-2">${monster.emoji}</span>
                 <div class="text-lg font-bold text-yellow-300">${monster.name} <span class="${elemObj.color} text-sm">(${elemObj.icon}${monster.element})</span></div>
-                <div class="text-xs text-zinc-400 mt-1">CP: ${monster.cp} | Chí mạng: ${monster.critRate}% | Né: ${monster.dodgeRate}% | Chính xác: ${monster.accuracy}%</div>
+                <div class="text-xs text-zinc-400 mt-1">CP: ${monster.cp} | Chí mạng: ${capturedTempMonster.critRate}% | Né: ${capturedTempMonster.dodgeRate}%</div>
             </div>
             <div class="space-y-2">
-                <button onclick="handleCatchDecision('team')" class="w-full bg-emerald-600 py-3 rounded-xl font-bold text-xs">🎒 Đưa vào Đội hình / Trang Trại</button>
+                <button onclick="handleCatchDecision('team')" class="w-full bg-emerald-600 py-3 rounded-xl font-bold text-xs">🎒 Đưa vào Đội hình (hoặc Trang Trại)</button>
                 <button onclick="handleCatchDecision('meat')" class="w-full bg-amber-600 py-3 rounded-xl font-bold text-xs">🥩 Giết lấy thịt (+Thức ăn & Vàng)</button>
                 <button onclick="handleCatchDecision('sell')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs">💰 Bán ngay (${monster.rarePrice} Vàng)</button>
             </div>`;
@@ -744,19 +760,23 @@
                 if (team.length < 3) {
                     team.push(capturedTempMonster);
                     localStorage.setItem('ar_team', JSON.stringify(team));
-                    updateTeamCount();
+                    alert(`Đã đưa ${capturedTempMonster.name} vào đội hình chiến đấu!`);
                 } else {
                     farm.push(capturedTempMonster);
                     localStorage.setItem('ar_farm', JSON.stringify(farm));
+                    alert(`Đội hình chính đã đầy (3/3), ${capturedTempMonster.name} đã được đưa vào Trang Trại!`);
                 }
+                updateTeamCount();
             } else if (action === 'meat') {
                 inventory.food += 2;
                 playerCoins += 30;
                 saveInventory();
                 localStorage.setItem('ar_coins', playerCoins);
+                alert(`Nhận +2 Thức ăn & +30 Vàng!`);
             } else if (action === 'sell') {
                 playerCoins += capturedTempMonster.rarePrice;
                 localStorage.setItem('ar_coins', playerCoins);
+                alert(`Bán thành công +${capturedTempMonster.rarePrice} Vàng!`);
             }
 
             if (!pokedex.includes(capturedTempMonster.id)) {
@@ -786,7 +806,7 @@
         let searchMatchTimeout = null;
 
         function findOnlineMatch() {
-            if (team.length === 0) { alert('Đội hình trống!'); closeModal(); return; }
+            if (team.length === 0) { alert('Đội hình trống! Hãy vào Trang Trại đưa thú vào đội.'); closeModal(); return; }
             if (team[0].happiness < 30) { alert(`⚠️ ${team[0].name} đang bất mãn (Hạnh phúc < 30%) và từ chối chiến đấu!`); closeModal(); return; }
 
             closeModal();
@@ -849,7 +869,7 @@
 
         function startCanvasBattle(opponentObj = null) {
             checkPetSurvival();
-            if (team.length === 0) { alert('Đội hình trống!'); closeModal(); return; }
+            if (team.length === 0) { alert('Đội hình trống! Không có thú để chiến đấu.'); closeModal(); return; }
             if (team[0].happiness < 30) { alert(`⚠️ ${team[0].name} đang bất mãn và từ chối chiến đấu!`); closeModal(); return; }
 
             closeModal();
@@ -1060,7 +1080,6 @@
                 }, (error) => {}, { enableHighAccuracy: true });
             }
 
-            // Sửa lỗi màn hình đen bằng cách invalidate kích thước bản đồ
             setTimeout(() => { map.invalidateSize(); }, 300);
         }
 
