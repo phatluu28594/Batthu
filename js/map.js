@@ -4,7 +4,7 @@ let otherPlayersMarkers = [];
 let userLat = 10.0452, userLng = 105.7469; 
 
 // Kiểm tra và hiển thị bảng nhập thông tin khi vừa vào game
-function checkPlayerProfile() {
+export function checkPlayerProfile() {
     let profile = JSON.parse(localStorage.getItem('ar_player_profile') || 'null');
     const setupModal = document.getElementById('player-setup-modal');
     
@@ -14,7 +14,7 @@ function checkPlayerProfile() {
 }
 
 // Lưu thông tin người chơi khi bấm nút xác nhận
-function savePlayerProfile() {
+export function savePlayerProfile() {
     let name = document.getElementById('setup-name').value.trim();
     let age = document.getElementById('setup-age').value.trim();
     let gender = document.getElementById('setup-gender').value;
@@ -37,7 +37,8 @@ function savePlayerProfile() {
 
     alert(`Chào mừng nhà thám hiểm ${name} đã tham gia game!`);
 }
-function initMap() {
+
+export function initMap() {
     map = L.map('map', { zoomControl: false }).setView([userLat, userLng], 17);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
@@ -62,7 +63,7 @@ function initMap() {
     setTimeout(() => { map.invalidateSize(); }, 300);
 }
 
-function recenterMap() { 
+export function recenterMap() { 
     map.setView([userLat, userLng], 17); 
     map.invalidateSize(); 
 }
@@ -71,7 +72,7 @@ let mockRealPlayers = [
     { id: 'p1', name: 'Cao Bồi Ken', avatar: '🤠', pet: { name: 'Chó Vàng', emoji: '🐕', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1, element: 'Kim', critRate: 20, dodgeRate: 15, accuracy: 20, attackSpeed: 1.3 } }
 ];
 
-function spawnOtherPlayers() {
+export function spawnOtherPlayers() {
     otherPlayersMarkers.forEach(m => map.removeLayer(m));
     otherPlayersMarkers = [];
 
@@ -91,7 +92,7 @@ function spawnOtherPlayers() {
     });
 }
 
-function openOtherPlayerModal(player) {
+export function openOtherPlayerModal(player) {
     const modal = document.getElementById('modal-container');
     const content = document.getElementById('modal-content');
     modal.classList.remove('hidden');
@@ -118,13 +119,13 @@ function openOtherPlayerModal(player) {
     <button onclick="attackRealPlayer('${player.name}')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs shadow-lg">⚔️ Thách Đấu Realtime</button>`;
 }
 
-function attackRealPlayer(playerName) {
+export function attackRealPlayer(playerName) {
     closeModal();
     let foundP = mockRealPlayers.find(p => p.name === playerName);
     startCanvasBattle(foundP);
 }
 
-function spawnMultipleMonsters() {
+export function spawnMultipleMonsters() {
     activeMarkers.forEach(m => map.removeLayer(m));
     activeMarkers = [];
 
@@ -168,3 +169,13 @@ window.onload = () => {
     initStaminaSystem();
     updateTeamCount();
 };
+
+// Đảm bảo tương thích nếu gọi trực tiếp qua biến toàn cục window
+window.initMap = initMap;
+window.recenterMap = recenterMap;
+window.checkPlayerProfile = checkPlayerProfile;
+window.savePlayerProfile = savePlayerProfile;
+window.spawnOtherPlayers = spawnOtherPlayers;
+window.openOtherPlayerModal = openOtherPlayerModal;
+window.attackRealPlayer = attackRealPlayer;
+window.spawnMultipleMonsters = spawnMultipleMonsters;
