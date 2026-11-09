@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Scaling Progression v3.9</title>
+    <title>Batthu - Tug of War Capture v4.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -87,7 +87,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH MINIGAME CANVAS BẮT THÚ -->
+    <!-- MÀN HÌNH MINIGAME CANVAS BẮT THÚ & GIẰNG CO -->
     <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -103,15 +103,22 @@
         </div>
         <div class="flex flex-col items-center z-20 pb-8 pointer-events-none">
             <div id="throw-feedback" class="text-sm font-bold bg-black/80 px-4 py-2 rounded-full border border-white/20 opacity-0 transition-opacity shadow-lg">Bắt hụt rồi!</div>
+            <div id="tug-of-war-ui" class="hidden flex flex-col items-center w-full max-w-xs bg-black/80 p-3 rounded-2xl border border-amber-500/50 pointer-events-auto mb-2">
+                <div class="text-xs font-bold text-amber-300 mb-1 animate-pulse">⚔️ ĐANG GIẰNG CO! CLICK / CHẠM LIÊN TỤC!</div>
+                <div class="w-full bg-zinc-900 rounded-full h-3 overflow-hidden border border-zinc-700 mb-1 relative">
+                    <div id="tug-progress-bar" class="bg-gradient-to-r from-red-500 via-yellow-500 to-emerald-500 h-full transition-all duration-75" style="width: 50%"></div>
+                </div>
+                <div class="text-[10px] text-zinc-300">Kéo thú về phía bạn để chiến thắng!</div>
+            </div>
             <div id="throw-attempt-count" class="text-[11px] text-yellow-400 mt-1 bg-black/60 px-3 py-0.5 rounded-full border border-white/10 font-bold">Lượt quăng: 0/3</div>
-            <div class="text-[11px] text-zinc-300 mt-1 bg-black/60 px-3 py-1 rounded-full border border-white/10">🤠 Vuốt ngón tay hướng lên trên để quăng vòng dây thừng!</div>
+            <div id="ar-instruction" class="text-[11px] text-zinc-300 mt-1 bg-black/60 px-3 py-1 rounded-full border border-white/10">🤠 Vuốt ngón tay hướng lên trên để quăng vòng dây thừng!</div>
         </div>
     </div>
 
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP / LEO THÁP -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V3.9</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V4.0</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -137,7 +144,6 @@
         let playerCoins = parseInt(localStorage.getItem('ar_coins') || '500');
         let towerFloor = parseInt(localStorage.getItem('ar_tower_floor') || '1');
 
-        // Biến lưu số lần đã hạ gục để scaling sức mạnh & phần thưởng
         let bossKills = parseInt(localStorage.getItem('ar_boss_kills') || '0');
         let ghostKills = parseInt(localStorage.getItem('ar_ghost_kills') || '0');
 
@@ -173,7 +179,6 @@
             let bossName = `Thủ Vệ Tầng ${towerFloor}`;
             let bossEmoji = bossEmojiList[(towerFloor - 1) % bossEmojiList.length];
             
-            // Scaling chỉ số tháp theo số tầng
             let bossHp = 180 + (towerFloor * 60);
             let bossAtk = 90 + (towerFloor * 25);
 
@@ -969,7 +974,7 @@
             let genderColor = capturedTempMonster.gender === 'Đực' ? 'text-blue-400' : 'text-pink-400';
 
             content.innerHTML = `
-            <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-lg">🎉 Bắt Thành Công!</h3></div>
+            <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-lg">🎉 Giằng Co Thắng - Bắt Thành Công!</h3></div>
             <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-zinc-700 mb-4 text-center">
                 <span class="text-7xl mb-2">${monster.emoji}</span>
                 <div class="text-lg font-bold text-yellow-300">${monster.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="${elemObj.color} text-sm">(${elemObj.icon}${monster.element})</span></div>
@@ -1051,8 +1056,7 @@
             activeBattleType = type;
 
             if (isWorldBoss) {
-                // BOSS THẾ GIỚI SCALING THEO SỐ LẦN BỊ TIÊU DIỆT (bossKills)
-                let scaleFactor = 1 + (bossKills * 0.35); // Mỗi lần chết, Boss tăng 35% sức mạnh
+                let scaleFactor = 1 + (bossKills * 0.35);
                 let bossHp = Math.floor(350 * scaleFactor);
                 let bossAtk = Math.floor(130 * scaleFactor);
                 let bossLv = 30 + (bossKills * 10);
@@ -1063,7 +1067,6 @@
                 enemyBattlePet = { ...customEnemy };
                 if (type === 'tower') battleModeTitle = `🗼 LEO THÁP: TẦNG ${towerFloor}`;
                 else if (type === 'ghost') {
-                    // BÓNG MA SCALING THEO SỐ LẦN BỊ HẠ (ghostKills)
                     let ghostScale = 1 + (ghostKills * 0.25);
                     enemyBattlePet.hp = Math.floor(enemyBattlePet.maxHp * ghostScale);
                     enemyBattlePet.maxHp = enemyBattlePet.hp;
@@ -1205,11 +1208,11 @@
                         if (activeBattleType === 'boss') {
                             bossKills++;
                             localStorage.setItem('ar_boss_kills', bossKills);
-                            rewardCoins = 600 + (bossKills * 300); // Thưởng vàng tăng vọt theo số lần diệt Boss
+                            rewardCoins = 600 + (bossKills * 300);
                         } else if (activeBattleType === 'ghost') {
                             ghostKills++;
                             localStorage.setItem('ar_ghost_kills', ghostKills);
-                            rewardCoins = 350 + (ghostKills * 150); // Thưởng vàng bóng ma tăng dần
+                            rewardCoins = 350 + (ghostKills * 150);
                         } else if (activeBattleType === 'tower') {
                             rewardCoins = 400 + (towerFloor * 150);
                             towerFloor = Math.min(50, towerFloor + 1);
@@ -1411,10 +1414,18 @@
         let monsterPos = { x: 0, y: 0, vx: 2 };
         let touchStart = { x: 0, y: 0 }, touchEnd = { x: 0, y: 0 };
 
+        // BIẾN QUẢN LÝ TRẠNG THÁI GIẰNG CO (TUG OF WAR)
+        let isTugOfWarActive = false;
+        let tugProgress = 50; // 0: thú kéo sổng | 100: bạn kéo về bắt thành công
+        let tugTimerInterval = null;
+
         async function enterARScreen() {
             document.getElementById('map-screen').classList.add('hidden');
             document.getElementById('ar-screen').classList.remove('hidden');
             isARActive = true;
+            isTugOfWarActive = false;
+            document.getElementById('tug-of-war-ui').classList.add('hidden');
+            document.getElementById('ar-instruction').classList.remove('hidden');
 
             let elemObj = elements.find(e => e.name === currentWildMonster.element) || elements[0];
             document.getElementById('ar-mon-info').innerText = `${currentWildMonster.emoji} ${currentWildMonster.name} (${elemObj.icon}${currentWildMonster.element}) - CP ${currentWildMonster.cp}`;
@@ -1433,6 +1444,8 @@
 
         function exitARScreen() {
             isARActive = false;
+            isTugOfWarActive = false;
+            if (tugTimerInterval) clearInterval(tugTimerInterval);
             const videoEl = document.getElementById('camera-feed');
             if (videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
             document.getElementById('ar-screen').classList.add('hidden');
@@ -1454,12 +1467,23 @@
             resetRope();
 
             canvas.onpointerdown = (e) => {
+                if (isTugOfWarActive) {
+                    // Khi đang giằng co, mỗi click/chạm sẽ kéo thanh tiến độ về phía bạn (+4%)
+                    tugProgress = Math.min(100, tugProgress + 4);
+                    document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
+                    
+                    // Hiệu ứng thú bị giật về phía người chơi khi click
+                    monsterPos.y += 12;
+                    setTimeout(() => { monsterPos.y -= 12; }, 60);
+                    return;
+                }
+
                 if (rope.flying) return;
                 touchStart.x = e.clientX; touchStart.y = e.clientY;
             };
 
             canvas.onpointerup = (e) => {
-                if (rope.flying) return;
+                if (isTugOfWarActive || rope.flying) return;
                 touchEnd.x = e.clientX; touchEnd.y = e.clientY;
                 let dx = touchEnd.x - touchStart.x;
                 let dy = touchEnd.y - touchStart.y;
@@ -1487,8 +1511,14 @@
             if (!isARActive || !ctx || !canvas) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            monsterPos.x += monsterPos.vx;
-            if (monsterPos.x < 60 || monsterPos.x > canvas.width - 60) monsterPos.vx *= -1;
+            if (!isTugOfWarActive) {
+                monsterPos.x += monsterPos.vx;
+                if (monsterPos.x < 60 || monsterPos.x > canvas.width - 60) monsterPos.vx *= -1;
+            } else {
+                // Hiệu ứng thú giằng co kéo tới kéo lui liên tục theo hàm Sin
+                let pullOscillation = Math.sin(Date.now() * 0.01) * 35;
+                monsterPos.y = (canvas.height * 0.4) + pullOscillation;
+            }
 
             ctx.font = "80px sans-serif";
             ctx.textAlign = "center";
@@ -1501,8 +1531,21 @@
                 ctx.strokeStyle = "#d4a373"; ctx.lineWidth = 4; ctx.stroke();
 
                 let dist = Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y);
-                if (dist < 65) { rope.flying = false; handleCatchResult(); }
+                if (dist < 65) { 
+                    rope.flying = false; 
+                    startTugOfWarSession(); // BẮT ĐẦU MINI GAME GIẰNG CO KHI NÉM TRÚNG THÚ
+                }
                 if (rope.y < 0 || rope.x < 0 || rope.x > canvas.width) { rope.flying = false; handleMissAttempt("Quăng hụt!"); resetRope(); }
+            }
+
+            // Vẽ dây thừng giữ thú khi đang giằng co
+            if (isTugOfWarActive) {
+                ctx.beginPath(); 
+                ctx.moveTo(canvas.width / 2, canvas.height * 0.85); 
+                ctx.lineTo(monsterPos.x, monsterPos.y);
+                ctx.strokeStyle = "#eab308"; 
+                ctx.lineWidth = 6; 
+                ctx.stroke();
             }
 
             ctx.font = "40px sans-serif";
@@ -1510,15 +1553,57 @@
             requestAnimationFrame(updateCanvasGame);
         }
 
-        function handleCatchResult() {
-            let isFailed = Math.random() < 0.50;
-            if (isFailed) { handleMissAttempt(`${currentWildMonster.name} giãy giụa thoát!`); resetRope(); }
-            else {
-                const feedback = document.getElementById('throw-feedback');
-                feedback.innerText = `🎉 Bắt thành công ${currentWildMonster.name}!`;
-                feedback.style.opacity = '1';
-                setTimeout(() => { feedback.style.opacity = '0'; exitARScreen(); promptCatchChoice(currentWildMonster); }, 1000);
-            }
+        function startTugOfWarSession() {
+            isTugOfWarActive = true;
+            tugProgress = 50;
+            document.getElementById('tug-progress-bar').style.width = '50%';
+            document.getElementById('tug-of-war-ui').classList.remove('hidden');
+            document.getElementById('ar-instruction').classList.add('hidden');
+
+            const feedback = document.getElementById('throw-feedback');
+            feedback.innerText = `🪢 Đã dính dây! Hãy click/chạm liên tục để kéo thú!`;
+            feedback.style.opacity = '1';
+            setTimeout(() => { feedback.style.opacity = '0'; }, 1500);
+
+            if (tugTimerInterval) clearInterval(tugTimerInterval);
+            
+            // Mỗi 50ms thú sẽ kéo ngược lại dựa theo CP của thú
+            let monsterPullPower = 1.8 + (currentWildMonster.cp * 0.003);
+
+            tugTimerInterval = setInterval(() => {
+                if (!isARActive) { clearInterval(tugTimerInterval); return; }
+
+                tugProgress -= monsterPullPower;
+                document.getElementById('tug-progress-bar').style.width = Math.max(0, tugProgress) + '%';
+
+                if (tugProgress >= 100) {
+                    // NGƯỜI CHƠI THẮNG GIẰNG CO -> BẮT THÀNH CÔNG
+                    clearInterval(tugTimerInterval);
+                    isTugOfWarActive = false;
+                    document.getElementById('tug-of-war-ui').classList.add('hidden');
+
+                    feedback.innerText = `🎉 Giằng co thắng! Bắt thành công ${currentWildMonster.name}!`;
+                    feedback.style.opacity = '1';
+                    setTimeout(() => { 
+                        feedback.style.opacity = '0'; 
+                        exitARScreen(); 
+                        promptCatchChoice(currentWildMonster); 
+                    }, 1200);
+                } else if (tugProgress <= 0) {
+                    // THÚ THẮNG GIẰNG CO -> THÚ CHẠY THOÁT
+                    clearInterval(tugTimerInterval);
+                    isTugOfWarActive = false;
+                    document.getElementById('tug-of-war-ui').classList.add('hidden');
+
+                    feedback.innerText = `💨 Thú đã giật đứt dây và chạy thoát!`;
+                    feedback.style.opacity = '1';
+                    setTimeout(() => { 
+                        feedback.style.opacity = '0'; 
+                        exitARScreen(); 
+                        spawnMultipleMonsters(); 
+                    }, 1500);
+                }
+            }, 50);
         }
 
         function handleMissAttempt(reasonMsg) {
