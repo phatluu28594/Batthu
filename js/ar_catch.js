@@ -1,24 +1,19 @@
-import { stamina, elements, team, farm, pokedex, saveInventory } from './config.js';
-
+let currentWildMonster = null;
+let catchAttempts = 0;
+let capturedTempMonster = null;
 let canvas, ctx;
 let isARActive = false;
 let rope = { x: 0, y: 0, vx: 0, vy: 0, radius: 30, flying: false };
 let monsterPos = { x: 0, y: 0, vx: 2 };
 let touchStart = { x: 0, y: 0 }, touchEnd = { x: 0, y: 0 };
-let currentWildMonster = null;
-let catchAttempts = 0;
 
-export async function enterARScreen(monsterData) {
-    currentWildMonster = monsterData;
-    catchAttempts = 0;
-
+async function enterARScreen() {
     document.getElementById('map-screen').classList.add('hidden');
     document.getElementById('ar-screen').classList.remove('hidden');
     isARActive = true;
 
     let elemObj = elements.find(e => e.name === currentWildMonster.element) || elements[0];
     document.getElementById('ar-mon-info').innerText = `${currentWildMonster.emoji} ${currentWildMonster.name} (${elemObj.icon}${currentWildMonster.element}) - CP ${currentWildMonster.cp}`;
-    document.getElementById('throw-attempt-count').innerText = `Lượt quăng: 0/3`;
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } }, audio: false });
@@ -32,14 +27,14 @@ export async function enterARScreen(monsterData) {
     initCanvasGame();
 }
 
-window.exitARScreen = function() {
+function exitARScreen() {
     isARActive = false;
     const videoEl = document.getElementById('camera-feed');
     if (videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
     document.getElementById('ar-screen').classList.add('hidden');
     document.getElementById('map-screen').classList.remove('hidden');
-    if (window.map) window.map.invalidateSize();
-};
+    map.invalidateSize();
+}
 
 function initCanvasGame() {
     canvas = document.getElementById('gameCanvas');
@@ -62,14 +57,11 @@ function initCanvasGame() {
         let dx = touchEnd.x - touchStart.x;
         let dy = touchEnd.y - touchStart.y;
 
-        let staminaVal = parseInt(localStorage.getItem('ar_stamina') || '15');
         if (dy < -30) {
-            if (staminaVal > 0) {
-                staminaVal--;
-                localStorage.setItem('ar_stamina', staminaVal);
-                if (document.getElementById('stamina-count')) {
-                    document.getElementById('stamina-count').innerText = staminaVal;
-                }
+            if (stamina > 0) {
+                stamina--;
+                localStorage.setItem('ar_stamina', stamina);
+                document.getElementById('stamina-count').innerText = stamina;
             }
             rope.vx = dx * 0.12;
             rope.vy = dy * 0.15;
@@ -118,7 +110,7 @@ function handleCatchResult() {
         const feedback = document.getElementById('throw-feedback');
         feedback.innerText = `🎉 Bắt thành công ${currentWildMonster.name}!`;
         feedback.style.opacity = '1';
-        setTimeout(() => { feedback.style.opacity = '0'; window.exitARScreen(); promptCatchChoice(currentWildMonster); }, 1000);
+        setTimeout(() => { feedback.style.opacity = '0'; exitARScreen(); promptCatchChoice(currentWildMonster); }, 1000);
     }
 }
 
@@ -130,7 +122,7 @@ function handleMissAttempt(reasonMsg) {
     if (catchAttempts >= 3) {
         feedback.innerText = `😜 ${currentWildMonster.name} đã chạy mất!`;
         feedback.style.opacity = '1';
-        setTimeout(() => { feedback.style.opacity = '0'; window.exitARScreen(); if (window.spawnMultipleMonsters) window.spawnMultipleMonsters(); }, 2500);
+        setTimeout(() => { feedback.style.opacity = '0'; exitARScreen(); spawnMultipleMonsters(); }, 2500);
     } else {
         feedback.innerText = `💥 ${reasonMsg}`;
         feedback.style.opacity = '1';
@@ -138,7 +130,6 @@ function handleMissAttempt(reasonMsg) {
     }
 }
 
-let capturedTempMonster = null;
 function promptCatchChoice(monster) {
     capturedTempMonster = {
         ...monster,
@@ -167,13 +158,13 @@ function promptCatchChoice(monster) {
         <div class="text-xs text-zinc-400 mt-1">CP: ${monster.cp} | Chí mạng: ${capturedTempMonster.critRate}% | Né: ${capturedTempMonster.dodgeRate}%</div>
     </div>
     <div class="space-y-2">
-        <button onclick="handleCatchDecision('team')" class="w-full bg-emerald-600 py-3 rounded-xl font-bold text-xs">🎒 Đưa vào Đội hình (hoặc Trại)</button>
+        <button onclick="handleCatchDecision('team')" class="w-full bg-emerald-600 py-3 rounded-xl font-bold text-xs">🎒 Đưa vào Đội hình (hoặc Trang Trại)</button>
         <button onclick="handleCatchDecision('meat')" class="w-full bg-amber-600 py-3 rounded-xl font-bold text-xs">🥩 Giết lấy thịt (+Thức ăn & Vàng)</button>
         <button onclick="handleCatchDecision('sell')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs">💰 Bán ngay (${monster.rarePrice} Vàng)</button>
     </div>`;
 }
 
-window.handleCatchDecision = function(action) {
+function handleCatchDecision(action) {
     if (action === 'team') {
         if (team.length < 3) {
             team.push(capturedTempMonster);
@@ -182,19 +173,18 @@ window.handleCatchDecision = function(action) {
         } else {
             farm.push(capturedTempMonster);
             localStorage.setItem('ar_farm', JSON.stringify(farm));
-            alert(`Đội hình đầy (3/3), đã đưa ${capturedTempMonster.name} vào Trang Trại!`);
+            alert(`Đội hình chính đã đầy (3/3), ${capturedTempMonster.name} đã được đưa vào Trang Trại!`);
         }
-        if (window.updateTeamCount) window.updateTeamCount();
+        updateTeamCount();
     } else if (action === 'meat') {
-        let inv = JSON.parse(localStorage.getItem('ar_inventory'));
-        inv.food += 2;
-        localStorage.setItem('ar_inventory', JSON.stringify(inv));
-        let coins = parseInt(localStorage.getItem('ar_coins') || '500') + 30;
-        localStorage.setItem('ar_coins', coins);
+        inventory.food += 2;
+        playerCoins += 30;
+        saveInventory();
+        localStorage.setItem('ar_coins', playerCoins);
         alert(`Nhận +2 Thức ăn & +30 Vàng!`);
     } else if (action === 'sell') {
-        let coins = parseInt(localStorage.getItem('ar_coins') || '500') + capturedTempMonster.rarePrice;
-        localStorage.setItem('ar_coins', coins);
+        playerCoins += capturedTempMonster.rarePrice;
+        localStorage.setItem('ar_coins', playerCoins);
         alert(`Bán thành công +${capturedTempMonster.rarePrice} Vàng!`);
     }
 
@@ -204,5 +194,5 @@ window.handleCatchDecision = function(action) {
     }
 
     closeModal();
-    if (window.spawnMultipleMonsters) window.spawnMultipleMonsters();
-};
+    spawnMultipleMonsters();
+}
