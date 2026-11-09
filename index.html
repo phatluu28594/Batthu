@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster - Modular Clean</title>
+    <title>AR Monster - Modular Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -92,10 +92,10 @@
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
 
-    <!-- TẢI THƯ VIỆN LEAFLET -->
+    <!-- THƯ VIỆN LEAFLET -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- LIÊN KẾT MODULE CHÍNH -->
+    <!-- NẠP CÁC MODULE JAVASCRIPT & LIÊN KẾT GIAO DIỆN -->
     <script type="module">
         import { openMarketMenu } from './js/market.js';
         import { openArenaMenu, exitBattleScreen } from './js/arena.js';
@@ -106,7 +106,7 @@
         import { exitARScreen } from './js/ar_catch.js';
         import { initStaminaSystem } from './js/stamina.js';
 
-        // Gắn sự kiện click an toàn cho các nút giao diện
+        // Gắn sự kiện click an toàn qua JavaScript (Tránh lỗi không bắt được sự kiện onclick)
         document.getElementById('btn-market').onclick = openMarketMenu;
         document.getElementById('btn-arena').onclick = openArenaMenu;
         document.getElementById('btn-farm').onclick = openFarmMenu;
