@@ -3,6 +3,40 @@ let activeMarkers = [];
 let otherPlayersMarkers = [];
 let userLat = 10.0452, userLng = 105.7469; 
 
+// Kiểm tra và hiển thị bảng nhập thông tin khi vừa vào game
+function checkPlayerProfile() {
+    let profile = JSON.parse(localStorage.getItem('ar_player_profile') || 'null');
+    const setupModal = document.getElementById('player-setup-modal');
+    
+    if (!profile && setupModal) {
+        setupModal.classList.remove('hidden'); // Hiển thị bảng nếu chưa có dữ liệu
+    }
+}
+
+// Lưu thông tin người chơi khi bấm nút xác nhận
+function savePlayerProfile() {
+    let name = document.getElementById('setup-name').value.trim();
+    let age = document.getElementById('setup-age').value.trim();
+    let gender = document.getElementById('setup-gender').value;
+
+    if (!name) {
+        alert('Vui lòng nhập tên nhân vật của bạn!');
+        return;
+    }
+    if (!age || age <= 0) {
+        alert('Vui lòng nhập số tuổi hợp lệ!');
+        return;
+    }
+
+    let profileData = { name: name, age: age, gender: gender };
+    localStorage.setItem('ar_player_profile', JSON.stringify(profileData));
+
+    // Ẩn bảng đi
+    const setupModal = document.getElementById('player-setup-modal');
+    if (setupModal) setupModal.classList.add('hidden');
+
+    alert(`Chào mừng nhà thám hiểm ${name} đã tham gia game!`);
+}
 function initMap() {
     map = L.map('map', { zoomControl: false }).setView([userLat, userLng], 17);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
@@ -128,6 +162,7 @@ function spawnMultipleMonsters() {
 }
 
 window.onload = () => {
+    checkPlayerProfile();
     initWeather();
     initMap();
     initStaminaSystem();
