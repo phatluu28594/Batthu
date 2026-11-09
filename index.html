@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Tower, Gear & Breeding v3.6</title>
+    <title>Batthu - Breeding Gender v3.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -59,7 +59,7 @@
                 <span id="weather-status" class="text-[11px] font-medium">Trời quang</span>
             </div>
             <div class="flex gap-1 overflow-x-auto py-1">
-                <button onclick="openTowerMenu()" class="bg-purple-600/90 px-2 py-1 rounded-full border border-purple-400 text-[10px] font-bold shadow cursor-pointer">🗼 Leo Tháp</button>
+                <button onclick="openTowerMenu()" class="bg-purple-600/90 px-2 py-1 rounded-full border border-purple-400 text-[10px] font-bold shadow cursor-pointer">🗼 Tháp</button>
                 <button onclick="openBreedingMenu()" class="bg-pink-600/90 px-2 py-1 rounded-full border border-pink-400 text-[10px] font-bold shadow cursor-pointer">🧬 Lai Giống</button>
                 <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2 py-1 rounded-full border border-amber-400 text-[10px] font-bold shadow cursor-pointer">🛒 Chợ</button>
                 <button onclick="openArenaMenu()" class="bg-red-600/90 px-2 py-1 rounded-full border border-red-400 text-[10px] font-bold shadow cursor-pointer">⚔️ PvP</button>
@@ -111,7 +111,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP / LEO THÁP -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V3.6</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V3.7</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -140,9 +140,8 @@
         let stamina = parseInt(localStorage.getItem('ar_stamina') || '15');
         let lastStaminaTime = parseInt(localStorage.getItem('ar_stamina_time') || Date.now());
 
-        let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ food: 5, toy: 5, trainer: 3, meat: 0, stoneKim: 0, stoneMoc: 0, stoneThuy: 0, stoneHoa: 0, stoneTho: 0, gearClaw: 1, gearArmor: 1, gearBelt: 1 }));
+        let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ food: 5, toy: 5, trainer: 3, meat: 0, stoneKim: 0, stoneMoc: 0, stoneThuy: 0, stoneHoa: 0, stoneTho: 0 }));
 
-        // --- TÍNH NĂNG 2: LEO THÁP VÔ TẬN ---
         function openTowerMenu() {
             checkPetSurvival();
             const modal = document.getElementById('modal-container');
@@ -184,7 +183,7 @@
             startCanvasBattle(null, false, customEnemy, 'tower');
         }
 
-        // --- TÍNH NĂNG 3: LAI GIỐNG LINH THÚ ---
+        // --- TRUNG TÂM LAI GIỐNG (YÊU CẦU ĐỰC & CÁI) ---
         let breedingSlots = { parent1: null, parent2: null };
 
         function openBreedingMenu() {
@@ -193,17 +192,17 @@
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
 
-            let p1Html = breedingSlots.parent1 ? `<div class="text-3xl">${breedingSlots.parent1.emoji}</div><div class="text-[10px] font-bold">${breedingSlots.parent1.name}</div>` : `<span class="text-xs text-zinc-500">Chọn Thú 1</span>`;
-            let p2Html = breedingSlots.parent2 ? `<div class="text-3xl">${breedingSlots.parent2.emoji}</div><div class="text-[10px] font-bold">${breedingSlots.parent2.name}</div>` : `<span class="text-xs text-zinc-500">Chọn Thú 2</span>`;
+            let p1Html = breedingSlots.parent1 ? `<div class="text-3xl">${breedingSlots.parent1.emoji}</div><div class="text-[10px] font-bold">${breedingSlots.parent1.name} (${breedingSlots.parent1.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái'})</div>` : `<span class="text-xs text-zinc-500">Chọn Thú 1 (Bố hoặc Mẹ)</span>`;
+            let p2Html = breedingSlots.parent2 ? `<div class="text-3xl">${breedingSlots.parent2.emoji}</div><div class="text-[10px] font-bold">${breedingSlots.parent2.name} (${breedingSlots.parent2.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái'})</div>` : `<span class="text-xs text-zinc-500">Chọn Thú 2 (Phải khác giới tính)</span>`;
 
             content.innerHTML = `
             <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🧬 Trung Tâm Lai Giống</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>
-            <p class="text-xs text-zinc-300 mb-3">Kết hợp 2 linh thú trong Trang Trại để tạo ra thế hệ lai vượt trội!</p>
+            <p class="text-xs text-zinc-300 mb-3">Kết hợp 1 con <strong>Đực (♂️)</strong> và 1 con <strong>Cái (♀️)</strong> trong Trang Trại để sinh ra thế hệ lai vượt trội!</p>
             <div class="grid grid-cols-2 gap-3 mb-4">
-                <div onclick="openSelectBreedingParent(1)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 flex flex-col items-center justify-center h-24 cursor-pointer">
+                <div onclick="openSelectBreedingParent(1)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 flex flex-col items-center justify-center h-28 cursor-pointer text-center">
                     ${p1Html}
                 </div>
-                <div onclick="openSelectBreedingParent(2)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 flex flex-col items-center justify-center h-24 cursor-pointer">
+                <div onclick="openSelectBreedingParent(2)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 flex flex-col items-center justify-center h-28 cursor-pointer text-center">
                     ${p2Html}
                 </div>
             </div>
@@ -218,13 +217,15 @@
             } else {
                 html += `<div class="space-y-2 max-h-60 overflow-y-auto">`;
                 farm.forEach((pet, idx) => {
+                    let genderSymbol = pet.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái';
+                    let genderColor = pet.gender === 'Đực' ? 'text-blue-400' : 'text-pink-400';
                     html += `
                     <div onclick="selectParent(${slotNum}, ${idx})" class="bg-zinc-800 p-3 rounded-xl flex items-center justify-between border border-zinc-700 cursor-pointer">
                         <div class="flex items-center gap-3">
                             <span class="text-3xl">${pet.emoji}</span>
                             <div>
-                                <div class="font-bold text-xs">${pet.name} (Lv.${pet.level || 1})</div>
-                                <div class="text-[10px] text-zinc-400">Hệ: ${pet.element || 'Kim'} | HP: ${pet.hp}</div>
+                                <div class="font-bold text-xs">${pet.name} <span class="${genderColor}">(${genderSymbol})</span></div>
+                                <div class="text-[10px] text-zinc-400">Lv.${pet.level || 1} | Hệ: ${pet.element || 'Kim'}</div>
                             </div>
                         </div>
                     </div>`;
@@ -237,12 +238,22 @@
         function selectParent(slotNum, farmIdx) {
             let pet = farm[farmIdx];
             if (slotNum === 1) breedingSlots.parent1 = pet;
-            else breedingSlots.parent2 = pet;
+            else {
+                if (breedingSlots.parent1 && breedingSlots.parent1.gender === pet.gender) {
+                    alert(`⚠️ Không thể chọn! Thú thứ 2 phải khác giới tính với thú thứ nhất (Yêu cầu 1 Đực và 1 Cái).`);
+                    return;
+                }
+                breedingSlots.parent2 = pet;
+            }
             openBreedingMenu();
         }
 
         function executeBreeding() {
             if (!breedingSlots.parent1 || !breedingSlots.parent2) { alert('Vui lòng chọn đủ 2 linh thú bố mẹ!'); return; }
+            if (breedingSlots.parent1.gender === breedingSlots.parent2.gender) {
+                alert('⚠️ Lai giống thất bại! Cần đúng 1 con Đực (♂️) và 1 con Cái (♀️).');
+                return;
+            }
             if (playerCoins < 300) { alert('Cần 300 Vàng để làm phí lai giống!'); return; }
 
             playerCoins -= 300;
@@ -250,6 +261,8 @@
 
             let baseTemplate = allMonsters[Math.floor(Math.random() * allMonsters.length)];
             let randomElem = elements[Math.floor(Math.random() * elements.length)];
+            let randomGender = Math.random() < 0.5 ? 'Đực' : 'Cái';
+
             let childPet = {
                 ...baseTemplate,
                 uniqueId: Date.now(),
@@ -259,6 +272,7 @@
                 maxHp: baseTemplate.maxHp + 50,
                 atk: baseTemplate.atk + 25,
                 element: randomElem.name,
+                gender: randomGender,
                 critRate: Math.floor(20 + Math.random() * 20),
                 dodgeRate: Math.floor(15 + Math.random() * 15),
                 accuracy: Math.floor(20 + Math.random() * 20),
@@ -271,7 +285,7 @@
             farm.push(childPet);
             localStorage.setItem('ar_farm', JSON.stringify(farm));
             breedingSlots = { parent1: null, parent2: null };
-            alert(`🧬 Lai giống thành công! Nhận được ${childPet.emoji} ${childPet.name} [Hệ ${childPet.element}] vào Trang Trại!`);
+            alert(`🧬 Lai giống thành công! Nhận được ${childPet.emoji} ${childPet.name} [Hệ ${childPet.element} - ${childPet.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái'}] vào Trang Trại!`);
             openFarmMenu();
         }
 
@@ -332,6 +346,7 @@
                 maxHp: p.maxHp || p.hp || 80,
                 hp: (p.hp !== undefined && p.hp > 0) ? p.hp : (p.maxHp || 80),
                 level: p.level || 1,
+                gender: p.gender || (Math.random() < 0.5 ? 'Đực' : 'Cái'),
                 critRate: p.critRate !== undefined ? p.critRate : Math.floor(10 + Math.random() * 20),
                 dodgeRate: p.dodgeRate !== undefined ? p.dodgeRate : Math.floor(5 + Math.random() * 15),
                 accuracy: p.accuracy !== undefined ? p.accuracy : Math.floor(10 + Math.random() * 20),
@@ -470,6 +485,8 @@
 
             const basePet = allMonsters[Math.floor(Math.random() * allMonsters.length)];
             const randomElem = elements[Math.floor(Math.random() * elements.length)];
+            const randomGender = Math.random() < 0.5 ? 'Đực' : 'Cái';
+
             const hatchedPet = { 
                 ...basePet, 
                 uniqueId: Date.now(), 
@@ -477,6 +494,7 @@
                 hunger: 80, 
                 happiness: 80, 
                 element: randomElem.name,
+                gender: randomGender,
                 critRate: Math.floor(1 + Math.random() * 34),
                 dodgeRate: Math.floor(1 + Math.random() * 34),
                 accuracy: Math.floor(1 + Math.random() * 34),
@@ -488,11 +506,11 @@
                 team.push(hatchedPet);
                 localStorage.setItem('ar_team', JSON.stringify(team));
                 updateTeamCount();
-                alert(`🎉 Trứng nở ra ${hatchedPet.emoji} ${hatchedPet.name} [Hệ ${hatchedPet.element}] vào đội hình!`);
+                alert(`🎉 Trứng nở ra ${hatchedPet.emoji} ${hatchedPet.name} [Hệ ${hatchedPet.element} - ${hatchedPet.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái'}] vào đội hình!`);
             } else {
                 farm.push(hatchedPet);
                 localStorage.setItem('ar_farm', JSON.stringify(farm));
-                alert(`🎉 Trứng nở ra ${hatchedPet.emoji} ${hatchedPet.name} [Hệ ${hatchedPet.element}] vào Trang Trại!`);
+                alert(`🎉 Trứng nở ra ${hatchedPet.emoji} ${hatchedPet.name} [Hệ ${hatchedPet.element} - ${hatchedPet.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái'}] vào Trang Trại!`);
             }
             closeModal();
         }
@@ -639,12 +657,14 @@
             } else {
                 farm.forEach((pet, idx) => {
                     let elemObj = elements.find(e => e.name === pet.element) || elements[0];
+                    let genderSymbol = pet.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái';
+                    let genderColor = pet.gender === 'Đực' ? 'text-blue-400' : 'text-pink-400';
                     html += `
                     <div class="bg-zinc-800/90 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
                         <div class="flex items-center gap-2.5">
                             <span class="text-3xl">${pet.emoji}</span>
                             <div>
-                                <div class="font-bold text-xs">${pet.name} <span class="text-yellow-400">Lv.${pet.level || 1}</span> <span class="${elemObj.color}">(${elemObj.icon}${pet.element || 'Kim'})</span></div>
+                                <div class="font-bold text-xs">${pet.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="text-yellow-400">Lv.${pet.level || 1}</span> <span class="${elemObj.color}">(${elemObj.icon}${pet.element || 'Kim'})</span></div>
                                 <div class="text-[10px] text-zinc-300">HP: ${pet.hp}/${pet.maxHp} | No: ${pet.hunger}% | Vui: ${pet.happiness}%</div>
                             </div>
                         </div>
@@ -739,13 +759,15 @@
                 html += `<div class="space-y-3">`;
                 team.forEach((pet, idx) => {
                     let elemObj = elements.find(e => e.name === pet.element) || elements[0];
+                    let genderSymbol = pet.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái';
+                    let genderColor = pet.gender === 'Đực' ? 'text-blue-400' : 'text-pink-400';
                     let isRefusing = (pet.happiness < 30);
                     html += `
                     <div onclick="openPetDetail(${idx})" class="bg-zinc-800 cursor-pointer p-3 rounded-xl flex items-center justify-between border ${isRefusing ? 'border-red-500' : 'border-zinc-700'}">
                         <div class="flex items-center gap-3">
                             <span class="text-4xl bg-zinc-900 p-2 rounded-xl pet-animate">${pet.emoji}</span>
                             <div>
-                                <div class="font-bold text-sm">${pet.name} <span class="text-xs text-yellow-400">Lv.${pet.level}</span> <span class="${elemObj.color}">(${elemObj.icon}${pet.element})</span></div>
+                                <div class="font-bold text-sm">${pet.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="text-xs text-yellow-400">Lv.${pet.level}</span> <span class="${elemObj.color}">(${elemObj.icon}${pet.element})</span></div>
                                 <div class="text-[11px] text-zinc-300">HP: ${pet.hp}/${pet.maxHp} | No: ${pet.hunger}% | Vui: ${pet.happiness}%</div>
                                 ${isRefusing ? '<div class="text-[10px] text-red-400 font-bold">⚠️ Hạnh phúc < 30%: Từ chối chiến đấu!</div>' : ''}
                             </div>
@@ -758,10 +780,11 @@
             content.innerHTML = html;
         }
 
-        // --- TÍNH NĂNG 1: CƯỜNG HÓA TRANG BỊ CHO LINH THÚ ---
         function openPetDetail(index) {
             let pet = team[index];
             let elemObj = elements.find(e => e.name === pet.element) || elements[0];
+            let genderSymbol = pet.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái';
+            let genderColor = pet.gender === 'Đực' ? 'text-blue-400' : 'text-pink-400';
             const content = document.getElementById('modal-content');
 
             let stoneKey = '', stoneName = '';
@@ -781,7 +804,7 @@
             </div>
             <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-zinc-700 mb-4 text-center">
                 <div class="text-7xl mb-2 pet-animate filter drop-shadow-xl">${pet.emoji}</div>
-                <div class="text-base font-bold text-yellow-300">${pet.name} <span class="${elemObj.color} text-sm">(${elemObj.icon}${pet.element})</span></div>
+                <div class="text-base font-bold text-yellow-300">${pet.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="${elemObj.color} text-sm">(${elemObj.icon}${pet.element})</span></div>
                 <div class="text-[11px] text-amber-300 mt-1 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-700">
                     Cấp độ: Lv.${pet.level || 1} | ATK: ${pet.atk} | HP: ${pet.hp}/${pet.maxHp}
                 </div>
@@ -888,11 +911,13 @@
         let capturedTempMonster = null;
 
         function promptCatchChoice(monster) {
+            let randomGender = Math.random() < 0.5 ? 'Đực' : 'Cái';
             capturedTempMonster = {
                 ...monster,
                 maxHp: monster.maxHp || monster.hp || 80,
                 hp: monster.maxHp || monster.hp || 80,
                 level: 1,
+                gender: randomGender,
                 hunger: 80,
                 happiness: 80,
                 critRate: Math.floor(1 + Math.random() * 34),
@@ -907,11 +932,14 @@
             modal.classList.remove('hidden');
 
             let elemObj = elements.find(e => e.name === monster.element) || elements[0];
+            let genderSymbol = capturedTempMonster.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái';
+            let genderColor = capturedTempMonster.gender === 'Đực' ? 'text-blue-400' : 'text-pink-400';
+
             content.innerHTML = `
             <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-lg">🎉 Bắt Thành Công!</h3></div>
             <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-zinc-700 mb-4 text-center">
                 <span class="text-7xl mb-2">${monster.emoji}</span>
-                <div class="text-lg font-bold text-yellow-300">${monster.name} <span class="${elemObj.color} text-sm">(${elemObj.icon}${monster.element})</span></div>
+                <div class="text-lg font-bold text-yellow-300">${monster.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="${elemObj.color} text-sm">(${elemObj.icon}${monster.element})</span></div>
                 <div class="text-xs text-zinc-400 mt-1">CP: ${monster.cp} | Chí mạng: ${capturedTempMonster.critRate}% | Né: ${capturedTempMonster.dodgeRate}%</div>
             </div>
             <div class="space-y-2">
@@ -1204,8 +1232,8 @@
         }
 
         let ghostPlayers = [
-            { id: 'g1', name: 'Ghost_Viper', avatar: '👻', pet: { name: 'Xà Vương', emoji: '🐍', cp: 180, hp: 95, maxHp: 95, atk: 110, level: 65, element: 'Mộc', critRate: 20, dodgeRate: 25, accuracy: 25, attackSpeed: 1.4 } },
-            { id: 'g2', name: 'Ghost_Shadow', avatar: '👤', pet: { name: 'Dơi Bóng Tối', emoji: '🦇', cp: 165, hp: 75, maxHp: 75, atk: 115, level: 50, element: 'Thủy', critRate: 18, dodgeRate: 30, accuracy: 20, attackSpeed: 1.5 } }
+            { id: 'g1', name: 'Ghost_Viper', avatar: '👻', pet: { name: 'Xà Vương', emoji: '🐍', cp: 180, hp: 95, maxHp: 95, atk: 110, level: 65, element: 'Mộc', gender: 'Đực', critRate: 20, dodgeRate: 25, accuracy: 25, attackSpeed: 1.4 } },
+            { id: 'g2', name: 'Ghost_Shadow', avatar: '👤', pet: { name: 'Dơi Bóng Tối', emoji: '🦇', cp: 165, hp: 75, maxHp: 75, atk: 115, level: 50, element: 'Thủy', gender: 'Cái', critRate: 18, dodgeRate: 30, accuracy: 20, attackSpeed: 1.5 } }
         ];
 
         function spawnGhostPlayers() {
