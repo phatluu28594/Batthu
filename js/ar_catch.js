@@ -1,13 +1,13 @@
-let currentWildMonster = null;
-let catchAttempts = 0;
-let capturedTempMonster = null;
+export let currentWildMonster = null;
+export let catchAttempts = 0;
+export let capturedTempMonster = null;
 let canvas, ctx;
 let isARActive = false;
 let rope = { x: 0, y: 0, vx: 0, vy: 0, radius: 30, flying: false };
 let monsterPos = { x: 0, y: 0, vx: 2 };
 let touchStart = { x: 0, y: 0 }, touchEnd = { x: 0, y: 0 };
 
-async function enterARScreen() {
+export async function enterARScreen() {
     document.getElementById('map-screen').classList.add('hidden');
     document.getElementById('ar-screen').classList.remove('hidden');
     isARActive = true;
@@ -27,7 +27,7 @@ async function enterARScreen() {
     initCanvasGame();
 }
 
-function exitARScreen() {
+export function exitARScreen() {
     isARActive = false;
     const videoEl = document.getElementById('camera-feed');
     if (videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
@@ -132,7 +132,7 @@ function handleMissAttempt(reasonMsg) {
     }
 }
 
-function promptCatchChoice(monster) {
+export function promptCatchChoice(monster) {
     capturedTempMonster = {
         ...monster,
         maxHp: monster.maxHp || monster.hp || 80,
@@ -171,7 +171,7 @@ function promptCatchChoice(monster) {
     document.getElementById('btn-catch-sell').onclick = () => handleCatchDecision('sell');
 }
 
-function handleCatchDecision(action) {
+export function handleCatchDecision(action) {
     if (action === 'team') {
         if (typeof team !== 'undefined' && team.length < 3) {
             team.push(capturedTempMonster);
