@@ -1,22 +1,7 @@
-export const APP_VERSION = '3.2';
+// Cấu hình chung và Danh mục Linh thú
+const APP_VERSION = '3.1';
 
-export let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
-export let farm = JSON.parse(localStorage.getItem('ar_farm') || '[]');
-export let pokedex = JSON.parse(localStorage.getItem('ar_pokedex') || '[]');
-export let eggSteps = parseInt(localStorage.getItem('ar_egg_steps') || '0');
-export let playerCoins = parseInt(localStorage.getItem('ar_coins') || '500');
-
-export let stamina = parseInt(localStorage.getItem('ar_stamina') || '15');
-export let lastStaminaTime = parseInt(localStorage.getItem('ar_stamina_time') || Date.now());
-
-export let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ 
-    food: 5, toy: 5, trainer: 3, meat: 0, 
-    stoneKim: 0, stoneMoc: 0, stoneThuy: 0, stoneHoa: 0, stoneTho: 0 
-}));
-
-export let currentWeather = { name: 'Trời quang', icon: '☀️', effect: 'ATK +10%', buffAtk: 1.1 };
-
-export const elements = [
+const elements = [
     { name: 'Kim', icon: '⚔️', color: 'text-yellow-300' },
     { name: 'Mộc', icon: '🌿', color: 'text-emerald-400' },
     { name: 'Thủy', icon: '💧', color: 'text-blue-400' },
@@ -24,7 +9,13 @@ export const elements = [
     { name: 'Thổ', icon: '🪨', color: 'text-amber-600' }
 ];
 
-export const categories = {
+function checkElementAdvantage(attackerElem, defenderElem) {
+    if (!attackerElem || !defenderElem) return false;
+    let rules = { 'Kim': 'Mộc', 'Mộc': 'Thổ', 'Thổ': 'Thủy', 'Thủy': 'Hỏa', 'Hỏa': 'Kim' };
+    return rules[attackerElem] === defenderElem;
+}
+
+const categories = {
     'Gia cầm': [
         { id: 101, name: 'Gà Ta', emoji: '🐔', cp: 120, hp: 60, maxHp: 60, atk: 70, level: 1, rarePrice: 100, attackType: 'melee' },
         { id: 102, name: 'Vịt Cỏ', emoji: '🦆', cp: 110, hp: 55, maxHp: 55, atk: 65, level: 1, rarePrice: 90, attackType: 'magic' },
@@ -50,14 +41,4 @@ export const categories = {
     ]
 };
 
-export const allMonsters = Object.values(categories).flat();
-
-export function saveInventory() { localStorage.setItem('ar_inventory', JSON.stringify(inventory)); }
-
-export function checkPetSurvival() {
-    window.team = team.filter(p => p.hp > 0 && p.hunger > 0);
-    window.farm = farm.filter(p => p.hp > 0 && p.hunger > 0);
-    localStorage.setItem('ar_team', JSON.stringify(team));
-    localStorage.setItem('ar_farm', JSON.stringify(farm));
-    if (window.updateTeamCount) window.updateTeamCount();
-}
+const allMonsters = Object.values(categories).flat();
