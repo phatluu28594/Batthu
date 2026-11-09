@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Breeding Gender v3.7</title>
+    <title>Batthu - Full Stats Update v3.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -111,7 +111,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP / LEO THÁP -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V3.7</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V3.8</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -183,7 +183,6 @@
             startCanvasBattle(null, false, customEnemy, 'tower');
         }
 
-        // --- TRUNG TÂM LAI GIỐNG (YÊU CẦU ĐỰC & CÁI) ---
         let breedingSlots = { parent1: null, parent2: null };
 
         function openBreedingMenu() {
@@ -276,7 +275,7 @@
                 critRate: Math.floor(20 + Math.random() * 20),
                 dodgeRate: Math.floor(15 + Math.random() * 15),
                 accuracy: Math.floor(20 + Math.random() * 20),
-                attackSpeed: 1.4,
+                attackSpeed: parseFloat((1.2 + Math.random() * 0.5).toFixed(1)),
                 hunger: 100,
                 happiness: 100,
                 buffEffect: 'Thế Hệ Lai Đột Biến'
@@ -495,10 +494,10 @@
                 happiness: 80, 
                 element: randomElem.name,
                 gender: randomGender,
-                critRate: Math.floor(1 + Math.random() * 34),
-                dodgeRate: Math.floor(1 + Math.random() * 34),
-                accuracy: Math.floor(1 + Math.random() * 34),
-                attackSpeed: parseFloat((1.0 + Math.random() * 1.0).toFixed(1)),
+                critRate: Math.floor(10 + Math.random() * 20),
+                dodgeRate: Math.floor(5 + Math.random() * 15),
+                accuracy: Math.floor(10 + Math.random() * 20),
+                attackSpeed: parseFloat((1.2 + Math.random() * 0.5).toFixed(1)),
                 buffEffect: null
             };
 
@@ -806,9 +805,34 @@
                 <div class="text-7xl mb-2 pet-animate filter drop-shadow-xl">${pet.emoji}</div>
                 <div class="text-base font-bold text-yellow-300">${pet.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="${elemObj.color} text-sm">(${elemObj.icon}${pet.element})</span></div>
                 <div class="text-[11px] text-amber-300 mt-1 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-700">
-                    Cấp độ: Lv.${pet.level || 1} | ATK: ${pet.atk} | HP: ${pet.hp}/${pet.maxHp}
+                    Cấp độ: Lv.${pet.level || 1} | ATK: ${pet.atk}
                 </div>
-                <div class="text-xs mt-2">${hasBuff}</div>
+                
+                <!-- BỔ SUNG CHỈ SỐ % CHÍ MẠNG, NÉ, CHÍNH XÁC, TỐC ĐỘ -->
+                <div class="grid grid-cols-2 gap-2 w-full mt-3 text-[11px] bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-700 text-zinc-300">
+                    <div>🎯 Chí mạng: <strong class="text-yellow-400">${pet.critRate || 15}%</strong></div>
+                    <div>💨 Né tránh: <strong class="text-blue-400">${pet.dodgeRate || 10}%</strong></div>
+                    <div>🎯 Chính xác: <strong class="text-emerald-400">${pet.accuracy || 15}%</strong></div>
+                    <div>⚡ Tốc độ: <strong class="text-purple-400">${pet.attackSpeed || 1.2} t/s</strong></div>
+                </div>
+
+                <!-- BỔ SUNG THANH MÁU, ĐỘ NO, HẠNH PHÚC -->
+                <div class="w-full space-y-1.5 mt-3 text-left">
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-0.5"><span>HP</span><span>${pet.hp}/${pet.maxHp}</span></div>
+                        <div class="w-full bg-zinc-900 rounded-full h-2 overflow-hidden border border-zinc-700"><div class="bg-emerald-500 h-full" style="width: ${(pet.hp/pet.maxHp)*100}%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-0.5"><span>Độ no</span><span>${pet.hunger}%</span></div>
+                        <div class="w-full bg-zinc-900 rounded-full h-2 overflow-hidden border border-zinc-700"><div class="bg-amber-500 h-full" style="width: ${pet.hunger}%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-0.5"><span>Hạnh phúc</span><span>${pet.happiness}%</span></div>
+                        <div class="w-full bg-zinc-900 rounded-full h-2 overflow-hidden border border-zinc-700"><div class="bg-pink-500 h-full" style="width: ${pet.happiness}%"></div></div>
+                    </div>
+                </div>
+
+                <div class="text-xs mt-3">${hasBuff}</div>
             </div>
 
             <div class="space-y-2 mb-3">
@@ -920,10 +944,10 @@
                 gender: randomGender,
                 hunger: 80,
                 happiness: 80,
-                critRate: Math.floor(1 + Math.random() * 34),
-                dodgeRate: Math.floor(1 + Math.random() * 34),
-                accuracy: Math.floor(1 + Math.random() * 34),
-                attackSpeed: parseFloat((1.0 + Math.random() * 1.0).toFixed(1)),
+                critRate: Math.floor(10 + Math.random() * 20),
+                dodgeRate: Math.floor(5 + Math.random() * 15),
+                accuracy: Math.floor(10 + Math.random() * 20),
+                attackSpeed: parseFloat((1.2 + Math.random() * 0.5).toFixed(1)),
                 buffEffect: null
             };
 
@@ -1320,10 +1344,10 @@
                     ...baseTemplate, 
                     element: randomElem.name,
                     cp: Math.floor(baseTemplate.cp * (0.9 + Math.random() * 0.3)),
-                    critRate: Math.floor(1 + Math.random() * 34),
-                    dodgeRate: Math.floor(1 + Math.random() * 34),
-                    accuracy: Math.floor(1 + Math.random() * 34),
-                    attackSpeed: parseFloat((1.0 + Math.random() * 1.0).toFixed(1)),
+                    critRate: Math.floor(10 + Math.random() * 20),
+                    dodgeRate: Math.floor(5 + Math.random() * 15),
+                    accuracy: Math.floor(10 + Math.random() * 20),
+                    attackSpeed: parseFloat((1.2 + Math.random() * 0.5).toFixed(1)),
                     lat: userLat + (Math.random() - 0.5) * 0.0025,
                     lng: userLng + (Math.random() - 0.5) * 0.0025
                 };
