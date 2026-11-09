@@ -1,20 +1,105 @@
-<!-- TẢI THƯ VIỆN & CÁC FILE JS THEO ĐÚNG THỨ TỰ -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></script>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AR Monster - Modular v3.2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
+        #map { height: 100%; width: 100%; border-radius: 1rem; z-index: 10; }
+        .leaflet-control-attribution { display: none !important; }
+        @keyframes petBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .pet-animate { animation: petBounce 2s ease-in-out infinite; }
+        @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
+        .damage-popup { animation: floatText 0.7s ease-out forwards; }
+    </style>
+</head>
+<body class="text-white relative h-screen w-screen overflow-hidden">
+
+    <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
+    <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-3">
+        <div class="flex justify-between items-center z-30 pt-1">
+            <div class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
+                <span id="weather-icon" class="text-base">☀️</span>
+                <span id="weather-status" class="text-xs font-medium">Trời quang</span>
+            </div>
+            <div class="flex gap-1 overflow-x-auto py-1">
+                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2.5 py-1 rounded-full border border-amber-400 text-[11px] font-bold shadow">🛒 Chợ</button>
+                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2.5 py-1 rounded-full border border-red-400 text-[11px] font-bold shadow">⚔️ Đấu PvP</button>
+                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2.5 py-1 rounded-full border border-emerald-400 text-[11px] font-bold shadow">🏡 Trại</button>
+                <button onclick="openEggsMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🥚(<span id="egg-steps-count">0</span>)</button>
+                <button onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🎒(<span id="team-count">0</span>/3)</button>
+            </div>
+        </div>
+
+        <div class="absolute inset-0 pt-16 pb-24 px-3">
+            <div id="map" class="shadow-2xl border border-zinc-800"></div>
+            <button onclick="recenterMap()" class="absolute bottom-28 right-6 z-30 bg-blue-600 text-white p-3.5 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-xl">
+                📍
+            </button>
+        </div>
+
+        <div class="flex flex-col items-center z-30 pb-2">
+            <div id="stamina-info" class="text-xs font-bold text-amber-300 bg-black/80 px-4 py-1.5 rounded-full border border-white/20 mb-2 shadow-lg flex items-center gap-2">
+                ⚡ Năng lượng: <span id="stamina-count">15</span>/15 (<span id="stamina-timer">10:00</span>)
+            </div>
+            <button onclick="spawnMultipleMonsters()" class="w-full max-w-sm bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-2xl border border-zinc-700 shadow-xl text-xs">
+                🔄 Quét lại khu vực
+            </button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH MINIGAME BẮT THÚ AR -->
+    <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
+        <div class="absolute inset-0 z-0 overflow-hidden">
+            <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
+        </div>
+        <canvas id="gameCanvas" class="absolute inset-0 z-10 touch-none"></canvas>
+        <div class="flex justify-between items-center z-20 p-4 pointer-events-auto">
+            <button onclick="exitARScreen()" class="bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">
+                ⬅️ Quay lại bản đồ
+            </button>
+            <div id="ar-mon-info" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold text-yellow-300">
+                Mục tiêu: Đang tải...
+            </div>
+        </div>
+        <div class="flex flex-col items-center z-20 pb-8 pointer-events-none">
+            <div id="throw-feedback" class="text-sm font-bold bg-black/80 px-4 py-2 rounded-full border border-white/20 opacity-0 transition-opacity shadow-lg">Bắt hụt rồi!</div>
+            <div id="throw-attempt-count" class="text-[11px] text-yellow-400 mt-1 bg-black/60 px-3 py-0.5 rounded-full border border-white/10 font-bold">Lượt quăng: 0/3</div>
+            <div class="text-[11px] text-zinc-300 mt-1 bg-black/60 px-3 py-1 rounded-full border border-white/10">🤠 Vuốt ngón tay hướng lên trên để quăng vòng dây thừng!</div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP -->
+    <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
+        <div class="flex justify-between items-center z-20">
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ PVP REALTIME</div>
+            <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">Rút lui</button>
+        </div>
+        <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
+            <canvas id="battleCanvas" class="absolute inset-0 w-full h-full"></canvas>
+            <div id="damage-popup-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+            <div id="battle-log" class="absolute bottom-4 bg-black/90 px-5 py-2.5 rounded-xl text-xs text-yellow-300 font-bold border border-yellow-500/50 text-center max-w-sm shadow-xl">
+                Đang chuẩn bị giao tranh...
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHUNG -->
+    <div id="modal-container" class="hidden absolute inset-0 z-40 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
+    </div>
+
+    <!-- TẢI THƯ VIỆN LEAFLET & CÁC FILE SCRIPT THEO ĐÚNG THỨ TỰ -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- 1. File cấu hình và dữ liệu nền tảng -->
     <script src="./js/config.js"></script>
-
-    <!-- 2. Các file hệ thống & quản lý tài nguyên -->
     <script src="./js/stamina.js"></script>
     <script src="./js/market.js"></script>
-    <script src="./js/eggs.js"></script>
-
-    <!-- 3. Các file tính năng giao diện (Trang trại, Đội hình) -->
     <script src="./js/farm.js"></script>
     <script src="./js/team.js"></script>
-
-    <!-- 4. Các file minigame, đấu trường và bản đồ -->
+    <script src="./js/eggs.js"></script>
     <script src="./js/ar_catch.js"></script>
     <script src="./js/arena.js"></script>
     <script src="./js/map.js"></script>
@@ -34,3 +119,5 @@
             if (typeof initStaminaSystem === 'function') initStaminaSystem();
         };
     </script>
+</body>
+</html>
