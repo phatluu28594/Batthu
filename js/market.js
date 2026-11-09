@@ -118,3 +118,9 @@ function buyStaminaBatch(unitPrice) {
     alert(`⚡ Hồi phục +${qty * 5} Năng lượng!`);
     renderMarketContent();
 }
+function closeModal() {
+    const modal = document.getElementById('modal-container');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
