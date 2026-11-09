@@ -3,307 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster Catching & Pet Game</title>
+    <title>AR Monster - Modular v3.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
-        .monster-float { animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0px) scale(1); } 50% { transform: translateY(-15px) scale(1.05); } }
+        #map { height: 100%; width: 100%; border-radius: 1rem; z-index: 10; }
+        .leaflet-control-attribution { display: none !important; }
+        @keyframes petBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .pet-animate { animation: petBounce 2s ease-in-out infinite; }
+        @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
+        .damage-popup { animation: floatText 0.7s ease-out forwards; }
     </style>
 </head>
 <body class="text-white relative h-screen w-screen overflow-hidden">
 
-    <!-- CAMERA BACKGROUND -->
-    <div id="camera-container" class="absolute inset-0 z-0 overflow-hidden bg-zinc-900">
-        <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
-        <div id="camera-fallback" class="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-blue-900 to-indigo-950 text-center p-6">
-            <div>
-                <div class="text-6xl mb-4">🌍</div>
-                <h2 class="text-xl font-bold mb-2">Đang bật Camera AR...</h2>
-                <p class="text-sm text-zinc-300">Vui lòng cấp quyền truy cập camera để bắt đầu trải nghiệm thế giới ảo.</p>
+    <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
+    <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-3">
+        <div class="flex justify-between items-center z-30 pt-1">
+            <div class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
+                <span id="weather-icon" class="text-base">☀️</span>
+                <span id="weather-status" class="text-xs font-medium">Trời quang</span>
+            </div>
+            <div class="flex gap-1 overflow-x-auto py-1">
+                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2.5 py-1 rounded-full border border-amber-400 text-[11px] font-bold shadow">🛒 Chợ</button>
+                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2.5 py-1 rounded-full border border-red-400 text-[11px] font-bold shadow">⚔️ Đấu PvP</button>
+                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2.5 py-1 rounded-full border border-emerald-400 text-[11px] font-bold shadow">🏡 Trại</button>
+                <button onclick="openEggsMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🥚(<span id="egg-steps-count">0</span>)</button>
+                <button onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🎒(<span id="team-count">0</span>/3)</button>
+            </div>
+        </div>
+
+        <div class="absolute inset-0 pt-16 pb-24 px-3">
+            <div id="map" class="shadow-2xl border border-zinc-800"></div>
+            <button onclick="recenterMap()" class="absolute bottom-28 right-6 z-30 bg-blue-600 text-white p-3.5 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-xl">
+                📍
+            </button>
+        </div>
+
+        <div class="flex flex-col items-center z-30 pb-2">
+            <div id="stamina-info" class="text-xs font-bold text-amber-300 bg-black/80 px-4 py-1.5 rounded-full border border-white/20 mb-2 shadow-lg flex items-center gap-2">
+                ⚡ Năng lượng: <span id="stamina-count">15</span>/15 (<span id="stamina-timer">10:00</span>)
+            </div>
+            <button onclick="spawnMultipleMonsters()" class="w-full max-w-sm bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-2xl border border-zinc-700 shadow-xl text-xs">
+                🔄 Quét lại khu vực
+            </button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH MINIGAME BẮT THÚ AR (VUỐT DÂY THỪNG) -->
+    <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
+        <div class="absolute inset-0 z-0 overflow-hidden">
+            <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
+        </div>
+        <canvas id="gameCanvas" class="absolute inset-0 z-10 touch-none"></canvas>
+        <div class="flex justify-between items-center z-20 p-4 pointer-events-auto">
+            <button onclick="exitARScreen()" class="bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">
+                ⬅️ Quay lại bản đồ
+            </button>
+            <div id="ar-mon-info" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold text-yellow-300">
+                Mục tiêu: Đang tải...
+            </div>
+        </div>
+        <div class="flex flex-col items-center z-20 pb-8 pointer-events-none">
+            <div id="throw-feedback" class="text-sm font-bold bg-black/80 px-4 py-2 rounded-full border border-white/20 opacity-0 transition-opacity shadow-lg">Bắt hụt rồi!</div>
+            <div id="throw-attempt-count" class="text-[11px] text-yellow-400 mt-1 bg-black/60 px-3 py-0.5 rounded-full border border-white/10 font-bold">Lượt quăng: 0/3</div>
+            <div class="text-[11px] text-zinc-300 mt-1 bg-black/60 px-3 py-1 rounded-full border border-white/10">🤠 Vuốt ngón tay hướng lên trên để quăng vòng dây thừng!</div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP -->
+    <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
+        <div class="flex justify-between items-center z-20">
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ PVP REALTIME</div>
+            <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">Rút lui</button>
+        </div>
+        <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
+            <canvas id="battleCanvas" class="absolute inset-0 w-full h-full"></canvas>
+            <div id="damage-popup-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+            <div id="battle-log" class="absolute bottom-4 bg-black/90 px-5 py-2.5 rounded-xl text-xs text-yellow-300 font-bold border border-yellow-500/50 text-center max-w-sm shadow-xl">
+                Đang chuẩn bị giao tranh...
             </div>
         </div>
     </div>
 
-    <!-- MAIN UI OVERLAY -->
-    <div id="game-ui" class="absolute inset-0 z-10 flex flex-col justify-between pointer-events-none p-4">
-        
-        <!-- TOP BAR -->
-        <div class="flex justify-between items-center pointer-events-auto">
-            <div class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span id="radar-status" class="text-xs font-medium">Radar: Quét xung quanh...</span>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="openMenu('team')" class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold flex items-center gap-1">
-                    🎒 Đội hình (<span id="team-count">0</span>/3)
-                </button>
-                <button onclick="openMenu('pokedex')" class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold">
-                    📖 Sổ tay
-                </button>
-            </div>
-        </div>
-
-        <!-- 3D ANCHORED MONSTER LAYER -->
-        <div id="ar-scene" class="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <!-- Monster will be injected dynamically here based on spatial rotation -->
-            <div id="active-monster" class="pointer-events-auto cursor-pointer flex flex-col items-center monster-float transition-all duration-300" onclick="catchMonster()">
-                <div class="bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] text-yellow-300 font-bold mb-1 border border-yellow-500/30">CP <span id="mon-cp">150</span></div>
-                <div id="mon-avatar" class="text-7xl filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.6)]">🐕</div>
-                <div id="mon-name" class="text-xs font-bold mt-1 bg-black/60 px-2 py-0.5 rounded-full border border-white/20">Inu-Spark</div>
-            </div>
-        </div>
-
-        <!-- BOTTOM CONTROLS -->
-        <div class="flex flex-col items-center gap-3 pointer-events-auto pb-6">
-            <div id="throw-feedback" class="text-xs font-bold text-yellow-300 bg-black/60 px-3 py-1 rounded-full opacity-0 transition-opacity">Ném bóng chính xác!</div>
-            <div class="flex items-center gap-6">
-                <button onclick="openMenu('arena')" class="w-12 h-12 rounded-full bg-red-600/80 border-2 border-red-400 flex items-center justify-center text-xl shadow-lg active:scale-95 transition-transform" title="Đấu trường">
-                    ⚔️
-                </button>
-                <button onclick="throwPokeball()" class="w-20 h-20 rounded-full bg-gradient-to-tr from-red-500 via-white to-white border-4 border-black flex items-center justify-center shadow-2xl active:scale-90 transition-transform relative overflow-hidden">
-                    <div class="absolute inset-y-0 w-full bg-black h-2"></div>
-                    <div class="w-6 h-6 rounded-full bg-white border-2 border-black z-10"></div>
-                </button>
-                <button onclick="respawnMonster()" class="w-12 h-12 rounded-full bg-blue-600/80 border-2 border-blue-400 flex items-center justify-center text-xl shadow-lg active:scale-95 transition-transform" title="Tìm thú mới">
-                    🔍
-                </button>
-            </div>
-        </div>
+    <!-- MODAL CHUNG -->
+    <div id="modal-container" class="hidden absolute inset-0 z-40 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
 
-    <!-- MODAL OVERLAY -->
-    <div id="modal-container" class="hidden absolute inset-0 z-30 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto">
-            <!-- Dynamic modal content inserted via JS -->
-        </div>
-    </div>
+    <!-- TẢI CÁC THƯ VIỆN & MODULE JAVASCRIPT -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module" src="./js/config.js"></script>
+    <script type="module" src="./js/market.js"></script>
+    <script type="module" src="./js/farm.js"></script>
+    <script type="module" src="./js/team.js"></script>
+    <script type="module" src="./js/eggs.js"></script>
+    <script type="module" src="./js/ar_catch.js"></script>
+    <script type="module" src="./js/arena.js"></script>
+    <script type="module" src="./js/map.js"></script>
 
     <script>
-        // --- GAME STATE ---
-        let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
-        let pokedex = JSON.parse(localStorage.getItem('ar_pokedex') || '[]');
-        
-        const monstersPool = [
-            { id: 1, name: 'Inu-Spark', emoji: '🐕', type: 'Electric', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1, exp: 0, hunger: 80, thirst: 80 },
-            { id: 2, name: 'Neko-Leaf', emoji: '🐈', type: 'Grass', cp: 160, hp: 70, maxHp: 70, atk: 120, level: 1, exp: 0, hunger: 80, thirst: 80 },
-            { id: 3, name: 'Chu-Rats', emoji: '🐹', type: 'Water', cp: 110, hp: 60, maxHp: 60, atk: 65, level: 1, exp: 0, hunger: 80, thirst: 80 },
-            { id: 4, name: 'Tori-Flame', emoji: '🐦', type: 'Fire', cp: 185, hp: 50, maxHp: 50, atk: 140, level: 1, exp: 0, hunger: 80, thirst: 80 }
-        ];
-
-        let currentWildMonster = null;
-        let lastVibrateTime = 0;
-
-        // --- CAMERA INITIALIZATION ---
-        async function initCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: { exact: "environment" } },
-                    audio: false
-                });
-                const video = document.getElementById('camera-feed');
-                video.srcObject = stream;
-                document.getElementById('camera-fallback').style.display = 'none';
-            } catch (err) {
-                // Fallback to any available camera if environment fails
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                    document.getElementById('camera-feed').srcObject = stream;
-                    document.getElementById('camera-fallback').style.display = 'none';
-                } catch (e) {
-                    console.log("Camera access denied or unavailable.");
-                }
-            }
-        }
-
-        // --- SPATIAL ORIENTATION & RADAR VIBRATION ---
-        function initSensors() {
-            if (window.DeviceOrientationEvent) {
-                window.addEventListener('deviceorientation', (event) => {
-                    const alpha = event.alpha || 0; // Compass direction
-                    const monsterEl = document.getElementById('active-monster');
-                    
-                    // Map alpha rotation to translation offset for spatial anchoring feel
-                    const offsetX = Math.sin(alpha * Math.PI / 180) * 80;
-                    monsterEl.style.transform = `translate(${offsetX}px, 0px)`;
-
-                    // Simulated radar proximity vibration when turning towards monster
-                    if (Math.abs(offsetX) < 30 && navigator.vibrate && Date.now() - lastVibrateTime > 2000) {
-                        navigator.vibrate([100, 50, 100]);
-                        lastVibrateTime = Date.now();
-                        document.getElementById('radar-status').innerText = 'Radar: Phát hiện thú ở gần!';
-                    }
-                });
-            }
-        }
-
-        // --- GAMEPLAY LOGIC ---
-        function respawnMonster() {
-            const template = monstersPool[Math.floor(Math.random() * monstersPool.length)];
-            currentWildMonster = { ...template, cp: Math.floor(template.cp * (0.9 + Math.random() * 0.3)) };
-            
-            document.getElementById('mon-avatar').innerText = currentWildMonster.emoji;
-            document.getElementById('mon-name').innerText = currentWildMonster.name;
-            document.getElementById('mon-cp').innerText = currentWildMonster.cp;
-            
-            const monsterEl = document.getElementById('active-monster');
-            monsterEl.style.display = 'flex';
-            playSound('spawn');
-        }
-
-        function throwPokeball() {
-            playSound('throw');
-            const feedback = document.getElementById('throw-feedback');
-            feedback.style.opacity = '1';
-            
-            setTimeout(() => {
-                feedback.style.opacity = '0';
-                catchMonster();
-            }, 600);
-        }
-
-        function catchMonster() {
-            if (!currentWildMonster) return;
-            playSound('catch');
-            
-            if (team.length < 3) {
-                team.push({ ...currentWildMonster });
-                localStorage.setItem('ar_team', JSON.stringify(team));
-                updateTeamCount();
-                alert(`Chúc mừng! Bạn đã bắt thành công ${currentWildMonster.name}!`);
-            } else {
-                alert(`Đội hình đã đầy (3/3). Thú tự động chuyển vào kho lưu trữ.`);
-            }
-
-            if (!pokedex.some(m => m.id === currentWildMonster.id)) {
-                pokedex.push(currentWildMonster);
-                localStorage.setItem('ar_pokedex', JSON.stringify(pokedex));
-            }
-
-            document.getElementById('active-monster').style.display = 'none';
-            setTimeout(respawnMonster, 2000);
-        }
-
-        function updateTeamCount() {
-            document.getElementById('team-count').innerText = team.length;
-        }
-
-        // --- AUDIO SYNTHESIS (WEB AUDIO API) ---
-        function playSound(type) {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
-            if (type === 'throw') {
-                osc.frequency.setValueAtTime(300, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.3);
-                gain.gain.setValueAtTime(0.2, ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
-                osc.start(); osc.stop(ctx.currentTime + 0.3);
-            } else if (type === 'catch') {
-                osc.frequency.setValueAtTime(400, ctx.currentTime);
-                osc.frequency.setValueAtTime(600, ctx.currentTime + 0.15);
-                osc.frequency.setValueAtTime(800, ctx.currentTime + 0.3);
-                gain.gain.setValueAtTime(0.3, ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
-                osc.start(); osc.stop(ctx.currentTime + 0.5);
-            } else if (type === 'spawn') {
-                osc.frequency.setValueAtTime(500, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.2);
-                gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
-                osc.start(); osc.stop(ctx.currentTime + 0.2);
-            }
-        }
-
-        // --- UI MENUS & MODALS ---
-        function openMenu(type) {
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-            
-            if (type === 'team') {
-                let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Đội Hình Thú Cưng (${team.length}/3)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>`;
-                if (team.length === 0) {
-                    html += `<p class="text-zinc-400 text-sm text-center py-6">Chưa có thú nào trong đội hình. Hãy đi bắt ngay!</p>`;
-                } else {
-                    html += `<div class="space-y-3">`;
-                    team.forEach((pet, idx) => {
-                        html += `
-                        <div class="bg-zinc-800 p-3 rounded-xl flex items-center justify-between border border-zinc-700">
-                            <div class="flex items-center gap-3">
-                                <span class="text-3xl">${pet.emoji}</span>
-                                <div>
-                                    <div class="font-bold text-sm">${pet.name} <span class="text-xs text-yellow-400">Lv.${pet.level || 1}</span></div>
-                                    <div class="text-[10px] text-zinc-400">HP: ${pet.hp}/${pet.maxHp} | ATK: ${pet.atk}</div>
-                                </div>
-                            </div>
-                            <div class="flex gap-1.5">
-                                <button onclick="feedPet(${idx}, 'food')" class="bg-emerald-600 px-2 py-1 rounded text-xs font-bold">🍖 Ăn</button>
-                                <button onclick="feedPet(${idx}, 'water')" class="bg-blue-600 px-2 py-1 rounded text-xs font-bold">💧 Uống</button>
-                            </div>
-                        </div>`;
-                    });
-                    html += `</div>`;
-                }
-                content.innerHTML = html;
-            } else if (type === 'pokedex') {
-                let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">📖 Sổ Tay Pokedex</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>`;
-                html += `<div class="grid grid-cols-2 gap-3">`;
-                monstersPool.forEach(m => {
-                    const caught = pokedex.some(p => p.id === m.id);
-                    html += `
-                    <div class="bg-zinc-800 p-3 rounded-xl flex flex-col items-center border ${caught ? 'border-emerald-500/50' : 'border-zinc-700 opacity-50'}">
-                        <span class="text-4xl mb-1">${caught ? m.emoji : '❓'}</span>
-                        <div class="font-bold text-xs">${m.name}</div>
-                        <div class="text-[10px] text-zinc-400">${caught ? 'Đã bắt' : 'Chưa gặp'}</div>
-                    </div>`;
-                });
-                html += `</div>`;
-                content.innerHTML = html;
-            } else if (type === 'arena') {
-                content.innerHTML = `
-                <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Đấu Trường PvP</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
-                <p class="text-xs text-zinc-300 mb-4">Chọn thú cưng trong đội hình để khiêu chiến với đấu sĩ xung quanh!</p>
-                <button onclick="startBattle()" class="w-full bg-red-600 hover:bg-red-500 py-3 rounded-xl font-bold text-sm shadow-lg">Tìm Đối Thủ & Giao Tranh</button>
-                `;
-            }
-        }
-
         function closeModal() {
             document.getElementById('modal-container').classList.add('hidden');
         }
-
-        function feedPet(index, type) {
-            let pet = team[index];
-            pet.hp = Math.min(pet.maxHp, pet.hp + 20);
-            pet.level = (pet.level || 1) + 1;
-            localStorage.setItem('ar_team', JSON.stringify(team));
-            alert(`${pet.name} đã được chăm sóc và tăng cấp lên Lv.${pet.level}!`);
-            openMenu('team');
+        function updateTeamCount() {
+            let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
+            let countEl = document.getElementById('team-count');
+            if (countEl) countEl.innerText = team.length;
         }
-
-        function startBattle() {
-            if (team.length === 0) {
-                alert('Bạn cần bắt ít nhất 1 con thú để tham gia đấu trường!');
-                return;
-            }
-            const myPet = team[0];
-            const enemyPet = monstersPool[Math.floor(Math.random() * monstersPool.length)];
-            
-            const won = myPet.atk >= enemyPet.cp;
-            alert(`Trận chiến giữa ${myPet.name} (ATK: ${myPet.atk}) và ${enemyPet.name} (CP: ${enemyPet.cp})!\n\nKết quả: ${won ? '🎉 Bạn đã giành chiến thắng vinh quang!' : '😢 Thú cưng đã thất bại, hãy cho ăn và tăng cấp thêm nhé!'}`);
-            closeModal();
-        }
-
-        // Initialize App
         window.onload = () => {
-            initCamera();
-            initSensors();
             updateTeamCount();
-            respawnMonster();
+            if (window.initMap) window.initMap();
         };
     </script>
 </body>
