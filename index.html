@@ -3,141 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bắt Thú GPS - Web Game</title>
-    
-    <!-- Thư viện bản đồ Leaflet CSS -->
+    <title>AR Monster - Modular Version</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Giao diện tùy chỉnh của game -->
     <style>
-        * { box-sizing: border-box; }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; overflow: hidden; background: #111; color: #fff; }
-        
-        /* Bản đồ hiển thị toàn màn hình */
-        #map { width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-
-        /* Thanh điều hướng / Menu nổi phía trên */
-        .hud-top {
-            position: absolute; top: 10px; left: 10px; right: 10px; z-index: 10;
-            display: flex; justify-content: space-between; pointer-events: none;
-        }
-        .hud-top > * { pointer-events: auto; }
-        .hud-card { background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 8px; font-size: 14px; border: 1px solid #444; }
-
-        /* Thanh Menu công cụ phía dưới */
-        .hud-bottom {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10;
-            display: flex; gap: 10px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 30px; border: 1px solid #555;
-        }
-        .hud-btn {
-            background: #ff9800; border: none; padding: 10px 15px; color: white; font-weight: bold;
-            border-radius: 20px; cursor: pointer; font-size: 12px; transition: 0.2s;
-        }
-        .hud-btn:active { transform: scale(0.95); background: #f57c00; }
-
-        /* Màn hình phụ (Ẩn/Hiện bằng JS) */
-        .game-screen {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 100; padding: 20px; overflow-y: auto;
-        }
-        .close-screen-btn {
-            background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 5px; float: right; cursor: pointer;
-        }
+        body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
+        #map { height: 100%; width: 100%; border-radius: 1rem; z-index: 10; }
+        .leaflet-control-attribution { display: none !important; }
+        @keyframes petBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .pet-animate { animation: petBounce 2s ease-in-out infinite; }
+        @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
+        .damage-popup { animation: floatText 0.7s ease-out forwards; }
     </style>
 </head>
-<body>
+<body class="text-white relative h-screen w-screen overflow-hidden">
 
-    <!-- Khung hiển thị Bản đồ GPS -->
-    <div id="map"></div>
+    <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
+    <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-3">
+        <div class="flex justify-between items-center z-30 pt-1">
+            <div class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
+                <span id="weather-icon" class="text-base">☀️</span>
+                <span id="weather-status" class="text-xs font-medium">Trời quang</span>
+            </div>
+            <div class="flex gap-1 overflow-x-auto py-1">
+                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2.5 py-1 rounded-full border border-amber-400 text-[11px] font-bold shadow">🛒 Chợ</button>
+                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2.5 py-1 rounded-full border border-red-400 text-[11px] font-bold shadow">⚔️ Đấu PvP</button>
+                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2.5 py-1 rounded-full border border-emerald-400 text-[11px] font-bold shadow">🏡 Trại</button>
+                <button onclick="openEggsMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🥚(<span id="egg-steps-count">0</span>)</button>
+                <button onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🎒(<span id="team-count">0</span>/3)</button>
+                <button onclick="openPokedexMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">📖</button>
+            </div>
+        </div>
 
-    <!-- Giao diện hiển thị thông tin nhanh (HUD) -->
-    <div class="hud-top">
-        <div class="hud-card" id="playerStatus">Đang định vị GPS...</div>
-        <div class="hud-card" id="staminaDisplay">Thể lực: 100/100</div>
+        <div class="absolute inset-0 pt-16 pb-24 px-3">
+            <div id="map" class="shadow-2xl border border-zinc-800"></div>
+            <button onclick="recenterMap()" class="absolute bottom-28 right-6 z-30 bg-blue-600 hover:bg-blue-500 text-white p-3.5 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-xl" title="Về vị trí của tôi">
+                📍
+            </button>
+        </div>
+
+        <div class="flex flex-col items-center z-30 pb-2">
+            <div id="stamina-info" class="text-xs font-bold text-amber-300 bg-black/80 px-4 py-1.5 rounded-full border border-white/20 mb-2 shadow-lg flex items-center gap-2">
+                ⚡ Năng lượng: <span id="stamina-count">15</span>/15 (<span id="stamina-timer">10:00</span>)
+            </div>
+            <button onclick="spawnMultipleMonsters()" class="w-full max-w-sm bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-2xl border border-zinc-700 shadow-xl transition-all text-xs">
+                🔄 Quét lại khu vực (Tìm thú & Người chơi)
+            </button>
+        </div>
     </div>
 
-    <!-- Thanh menu chuyển đổi các tính năng -->
-    <div class="hud-bottom">
-        <button class="hud-btn" onclick="openScreen('teamScreen')">Đội Hình</button>
-        <button class="hud-btn" onclick="openScreen('farmScreen')">Trang Trại</button>
-        <button class="hud-btn" onclick="openScreen('marketScreen')">Chợ</button>
-        <button class="hud-btn" onclick="openScreen('eggScreen')">Trứng</button>
-        <button class="hud-btn" onclick="openScreen('arenaScreen')">Đấu Trường</button>
+    <!-- MÀN HÌNH MINIGAME CANVAS CAO BỒI BẮT THÚ -->
+    <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
+        <div class="absolute inset-0 z-0 overflow-hidden">
+            <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
+        </div>
+        <canvas id="gameCanvas" class="absolute inset-0 z-10 touch-none"></canvas>
+        <div class="flex justify-between items-center z-20 p-4 pointer-events-auto">
+            <button onclick="exitARScreen()" class="bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">
+                ⬅️ Quay lại bản đồ
+            </button>
+            <div id="ar-mon-info" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold text-yellow-300">
+                Mục tiêu: Đang tải...
+            </div>
+        </div>
+        <div class="flex flex-col items-center z-20 pb-8 pointer-events-none">
+            <div id="throw-feedback" class="text-sm font-bold bg-black/80 px-4 py-2 rounded-full border border-white/20 opacity-0 transition-opacity shadow-lg">Bắt hụt rồi!</div>
+            <div id="throw-attempt-count" class="text-[11px] text-yellow-400 mt-1 bg-black/60 px-3 py-0.5 rounded-full border border-white/10 font-bold">Lượt quăng: 0/3</div>
+            <div class="text-[11px] text-zinc-300 mt-1 bg-black/60 px-3 py-1 rounded-full border border-white/10">🤠 Vuốt ngón tay hướng lên trên để quăng vòng dây thừng!</div>
+        </div>
     </div>
 
-    <!-- CÁC MÀN HÌNH TÍNH NĂNG PHỤ -->
-    <div id="teamScreen" class="game-screen">
-        <button class="close-screen-btn" onclick="closeScreen('teamScreen')">Đóng</button>
-        <h2>Đội Hình Thú Cưng</h2>
-        <div id="teamContainer"></div>
+    <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP REALTIME -->
+    <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
+        <div class="flex justify-between items-center z-20">
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ PVP REALTIME V3.1</div>
+            <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">Rút lui</button>
+        </div>
+        <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
+            <canvas id="battleCanvas" class="absolute inset-0 w-full h-full"></canvas>
+            <div id="damage-popup-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+            <div id="battle-log" class="absolute bottom-4 bg-black/90 px-5 py-2.5 rounded-xl text-xs text-yellow-300 font-bold border border-yellow-500/50 text-center max-w-sm shadow-xl">
+                Đang chuẩn bị giao tranh...
+            </div>
+        </div>
     </div>
 
-    <div id="farmScreen" class="game-screen">
-        <button class="close-screen-btn" onclick="closeScreen('farmScreen')">Đóng</button>
-        <h2>Trang Trại Nuôi Thú</h2>
-        <div id="farmContainer"></div>
+    <!-- MODAL OVERLAY CHUNG -->
+    <div id="modal-container" class="hidden absolute inset-0 z-40 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
 
-    <div id="marketScreen" class="game-screen">
-        <button class="close-screen-btn" onclick="closeScreen('marketScreen')">Đóng</button>
-        <h2>Chợ Trao Đổi</h2>
-        <div id="marketContainer"></div>
-    </div>
-
-    <div id="eggScreen" class="game-screen">
-        <button class="close-screen-btn" onclick="closeScreen('eggScreen')">Đóng</button>
-        <h2>Ấp Trứng & Bước Chân</h2>
-        <div id="eggContainer"></div>
-    </div>
-
-    <div id="arenaScreen" class="game-screen">
-        <button class="close-screen-btn" onclick="closeScreen('arenaScreen')">Đóng</button>
-        <h2>Đấu Trường 1v1</h2>
-        <div id="arenaContainer"></div>
-    </div>
-
-    <!-- Màn hình Minigame AR Bắt Thú -->
-    <div id="arCatchScreen" class="game-screen" style="text-align: center;">
-        <button class="close-screen-btn" onclick="closeScreen('arCatchScreen')">Chạy Trốn</button>
-        <h2>Bắt Linh Thú</h2>
-        <canvas id="arCanvas" width="360" height="500" style="background:#555; border-radius:10px; margin-top:15px;"></canvas>
-    </div>
-
-
-    <!-- ================= NHÚNG CÁC FILE JAVASCRIPT ================= -->
-    <!-- 1. Thư viện Leaflet Bản đồ -->
+    <!-- THƯ VIỆN LEAFLET BẢN ĐỒ -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- 2. File cấu hình chung -->
+    <!-- CÁC MODULE JAVASCRIPT ĐÃ TÁCH -->
     <script src="js/config.js"></script>
-
-    <!-- 3. Các module tính năng (Thứ tự gọi linh hoạt theo hệ thống) -->
     <script src="js/stamina.js"></script>
     <script src="js/eggs.js"></script>
-    <script src="js/team.js"></script>
-    <script src="js/farm.js"></script>
     <script src="js/market.js"></script>
-    <script src="js/arena.js"></script>
+    <script src="js/farm.js"></script>
+    <script src="js/team.js"></script>
     <script src="js/ar_catch.js"></script>
-
-    <!-- 4. File điều phối bản đồ và logic trung tâm (Chạy cuối cùng để kết nối tất cả) -->
+    <script src="js/arena.js"></script>
     <script src="js/map.js"></script>
-
-    <!-- Đăng ký Service Worker để hỗ trợ chạy PWA ngoại tuyến -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-            .then(() => console.log("Service Worker đã đăng ký thành công!"))
-            .catch((err) => console.log("Đăng ký Service Worker thất bại:", err));
-        }
-
-        // Hàm tiện ích chuyển đổi qua lại giữa các màn hình giao diện phụ
-        function openScreen(screenId) {
-            document.getElementById(screenId).style.display = 'block';
-        }
-        function closeScreen(screenId) {
-            document.getElementById(screenId).style.display = 'none';
-        }
-    </script>
 </body>
 </html>
