@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster - Team Fix v3.1</title>
+    <title>AR Monster - Rarity & Cooldown Update</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -20,7 +20,7 @@
 
     <!-- QUẢN LÝ PHIÊN BẢN & AUTO UPDATE -->
     <script>
-        const APP_VERSION = '3.1'; 
+        const APP_VERSION = '3.2'; 
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -115,12 +115,12 @@
                 ⚡ Năng lượng: <span id="stamina-count">15</span>/15 (<span id="stamina-timer">10:00</span>)
             </div>
             <button onclick="spawnMultipleMonsters()" class="w-full max-w-sm bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-2xl border border-zinc-700 shadow-xl transition-all text-xs cursor-pointer">
-                🔄 Quét lại khu vực (Tìm thú & Người chơi)
+                🔄 Quét tìm thú (Hồi 60 phút/lần)
             </button>
         </div>
     </div>
 
-    <!-- MÀN HÌNH MINIGAME CANVAS CAO BỒI BẮT THÚ -->
+    <!-- MÀN HÌNH MINIGAME CANVAS BẮT THÚ -->
     <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -144,7 +144,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP REALTIME -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ PVP REALTIME V3.1</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ PVP REALTIME V3.2</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -211,33 +211,58 @@
             return rules[attackerElem] === defenderElem;
         }
 
+        // --- DANH SÁCH THÚ CƯNG PHÂN THEO ĐỘ HIẾM & TỶ LỆ XUẤT HIỆN ---
+        // ⚪ Trắng (Thường - 50%) | 🟢 Xanh (Hiếm - 30%) | 🟡 Vàng (Cực Hiếm - 15%) | 🔴 Đỏ (Huyền Thoại - 4.5%) | 🟣 Tím (Thần Thoại - 0.5%)
+        const allMonsters = [
+            // Bậc Trắng (Thường)
+            { id: 101, name: 'Gà Ta', emoji: '🐔', rarity: 'Trắng', color: 'text-zinc-300', cp: 120, hp: 60, maxHp: 60, atk: 70, level: 1, rarePrice: 100 },
+            { id: 102, name: 'Vịt Cỏ', emoji: '🦆', rarity: 'Trắng', color: 'text-zinc-300', cp: 110, hp: 55, maxHp: 55, atk: 65, level: 1, rarePrice: 90 },
+            { id: 103, name: 'Chuột Nước', emoji: '🐹', rarity: 'Trắng', color: 'text-zinc-300', cp: 110, hp: 60, maxHp: 60, atk: 65, level: 1, rarePrice: 110 },
+            { id: 104, name: 'Chó Vàng', emoji: '🐕', rarity: 'Trắng', color: 'text-zinc-300', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1, rarePrice: 150 },
+            { id: 105, name: 'Mèo Mướp', emoji: '🐈', rarity: 'Trắng', color: 'text-zinc-300', cp: 135, hp: 70, maxHp: 70, atk: 95, level: 1, rarePrice: 140 },
+            { id: 106, name: 'Heo Ủn Ỉn', emoji: '🐖', rarity: 'Trắng', color: 'text-zinc-300', cp: 150, hp: 100, maxHp: 100, atk: 75, level: 1, rarePrice: 160 },
+            { id: 107, name: 'Ngan Đen', emoji: '🦃', rarity: 'Trắng', color: 'text-zinc-300', cp: 130, hp: 75, maxHp: 75, atk: 80, level: 1, rarePrice: 120 },
+
+            // Bậc Xanh (Hiếm)
+            { id: 201, name: 'Ngỗng Trắng', emoji: '🦢', rarity: 'Xanh', color: 'text-blue-400', cp: 140, hp: 80, maxHp: 80, atk: 85, level: 1, rarePrice: 130 },
+            { id: 202, name: 'Bò Sữa Chiến', emoji: '🐂', rarity: 'Xanh', color: 'text-blue-400', cp: 180, hp: 120, maxHp: 120, atk: 110, level: 1, rarePrice: 200 },
+            { id: 203, name: 'Cáo Đỏ', emoji: '🦊', rarity: 'Xanh', color: 'text-blue-400', cp: 160, hp: 65, maxHp: 65, atk: 115, level: 1, rarePrice: 180 },
+            { id: 204, name: 'Sói Xám', emoji: '🐺', rarity: 'Xanh', color: 'text-blue-400', cp: 175, hp: 90, maxHp: 90, atk: 125, level: 1, rarePrice: 220 },
+            { id: 205, name: 'Gấu Rúc', emoji: '🦝', rarity: 'Xanh', color: 'text-blue-400', cp: 165, hp: 95, maxHp: 95, atk: 90, level: 1, rarePrice: 190 },
+            { id: 206, name: 'Diều Hâu Núi', emoji: '🦅', rarity: 'Xanh', color: 'text-blue-400', cp: 170, hp: 60, maxHp: 60, atk: 130, level: 1, rarePrice: 210 },
+            { id: 207, name: 'Rùa Đá Cổ', emoji: '🐢', rarity: 'Xanh', color: 'text-blue-400', cp: 155, hp: 130, maxHp: 130, atk: 70, level: 1, rarePrice: 170 },
+
+            // Bậc Vàng (Cực Hiếm)
+            { id: 301, name: 'Chim Lửa Thần', emoji: '🐦', rarity: 'Vàng', color: 'text-yellow-400', cp: 210, hp: 85, maxHp: 85, atk: 155, level: 1, rarePrice: 350 },
+            { id: 302, name: 'Bạch Hổ Gầm', emoji: '🐅', rarity: 'Vàng', color: 'text-yellow-400', cp: 230, hp: 110, maxHp: 110, atk: 165, level: 1, rarePrice: 400 },
+            { id: 303, name: 'Báo Gấm Sấm Sét', emoji: '🐆', rarity: 'Vàng', color: 'text-yellow-400', cp: 220, hp: 90, maxHp: 90, atk: 160, level: 1, rarePrice: 380 },
+            { id: 304, name: 'Gấu Xám Bắc Cực', emoji: '🐻', rarity: 'Vàng', color: 'text-yellow-400', cp: 225, hp: 130, maxHp: 130, atk: 135, level: 1, rarePrice: 390 },
+            { id: 305, name: 'Mãng Sà Lục Bảo', emoji: '🐍', rarity: 'Vàng', color: 'text-yellow-400', cp: 215, hp: 100, maxHp: 100, atk: 150, level: 1, rarePrice: 360 },
+            { id: 306, name: 'Khổng Tước Thiên', emoji: '🦚', rarity: 'Vàng', color: 'text-yellow-400', cp: 205, hp: 95, maxHp: 95, atk: 145, level: 1, rarePrice: 340 },
+
+            // Bậc Đỏ (Huyền Thoại)
+            { id: 401, name: 'Rồng Nước Thiêng', emoji: '🐉', rarity: 'Đỏ', color: 'text-red-500', cp: 290, hp: 160, maxHp: 160, atk: 190, level: 1, rarePrice: 700 },
+            { id: 402, name: 'Phượng Hoàng Lửa', emoji: '🦅', rarity: 'Đỏ', color: 'text-red-500', cp: 310, hp: 150, maxHp: 150, atk: 210, level: 1, rarePrice: 800 },
+            { id: 403, name: 'Kỳ Lân Sáng Thế', emoji: '🦄', rarity: 'Đỏ', color: 'text-red-500', cp: 300, hp: 170, maxHp: 170, atk: 185, level: 1, rarePrice: 750 },
+            { id: 404, name: 'Hắc Hổ Ma Vương', emoji: '🐅', rarity: 'Đỏ', color: 'text-red-500', cp: 295, hp: 155, maxHp: 155, atk: 195, level: 1, rarePrice: 720 },
+            { id: 405, name: 'Quy Xà Bá Thần', emoji: '🐢', rarity: 'Đỏ', color: 'text-red-500', cp: 285, hp: 200, maxHp: 200, atk: 160, level: 1, rarePrice: 680 },
+
+            // Bậc Tím (Thần Thoại)
+            { id: 501, name: 'Cửu Trảo Kim Long', emoji: '🐉', rarity: 'Tím', color: 'text-purple-400', cp: 380, hp: 220, maxHp: 220, atk: 250, level: 1, rarePrice: 1500 },
+            { id: 502, name: 'Hỏa Lân Thần Thú', emoji: '🦄', rarity: 'Tím', color: 'text-purple-400', cp: 390, hp: 200, maxHp: 200, atk: 265, level: 1, rarePrice: 1600 },
+            { id: 503, name: 'Băng Phượng Hoàng', emoji: '🦅', rarity: 'Tím', color: 'text-purple-400', cp: 375, hp: 210, maxHp: 210, atk: 245, level: 1, rarePrice: 1450 },
+            { id: 504, name: 'Hắc Long Hủy Diệt', emoji: '🐍', rarity: 'Tím', color: 'text-purple-400', cp: 400, hp: 250, maxHp: 250, atk: 280, level: 1, rarePrice: 2000 }
+        ];
+
+        // Sắp xếp danh mục theo độ hiếm cho Sổ tay Pokedex
         const categories = {
-            'Gia cầm': [
-                { id: 101, name: 'Gà Ta', emoji: '🐔', cp: 120, hp: 60, maxHp: 60, atk: 70, level: 1, rarePrice: 100, attackType: 'melee' },
-                { id: 102, name: 'Vịt Cỏ', emoji: '🦆', cp: 110, hp: 55, maxHp: 55, atk: 65, level: 1, rarePrice: 90, attackType: 'magic' },
-                { id: 103, name: 'Ngỗng Trắng', emoji: '🦢', cp: 140, hp: 80, maxHp: 80, atk: 85, level: 1, rarePrice: 130, attackType: 'charge' },
-                { id: 104, name: 'Ngan Đen', emoji: '🦃', cp: 130, hp: 75, maxHp: 75, atk: 80, level: 1, rarePrice: 120, attackType: 'melee' }
-            ],
-            'Gia súc': [
-                { id: 201, name: 'Chó Vàng', emoji: '🐕', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1, rarePrice: 150, attackType: 'melee' },
-                { id: 202, name: 'Mèo Mướp', emoji: '🐈', cp: 135, hp: 70, maxHp: 70, atk: 95, level: 1, rarePrice: 140, attackType: 'magic' },
-                { id: 203, name: 'Heo Ủn Ỉn', emoji: '🐖', cp: 150, hp: 100, maxHp: 100, atk: 75, level: 1, rarePrice: 160, attackType: 'charge' },
-                { id: 204, name: 'Bò Sữa', emoji: '🐂', cp: 180, hp: 120, maxHp: 120, atk: 110, level: 1, rarePrice: 200, attackType: 'melee' }
-            ],
-            'Tự nhiên': [
-                { id: 301, name: 'Chuột Nước', emoji: '🐹', cp: 110, hp: 60, maxHp: 60, atk: 65, level: 1, rarePrice: 110, attackType: 'magic' },
-                { id: 302, name: 'Chim Lửa', emoji: '🐦', cp: 185, hp: 50, maxHp: 50, atk: 140, level: 1, rarePrice: 250, attackType: 'magic' },
-                { id: 303, name: 'Cáo Đỏ', emoji: '🦊', cp: 160, hp: 65, maxHp: 65, atk: 115, level: 1, rarePrice: 180, attackType: 'charge' },
-                { id: 304, name: 'Sói Xám', emoji: '🐺', cp: 175, hp: 90, maxHp: 90, atk: 125, level: 1, rarePrice: 220, attackType: 'melee' }
-            ],
-            'Sách đỏ': [
-                { id: 401, name: 'Rồng Nước', emoji: '🐉', cp: 250, hp: 150, maxHp: 150, atk: 180, level: 1, rarePrice: 500, attackType: 'magic' },
-                { id: 402, name: 'Phượng Hoàng', emoji: '🦅', cp: 270, hp: 140, maxHp: 140, atk: 195, level: 1, rarePrice: 600, attackType: 'magic' },
-                { id: 403, name: 'Kỳ Lân', emoji: '🦄', cp: 260, hp: 160, maxHp: 160, atk: 175, level: 1, rarePrice: 550, attackType: 'charge' }
-            ]
+            '⚪ Thường (Trắng)': allMonsters.filter(m => m.rarity === 'Trắng'),
+            '🟢 Hiếm (Xanh)': allMonsters.filter(m => m.rarity === 'Xanh'),
+            '🟡 Cực Hiếm (Vàng)': allMonsters.filter(m => m.rarity === 'Vàng'),
+            '🔴 Huyền Thoại (Đỏ)': allMonsters.filter(m => m.rarity === 'Đỏ'),
+            '🟣 Thần Thoại (Tím)': allMonsters.filter(m => m.rarity === 'Tím')
         };
 
-        const allMonsters = Object.values(categories).flat();
         let currentWildMonster = null;
         let catchAttempts = 0;
 
@@ -628,7 +653,7 @@
             <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-zinc-700 mb-4 text-center">
                 <span class="text-7xl mb-2">${monster.emoji}</span>
                 <div class="text-lg font-bold text-yellow-300">${monster.name} <span class="${elemObj.color} text-sm">(${elemObj.icon}${monster.element})</span></div>
-                <div class="text-xs text-zinc-400 mt-1">CP: ${monster.cp} | Chí mạng: ${capturedTempMonster.critRate}% | Né: ${capturedTempMonster.dodgeRate}%</div>
+                <div class="text-xs text-zinc-400 mt-1">Độ hiếm: ${monster.rarity} | CP: ${monster.cp}</div>
             </div>
             <div class="space-y-2">
                 <button onclick="handleCatchDecision('team')" class="w-full bg-emerald-600 py-3 rounded-xl font-bold text-xs cursor-pointer">🎒 Đưa vào Đội hình (hoặc Trang Trại)</button>
@@ -759,13 +784,43 @@
             startCanvasBattle(foundP);
         }
 
+        // --- CƠ CHẾ DÒ TÌM 60 PHÚT 1 LẦN & XUẤT HIỆN THEO ĐỘ HIẾM ---
+        function rollMonsterRarity() {
+            let rand = Math.random() * 100;
+            if (rand < 0.5) return 'Tím';   // 0.5% Thần Thoại
+            if (rand < 5.0) return 'Đỏ';    // 4.5% Huyền Thoại
+            if (rand < 20.0) return 'Vàng'; // 15% Cực Hiếm
+            if (rand < 50.0) return 'Xanh'; // 30% Hiếm
+            return 'Trắng';                 // 50% Thường
+        }
+
         function spawnMultipleMonsters() {
+            let lastScanTime = parseInt(localStorage.getItem('ar_last_scan_time') || '0');
+            let now = Date.now();
+            let cooldownTime = 60 * 60 * 1000; // 60 phút (tính bằng mili-giây)
+
+            if (now - lastScanTime < cooldownTime) {
+                let remainingMs = cooldownTime - (now - lastScanTime);
+                let minutes = Math.floor(remainingMs / (1000 * 60));
+                let seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+                alert(`⏳ Chưa đến thời gian quét! Vui lòng đợi ${minutes} phút ${s = seconds} giây nữa.`);
+                return;
+            }
+
+            // Lưu mốc thời gian quét mới
+            localStorage.setItem('ar_last_scan_time', now);
+
             activeMarkers.forEach(m => map.removeLayer(m));
             activeMarkers = [];
 
             for (let i = 0; i < 8; i++) {
-                const baseTemplate = allMonsters[Math.floor(Math.random() * allMonsters.length)];
+                let chosenRarity = rollMonsterRarity();
+                let filteredList = allMonsters.filter(m => m.rarity === chosenRarity);
+                if (filteredList.length === 0) filteredList = allMonsters;
+                
+                const baseTemplate = filteredList[Math.floor(Math.random() * filteredList.length)];
                 const randomElem = elements[Math.floor(Math.random() * elements.length)];
+                
                 const monsterData = { 
                     ...baseTemplate, 
                     element: randomElem.name,
@@ -794,6 +849,7 @@
                 });
                 activeMarkers.push(marker);
             }
+            alert('🔄 Quét thành công! Các linh thú mới đã xuất hiện trên bản đồ.');
         }
 
         function updateTeamCount() { document.getElementById('team-count').innerText = team.length; }
@@ -806,7 +862,7 @@
             let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">📖 Sổ Tay Phân Loại</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>`;
             html += `<div class="space-y-4">`;
             for (let [catName, list] of Object.entries(categories)) {
-                html += `<div class="bg-zinc-800/80 p-3 rounded-xl border border-zinc-700"><div class="text-yellow-400 font-bold text-sm mb-2">📁 ${catName}</div><div class="grid grid-cols-4 gap-2">`;
+                html += `<div class="bg-zinc-800/80 p-3 rounded-xl border border-zinc-700"><div class="text-yellow-400 font-bold text-sm mb-2">${catName}</div><div class="grid grid-cols-4 gap-2">`;
                 list.forEach(m => {
                     const caught = pokedex.includes(m.id);
                     html += `<div class="bg-zinc-900 p-2 rounded-lg flex flex-col items-center border ${caught ? 'border-emerald-500/60' : 'border-zinc-800 opacity-40'}"><span class="text-3xl mb-1">${caught ? m.emoji : '❓'}</span><div class="text-[10px] text-center font-bold truncate w-full">${m.name}</div></div>`;
