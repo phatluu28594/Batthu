@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Monster - Modular Version</title>
+    <title>AR Monster - Final Modular</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -33,19 +33,11 @@
                 <button id="btn-eggs" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🥚(<span id="egg-steps-count">0</span>)</button>
                 <button id="btn-team" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🎒(<span id="team-count">0</span>/3)</button>
             </div>
-            <div class="flex gap-1 overflow-x-auto py-1">
-                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2.5 py-1 rounded-full border border-amber-400 text-[11px] font-bold shadow">🛒 Chợ</button>
-                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2.5 py-1 rounded-full border border-red-400 text-[11px] font-bold shadow">⚔️ Đấu PvP</button>
-                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2.5 py-1 rounded-full border border-emerald-400 text-[11px] font-bold shadow">🏡 Trại</button>
-                <button onclick="openEggsMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🥚(<span id="egg-steps-count">0</span>)</button>
-                <button onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">🎒(<span id="team-count">0</span>/3)</button>
-                <button onclick="openPokedexMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold">📖</button>
-            </div>
         </div>
 
         <div class="absolute inset-0 pt-16 pb-24 px-3">
             <div id="map" class="shadow-2xl border border-zinc-800"></div>
-            <button onclick="recenterMap()" class="absolute bottom-28 right-6 z-30 bg-blue-600 hover:bg-blue-500 text-white p-3.5 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-xl" title="Về vị trí của tôi">
+            <button id="btn-recenter" class="absolute bottom-28 right-6 z-30 bg-blue-600 text-white p-3.5 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-xl">
                 📍
             </button>
         </div>
@@ -54,20 +46,20 @@
             <div id="stamina-info" class="text-xs font-bold text-amber-300 bg-black/80 px-4 py-1.5 rounded-full border border-white/20 mb-2 shadow-lg flex items-center gap-2">
                 ⚡ Năng lượng: <span id="stamina-count">15</span>/15 (<span id="stamina-timer">10:00</span>)
             </div>
-            <button onclick="spawnMultipleMonsters()" class="w-full max-w-sm bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-2xl border border-zinc-700 shadow-xl transition-all text-xs">
-                🔄 Quét lại khu vực (Tìm thú & Người chơi)
+            <button id="btn-spawn" class="w-full max-w-sm bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-2xl border border-zinc-700 shadow-xl text-xs">
+                🔄 Quét lại khu vực
             </button>
         </div>
     </div>
 
-    <!-- MÀN HÌNH MINIGAME CANVAS CAO BỒI BẮT THÚ -->
+    <!-- MÀN HÌNH MINIGAME BẮT THÚ AR -->
     <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
         </div>
         <canvas id="gameCanvas" class="absolute inset-0 z-10 touch-none"></canvas>
         <div class="flex justify-between items-center z-20 p-4 pointer-events-auto">
-            <button onclick="exitARScreen()" class="bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">
+            <button id="btn-exit-ar" class="bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">
                 ⬅️ Quay lại bản đồ
             </button>
             <div id="ar-mon-info" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold text-yellow-300">
@@ -81,11 +73,11 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP REALTIME -->
+    <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ PVP REALTIME V3.1</div>
-            <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">Rút lui</button>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ PVP NGŨ HÀNH</div>
+            <button id="btn-exit-battle" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
             <canvas id="battleCanvas" class="absolute inset-0 w-full h-full"></canvas>
@@ -96,52 +88,54 @@
         </div>
     </div>
 
-    <!-- MODAL OVERLAY CHUNG -->
+    <!-- MODAL CHUNG -->
     <div id="modal-container" class="hidden absolute inset-0 z-40 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
-    <!-- MÀN HÌNH NHẬP TÊN, TUỔI, GIỚI TÍNH LẦN ĐẦU -->
-    <div id="player-setup-modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-zinc-900 border border-amber-500/50 w-full max-w-sm rounded-2xl p-5 text-zinc-100 shadow-2xl">
-            <h3 class="font-bold text-lg text-yellow-300 mb-3 text-center">🤠 Hồ Sơ Nhà Thám Hiểm</h3>
-            <p class="text-xs text-zinc-300 mb-4 text-center">Hãy nhập thông tin của bạn để bắt đầu hành trình săn thú!</p>
-            
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-bold text-zinc-400 mb-1">Tên nhân vật:</label>
-                    <input type="text" id="setup-name" placeholder="Nhập tên của bạn..." class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-zinc-400 mb-1">Tuổi:</label>
-                    <input type="number" id="setup-age" placeholder="Ví dụ: 20" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-zinc-400 mb-1">Giới tính:</label>
-                    <select id="setup-gender" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
-                        <option value="Nam">Nam 👦</option>
-                        <option value="Nữ">Nữ 👧</option>
-                        <option value="Khác">Khác 🌟</option>
-                    </select>
-                </div>
-            </div>
-    
-            <button onclick="savePlayerProfile()" class="w-full mt-5 bg-amber-600 hover:bg-amber-500 py-3 rounded-xl font-bold text-xs shadow-lg text-white">
-                💾 Xác Nhận & Vào Game
-            </button>
-        </div>
-    </div>
-    <!-- THƯ VIỆN LEAFLET BẢN ĐỒ -->
+
+    <!-- THƯ VIỆN LEAFLET -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- CÁC MODULE JAVASCRIPT ĐÃ TÁCH -->
-    <script src="js/config.js"></script>
-    <script src="js/stamina.js"></script>
-    <script src="js/eggs.js"></script>
-    <script src="js/market.js"></script>
-    <script src="js/farm.js"></script>
-    <script src="js/team.js"></script>
-    <script src="js/ar_catch.js"></script>
-    <script src="js/arena.js"></script>
-    <script src="js/map.js"></script>
+    <!-- NẠP CÁC MODULE JAVASCRIPT & LIÊN KẾT GIAO DIỆN -->
+    <script type="module">
+        import { openProfileMenu } from './js/profile.js';
+        import { openMarketMenu } from './js/market.js';
+        import { openArenaMenu, exitBattleScreen } from './js/arena.js';
+        import { openFarmMenu } from './js/farm.js';
+        import { openEggsMenu } from './js/eggs.js';
+        import { openTeamMenu } from './js/team.js';
+        import { initMap, recenterMap, spawnMultipleMonsters } from './js/map.js';
+        import { exitARScreen } from './js/ar_catch.js';
+        import { initStaminaSystem } from './js/stamina.js';
+
+        // Gắn sự kiện click an toàn cho các nút giao diện
+        document.getElementById('btn-profile').onclick = openProfileMenu;
+        document.getElementById('btn-market').onclick = openMarketMenu;
+        document.getElementById('btn-arena').onclick = openArenaMenu;
+        document.getElementById('btn-farm').onclick = openFarmMenu;
+        document.getElementById('btn-eggs').onclick = openEggsMenu;
+        document.getElementById('btn-team').onclick = openTeamMenu;
+        document.getElementById('btn-recenter').onclick = recenterMap;
+        document.getElementById('btn-spawn').onclick = spawnMultipleMonsters;
+        document.getElementById('btn-exit-ar').onclick = exitARScreen;
+        document.getElementById('btn-exit-battle').onclick = exitBattleScreen;
+
+        window.closeModal = function() {
+            document.getElementById('modal-container').classList.add('hidden');
+        };
+
+        window.onload = () => {
+            let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
+            let countEl = document.getElementById('team-count');
+            if (countEl) countEl.innerText = team.length;
+            
+            let eggSteps = parseInt(localStorage.getItem('ar_egg_steps') || '0');
+            let eggEl = document.getElementById('egg-steps-count');
+            if (eggEl) eggEl.innerText = eggSteps;
+
+            if (typeof initMap === 'function') initMap();
+            if (typeof initStaminaSystem === 'function') initStaminaSystem();
+        };
+    </script>
 </body>
 </html>
