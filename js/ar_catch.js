@@ -8,7 +8,7 @@ let rope = { x: 0, y: 0, vx: 0, vy: 0, radius: 30, flying: false };
 let monsterPos = { x: 0, y: 0, vx: 2 };
 let touchStart = { x: 0, y: 0 }, touchEnd = { x: 0, y: 0 };
 
-export async function enterARScreen() {
+async function enterARScreen() {
     document.getElementById('map-screen').classList.add('hidden');
     document.getElementById('ar-screen').classList.remove('hidden');
     isARActive = true;
@@ -28,7 +28,7 @@ export async function enterARScreen() {
     initCanvasGame();
 }
 
-export function exitARScreen() {
+function exitARScreen() {
     isARActive = false;
     const videoEl = document.getElementById('camera-feed');
     if (videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
@@ -125,7 +125,6 @@ function handleMissAttempt(reasonMsg) {
     if (catchAttempts >= 3) {
         feedback.innerText = `😜 ${currentWildMonster.name} đã chạy mất!`;
         feedback.style.opacity = '1';
-        // Đã gỡ bỏ gọi spawnMultipleMonsters() ở đây để không tự động quét lại thú xung quanh
         setTimeout(() => { feedback.style.opacity = '0'; exitARScreen(); }, 2500);
     } else {
         feedback.innerText = `💥 ${reasonMsg}`;
@@ -134,7 +133,7 @@ function handleMissAttempt(reasonMsg) {
     }
 }
 
-export function promptCatchChoice(monster) {
+function promptCatchChoice(monster) {
     capturedTempMonster = {
         ...monster,
         maxHp: monster.maxHp || monster.hp || 80,
@@ -173,7 +172,7 @@ export function promptCatchChoice(monster) {
     document.getElementById('btn-catch-sell').onclick = () => handleCatchDecision('sell');
 }
 
-export function handleCatchDecision(action) {
+function handleCatchDecision(action) {
     if (action === 'team') {
         if (typeof team !== 'undefined' && team.length < 3) {
             team.push(capturedTempMonster);
@@ -212,6 +211,10 @@ export function handleCatchDecision(action) {
     } else {
         document.getElementById('modal-container').classList.add('hidden');
     }
-
-    // Đã gỡ bỏ gọi spawnMultipleMonsters() ở đây để không tự động quét lại thú xung quanh sau khi đưa ra quyết định
 }
+
+// Gắn tường minh vào window để các script khác và Leaflet map gọi được mà không cần import/export phức tạp
+window.enterARScreen = enterARScreen;
+window.exitARScreen = exitARScreen;
+window.promptCatchChoice = promptCatchChoice;
+window.handleCatchDecision = handleCatchDecision;
