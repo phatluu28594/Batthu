@@ -1,6 +1,37 @@
-import { team, farm, inventory, saveInventory, checkPetSurvival, elements } from './config.js';
+let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
+let pokedex = JSON.parse(localStorage.getItem('ar_pokedex') || '[]');
 
-export function openTeamMenu() {
+function sanitizePetsData(petList) {
+    return petList.map(p => ({
+        ...p,
+        maxHp: p.maxHp || p.hp || 80,
+        hp: (p.hp !== undefined && p.hp > 0) ? p.hp : (p.maxHp || 80),
+        level: p.level || 1,
+        critRate: p.critRate !== undefined ? p.critRate : Math.floor(10 + Math.random() * 20),
+        dodgeRate: p.dodgeRate !== undefined ? p.dodgeRate : Math.floor(5 + Math.random() * 15),
+        accuracy: p.accuracy !== undefined ? p.accuracy : Math.floor(10 + Math.random() * 20),
+        attackSpeed: p.attackSpeed !== undefined ? p.attackSpeed : parseFloat((1.2 + Math.random() * 0.5).toFixed(1)),
+        hunger: p.hunger !== undefined ? p.hunger : 80,
+        happiness: p.happiness !== undefined ? p.happiness : 80
+    }));
+}
+team = sanitizePetsData(team);
+farm = sanitizePetsData(farm);
+
+function checkPetSurvival() {
+    team = team.filter(p => p.hp > 0 && p.hunger > 0);
+    farm = farm.filter(p => p.hp > 0 && p.hunger > 0);
+    localStorage.setItem('ar_team', JSON.stringify(team));
+    localStorage.setItem('ar_farm', JSON.stringify(farm));
+    updateTeamCount();
+}
+
+function updateTeamCount() { 
+    let el = document.getElementById('team-count');
+    if (el) el.innerText = team.length; 
+}
+
+function openTeamMenu() {
     checkPetSurvival();
     const modal = document.getElementById('modal-container');
     const content = document.getElementById('modal-content');
@@ -24,7 +55,7 @@ export function openTeamMenu() {
                         ${isRefusing ? '<div class="text-[10px] text-red-400 font-bold">⚠️ Hạnh phúc < 30%: Từ chối chiến đấu!</div>' : ''}
                     </div>
                 </div>
-                <button onclick="event.stopPropagation(); removePetToFarm(${idx})" class="text-amber-400 text-xs px-2 py-1 bg-amber-950/40 rounded">Về trại</button>
+                <button onclick="event.stopPropagation(); removePet(${idx})" class="text-amber-400 text-xs px-2 py-1 bg-amber-950/40 rounded">Về trại</button>
             </div>`;
         });
         html += `</div>`;
@@ -32,7 +63,7 @@ export function openTeamMenu() {
     content.innerHTML = html;
 }
 
-window.openPetDetail = function(index) {
+function openPetDetail(index) {
     let pet = team[index];
     let elemObj = elements.find(e => e.name === pet.element) || elements[0];
     const content = document.getElementById('modal-content');
@@ -88,9 +119,9 @@ window.openPetDetail = function(index) {
         <button onclick="petAction(${index}, 'play')" class="bg-amber-600 p-2.5 rounded-xl font-bold text-xs">🎾 Chơi (${inventory.toy})</button>
         <button onclick="petAction(${index}, 'train')" class="bg-indigo-600 p-2.5 rounded-xl font-bold text-xs">🏋️ Tập (${inventory.trainer})</button>
     </div>`;
-};
+}
 
-window.upgradePetElement = function(index, stoneKey, effectDesc) {
+function upgradePetElement(index, stoneKey, effectDesc) {
     let pet = team[index];
     if ((inventory[stoneKey] || 0) <= 0) {
         alert(`Bạn không có viên đá phù hợp với hệ ${pet.element}! Hãy vào Chợ Đen mua.`);
@@ -101,10 +132,10 @@ window.upgradePetElement = function(index, stoneKey, effectDesc) {
     pet.buffEffect = effectDesc;
     localStorage.setItem('ar_team', JSON.stringify(team));
     alert(`✨ Nâng cấp thành công hiệu ứng: ${effectDesc}`);
-    window.openPetDetail(index);
-};
+    openPetDetail(index);
+}
 
-window.petAction = function(index, action) {
+function petAction(index, action) {
     let pet = team[index];
     if (action === 'feed') {
         if (inventory.food <= 0) { alert('Hết Thức ăn!'); return; }
@@ -125,14 +156,33 @@ window.petAction = function(index, action) {
     }
     saveInventory();
     localStorage.setItem('ar_team', JSON.stringify(team));
-    window.openPetDetail(index);
-};
+    openPetDetail(index);
+}
 
-window.removePetToFarm = function(index) {
+function removePet(index) {
     let pet = team.splice(index, 1)[0];
     farm.push(pet);
     localStorage.setItem('ar_team', JSON.stringify(team));
     localStorage.setItem('ar_farm', JSON.stringify(farm));
-    if (window.updateTeamCount) window.updateTeamCount();
+    updateTeamCount();
     openTeamMenu();
-};
+}
+
+function openPokedexMenu() {
+    const modal = document.getElementById('modal-container');
+    const content = document.getElementById('modal-content');
+    modal.classList.remove('hidden');
+
+    let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">📖 Sổ Tay Phân Loại</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>`;
+    html += `<div class="space-y-4">`;
+    for (let [catName, list] of Object.entries(categories)) {
+        html += `<div class="bg-zinc-800/80 p-3 rounded-xl border border-zinc-700"><div class="text-yellow-400 font-bold text-sm mb-2">📁 ${catName}</div><div class="grid grid-cols-4 gap-2">`;
+        list.forEach(m => {
+            const caught = pokedex.includes(m.id);
+            html += `<div class="bg-zinc-900 p-2 rounded-lg flex flex-col items-center border ${caught ? 'border-emerald-500/60' : 'border-zinc-800 opacity-40'}"><span class="text-3xl mb-1">${caught ? m.emoji : '❓'}</span><div class="text-[10px] text-center font-bold truncate w-full">${m.name}</div></div>`;
+        });
+        html += `</div></div>`;
+    }
+    html += `</div>`;
+    content.innerHTML = html;
+}
