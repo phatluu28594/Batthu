@@ -1403,5 +1403,42 @@
             updateTeamCount();
         };
     </script>
+<script>
+    // --- QUẢN LÝ ÂM THANH TRONG GAME ---
+    // Nhạc chờ nhẹ nhàng ở bản đồ
+    const lobbyMusic = new Audio('https://actions.google.com/sounds/v1/ambiences/rain_heavy.ogg'); 
+    // Nhạc đấu trường dồn dập
+    const battleMusic = new Audio('https://actions.google.com/sounds/v1/science_fiction/laser_charge.ogg'); 
+
+    lobbyMusic.loop = true;
+    battleMusic.loop = true;
+    lobbyMusic.volume = 0.4;
+    battleMusic.volume = 0.5;
+
+    let isMusicPlaying = false;
+
+    // Tự động phát nhạc khi người chơi tương tác lần đầu với trang web
+    document.addEventListener('click', () => {
+        if (!isMusicPlaying) {
+            isMusicPlaying = true;
+            lobbyMusic.play().catch(e => {});
+        }
+    }, { once: true });
+
+    // Hàm chuyển đổi nhạc giữa Bản đồ và Đấu trường
+    function switchGameMusic(scene) {
+        if (!isMusicPlaying) return;
+        
+        if (scene === 'battle') {
+            lobbyMusic.pause();
+            battleMusic.currentTime = 0;
+            battleMusic.play().catch(e => {});
+        } else if (scene === 'map') {
+            battleMusic.pause();
+            lobbyMusic.play().catch(e => {});
+        }
+    }
+</script>
+
 </body>
 </html>
