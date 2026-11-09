@@ -150,6 +150,8 @@ function promptCatchChoice(monster) {
     modal.classList.remove('hidden');
 
     let elemObj = elements.find(e => e.name === monster.element) || elements[0];
+    
+    // Sử dụng button có ID thuần để gắn sự kiện trực tiếp bên dưới
     content.innerHTML = `
     <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-lg">🎉 Bắt Thành Công!</h3></div>
     <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-zinc-700 mb-4 text-center">
@@ -158,41 +160,58 @@ function promptCatchChoice(monster) {
         <div class="text-xs text-zinc-400 mt-1">CP: ${monster.cp} | Chí mạng: ${capturedTempMonster.critRate}% | Né: ${capturedTempMonster.dodgeRate}%</div>
     </div>
     <div class="space-y-2">
-        <button onclick="handleCatchDecision('team')" class="w-full bg-emerald-600 py-3 rounded-xl font-bold text-xs">🎒 Đưa vào Đội hình (hoặc Trang Trại)</button>
-        <button onclick="handleCatchDecision('meat')" class="w-full bg-amber-600 py-3 rounded-xl font-bold text-xs">🥩 Giết lấy thịt (+Thức ăn & Vàng)</button>
-        <button onclick="handleCatchDecision('sell')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs">💰 Bán ngay (${monster.rarePrice} Vàng)</button>
+        <button id="btn-catch-team" class="w-full bg-emerald-600 py-3 rounded-xl font-bold text-xs text-white">🎒 Đưa vào Đội hình (hoặc Trang Trại)</button>
+        <button id="btn-catch-meat" class="w-full bg-amber-600 py-3 rounded-xl font-bold text-xs text-white">🥩 Giết lấy thịt (+Thức ăn & Vàng)</button>
+        <button id="btn-catch-sell" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs text-white">💰 Bán ngay (${monster.rarePrice || 50} Vàng)</button>
     </div>`;
+
+    // Gắn sự kiện click an toàn, giải quyết triệt để lỗi không nhận diện hàm
+    document.getElementById('btn-catch-team').onclick = () => handleCatchDecision('team');
+    document.getElementById('btn-catch-meat').onclick = () => handleCatchDecision('meat');
+    document.getElementById('btn-catch-sell').onclick = () => handleCatchDecision('sell');
 }
 
 function handleCatchDecision(action) {
     if (action === 'team') {
-        if (team.length < 3) {
+        if (typeof team !== 'undefined' && team.length < 3) {
             team.push(capturedTempMonster);
             localStorage.setItem('ar_team', JSON.stringify(team));
             alert(`Đã đưa ${capturedTempMonster.name} vào đội hình chiến đấu!`);
         } else {
-            farm.push(capturedTempMonster);
-            localStorage.setItem('ar_farm', JSON.stringify(farm));
+            if (typeof farm !== 'undefined') {
+                farm.push(capturedTempMonster);
+                localStorage.setItem('ar_farm', JSON.stringify(farm));
+            }
             alert(`Đội hình chính đã đầy (3/3), ${capturedTempMonster.name} đã được đưa vào Trang Trại!`);
         }
-        updateTeamCount();
+        if (typeof updateTeamCount === 'function') updateTeamCount();
     } else if (action === 'meat') {
-        inventory.food += 2;
-        playerCoins += 30;
-        saveInventory();
+        if (typeof inventory !== 'undefined') {
+            inventory.food = (inventory.food || 0) + 2;
+            if (typeof saveInventory === 'function') saveInventory();
+        }
+        playerCoins = (playerCoins || 0) + 30;
         localStorage.setItem('ar_coins', playerCoins);
         alert(`Nhận +2 Thức ăn & +30 Vàng!`);
     } else if (action === 'sell') {
-        playerCoins += capturedTempMonster.rarePrice;
+        let price = capturedTempMonster.rarePrice || 50;
+        playerCoins = (playerCoins || 0) + price;
         localStorage.setItem('ar_coins', playerCoins);
-        alert(`Bán thành công +${capturedTempMonster.rarePrice} Vàng!`);
+        alert(`Bán thành công +${price} Vàng!`);
     }
 
-    if (!pokedex.includes(capturedTempMonster.id)) {
+    if (typeof pokedex !== 'undefined' && !pokedex.includes(capturedTempMonster.id)) {
         pokedex.push(capturedTempMonster.id);
         localStorage.setItem('ar_pokedex', JSON.stringify(pokedex));
     }
 
-    closeModal();
-    spawnMultipleMonsters();
+    if (typeof closeModal === 'function') {
+        closeModal();
+    } else {
+        document.getElementById('modal-container').classList.add('hidden');
+    }
+
+    if (typeof spawnMultipleMonsters === 'function') {
+        spawnMultipleMonsters();
+    }
 }
