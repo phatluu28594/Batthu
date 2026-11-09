@@ -33,14 +33,7 @@ export async function enterARScreen(monsterData) {
     initCanvasGame();
 }
 
-window.exitARScreen = function() {
-    isARActive = false;
-    const videoEl = document.getElementById('camera-feed');
-    if (videoEl && videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
-    document.getElementById('ar-screen').classList.add('hidden');
-    document.getElementById('map-screen').classList.remove('hidden');
-    if (window.map) window.map.invalidateSize();
-};
+export function exitARScreen()
 
 function initCanvasGame() {
     canvas = document.getElementById('gameCanvas');
