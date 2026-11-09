@@ -33,7 +33,9 @@ function exitARScreen() {
     if (videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
     document.getElementById('ar-screen').classList.add('hidden');
     document.getElementById('map-screen').classList.remove('hidden');
-    map.invalidateSize();
+    if (typeof map !== 'undefined' && map.invalidateSize) {
+        map.invalidateSize();
+    }
 }
 
 function initCanvasGame() {
