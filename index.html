@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Realtime Online v3.3</title>
+    <title>Batthu - Ghost & Idle Update v3.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -57,9 +57,10 @@
                 <span id="weather-status" class="text-xs font-medium">Trời quang</span>
             </div>
             <div class="flex gap-1 overflow-x-auto py-1">
-                <button onclick="openQuestMenu()" class="bg-purple-600/90 px-2.5 py-1 rounded-full border border-purple-400 text-[11px] font-bold shadow cursor-pointer">📜 Nhiệm vụ</button>
+                <button onclick="openBountyMenu()" class="bg-orange-600/90 px-2.5 py-1 rounded-full border border-orange-400 text-[11px] font-bold shadow cursor-pointer">🎯 Truy nã</button>
+                <button onclick="openIdleMenu()" class="bg-indigo-600/90 px-2.5 py-1 rounded-full border border-indigo-400 text-[11px] font-bold shadow cursor-pointer">⏳ Thám hiểm</button>
                 <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2.5 py-1 rounded-full border border-amber-400 text-[11px] font-bold shadow cursor-pointer">🛒 Chợ</button>
-                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2.5 py-1 rounded-full border border-red-400 text-[11px] font-bold shadow cursor-pointer">⚔️ Đấu PvP</button>
+                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2.5 py-1 rounded-full border border-red-400 text-[11px] font-bold shadow cursor-pointer">⚔️ PvP</button>
                 <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2.5 py-1 rounded-full border border-emerald-400 text-[11px] font-bold shadow cursor-pointer">🏡 Trại</button>
                 <button onclick="openEggsMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold cursor-pointer">🥚(<span id="egg-steps-count">0</span>)</button>
                 <button onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold cursor-pointer">🎒(<span id="team-count">0</span>/3)</button>
@@ -79,7 +80,7 @@
                 ⚡ Năng lượng: <span id="stamina-count">15</span>/15 (<span id="stamina-timer">10:00</span>)
             </div>
             <button onclick="spawnMultipleMonsters()" class="w-full max-w-sm bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-2xl border border-zinc-700 shadow-xl transition-all text-xs cursor-pointer">
-                🔄 Quét lại khu vực (Tìm thú, Boss & Người chơi)
+                🔄 Quét lại khu vực (Thú, Boss & Bóng Ma)
             </button>
         </div>
     </div>
@@ -108,7 +109,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP REALTIME -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V3.3</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V3.4</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -125,7 +126,7 @@
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></script>
     <script>
         let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
         let farm = JSON.parse(localStorage.getItem('ar_farm') || '[]');
@@ -138,40 +139,125 @@
 
         let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ food: 5, toy: 5, trainer: 3, meat: 0, stoneKim: 0, stoneMoc: 0, stoneThuy: 0, stoneHoa: 0, stoneTho: 0 }));
         
-        let dailyQuests = JSON.parse(localStorage.getItem('ar_daily_quests') || JSON.stringify([
-            { id: 1, title: 'Bắt 2 con thú bất kỳ', target: 2, current: 0, rewardCoins: 150, completed: false },
-            { id: 2, title: 'Thắng 1 trận đấu', target: 1, current: 0, rewardCoins: 200, completed: false }
-        ]));
+        // --- HỆ THỐNG IDLE THÁM HIỂM ---
+        let idleExpedition = JSON.parse(localStorage.getItem('ar_idle_exp') || 'null');
 
-        function saveQuests() { localStorage.setItem('ar_daily_quests', JSON.stringify(dailyQuests)); }
-
-        function checkQuestProgress(type) {
-            dailyQuests.forEach(q => {
-                if (!q.completed) {
-                    if (type === 'catch' && q.id === 1) { q.current = Math.min(q.target, q.current + 1); }
-                    if (type === 'win' && q.id === 2) { q.current = Math.min(q.target, q.current + 1); }
-                }
-            });
-            saveQuests();
-        }
-
-        function openQuestMenu() {
+        function openIdleMenu() {
+            checkPetSurvival();
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
 
-            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">📜 Nhiệm Vụ Hằng Ngày</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>`;
-            html += `<div class="space-y-3">`;
-            dailyQuests.forEach(q => {
-                let canClaim = q.current >= q.target && !q.completed;
+            let now = Date.now();
+            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⏳ Gửi Linh Thú Thám Hiểm</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>`;
+
+            if (!idleExpedition) {
+                html += `<p class="text-xs text-zinc-300 mb-3">Chọn linh thú từ đội hình gửi đi khai khoáng nhận Vàng & Vật phẩm khi offline!</p>`;
+                if (team.length === 0) {
+                    html += `<div class="text-center text-xs text-red-400 py-4">Đội hình trống, không có thú để cử đi!</div>`;
+                } else {
+                    html += `<div class="space-y-2 max-h-60 overflow-y-auto">`;
+                    team.forEach((pet, idx) => {
+                        html += `
+                        <div class="bg-zinc-800 p-3 rounded-xl flex items-center justify-between border border-zinc-700">
+                            <div class="flex items-center gap-3">
+                                <span class="text-3xl">${pet.emoji}</span>
+                                <div>
+                                    <div class="font-bold text-xs">${pet.name} (Lv.${pet.level || 1})</div>
+                                    <div class="text-[10px] text-zinc-400">HP: ${pet.hp}/${pet.maxHp}</div>
+                                </div>
+                            </div>
+                            <button onclick="startIdle(${idx})" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded font-bold text-xs cursor-pointer">Cử đi (4 Tiếng)</button>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                }
+            } else {
+                let timeLeft = idleExpedition.endTime - now;
+                let isFinished = timeLeft <= 0;
+                let minLeft = Math.max(0, Math.ceil(timeLeft / 60000));
+
                 html += `
-                <div class="bg-zinc-800 p-3 rounded-xl border border-zinc-700 flex items-center justify-between">
-                    <div>
-                        <div class="font-bold text-xs">${q.title}</div>
-                        <div class="text-[10px] text-zinc-400">Tiến độ: ${q.current}/${q.target} | Thưởng: ${q.rewardCoins} 🪙</div>
+                <div class="bg-zinc-800 p-5 rounded-2xl border border-indigo-500/50 text-center space-y-3">
+                    <div class="text-6xl animate-bounce">${idleExpedition.pet.emoji}</div>
+                    <div class="font-bold text-sm text-yellow-300">${idleExpedition.pet.name} đang thám hiểm vùng đất linh khí!</div>
+                    <div class="text-xs text-zinc-300">${isFinished ? '🎉 Đã hoàn thành chuyến đi!' : `⏱️ Thời gian còn lại: khoảng ${minLeft} phút`}</div>
+                    <button onclick="claimIdle()" ${isFinished ? '' : 'disabled'} class="w-full py-3 rounded-xl font-bold text-xs ${isFinished ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer' : 'bg-zinc-700 text-zinc-400 opacity-50 cursor-not-allowed'}">
+                        ${isFinished ? '🎁 THU HOẠCH PHẦN THƯỞNG' : '🔒 Đang thám hiểm...'}
+                    </button>
+                </div>`;
+            }
+            content.innerHTML = html;
+        }
+
+        function startIdle(index) {
+            let pet = team.splice(index, 1)[0];
+            localStorage.setItem('ar_team', JSON.stringify(team));
+            updateTeamCount();
+
+            idleExpedition = {
+                pet: pet,
+                endTime: Date.now() + (4 * 60 * 60 * 1000) // 4 tiếng thực tế (hoặc test nhanh bạn có thể giảm xuống)
+            };
+            localStorage.setItem('ar_idle_exp', JSON.stringify(idleExpedition));
+            alert(`🚀 Đã cử ${pet.name} lên đường thám hiểm!`);
+            openIdleMenu();
+        }
+
+        function claimIdle() {
+            if (!idleExpedition) return;
+            let pet = idleExpedition.pet;
+            let rewardCoins = 300 + Math.floor(Math.random() * 200);
+            let rewardFood = 2;
+            
+            playerCoins += rewardCoins;
+            inventory.food += rewardFood;
+            pet.level += 5; // Tăng cấp khi thám hiểm về
+
+            if (team.length < 3) {
+                team.push(pet);
+            } else {
+                farm.push(pet);
+            }
+
+            localStorage.setItem('ar_coins', playerCoins);
+            saveInventory();
+            localStorage.setItem('ar_team', JSON.stringify(team));
+            localStorage.setItem('ar_farm', JSON.stringify(farm));
+            updateTeamCount();
+
+            idleExpedition = null;
+            localStorage.removeItem('ar_idle_exp');
+
+            alert(`🎉 Thu hoạch thành công: +${rewardCoins} Vàng, +2 Thức ăn & Thú tăng +5 Cấp độ!`);
+            closeModal();
+        }
+
+        // --- HỆ THỐNG SĂN TIỀN THƯỞNG TRUY NÃ ---
+        let bounties = [
+            { id: 1, name: 'Sư Tử Ma Quái', emoji: '🦁', cp: 350, reward: 500, hp: 200, atk: 110, element: 'Hỏa', completed: false },
+            { id: 2, name: 'Hắc Hổ Đột Biến', emoji: '🐯', cp: 420, reward: 700, hp: 250, atk: 130, element: 'Kim', completed: false }
+        ];
+
+        function openBountyMenu() {
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎯 Bảng Truy Nã Mục Tiêu</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>`;
+            html += `<div class="space-y-3">`;
+            bounties.forEach((b, idx) => {
+                html += `
+                <div class="bg-zinc-800 p-3 rounded-xl border border-orange-500/50 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-4xl">${b.emoji}</span>
+                        <div>
+                            <div class="font-bold text-xs text-orange-400">${b.name} [Hệ ${b.element}]</div>
+                            <div class="text-[10px] text-zinc-300">CP: ${b.cp} | Thưởng: ${b.reward} 🪙</div>
+                        </div>
                     </div>
-                    <button onclick="claimQuest(${q.id})" ${canClaim ? '' : 'disabled'} class="px-3 py-1.5 rounded-xl font-bold text-xs ${canClaim ? 'bg-emerald-600 text-white cursor-pointer' : 'bg-zinc-700 text-zinc-400 opacity-50 cursor-not-allowed'}">
-                        ${q.completed ? 'Đã nhận' : (canClaim ? 'Nhận thưởng' : 'Chưa xong')}
+                    <button onclick="attackBounty(${idx})" ${b.completed ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl font-bold text-xs ${b.completed ? 'bg-zinc-700 text-zinc-400 opacity-50' : 'bg-orange-600 hover:bg-orange-500 text-white cursor-pointer'}">
+                        ${b.completed ? 'Đã tiêu diệt' : 'Truy nã ngay'}
                     </button>
                 </div>`;
             });
@@ -179,16 +265,12 @@
             content.innerHTML = html;
         }
 
-        function claimQuest(id) {
-            let q = dailyQuests.find(item => item.id === id);
-            if (q && q.current >= q.target && !q.completed) {
-                q.completed = true;
-                playerCoins += q.rewardCoins;
-                localStorage.setItem('ar_coins', playerCoins);
-                saveQuests();
-                alert(`🎉 Nhận thành công +${q.rewardCoins} Vàng từ nhiệm vụ!`);
-                openQuestMenu();
-            }
+        let currentBountyIndex = null;
+        function attackBounty(idx) {
+            currentBountyIndex = idx;
+            let b = bounties[idx];
+            closeModal();
+            startCanvasBattle(null, false, { name: b.name, emoji: b.emoji, hp: b.hp, maxHp: b.hp, atk: b.atk, level: 50, element: b.element, critRate: 20, dodgeRate: 15, accuracy: 25, attackSpeed: 1.3 }, 'bounty');
         }
 
         const lobbyMusic = new Audio('lobbymusic.mp3'); 
@@ -851,7 +933,6 @@
                 localStorage.setItem('ar_pokedex', JSON.stringify(pokedex));
             }
 
-            checkQuestProgress('catch');
             closeModal();
             spawnMultipleMonsters();
         }
@@ -865,7 +946,7 @@
             content.innerHTML = `
             <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Sảnh Đấu Trường</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>
             <p class="text-xs text-zinc-300 mb-4">Thời tiết hiện tại: <strong>${currentWeather.name} (${currentWeather.effect})</strong></p>
-            <p class="text-[11px] text-zinc-400 mb-3">💡 Mẹo: Bạn có thể bấm trực tiếp vào các biểu tượng Người chơi xuất hiện xung quanh trên bản đồ để thách đấu ngay lập tức!</p>
+            <p class="text-[11px] text-zinc-400 mb-3">💡 Mẹo: Bấm trực tiếp vào các biểu tượng Bóng ma Người chơi trên bản đồ để thách đấu realtime!</p>
             <button onclick="startCanvasBattle(null)" class="w-full bg-zinc-700 py-3 rounded-xl font-bold text-xs cursor-pointer">🤖 Đấu Tập Nhanh (Với Bot)</button>
             `;
         }
@@ -876,8 +957,9 @@
         let battleState = 'fighting';
         let battleModeTitle = '⚔️ ĐẤU TRƯỜNG';
         let animActionTick = 0;
+        let activeBattleType = 'normal'; // 'normal', 'boss', 'ghost', 'bounty'
 
-        function startCanvasBattle(opponentObj = null, isWorldBoss = false) {
+        function startCanvasBattle(opponentObj = null, isWorldBoss = false, customEnemy = null, type = 'normal') {
             switchGameMusic('battle');
             checkPetSurvival();
             if (team.length === 0) { alert('Đội hình trống! Không có thú để chiến đấu.'); closeModal(); return; }
@@ -888,9 +970,14 @@
             document.getElementById('battle-screen').classList.remove('hidden');
 
             myBattlePet = team[0];
+            activeBattleType = type;
+
             if (isWorldBoss) {
                 enemyBattlePet = { name: 'Rồng Khổng Lồ (Boss)', emoji: '🐲', hp: 300, maxHp: 300, atk: 120, level: 10, element: 'Hỏa', critRate: 25, dodgeRate: 20, accuracy: 30, attackSpeed: 1.5 };
                 battleModeTitle = '🔥 ĐẠI CHIẾN BOSS THẾ GIỚI 🔥';
+            } else if (customEnemy) {
+                enemyBattlePet = { ...customEnemy };
+                battleModeTitle = type === 'bounty' ? '🎯 SĂN TIỀN THƯỞNG TRUY NÃ' : `👻 THÁCH ĐẤU BÓNG MA [${customEnemy.name.toUpperCase()}]`;
             } else if (opponentObj && opponentObj.pet) {
                 enemyBattlePet = { ...opponentObj.pet };
                 battleModeTitle = `⚔️ THÁCH ĐẤU [${opponentObj.name.toUpperCase()}]`;
@@ -1016,13 +1103,18 @@
                     clearInterval(battleInterval);
                     let hpLostPercent = Math.max(0, (myMaxHp - Math.max(0, myHp)) / myMaxHp);
                     myBattlePet.hp = Math.max(0, myHp);
+                    
                     let rewardCoins = battleState === 'won' ? 400 : 0;
+                    if (activeBattleType === 'bounty' && battleState === 'won' && currentBountyIndex !== null) {
+                        rewardCoins = bounties[currentBountyIndex].reward;
+                        bounties[currentBountyIndex].completed = true;
+                    }
+
                     if (battleState === 'won') {
                         playerCoins += rewardCoins;
                         localStorage.setItem('ar_coins', playerCoins);
                         team[0] = myBattlePet;
                         localStorage.setItem('ar_team', JSON.stringify(team));
-                        checkQuestProgress('win');
                     }
                     showBattleResultModal(battleState === 'won', rewardCoins, hpLostPercent, myBattlePet.name);
                 }
@@ -1050,7 +1142,7 @@
 
         let map, userMarker;
         let activeMarkers = [];
-        let otherPlayersMarkers = [];
+        let ghostMarkers = [];
         let userLat = 10.0452, userLng = 105.7469; 
 
         function initMap() {
@@ -1066,7 +1158,7 @@
 
             userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
             spawnMultipleMonsters();
-            spawnOtherPlayers();
+            spawnGhostPlayers();
 
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition((position) => {
@@ -1086,65 +1178,64 @@
             }
         }
 
-        // --- HỆ THỐNG NGƯỜI CHƠI ONLINE XUNG QUANH (REALTIME TRÊN BẢN ĐỒ) ---
-        let realOnlinePeers = [
-            { id: 'u1', name: 'Thám Hiểm Gia', avatar: '🧙‍♂️', pet: { name: 'Mèo Mướp', emoji: '🐈', cp: 135, hp: 70, maxHp: 70, atk: 95, level: 50, element: 'Thủy', critRate: 15, dodgeRate: 20, accuracy: 25, attackSpeed: 1.4 } },
-            { id: 'u2', name: 'Hà Nội Ranger', avatar: '🥷', pet: { name: 'Sói Xám', emoji: '🐺', cp: 175, hp: 90, maxHp: 90, atk: 125, level: 85, element: 'Kim', critRate: 22, dodgeRate: 18, accuracy: 20, attackSpeed: 1.3 } },
-            { id: 'u3', name: 'Sài Gòn Hunter', avatar: '🕵️', pet: { name: 'Chim Lửa', emoji: '🐦', cp: 185, hp: 50, maxHp: 50, atk: 140, level: 120, element: 'Hỏa', critRate: 30, dodgeRate: 25, accuracy: 35, attackSpeed: 1.6 } }
+        // --- HỆ THỐNG BÓNG MA NGƯỜI CHƠI (GHOST REPLAYS) ---
+        let ghostPlayers = [
+            { id: 'g1', name: 'Ghost_Viper', avatar: '👻', pet: { name: 'Xà Vương', emoji: '🐍', cp: 180, hp: 95, maxHp: 95, atk: 110, level: 65, element: 'Mộc', critRate: 20, dodgeRate: 25, accuracy: 25, attackSpeed: 1.4 } },
+            { id: 'g2', name: 'Ghost_Shadow', avatar: '👤', pet: { name: 'Dơi Bóng Tối', emoji: '🦇', cp: 165, hp: 75, maxHp: 75, atk: 115, level: 50, element: 'Thủy', critRate: 18, dodgeRate: 30, accuracy: 20, attackSpeed: 1.5 } }
         ];
 
-        function spawnOtherPlayers() {
+        function spawnGhostPlayers() {
             if (!map) return;
-            otherPlayersMarkers.forEach(m => map.removeLayer(m));
-            otherPlayersMarkers = [];
+            ghostMarkers.forEach(m => map.removeLayer(m));
+            ghostMarkers = [];
 
-            realOnlinePeers.forEach((player) => {
-                let pLat = userLat + (Math.random() - 0.5) * 0.0025;
-                let pLng = userLng + (Math.random() - 0.5) * 0.0025;
+            ghostPlayers.forEach((ghost) => {
+                let gLat = userLat + (Math.random() - 0.5) * 0.0025;
+                let gLng = userLng + (Math.random() - 0.5) * 0.0025;
 
-                const playerIcon = L.divIcon({
-                    className: 'custom-player-icon',
-                    html: `<div style="font-size: 30px; animation: bounce 2s infinite; filter: drop-shadow(0 0 8px rgba(168,85,247,0.9));">${player.avatar}</div>`,
+                const ghostIcon = L.divIcon({
+                    className: 'custom-ghost-icon',
+                    html: `<div style="font-size: 30px; animation: bounce 2s infinite; filter: drop-shadow(0 0 8px rgba(129,140,248,0.9));">${ghost.avatar}</div>`,
                     iconSize: [32, 32], iconAnchor: [16, 16]
                 });
 
-                const marker = L.marker([pLat, pLng], { icon: playerIcon }).addTo(map);
-                marker.on('click', () => { openOtherPlayerModal(player); });
-                otherPlayersMarkers.push(marker);
+                const marker = L.marker([gLat, gLng], { icon: ghostIcon }).addTo(map);
+                marker.on('click', () => { openGhostModal(ghost); });
+                ghostMarkers.push(marker);
             });
         }
 
-        function openOtherPlayerModal(player) {
+        function openGhostModal(ghost) {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
 
-            let petInfo = player.pet;
-            let elemObj = elements.find(e => e.name === petInfo.element) || elements[0];
+            let pInfo = ghost.pet;
+            let elemObj = elements.find(e => e.name === pInfo.element) || elements[0];
 
             content.innerHTML = `
             <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-lg">👤 Người Chơi: ${player.name}</h3>
+                <h3 class="font-bold text-lg">👻 Bóng Ma: ${ghost.name}</h3>
                 <button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button>
             </div>
-            <div class="bg-zinc-800 p-4 rounded-2xl border border-zinc-700 mb-4 text-center">
-                <div class="text-5xl mb-2">${player.avatar}</div>
-                <div class="text-sm font-bold text-yellow-300 mb-2">Linh thú chủ lực:</div>
+            <div class="bg-zinc-800 p-4 rounded-2xl border border-indigo-500/50 mb-4 text-center">
+                <div class="text-5xl mb-2">${ghost.avatar}</div>
+                <div class="text-xs text-indigo-300 mb-2">Dữ liệu ghi lại lịch sử chiến đấu</div>
                 <div class="bg-zinc-900 p-3 rounded-xl flex items-center justify-center gap-3 border border-zinc-700">
-                    <span class="text-4xl">${petInfo.emoji}</span>
+                    <span class="text-4xl">${pInfo.emoji}</span>
                     <div class="text-left">
-                        <div class="font-bold text-sm">${petInfo.name} <span class="${elemObj.color}">(${elemObj.icon}${petInfo.element})</span></div>
-                        <div class="text-xs text-zinc-300">Lv.${petInfo.level} | CP: ${petInfo.cp} | Crit: ${petInfo.critRate}%</div>
+                        <div class="font-bold text-sm">${pInfo.name} <span class="${elemObj.color}">(${elemObj.icon}${pInfo.element})</span></div>
+                        <div class="text-xs text-zinc-300">Lv.${pInfo.level} | CP: ${pInfo.cp}</div>
                     </div>
                 </div>
             </div>
-            <button onclick="attackRealPlayer('${player.name}')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs shadow-lg cursor-pointer">⚔️ Thách Đấu Realtime Ngay</button>`;
+            <button onclick="attackGhost('${ghost.id}')" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold text-xs shadow-lg cursor-pointer">⚔️ Thách Đấu Bóng Ma Realtime</button>`;
         }
 
-        function attackRealPlayer(playerName) {
+        function attackGhost(id) {
             closeModal();
-            let foundP = realOnlinePeers.find(p => p.name === playerName);
-            startCanvasBattle(foundP);
+            let foundG = ghostPlayers.find(g => g.id === id);
+            startCanvasBattle(null, false, foundG.pet, 'ghost');
         }
 
         function spawnMultipleMonsters() {
@@ -1166,7 +1257,7 @@
             const bossMarker = L.marker([bossData.lat, bossData.lng], { icon: bossIcon }).addTo(map);
             bossMarker.on('click', () => {
                 if (confirm('🔥 Phát hiện BOSS THẾ GIỚI! Bạn có muốn nghênh chiến?')) {
-                    startCanvasBattle(null, true);
+                    startCanvasBattle(null, true, null, 'boss');
                 }
             });
             activeMarkers.push(bossMarker);
@@ -1204,7 +1295,7 @@
                 activeMarkers.push(marker);
             }
 
-            spawnOtherPlayers();
+            spawnGhostPlayers();
         }
 
         let canvas, ctx;
