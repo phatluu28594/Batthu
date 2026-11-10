@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Map Fix v4.7</title>
+    <title>Batthu - Full AR Catch v4.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
         
-        /* SỬA LỖI KHUNG BẢN ĐỒ BỊ ĐEN TRÊN MOBILE */
         #map-screen { display: flex; flex-direction: column; height: 100vh; width: 100vw; position: absolute; inset: 0; background: #09090b; }
         #map-container-wrap { flex: 1; position: relative; width: 100%; min-height: 60vh; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; }
@@ -125,7 +124,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP / LEO THÁP -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V4.7</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V4.8</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -877,6 +876,16 @@
             }
         }
 
+        // 🌟 KHÔI PHỤC HỆ THỐNG MINIGAME CANVAS BẮT THÚ
+        let canvas, ctx;
+        let isARActive = false;
+        let rope = { x: 0, y: 0, vx: 0, vy: 0, radius: 30, flying: false };
+        let monsterPos = { x: 0, y: 0, vx: 2, vy: 1.5 };
+        let touchStart = { x: 0, y: 0 }, touchEnd = { x: 0, y: 0 };
+        let isTugOfWarActive = false;
+        let tugProgress = 50; 
+        let tugTimerInterval = null;
+
         function spawnMultipleMonsters() {
             if (!map) return;
             activeMarkers.forEach(m => map.removeLayer(m));
@@ -884,8 +893,11 @@
 
             for (let i = 0; i < 6; i++) {
                 const baseTemplate = allMonsters[Math.floor(Math.random() * allMonsters.length)];
+                const randomElem = elements[Math.floor(Math.random() * elements.length)];
                 const monsterData = { 
                     ...baseTemplate, 
+                    element: randomElem.name,
+                    cp: Math.floor(baseTemplate.cp * (0.9 + Math.random() * 0.3)),
                     lat: userLat + (Math.random() - 0.5) * 0.0025,
                     lng: userLng + (Math.random() - 0.5) * 0.0025
                 };
@@ -898,11 +910,264 @@
 
                 const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(map);
                 marker.on('click', () => {
-                    alert(`Bấm vào thú: ${monsterData.name}`);
+                    if (stamina <= 0) { alert('⚡ Hết Năng Lượng!'); return; }
+                    currentWildMonster = monsterData;
+                    catchAttempts = 0;
+                    document.getElementById('throw-attempt-count').innerText = `Lượt quăng: 0/3`;
+                    enterARScreen();
                 });
                 activeMarkers.push(marker);
             }
         }
+
+        async function enterARScreen() {
+            document.getElementById('map-screen').classList.add('hidden');
+            document.getElementById('ar-screen').classList.remove('hidden');
+            isARActive = true;
+            isTugOfWarActive = false;
+            document.getElementById('tug-of-war-ui').classList.add('hidden');
+            document.getElementById('ar-instruction').classList.remove('hidden');
+
+            let elemObj = elements.find(e => e.name === currentWildMonster.element) || elements[0];
+            document.getElementById('ar-mon-info').innerText = `${currentWildMonster.emoji} ${currentWildMonster.name} (${elemObj.icon}${currentWildMonster.element}) - CP ${currentWildMonster.cp}`;
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } }, audio: false });
+                document.getElementById('camera-feed').srcObject = stream;
+            } catch (e) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    document.getElementById('camera-feed').srcObject = stream;
+                } catch (err) {}
+            }
+            initCanvasGame();
+        }
+
+        function exitARScreen() {
+            isARActive = false;
+            isTugOfWarActive = false;
+            if (tugTimerInterval) clearInterval(tugTimerInterval);
+            const videoEl = document.getElementById('camera-feed');
+            if (videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
+            document.getElementById('ar-screen').classList.add('hidden');
+            document.getElementById('map-screen').classList.remove('hidden');
+            if(map) map.invalidateSize();
+        }
+
+        function initCanvasGame() {
+            canvas = document.getElementById('gameCanvas');
+            if (!canvas) return;
+            ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            monsterPos.x = Math.random() * (canvas.width - 120) + 60;
+            monsterPos.y = Math.random() * (canvas.height * 0.4) + 80;
+            monsterPos.vx = (Math.random() - 0.5) * 3.5;
+            monsterPos.vy = (Math.random() - 0.5) * 2.5;
+
+            resetRope();
+
+            canvas.onpointerdown = (e) => {
+                if (isTugOfWarActive) {
+                    if (tugProgress >= 100) return;
+                    tugProgress = Math.min(100, tugProgress + 6);
+                    document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
+                    monsterPos.y += 12;
+                    setTimeout(() => { monsterPos.y -= 12; }, 60);
+                    if (tugProgress >= 100) triggerTugWin();
+                    return;
+                }
+                if (rope.flying) return;
+                touchStart.x = e.clientX; touchStart.y = e.clientY;
+            };
+
+            canvas.onpointerup = (e) => {
+                if (isTugOfWarActive || rope.flying) return;
+                touchEnd.x = e.clientX; touchEnd.y = e.clientY;
+                let dx = touchEnd.x - touchStart.x;
+                let dy = touchEnd.y - touchStart.y;
+
+                if (dy < -30) {
+                    if (stamina > 0) {
+                        stamina--;
+                        localStorage.setItem('ar_stamina', stamina);
+                        document.getElementById('stamina-count').innerText = stamina;
+                    }
+                    rope.vx = dx * 0.12;
+                    rope.vy = dy * 0.15;
+                    rope.flying = true;
+                }
+            };
+            requestAnimationFrame(updateCanvasGame);
+        }
+
+        function resetRope() {
+            rope.x = canvas.width / 2; rope.y = canvas.height * 0.85;
+            rope.vx = 0; rope.vy = 0; rope.flying = false;
+        }
+
+        function updateCanvasGame() {
+            if (!isARActive || !ctx || !canvas) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (!isTugOfWarActive) {
+                monsterPos.x += monsterPos.vx;
+                monsterPos.y += monsterPos.vy;
+                if (monsterPos.x < 60 || monsterPos.x > canvas.width - 60) monsterPos.vx *= -1;
+                if (monsterPos.y < 60 || monsterPos.y > canvas.height * 0.6) monsterPos.vy *= -1;
+
+                if (rope.flying) {
+                    let distToRope = Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y);
+                    if (distToRope < 180) {
+                        monsterPos.vx += (rope.x > monsterPos.x ? -0.4 : 0.4);
+                        monsterPos.vy += (rope.y > monsterPos.y ? -0.4 : 0.4);
+                    }
+                }
+            } else {
+                let pullOscillation = Math.sin(Date.now() * 0.01) * 35;
+                monsterPos.y = (canvas.height * 0.4) + pullOscillation;
+            }
+
+            ctx.font = "80px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y);
+
+            if (rope.flying) {
+                rope.x += rope.vx; rope.y += rope.vy; rope.vy += 0.25;
+                ctx.beginPath(); ctx.moveTo(canvas.width / 2, canvas.height * 0.85); ctx.lineTo(rope.x, rope.y);
+                ctx.strokeStyle = "#d4a373"; ctx.lineWidth = 4; ctx.stroke();
+
+                let dist = Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y);
+                if (dist < 65) { 
+                    rope.flying = false; 
+                    startTugOfWarSession(); 
+                }
+                if (rope.y < 0 || rope.x < 0 || rope.x > canvas.width) { rope.flying = false; handleMissAttempt("Quăng hụt!"); resetRope(); }
+            }
+
+            if (isTugOfWarActive) {
+                ctx.beginPath(); 
+                ctx.moveTo(canvas.width / 2, canvas.height * 0.85); 
+                ctx.lineTo(monsterPos.x, monsterPos.y);
+                ctx.strokeStyle = "#eab308"; ctx.lineWidth = 6; ctx.stroke();
+            }
+
+            ctx.font = "40px sans-serif";
+            ctx.fillText("🪢", rope.x, rope.y);
+            requestAnimationFrame(updateCanvasGame);
+        }
+
+        function startTugOfWarSession() {
+            isTugOfWarActive = true;
+            tugProgress = 50;
+            document.getElementById('tug-progress-bar').style.width = '50%';
+            document.getElementById('tug-of-war-ui').classList.remove('hidden');
+            document.getElementById('ar-instruction').classList.add('hidden');
+
+            const feedback = document.getElementById('throw-feedback');
+            feedback.innerText = `🪢 Đã dính dây! Hãy click/chạm liên tục để kéo thú!`;
+            feedback.style.opacity = '1';
+            setTimeout(() => { feedback.style.opacity = '0'; }, 1500);
+
+            if (tugTimerInterval) clearInterval(tugTimerInterval);
+            let monsterPullPower = 1.2 + (currentWildMonster.cp * 0.007);
+
+            tugTimerInterval = setInterval(() => {
+                if (!isARActive || !isTugOfWarActive) { clearInterval(tugTimerInterval); return; }
+                tugProgress -= monsterPullPower;
+                document.getElementById('tug-progress-bar').style.width = Math.max(0, tugProgress) + '%';
+
+                if (tugProgress >= 100) {
+                    triggerTugWin();
+                } else if (tugProgress <= 0) {
+                    clearInterval(tugTimerInterval);
+                    isTugOfWarActive = false;
+                    document.getElementById('tug-of-war-ui').classList.add('hidden');
+                    feedback.innerText = `💨 Thú quá mạnh, đã thoát!`;
+                    feedback.style.opacity = '1';
+                    setTimeout(() => { feedback.style.opacity = '0'; exitARScreen(); spawnMultipleMonsters(); }, 1500);
+                }
+            }, 50);
+        }
+
+        function triggerTugWin() {
+            if (!isTugOfWarActive) return;
+            isTugOfWarActive = false;
+            clearInterval(tugTimerInterval);
+            document.getElementById('tug-of-war-ui').classList.add('hidden');
+
+            const feedback = document.getElementById('throw-feedback');
+            feedback.innerText = `🎉 Bắt thành công ${currentWildMonster.name}!`;
+            feedback.style.opacity = '1';
+            setTimeout(() => { feedback.style.opacity = '0'; exitARScreen(); promptCatchChoice(currentWildMonster); }, 1000);
+        }
+
+        function handleMissAttempt(reasonMsg) {
+            catchAttempts++;
+            document.getElementById('throw-attempt-count').innerText = `Lượt quăng: ${catchAttempts}/3`;
+            const feedback = document.getElementById('throw-feedback');
+
+            if (catchAttempts >= 3) {
+                feedback.innerText = `😜 ${currentWildMonster.name} đã chạy mất!`;
+                feedback.style.opacity = '1';
+                setTimeout(() => { feedback.style.opacity = '0'; exitARScreen(); spawnMultipleMonsters(); }, 2500);
+            } else {
+                feedback.innerText = `💥 ${reasonMsg}`;
+                feedback.style.opacity = '1';
+                setTimeout(() => { feedback.style.opacity = '0'; }, 2000);
+            }
+        }
+
+        function promptCatchChoice(monster) {
+            let randomGender = Math.random() < 0.5 ? 'Đực' : 'Cái';
+            let capturedTempMonster = {
+                ...monster, maxHp: monster.maxHp || 80, hp: monster.maxHp || 80,
+                level: 1, gender: randomGender, hunger: 80, happiness: 80,
+                critRate: 15, dodgeRate: 10, accuracy: 15, attackSpeed: 1.2
+            };
+
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-lg">🎉 Bắt Thành Công!</h3></div>
+            <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-zinc-700 mb-4 text-center">
+                <span class="text-7xl mb-2">${monster.emoji}</span>
+                <div class="text-lg font-bold text-yellow-300">${monster.name} (${randomGender === 'Đực' ? '♂️ Đực' : '♀️ Cái'})</div>
+            </div>
+            <div class="space-y-2">
+                <button onclick="saveCaughtPet(${JSON.stringify(capturedTempMonster).replace(/"/g, '&quot;')}, 'team')" class="w-full bg-emerald-600 py-3 rounded-xl font-bold text-xs cursor-pointer">🎒 Đưa vào Đội hình / Trại</button>
+                <button onclick="saveCaughtPet(${JSON.stringify(capturedTempMonster).replace(/"/g, '&quot;')}, 'sell')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs cursor-pointer">💰 Bán ngay (${monster.rarePrice} Vàng)</button>
+            </div>`;
+        }
+
+        window.saveCaughtPet = function(petObj, action) {
+            if (action === 'team') {
+                if (team.length < 3) {
+                    team.push(petObj);
+                    localStorage.setItem('ar_team', JSON.stringify(team));
+                    alert(`Đã đưa vào đội hình!`);
+                } else {
+                    farm.push(petObj);
+                    localStorage.setItem('ar_farm', JSON.stringify(farm));
+                    alert(`Đội hình đầy, đã chuyển vào Trang Trại!`);
+                }
+                updateTeamCount();
+            } else if (action === 'sell') {
+                playerCoins += petObj.rarePrice;
+                localStorage.setItem('ar_coins', playerCoins);
+                alert(`Bán thành công +${petObj.rarePrice} Vàng!`);
+            }
+            if (!pokedex.includes(petObj.id)) {
+                pokedex.push(petObj.id);
+                localStorage.setItem('ar_pokedex', JSON.stringify(pokedex));
+            }
+            closeModal();
+            spawnMultipleMonsters();
+        };
 
         function updateTeamCount() { document.getElementById('team-count').innerText = team.length; }
 
