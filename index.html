@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Fix Map Black Screen v5.2</title>
+    <title>Batthu - Full Combat & Survival v5.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
-        
         #map-screen { display: flex; flex-direction: column; height: 100vh; width: 100vw; position: absolute; inset: 0; background: #09090b; }
         #map-container-wrap { flex: 1; position: relative; width: 100%; min-height: 50vh; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; }
-        
         .leaflet-control-attribution { display: none !important; }
         @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-45px) scale(1.2); opacity: 0; } }
         .damage-popup { animation: floatText 0.75s ease-out forwards; }
@@ -92,7 +90,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH MINIGAME CANVAS BẮT THÚ & GIẰNG CO -->
+    <!-- MÀN HÌNH MINIGAME CANVAS BẮT THÚ & GIẰNG CO LÊN XUỐNG -->
     <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -107,23 +105,25 @@
             </div>
         </div>
         <div class="flex flex-col items-center z-20 pb-8 pointer-events-none">
-            <div id="throw-feedback" class="text-sm font-bold bg-black/80 px-4 py-2 rounded-full border border-white/20 opacity-0 transition-opacity shadow-lg">Bắt hụt rồi!</div>
-            <div id="tug-of-war-ui" class="hidden flex flex-col items-center w-full max-w-xs bg-black/80 p-3 rounded-2xl border border-amber-500/50 pointer-events-auto mb-2">
-                <div class="text-xs font-bold text-amber-300 mb-1 animate-pulse">⚔️ ĐANG GIẰNG CO! CLICK / CHẠM LIÊN TỤC!</div>
-                <div class="w-full bg-zinc-900 rounded-full h-3 overflow-hidden border border-zinc-700 mb-1 relative">
-                    <div id="tug-progress-bar" class="bg-gradient-to-r from-red-500 via-yellow-500 to-emerald-500 h-full transition-all duration-75" style="width: 50%"></div>
+            <div id="tug-of-war-ui" class="hidden flex flex-col items-center w-full max-w-xs bg-black/85 p-3 rounded-2xl border border-amber-500/50 pointer-events-auto mb-2 shadow-2xl">
+                <div class="text-xs font-bold text-amber-300 mb-1 animate-pulse">🎣 GIẰNG CO LÊN XUỐNG! CHẠM LIÊN TỤC!</div>
+                <!-- Thanh giằng co dạng dọc / lên xuống -->
+                <div class="flex items-center justify-center w-full my-1">
+                    <div class="relative w-8 h-36 bg-zinc-900 rounded-full border border-zinc-700 overflow-hidden flex flex-col justify-end">
+                        <div id="tug-vertical-bar" class="w-full bg-gradient-to-t from-red-500 via-yellow-500 to-emerald-400 transition-all duration-75" style="height: 50%"></div>
+                    </div>
                 </div>
-                <div class="text-[10px] text-zinc-300">Kéo thú về phía bạn để chiến thắng!</div>
+                <div class="text-[10px] text-zinc-300 mt-1">Càng kéo thanh lên cao (sắp bắt được), thú càng giãy mạnh!</div>
             </div>
             <div id="throw-attempt-count" class="text-[11px] text-yellow-400 mt-1 bg-black/60 px-3 py-0.5 rounded-full border border-white/10 font-bold">Lượt quăng: 0/3</div>
             <div id="ar-instruction" class="text-[11px] text-zinc-300 mt-1 bg-black/60 px-3 py-1 rounded-full border border-white/10">🤠 Vuốt ngón tay hướng lên trên để quăng vòng dây thừng!</div>
         </div>
     </div>
 
-    <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP / LEO THÁP -->
+    <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP / LEO THÁP / BOSS -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V5.2</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V5.3</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -566,7 +566,6 @@
                 html += `<div class="text-zinc-400 text-xs text-center py-4">Trang trại trống!</div>`;
             } else {
                 farm.forEach((pet, idx) => {
-                    let elemObj = elements.find(e => e.name === pet.element) || elements[0];
                     html += `
                     <div class="bg-zinc-800/90 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
                         <div class="flex items-center gap-2.5">
@@ -701,13 +700,6 @@
                 <div class="text-base font-bold text-yellow-300">${pet.name} <span class="${gCol}">(${gSym})</span> <span class="${elemObj.color}">(${elemObj.icon}${pet.element})</span></div>
                 <div class="text-[11px] text-amber-300 mt-1 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-700">Cấp độ: Lv.${pet.level || 1} | ATK: ${pet.atk}</div>
                 
-                <div class="grid grid-cols-2 gap-2 w-full mt-3 text-[11px] bg-zinc-900 p-2.5 rounded-xl border border-zinc-700 text-zinc-300">
-                    <div>🎯 Chí mạng: <strong class="text-yellow-400">${pet.critRate}%</strong></div>
-                    <div>💨 Né tránh: <strong class="text-blue-400">${pet.dodgeRate}%</strong></div>
-                    <div>🎯 Chính xác: <strong class="text-emerald-400">${pet.accuracy}%</strong></div>
-                    <div>⚡ Tốc độ: <strong class="text-purple-400">${pet.attackSpeed}</strong></div>
-                </div>
-
                 <div class="w-full space-y-1.5 mt-3 text-left">
                     <div>
                         <div class="flex justify-between text-[10px] mb-0.5"><span>HP</span><span>${pet.hp}/${pet.maxHp}</span></div>
@@ -941,7 +933,7 @@
             setTimeout(() => { if (map) map.invalidateSize(); }, 150);
         }
 
-        // 🌟 TACTICAL COMBAT ENGINE V5.2 (HIỆU ỨNG CHOÁNG, ĐỘC, ĐỐT LỬA, BUFF MÁU)
+        // 🌟 TACTICAL COMBAT ENGINE V5.3 (CÓ THÔNG BÁO, CẬP NHẬT HP THỰC & HỆ THỐNG THÚ TỬ TRẬN)
         let battleCanvas, battleCtx, battleInterval;
         let myBattlePet, enemyBattlePet;
         let myHp, enemyHp, myMaxHp, enemyMaxHp;
@@ -1049,31 +1041,31 @@
                         let burnDmg = 12;
                         myHp -= burnDmg;
                         myStatus.burn--;
-                        showDamagePopup(`🔥 -${burnDmg} Đốt`, 'text-orange-500', posMyX, centerY - 45);
+                        showDamagePopup(`🔥 -${burnDmg} Đốt`, 'text-orange-500 font-black text-base', posMyX, centerY - 55);
                     }
                     if (myStatus.poison > 0) {
                         let poisDmg = 8;
                         myHp -= poisDmg;
                         myStatus.poison--;
-                        showDamagePopup(`🟢 -${poisDmg} Độc`, 'text-emerald-400', posMyX, centerY - 45);
+                        showDamagePopup(`🟢 -${poisDmg} Độc`, 'text-emerald-400 font-black text-base', posMyX, centerY - 55);
                     }
                     if (Math.random() < 0.15 && myHp < myMaxHp) {
                         let healAmount = 20;
                         myHp = Math.min(myMaxHp, myHp + healAmount);
-                        showDamagePopup(`💖 +${healAmount} Hồi máu`, 'text-pink-400', posMyX, centerY - 45);
+                        showDamagePopup(`💖 +${healAmount} Hồi máu`, 'text-pink-400 font-black text-base', posMyX, centerY - 55);
                     }
 
                     if (enemyStatus.burn > 0) {
                         let burnDmg = 12;
                         enemyHp -= burnDmg;
                         enemyStatus.burn--;
-                        showDamagePopup(`🔥 -${burnDmg} Đốt`, 'text-orange-500', posEnemyX, centerY - 45);
+                        showDamagePopup(`🔥 -${burnDmg} Đốt`, 'text-orange-500 font-black text-base', posEnemyX, centerY - 55);
                     }
                     if (enemyStatus.poison > 0) {
                         let poisDmg = 8;
                         enemyHp -= poisDmg;
                         enemyStatus.poison--;
-                        showDamagePopup(`🟢 -${poisDmg} Độc`, 'text-emerald-400', posEnemyX, centerY - 45);
+                        showDamagePopup(`🟢 -${poisDmg} Độc`, 'text-emerald-400 font-black text-base', posEnemyX, centerY - 55);
                     }
                 }
 
@@ -1086,12 +1078,12 @@
                         let isCrit = Math.random() * 100 < (myBattlePet.critRate || 15);
                         let myDmg = Math.floor(myBattlePet.atk * 0.4 * (isCrit ? 1.5 : 1.0));
                         enemyHp -= myDmg;
-                        showDamagePopup(`-${myDmg}`, isCrit ? 'text-yellow-300 text-lg scale-125' : 'text-red-400', posEnemyX, centerY - 20);
+                        showDamagePopup(`-${myDmg}`, isCrit ? 'text-yellow-300 text-xl font-black scale-125' : 'text-red-400 text-base font-black', posEnemyX, centerY - 25);
 
                         let randEff = Math.random();
-                        if (randEff < 0.1) { enemyStatus.stun = 1; showDamagePopup(`💫 CHOÁNG!`, 'text-purple-300 font-bold', posEnemyX, centerY - 50); }
-                        else if (randEff < 0.2) { enemyStatus.burn = 2; showDamagePopup(`🔥 THIÊU ĐỐT!`, 'text-orange-400 font-bold', posEnemyX, centerY - 50); }
-                        else if (randEff < 0.3) { enemyStatus.poison = 2; showDamagePopup(`🟢 TRÚNG ĐỘC!`, 'text-emerald-400 font-bold', posEnemyX, centerY - 50); }
+                        if (randEff < 0.12) { enemyStatus.stun = 1; showDamagePopup(`💫 CHOÁNG!`, 'text-purple-300 font-black text-lg', posEnemyX, centerY - 65); }
+                        else if (randEff < 0.24) { enemyStatus.burn = 2; showDamagePopup(`🔥 THIÊU ĐỐT!`, 'text-orange-400 font-black text-lg', posEnemyX, centerY - 65); }
+                        else if (randEff < 0.36) { enemyStatus.poison = 2; showDamagePopup(`🟢 TRÚNG ĐỘC!`, 'text-emerald-400 font-black text-lg', posEnemyX, centerY - 65); }
 
                         setTimeout(() => { combatStateMy = 'retreating'; }, 250);
                     }
@@ -1108,11 +1100,11 @@
                         combatStateEnemy = 'attacking';
                         let enemyDmg = Math.floor(enemyBattlePet.atk * 0.35);
                         myHp -= enemyDmg;
-                        showDamagePopup(`-${enemyDmg}`, 'text-red-400', posMyX, centerY - 20);
+                        showDamagePopup(`-${enemyDmg}`, 'text-red-400 text-base font-black', posMyX, centerY - 25);
 
                         let randEff = Math.random();
-                        if (randEff < 0.1) { myStatus.stun = 1; showDamagePopup(`💫 CHOÁNG!`, 'text-purple-300 font-bold', posMyX, centerY - 50); }
-                        else if (randEff < 0.2) { myStatus.burn = 2; showDamagePopup(`🔥 THIÊU ĐỐT!`, 'text-orange-400 font-bold', posMyX, centerY - 50); }
+                        if (randEff < 0.12) { myStatus.stun = 1; showDamagePopup(`💫 CHOÁNG!`, 'text-purple-300 font-black text-lg', posMyX, centerY - 65); }
+                        else if (randEff < 0.24) { myStatus.burn = 2; showDamagePopup(`🔥 THIÊU ĐỐT!`, 'text-orange-400 font-black text-lg', posMyX, centerY - 65); }
 
                         setTimeout(() => { combatStateEnemy = 'retreating'; }, 250);
                     }
@@ -1123,7 +1115,7 @@
 
                 if (battleState === 'fighting' && combatTimer % 35 === 0 && combatStateMy === 'idle') {
                     if (myStatus.stun > 0) {
-                        showDamagePopup(`💫 BỊ CHOÁNG!`, 'text-purple-400', posMyX, centerY - 30);
+                        showDamagePopup(`💫 BỊ CHOÁNG!`, 'text-purple-400 font-black text-base', posMyX, centerY - 45);
                         myStatus.stun--;
                     } else {
                         combatStateMy = 'rushing';
@@ -1132,13 +1124,14 @@
 
                 if (battleState === 'fighting' && combatTimer % 40 === 0 && combatStateEnemy === 'idle' && enemyHp > 0) {
                     if (enemyStatus.stun > 0) {
-                        showDamagePopup(`💫 BỊ CHOÁNG!`, 'text-purple-400', posEnemyX, centerY - 30);
+                        showDamagePopup(`💫 BỊ CHOÁNG!`, 'text-purple-400 font-black text-base', posEnemyX, centerY - 45);
                         enemyStatus.stun--;
                     } else {
                         combatStateEnemy = 'rushing';
                     }
                 }
 
+                // Vẽ thú nhà
                 battleCtx.font = "80px sans-serif";
                 battleCtx.textAlign = "center";
                 battleCtx.fillText(myBattlePet.emoji, posMyX, centerY + hoverOffsetY);
@@ -1148,15 +1141,16 @@
                 if (myStatus.poison > 0) myEffText += ' 🟢';
                 if (myStatus.stun > 0) myEffText += ' 💫';
                 if (myEffText) {
-                    battleCtx.font = "14px sans-serif";
-                    battleCtx.fillText(myEffText, posMyX, centerY + hoverOffsetY - 45);
+                    battleCtx.font = "16px sans-serif";
+                    battleCtx.fillText(myEffText, posMyX, centerY + hoverOffsetY - 50);
                 }
 
                 battleCtx.fillStyle = "#18181b"; battleCtx.fillRect(25, centerY + 55, 130, 14);
                 battleCtx.fillStyle = "#10b981"; battleCtx.fillRect(25, centerY + 55, 130 * Math.max(0, myHp / myMaxHp), 14);
                 battleCtx.font = "10px sans-serif"; battleCtx.fillStyle = "#fff";
-                battleCtx.fillText(`${myBattlePet.name}`, 90, centerY + 50);
+                battleCtx.fillText(`${myBattlePet.name} (${Math.max(0, myHp)}/${myMaxHp})`, 90, centerY + 50);
 
+                // Vẽ thú địch
                 battleCtx.font = "80px sans-serif";
                 battleCtx.fillText(enemyBattlePet.emoji, posEnemyX, centerY - hoverOffsetY);
 
@@ -1165,26 +1159,34 @@
                 if (enemyStatus.poison > 0) enemyEffText += ' 🟢';
                 if (enemyStatus.stun > 0) enemyEffText += ' 💫';
                 if (enemyEffText) {
-                    battleCtx.font = "14px sans-serif";
-                    battleCtx.fillText(enemyEffText, posEnemyX, centerY - hoverOffsetY - 45);
+                    battleCtx.font = "16px sans-serif";
+                    battleCtx.fillText(enemyEffText, posEnemyX, centerY - hoverOffsetY - 50);
                 }
 
                 battleCtx.fillStyle = "#18181b"; battleCtx.fillRect(battleCanvas.width - 155, centerY + 55, 130, 14);
                 battleCtx.fillStyle = "#ef4444"; battleCtx.fillRect(battleCanvas.width - 155, centerY + 55, 130 * Math.max(0, enemyHp / enemyMaxHp), 14);
                 battleCtx.font = "10px sans-serif"; battleCtx.fillStyle = "#fff";
-                battleCtx.fillText(`${enemyBattlePet.name}`, battleCanvas.width - 90, centerY + 50);
+                battleCtx.fillText(`${enemyBattlePet.name} (${Math.max(0, enemyHp)}/${enemyMaxHp})`, battleCanvas.width - 90, centerY + 50);
 
                 if (enemyHp <= 0 || myHp <= 0) {
                     battleState = enemyHp > 0 ? 'lost' : 'won';
                     clearInterval(battleInterval);
-                    let rewardCoins = battleState === 'won' ? 400 : 0;
+                    
+                    // Cập nhật HP thực hoặc xử lý Thú tử trận
+                    myBattlePet.hp = Math.max(0, myHp);
                     if (battleState === 'won') {
+                        let rewardCoins = 400;
                         playerCoins += rewardCoins;
                         localStorage.setItem('ar_coins', playerCoins);
                         team[0] = myBattlePet;
                         localStorage.setItem('ar_team', JSON.stringify(team));
+                        showBattleResultModal(true, rewardCoins);
+                    } else {
+                        // Thú cưng chết sẽ bị loại khỏi đội hình
+                        team.shift();
+                        localStorage.setItem('ar_team', JSON.stringify(team));
+                        showBattleResultModal(false, 0);
                     }
-                    showBattleResultModal(battleState === 'won', rewardCoins);
                 }
             }, 60);
         }
@@ -1194,20 +1196,21 @@
             exitBattleScreen();
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
-            modal.classList.add('hidden');
+            modal.classList.remove('hidden');
 
             content.innerHTML = `
             <div class="flex flex-col items-center text-center py-2">
                 <div class="text-6xl mb-2">${isWon ? '🏆' : '💀'}</div>
-                <h3 class="font-bold text-xl ${isWon ? 'text-yellow-400' : 'text-red-500'} mb-1">${isWon ? 'CHIẾN THẮNG!' : 'THẤT BẠI!'}</h3>
+                <h3 class="font-bold text-xl ${isWon ? 'text-yellow-400' : 'text-red-500'} mb-1">${isWon ? 'CHIẾN THẮNG TRẬN ĐẤU!' : 'THÚ CƯNG ĐÃ TỬ TRẬN!'}</h3>
+                <p class="text-xs text-zinc-300 mb-3">${isWon ? 'Thú cưng của bạn đã chiến đấu dũng mãnh và giành chiến thắng.' : 'Rất tiếc! Thú cưng đầu đàn đã cạn kiệt sinh lực và vĩnh viễn rời khỏi đội hình.'}</p>
                 <div class="w-full bg-zinc-800 p-4 rounded-2xl border border-zinc-700 text-left space-y-2 mb-4">
-                    <div class="flex justify-between text-xs"><span>Phần thưởng:</span><strong class="text-yellow-400">+${coinsEarned} 🪙</strong></div>
+                    <div class="flex justify-between text-xs"><span>Phần thưởng vàng:</span><strong class="text-yellow-400">+${coinsEarned} 🪙</strong></div>
                 </div>
-                <button onclick="closeModal(); spawnMultipleMonsters();" class="w-full bg-amber-600 py-3 rounded-xl font-bold text-xs shadow-lg cursor-pointer">Tiếp Tục</button>
+                <button onclick="closeModal(); spawnMultipleMonsters();" class="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded-xl font-bold text-xs shadow-lg cursor-pointer">Tiếp Tục Hành Trình</button>
             </div>`;
         }
 
-        // CANVAS AR MINIGAME
+        // CANVAS AR MINIGAME (GIẰNG CO LÊN XUỐNG - CÀNG SẮP BẮT ĐƯỢC CÀNG KHÓ)
         let canvas, ctx;
         let isARActive = false;
         let rope = { x: 0, y: 0, vx: 0, vy: 0, flying: false };
@@ -1267,9 +1270,10 @@
 
             canvas.onpointerdown = (e) => {
                 if (isTugOfWarActive) {
-                    if (tugProgress >= 100) return;
-                    tugProgress = Math.min(100, tugProgress + 6);
-                    document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
+                    // Càng lên cao (tugProgress lớn), thú càng giãy mạnh, cần click nhiều hơn
+                    let pushPower = tugProgress > 80 ? 3.5 : (tugProgress > 60 ? 4.5 : 6);
+                    tugProgress = Math.min(100, tugProgress + pushPower);
+                    document.getElementById('tug-vertical-bar').style.height = tugProgress + '%';
                     if (tugProgress >= 100) triggerTugWin();
                     return;
                 }
@@ -1341,15 +1345,19 @@
         function startTugOfWarSession() {
             isTugOfWarActive = true;
             tugProgress = 50;
-            document.getElementById('tug-progress-bar').style.width = '50%';
+            document.getElementById('tug-vertical-bar').style.height = '50%';
             document.getElementById('tug-of-war-ui').classList.remove('hidden');
             document.getElementById('ar-instruction').classList.add('hidden');
 
             if (tugTimerInterval) clearInterval(tugTimerInterval);
             tugTimerInterval = setInterval(() => {
                 if (!isARActive || !isTugOfWarActive) { clearInterval(tugTimerInterval); return; }
-                tugProgress -= 1.5;
-                document.getElementById('tug-progress-bar').style.width = Math.max(0, tugProgress) + '%';
+                
+                // Thú giãy giụa kéo thanh xuống mạnh hơn khi càng gần chiến thắng
+                let pullDownRate = tugProgress > 75 ? 2.8 : (tugProgress > 50 ? 2.0 : 1.5);
+                tugProgress -= pullDownRate;
+                
+                document.getElementById('tug-vertical-bar').style.height = Math.max(0, tugProgress) + '%';
                 if (tugProgress >= 100) triggerTugWin();
                 else if (tugProgress <= 0) {
                     clearInterval(tugTimerInterval);
