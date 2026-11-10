@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Roaming Beasts Master v9.2</title>
+    <title>Batthu - Full Feature Master v9.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -19,6 +19,16 @@
 
         .leaflet-control-attribution { display: none !important; }
         .leaflet-div-icon { background: transparent !important; border: none !important; }
+
+        /* HIỆU ỨNG THÚ LƯỚT DI CHUYỂN LIỀN MẠCH, MƯỢT MÀ */
+        .roaming-pet-marker {
+            transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1), top 1.2s ease, left 1.2s ease;
+            will-change: transform;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
         @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-45px) scale(1.2); opacity: 0; } }
         .damage-popup { animation: floatText 0.6s ease-out forwards; }
     </style>
@@ -32,36 +42,43 @@
 
     <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
     <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2">
-        <div class="flex justify-between items-center z-30 pt-1 pb-1 shrink-0 gap-1">
-            <div class="bg-black/80 backdrop-blur-md px-2 py-1 rounded-full border border-white/20 flex items-center gap-1 shrink-0">
-                <span id="weather-icon" class="text-xs">☀️</span>
-                <span id="weather-status" class="text-[10px] font-medium">Trời quang</span>
-            </div>
-            <div class="flex gap-1 overflow-x-auto py-1 shrink grow items-center no-scrollbar">
-                <button onclick="openWorldBossMenu()" class="bg-amber-700/90 px-2 py-1 rounded-full border border-amber-400 text-[10px] font-bold shadow cursor-pointer animate-pulse whitespace-nowrap">👹 Boss</button>
-                <button onclick="openHospitalMenu()" class="bg-cyan-700/90 px-2 py-1 rounded-full border border-cyan-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">🏥 Bệnh Viện</button>
-                <button onclick="openEggIncubatorMenu()" class="bg-emerald-700/90 px-2 py-1 rounded-full border border-emerald-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
-                <button onclick="openQuestMenu()" class="bg-yellow-600/90 px-2 py-1 rounded-full border border-yellow-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">📜 NV</button>
-                <button onclick="openTowerMenu()" class="bg-purple-600/90 px-2 py-1 rounded-full border border-purple-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">🗼 Tháp</button>
-                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2 py-1 rounded-full border border-amber-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">🛒 Chợ</button>
-                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2 py-1 rounded-full border border-red-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">⚔️ PvP</button>
-                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2 py-1 rounded-full border border-emerald-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">🏡 Trại</button>
-                <button onclick="openTeamMenu()" class="bg-black/80 px-2 py-1 rounded-full border border-white/20 text-[10px] font-bold cursor-pointer whitespace-nowrap">🎒(<span id="team-count">0</span>/3)</button>
+        <!-- 2. THANH MENU TỐI ƯU ÔM SÁT MÀN HÌNH ĐIỆN THOẠI -->
+        <div class="z-30 pt-1 pb-1 shrink-0 w-full">
+            <div class="flex gap-1 overflow-x-auto py-1 w-full no-scrollbar items-center">
+                <button onclick="openWorldBossMenu()" class="bg-amber-700/90 px-2.5 py-1.5 rounded-full border border-amber-400 text-[11px] font-bold shadow cursor-pointer animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
+                <button onclick="openHospitalMenu()" class="bg-cyan-700/90 px-2.5 py-1.5 rounded-full border border-cyan-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏥 Bệnh Viện</button>
+                <button onclick="openEggIncubatorMenu()" class="bg-emerald-700/90 px-2.5 py-1.5 rounded-full border border-emerald-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
+                <button onclick="openQuestMenu()" class="bg-yellow-600/90 px-2.5 py-1.5 rounded-full border border-yellow-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">📜 NV</button>
+                <button onclick="openTowerMenu()" class="bg-purple-600/90 px-2.5 py-1.5 rounded-full border border-purple-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🗼 Tháp</button>
+                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2.5 py-1.5 rounded-full border border-amber-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🛒 Chợ</button>
+                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2.5 py-1.5 rounded-full border border-red-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">⚔️ PvP</button>
+                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2.5 py-1.5 rounded-full border border-emerald-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏡 Trại</button>
+                <button onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1.5 rounded-full border border-white/20 text-[11px] font-bold cursor-pointer whitespace-nowrap shrink-0">🎒(<span id="team-count">0</span>/3)</button>
             </div>
         </div>
 
         <div id="map-container-wrap" class="my-1 rounded-xl overflow-hidden border border-zinc-800 relative grow">
             <div id="map"></div>
+
+            <!-- 2. BẢNG THỜI TIẾT DỜI XUỐNG GÓC TRÊN CỦA BẢN ĐỒ -->
+            <div class="absolute top-3 left-3 z-30 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 flex items-center gap-1.5 shadow-lg pointer-events-none">
+                <span id="weather-icon" class="text-xs">☀️</span>
+                <span id="weather-status" class="text-[10px] font-medium text-zinc-200">Trời quang</span>
+            </div>
+
             <button onclick="recenterMap()" class="absolute bottom-6 right-4 z-30 bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-lg cursor-pointer" title="Về vị trí của tôi">
                 📍
             </button>
         </div>
 
-        <div class="flex flex-col items-center z-30 pb-1 shrink-0">
-            <div id="stamina-info" class="text-[11px] font-bold text-amber-300 bg-black/80 px-3 py-1 rounded-full border border-white/20 mb-1 shadow-lg flex items-center gap-1.5">
-                📡 Năng lượng quét: <span id="scan-stamina-count">5</span>/5 (<span id="scan-stamina-timer">10:00</span>) | 💰 <span id="coin-count">1500</span>🪙 | 👟 <span id="step-count-display">0</span> bước
+        <!-- 1. KHÔI PHỤC ĐẦY ĐỦ NĂNG LƯỢNG BẮT THÚ (15/15) VÀ NĂNG LƯỢNG QUÉT (5/5) -->
+        <div class="flex flex-col items-center z-30 pb-1 shrink-0 gap-1">
+            <div class="w-full max-w-sm flex items-center justify-between text-[10px] font-bold text-zinc-200 bg-black/85 px-3 py-1.5 rounded-xl border border-white/15 shadow-lg">
+                <span class="text-amber-300">⚡ Bắt: <span id="catch-stamina-count">15</span>/15 (<span id="catch-stamina-timer">10:00</span>)</span>
+                <span class="text-cyan-300">📡 Quét: <span id="scan-stamina-count">5</span>/5 (<span id="scan-stamina-timer">10:00</span>)</span>
+                <span class="text-yellow-400">💰 <span id="coin-count">1500</span>🪙</span>
             </div>
-            <button onclick="manualTriggerScan()" class="w-full max-w-xs bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-xl border border-zinc-700 shadow-xl transition-all text-[11px] cursor-pointer">
+            <button onclick="manualTriggerScan()" class="w-full max-w-sm bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-xl border border-zinc-700 shadow-xl transition-all text-[11px] cursor-pointer">
                 🔄 Quét lại khu vực (-1 Năng lượng quét)
             </button>
         </div>
@@ -124,7 +141,7 @@
                 </div>
                 <div class="text-[10px] text-zinc-300">Tap liên tay để kéo đầy thanh thừng!</div>
             </div>
-            <div id="ar-instruction" class="text-[11px] text-zinc-300 mt-1 bg-black/60 px-3 py-1 rounded-full border border-white/10">🤠 Chạm vào màn hình để quăng vòng dây thừng!</div>
+            <div id="ar-instruction" class="text-[11px] text-zinc-300 mt-1 bg-black/60 px-3 py-1 rounded-full border border-white/10">🤠 Chạm vào màn hình để quăng vòng dây thừng! (⚡-1)</div>
         </div>
     </div>
 
@@ -175,7 +192,10 @@
         let bossLevel = parseInt(localStorage.getItem('ar_boss_level') || '1');
         let totalSteps = parseInt(localStorage.getItem('ar_steps') || '0');
 
-        // NĂNG LƯỢNG QUÉT KHU VỰC: TỐI ĐA 5, 10 PHÚT HỒI 1 ĐIỂM
+        // 1. NĂNG LƯỢNG BẮT THÚ (15/15) & NĂNG LƯỢNG QUÉT (5/5)
+        let catchStamina = parseInt(localStorage.getItem('ar_catch_stamina') || '15');
+        let lastCatchStaminaTime = parseInt(localStorage.getItem('ar_catch_stamina_time') || Date.now());
+
         let scanStamina = parseInt(localStorage.getItem('ar_scan_stamina') || '5');
         let lastScanStaminaTime = parseInt(localStorage.getItem('ar_scan_stamina_time') || Date.now());
 
@@ -308,18 +328,21 @@
             localStorage.setItem('ar_coins', playerCoins);
             localStorage.setItem('ar_tower_floor', towerFloor);
             localStorage.setItem('ar_steps', totalSteps);
+            localStorage.setItem('ar_catch_stamina', catchStamina);
+            localStorage.setItem('ar_catch_stamina_time', lastCatchStaminaTime);
             localStorage.setItem('ar_scan_stamina', scanStamina);
             localStorage.setItem('ar_scan_stamina_time', lastScanStaminaTime);
             localStorage.setItem('ar_training_poles', JSON.stringify(trainingPoles));
             localStorage.setItem('ar_resting_pets', JSON.stringify(restingPets));
+            
             let coinEl = document.getElementById('coin-count');
             if (coinEl) coinEl.innerText = playerCoins;
             let eggBadge = document.getElementById('egg-count-badge');
             if (eggBadge) eggBadge.innerText = eggs.length;
-            let stepEl = document.getElementById('step-count-display');
-            if (stepEl) stepEl.innerText = totalSteps;
             let gateTag = document.getElementById('tower-gate-floor');
             if (gateTag) gateTag.innerText = towerFloor;
+            let catchCountEl = document.getElementById('catch-stamina-count');
+            if (catchCountEl) catchCountEl.innerText = catchStamina;
             let scanCountEl = document.getElementById('scan-stamina-count');
             if (scanCountEl) scanCountEl.innerText = scanStamina;
         }
@@ -335,7 +358,7 @@
             updateTeamCount();
         }
 
-        // --- CƠ CHẾ THỜI TIẾT & NGÀY/ĐÊM ---
+        // --- THỜI TIẾT & NGÀY/ĐÊM ---
         let currentWeather = { type: 'sun', name: 'Nắng gắt ☀️ (Buff Hỏa +25%)', bonusElem: 'Hoa', statBonus: 1.25 };
         function updateWeatherCycle() {
             let hour = new Date().getHours();
@@ -372,9 +395,7 @@
         function addPlayerSteps(amount = 1) {
             totalSteps += amount;
             eggs.forEach(egg => {
-                if (egg.steps < egg.requiredSteps) {
-                    egg.steps += amount;
-                }
+                if (egg.steps < egg.requiredSteps) egg.steps += amount;
             });
             saveGameData();
         }
@@ -688,8 +709,12 @@
             <div class="text-xs text-yellow-400 font-bold mb-3">💰 Vàng hiện có: ${playerCoins} 🪙</div>
             <div class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
                 <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/40">
-                    <div class="text-xs">⚡ Năng Lượng x5 (500🪙)</div>
-                    <button onclick="buyShopItem('stamina', 500, 5)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
+                    <div class="text-xs">⚡ Năng Lượng Bắt x5 (500🪙)</div>
+                    <button onclick="buyShopItem('catchStamina', 500, 5)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
+                </div>
+                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-cyan-500/40">
+                    <div class="text-xs">📡 Năng Lượng Quét x2 (400🪙)</div>
+                    <button onclick="buyShopItem('scanStamina', 400, 2)" class="bg-cyan-600 hover:bg-cyan-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
                 </div>
                 <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
                     <div class="text-xs">🍖 Thức Ăn (50🪙) [Kho: ${inventory.food}]</div>
@@ -716,13 +741,20 @@
         function buyShopItem(itemKey, price, qty) {
             if (playerCoins < price) { alert('Không đủ vàng!'); return; }
             playerCoins -= price; saveGameData();
-            if (itemKey === 'stamina') { 
+            if (itemKey === 'catchStamina') { 
+                catchStamina = Math.min(15, catchStamina + qty); 
+                localStorage.setItem('ar_catch_stamina', catchStamina); 
+                let cEl = document.getElementById('catch-stamina-count');
+                if (cEl) cEl.innerText = catchStamina;
+            } else if (itemKey === 'scanStamina') { 
                 scanStamina = Math.min(5, scanStamina + qty); 
                 localStorage.setItem('ar_scan_stamina', scanStamina); 
                 let scanCountEl = document.getElementById('scan-stamina-count');
                 if (scanCountEl) scanCountEl.innerText = scanStamina;
+            } else { 
+                inventory[itemKey] = (inventory[itemKey] || 0) + qty; 
+                localStorage.setItem('ar_inventory', JSON.stringify(inventory)); 
             }
-            else { inventory[itemKey] = (inventory[itemKey] || 0) + qty; localStorage.setItem('ar_inventory', JSON.stringify(inventory)); }
             alert('🛒 Mua thành công!'); openMarketMenu();
         }
 
@@ -833,10 +865,10 @@
             content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Đấu Trường PvP</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><button onclick="startBattle('arena')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Tìm Trận Đấu</button>`;
         }
 
-        // --- CƠ CHẾ 1 & 2: BẢN ĐỒ GPS, QUÉT KHU VỰC VÀ THÚ DI CHUYỂN TỚI LUI ---
+        // --- BẢN ĐỒ GPS, QUÉT KHU VỰC VÀ THÚ DI CHUYỂN LIỀN LẠC ---
         let map, userMarker, activeMarkers = [];
-        let mapMonstersData = []; // Dữ liệu thú đang có ngoài bản đồ
-        let roamInterval = null; // Vòng lặp di chuyển thú
+        let mapMonstersData = [];
+        let roamInterval = null;
         let userLat = 10.0452, userLng = 105.7469;
 
         function initMap() {
@@ -857,7 +889,6 @@
             const userIcon = L.divIcon({ className: 'leaflet-div-icon', html: '<div style="font-size: 28px;">📍</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
             userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
             
-            // Khởi tạo thú lần đầu nếu chưa có
             if (mapMonstersData.length === 0) spawnMultipleMonsters();
             initRoamingBeasts();
             setTimeout(() => { map.invalidateSize(); }, 300);
@@ -873,42 +904,41 @@
             } else if (map) { map.setView([userLat, userLng], 17); map.invalidateSize(); }
         }
 
-        // 1. THÚ DI CHUYỂN TỚI LUI NGOÀI BẢN ĐỒ
+        // 3. THÚ DI CHUYỂN NHANH, LIỀN LẠC VÀ MƯỢT MÀ HƠN
         function initRoamingBeasts() {
             if (roamInterval) clearInterval(roamInterval);
             roamInterval = setInterval(() => {
                 if (!map || activeMarkers.length === 0) return;
                 mapMonstersData.forEach((m, idx) => {
-                    // Cập nhật toạ độ nhích nhẹ theo hướng vx, vy
+                    // Quãng đường di chuyển nhanh và dài hơn (tăng bước nhảy)
                     m.lat += m.vx;
                     m.lng += m.vy;
                     m.roamStep++;
 
-                    // Đổi hướng sau 12-20 nhịp di chuyển (tới lui quanh bán kính)
-                    if (m.roamStep > 15 || Math.abs(m.lat - m.originLat) > 0.0015 || Math.abs(m.lng - m.originLng) > 0.0015) {
-                        m.vx = (Math.random() - 0.5) * 0.00008;
-                        m.vy = (Math.random() - 0.5) * 0.00008;
+                    // Đổi hướng sau 6 nhịp (khoảng 7-8 giây một lần rẽ)
+                    if (m.roamStep > 6 || Math.abs(m.lat - m.originLat) > 0.002 || Math.abs(m.lng - m.originLng) > 0.002) {
+                        m.vx = (Math.random() - 0.5) * 0.00035;
+                        m.vy = (Math.random() - 0.5) * 0.00035;
                         m.roamStep = 0;
                     }
 
-                    // Cập nhật vị trí Marker trên Leaflet
                     if (activeMarkers[idx]) {
                         activeMarkers[idx].setLatLng([m.lat, m.lng]);
                     }
                 });
-            }, 1000);
+            }, 1200);
         }
 
-        // 2. QUÉT KHU VỰC THỦ CÔNG (-1 NĂNG LƯỢNG QUÉT)
+        // 4. QUÉT KHU VỰC KHÔNG HIỆN POPUP ALERT
         function manualTriggerScan() {
             if (scanStamina <= 0) {
-                alert('⚠️ Bạn đã hết Năng lượng quét (0/5)! Cần chờ 10 phút để tự hồi 1 điểm hoặc nạp thêm ở Chợ.');
+                alert('⚠️ Bạn đã hết Năng lượng quét (0/5)! Cần chờ 10 phút để tự hồi hoặc mua thêm ở Chợ.');
                 return;
             }
             scanStamina--;
             saveGameData();
             spawnMultipleMonsters();
-            alert('📡 Đã quét lại khu vực thành công! Toàn bộ linh thú mới đã xuất hiện.');
+            // Đã lược bỏ thông báo theo yêu cầu
         }
 
         function spawnMultipleMonsters() {
@@ -930,16 +960,25 @@
                     atk: Math.floor(baseTemplate.atk * multi), speed: Math.floor(baseTemplate.speed * multi),
                     lat: originLat, lng: originLng,
                     originLat: originLat, originLng: originLng,
-                    vx: (Math.random() - 0.5) * 0.00008,
-                    vy: (Math.random() - 0.5) * 0.00008,
+                    vx: (Math.random() - 0.5) * 0.00035,
+                    vy: (Math.random() - 0.5) * 0.00035,
                     roamStep: 0
                 };
                 mapMonstersData.push(monsterData);
 
-                const monsterIcon = L.divIcon({ className: 'leaflet-div-icon', html: `<div style="font-size: 36px; transition: transform 0.5s;" title="${rarity.badge}">${monsterData.emoji}</div>`, iconSize: [38, 38], iconAnchor: [19, 19] });
+                const monsterIcon = L.divIcon({ 
+                    className: 'leaflet-div-icon', 
+                    html: `<div class="roaming-pet-marker" style="font-size: 36px; filter: drop-shadow(0 0 6px gold);" title="${rarity.badge}">${monsterData.emoji}</div>`, 
+                    iconSize: [38, 38], 
+                    iconAnchor: [19, 19] 
+                });
                 const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(map);
                 
                 marker.on('click', () => {
+                    if (catchStamina <= 0) {
+                        alert('⚡ Bạn đã hết Năng Lượng Bắt Thú (0/15)! Hãy chờ 10 phút để tự hồi 1 điểm hoặc nạp ở Chợ.');
+                        return;
+                    }
                     currentWildMonster = monsterData; 
                     currentSelectedMarker = marker;
                     enterARScreen();
@@ -967,7 +1006,6 @@
             initCanvasGame();
         }
 
-        // 3. KHÔNG TỰ ĐỘNG QUÉT LẠI KHI THOÁT HOẶC XONG TRẬN
         function exitARScreen() {
             isARActive = false; isTugOfWarActive = false;
             if (tugTimerInterval) clearInterval(tugTimerInterval);
@@ -994,6 +1032,11 @@
             };
             canvas.onpointerup = (e) => {
                 if (isTugOfWarActive || rope.flying) return;
+                // TRỪ NĂNG LƯỢNG BẮT THÚ
+                if (catchStamina > 0) { 
+                    catchStamina--; 
+                    saveGameData(); 
+                }
                 rope.vx = (e.clientX - rope.x) * 0.12; rope.vy = (e.clientY - rope.y) * 0.12;
                 rope.flying = true; rope.flightTime = 0;
             };
@@ -1055,7 +1098,6 @@
             document.getElementById('tug-of-war-ui').classList.add('hidden');
             exitARScreen();
 
-            // Xóa con thú vừa bắt khỏi bản đồ, KHÔNG quét lại cả bản đồ
             if (currentSelectedMarker && map) {
                 map.removeLayer(currentSelectedMarker);
                 let idx = activeMarkers.indexOf(currentSelectedMarker);
@@ -1231,7 +1273,6 @@
             }, 30);
         }
 
-        // 3. THOÁT ĐẤU TRƯỜNG CŨNG KHÔNG QUÉT LẠI BẢN ĐỒ
         function exitBattleScreen() {
             switchGameMusic('map');
             if (battleInterval) clearInterval(battleInterval);
@@ -1282,33 +1323,50 @@
             content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-amber-400">👹 Hắc Long Vương (Cấp ${bossLevel})</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-amber-500/40 mb-4 text-center"><div class="text-6xl mb-2">🐉🔥</div><div class="font-bold text-base text-yellow-300">Yêu cầu: Đội hình đủ 3 linh thú! (${team.length}/3)</div></div>${canFight ? `<button onclick="startBattle('boss')" class="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Xuất Trận Đánh Boss</button>` : `<div class="text-center text-xs text-red-400 font-bold bg-red-950/50 p-3 rounded-xl border border-red-500/50">⚠️ Đội hình chưa đủ 3 linh thú!</div>`}`;
         }
 
-        // HỆ THỐNG NĂNG LƯỢNG QUÉT KHU VỰC (5/5, 10 PHÚT HỒI 1 LẦN)
-        function initScanStaminaSystem() {
+        // HỆ THỐNG NĂNG LƯỢNG KÉP: BẮT THÚ (15/15) & QUÉT KHU VỰC (5/5)
+        function initDualStaminaSystem() {
             setInterval(() => {
                 let now = Date.now();
-                let diffSec = Math.floor((now - lastScanStaminaTime) / 1000);
-                let coolDownTime = 600; // 10 phút = 600s
-                let remainingSec = Math.max(0, coolDownTime - diffSec);
+                let coolDownTime = 600; // 10 phút
 
-                if (scanStamina < 5 && diffSec >= coolDownTime) {
+                // 1. Hồi Năng Lượng Bắt Thú
+                let diffCatch = Math.floor((now - lastCatchStaminaTime) / 1000);
+                let remCatch = Math.max(0, coolDownTime - diffCatch);
+                if (catchStamina < 15 && diffCatch >= coolDownTime) {
+                    catchStamina = Math.min(15, catchStamina + 1);
+                    lastCatchStaminaTime = now;
+                    saveGameData();
+                    remCatch = coolDownTime;
+                }
+                let minC = String(Math.floor(remCatch / 60)).padStart(2, '0');
+                let secC = String(remCatch % 60).padStart(2, '0');
+                let cCountEl = document.getElementById('catch-stamina-count');
+                let cTimerEl = document.getElementById('catch-stamina-timer');
+                if (cCountEl) cCountEl.innerText = catchStamina;
+                if (cTimerEl) cTimerEl.innerText = catchStamina >= 15 ? 'MAX' : `${minC}:${secC}`;
+
+                // 2. Hồi Năng Lượng Quét
+                let diffScan = Math.floor((now - lastScanStaminaTime) / 1000);
+                let remScan = Math.max(0, coolDownTime - diffScan);
+                if (scanStamina < 5 && diffScan >= coolDownTime) {
                     scanStamina = Math.min(5, scanStamina + 1);
                     lastScanStaminaTime = now;
                     saveGameData();
-                    remainingSec = coolDownTime;
+                    remScan = coolDownTime;
                 }
+                let minS = String(Math.floor(remScan / 60)).padStart(2, '0');
+                let secS = String(remScan % 60).padStart(2, '0');
+                let sCountEl = document.getElementById('scan-stamina-count');
+                let sTimerEl = document.getElementById('scan-stamina-timer');
+                if (sCountEl) sCountEl.innerText = scanStamina;
+                if (sTimerEl) sTimerEl.innerText = scanStamina >= 5 ? 'MAX' : `${minS}:${secS}`;
 
-                let minStr = String(Math.floor(remainingSec / 60)).padStart(2, '0');
-                let secStr = String(remainingSec % 60).padStart(2, '0');
-                let countEl = document.getElementById('scan-stamina-count');
-                let timerEl = document.getElementById('scan-stamina-timer');
-                if (countEl) countEl.innerText = scanStamina;
-                if (timerEl) timerEl.innerText = scanStamina >= 5 ? 'MAX' : `${minStr}:${secStr}`;
             }, 1000);
             saveGameData();
         }
 
         window.onload = () => {
-            initMap(); initScanStaminaSystem(); updateTeamCount(); updateWeatherCycle(); initStepCounter();
+            initMap(); initDualStaminaSystem(); updateTeamCount(); updateWeatherCycle(); initStepCounter();
             setTimeout(() => { if(map) map.invalidateSize(); }, 400);
         };
         window.onresize = () => { if (map) setTimeout(() => map.invalidateSize(), 200); };
