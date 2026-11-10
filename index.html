@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Dynamic Battle Animation v4.7</title>
+    <title>Batthu - Map Fix v4.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
+        
+        /* SỬA LỖI KHUNG BẢN ĐỒ BỊ ĐEN TRÊN MOBILE */
         #map-screen { display: flex; flex-direction: column; height: 100vh; width: 100vw; position: absolute; inset: 0; background: #09090b; }
-        #map-container-wrap { flex: 1; position: relative; width: 100%; height: 100%; }
-        #map { height: 100% !important; width: 100% !important; z-index: 10; }
+        #map-container-wrap { flex: 1; position: relative; width: 100%; min-height: 60vh; }
+        #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; }
+        
         .leaflet-control-attribution { display: none !important; }
         
-        @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.3); opacity: 0; } }
-        .damage-popup { animation: floatText 0.5s ease-out forwards; }
+        @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
+        .damage-popup { animation: floatText 0.7s ease-out forwards; }
     </style>
 </head>
 <body class="text-white relative h-screen w-screen overflow-hidden">
@@ -22,20 +25,6 @@
     <!-- KHUNG YOUTUBE PLAYER ẨN (PHÁT NHẠC NỀN) -->
     <div id="youtube-audio-container" style="position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none;">
         <div id="yt-player"></div>
-    </div>
-
-    <!-- THÔNG BÁO CẬP NHẬT PHIÊN BẢN MỚI -->
-    <div id="update-toast" class="hidden absolute top-4 inset-x-4 z-50 bg-amber-600 border border-yellow-300 text-white p-3 rounded-2xl shadow-2xl flex items-center justify-between backdrop-blur-md animate-bounce">
-        <div class="flex items-center gap-2">
-            <span class="text-2xl">🚀</span>
-            <div>
-                <div class="font-bold text-xs">Đã có phiên bản cập nhật mới!</div>
-                <div class="text-[10px] text-amber-100">Bấm để làm mới và trải nghiệm ngay.</div>
-            </div>
-        </div>
-        <button onclick="applyAppUpdate()" class="bg-black hover:bg-zinc-900 text-yellow-300 px-3 py-1.5 rounded-xl font-bold text-xs shadow cursor-pointer">
-            Cập nhật ngay
-        </button>
     </div>
 
     <!-- MÀN HÌNH NHẬP THÔNG TIN CÁ NHÂN LẦN ĐẦU -->
@@ -153,40 +142,10 @@
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
 
+    <!-- YOUTUBE IFRAME API SCRIPT -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        let newWorker;
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').then(reg => {
-                reg.addEventListener('updatefound', () => {
-                    newWorker = reg.installing;
-                    newWorker.addEventListener('change', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            document.getElementById('update-toast').classList.remove('hidden');
-                        }
-                    });
-                });
-            });
-
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    window.location.reload();
-                    refreshing = true;
-                }
-            });
-        }
-
-        function applyAppUpdate() {
-            if (newWorker) {
-                newWorker.postMessage({ action: 'skipWaiting' });
-            } else {
-                window.location.reload();
-            }
-        }
-
         let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
         let farm = JSON.parse(localStorage.getItem('ar_farm') || '[]');
         let pokedex = JSON.parse(localStorage.getItem('ar_pokedex') || '[]');
@@ -208,19 +167,20 @@
         const BATTLE_YOUTUBE_ID = '5qap5aO4i9A';
 
         function onYouTubeIframeAPIReady() {
-            ytPlayer = new YT.Player('yt-player', {
-                height: '0',
-                width: '0',
-                videoId: LOBBY_YOUTUBE_ID,
-                playerVars: { 'autoplay': 1, 'loop': 1, 'playlist': LOBBY_YOUTUBE_ID, 'controls': 0 },
-                events: {
-                    'onReady': (event) => {
-                        isMusicReady = true;
-                        event.target.setVolume(50);
-                        event.target.playVideo();
+            try {
+                ytPlayer = new YT.Player('yt-player', {
+                    height: '0', width: '0',
+                    videoId: LOBBY_YOUTUBE_ID,
+                    playerVars: { 'autoplay': 1, 'loop': 1, 'playlist': LOBBY_YOUTUBE_ID, 'controls': 0 },
+                    events: {
+                        'onReady': (event) => {
+                            isMusicReady = true;
+                            event.target.setVolume(50);
+                            event.target.playVideo();
+                        }
                     }
-                }
-            });
+                });
+            } catch(e){}
         }
 
         let isMusicPlaying = false;
@@ -281,18 +241,10 @@
             let bossAtk = 90 + (towerFloor * 25);
 
             let customEnemy = {
-                name: bossName,
-                emoji: bossEmoji,
-                spriteUrl: '',
-                hp: bossHp,
-                maxHp: bossHp,
-                atk: bossAtk,
-                level: towerFloor * 8,
+                name: bossName, emoji: bossEmoji, spriteUrl: '',
+                hp: bossHp, maxHp: bossHp, atk: bossAtk, level: towerFloor * 8,
                 element: elements[towerFloor % elements.length].name,
-                critRate: 25,
-                dodgeRate: 18,
-                accuracy: 30,
-                attackSpeed: 1.4
+                critRate: 25, dodgeRate: 18, accuracy: 30, attackSpeed: 1.4
             };
 
             startCanvasBattle(null, false, customEnemy, 'tower');
@@ -313,12 +265,8 @@
             <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🧬 Trung Tâm Lai Giống</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>
             <p class="text-xs text-zinc-300 mb-3">Kết hợp 1 con <strong>Đực (♂️)</strong> và 1 con <strong>Cái (♀️)</strong> trong Trang Trại để sinh ra thế hệ lai vượt trội!</p>
             <div class="grid grid-cols-2 gap-3 mb-4">
-                <div onclick="openSelectBreedingParent(1)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 flex flex-col items-center justify-center h-28 cursor-pointer text-center">
-                    ${p1Html}
-                </div>
-                <div onclick="openSelectBreedingParent(2)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 flex flex-col items-center justify-center h-28 cursor-pointer text-center">
-                    ${p2Html}
-                </div>
+                <div onclick="openSelectBreedingParent(1)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 flex flex-col items-center justify-center h-28 cursor-pointer text-center">${p1Html}</div>
+                <div onclick="openSelectBreedingParent(2)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 flex flex-col items-center justify-center h-28 cursor-pointer text-center">${p2Html}</div>
             </div>
             <button onclick="executeBreeding()" class="w-full bg-pink-600 hover:bg-pink-500 py-3 rounded-xl font-bold text-xs shadow-lg cursor-pointer">✨ Tiến Hành Lai Giống (300 🪙)</button>`;
         }
@@ -354,7 +302,7 @@
             if (slotNum === 1) breedingSlots.parent1 = pet;
             else {
                 if (breedingSlots.parent1 && breedingSlots.parent1.gender === pet.gender) {
-                    alert(`⚠️ Không thể chọn! Thú thứ 2 phải khác giới tính với thú thứ nhất (Yêu cầu 1 Đực và 1 Cái).`);
+                    alert(`⚠️ Không thể chọn! Thú thứ 2 phải khác giới tính với thú thứ nhất.`);
                     return;
                 }
                 breedingSlots.parent2 = pet;
@@ -365,7 +313,7 @@
         function executeBreeding() {
             if (!breedingSlots.parent1 || !breedingSlots.parent2) { alert('Vui lòng chọn đủ 2 linh thú bố mẹ!'); return; }
             if (breedingSlots.parent1.gender === breedingSlots.parent2.gender) {
-                alert('⚠️ Lai giống thất bại! Cần đúng 1 con Đực (♂️) và 1 con Cái (♀️).');
+                alert('⚠️ Lai giống thất bại! Cần đúng 1 con Đực và 1 con Cái.');
                 return;
             }
             if (playerCoins < 300) { alert('Cần 300 Vàng để làm phí lai giống!'); return; }
@@ -399,7 +347,7 @@
             farm.push(childPet);
             localStorage.setItem('ar_farm', JSON.stringify(farm));
             breedingSlots = { parent1: null, parent2: null };
-            alert(`🧬 Lai giống thành công! Nhận được ${childPet.emoji} ${childPet.name} [Hệ ${childPet.element} - ${childPet.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái'}] vào Trang Trại!`);
+            alert(`🧬 Lai giống thành công! Nhận được ${childPet.emoji} ${childPet.name} vào Trang Trại!`);
             openFarmMenu();
         }
 
@@ -421,7 +369,7 @@
 
             localStorage.setItem('ar_player_profile', JSON.stringify({ name, age, gender }));
             document.getElementById('player-setup-modal').classList.add('hidden');
-            alert(`Chào mừng nhà thám hiểm ${name} đã tham gia game!`);
+            alert(`Chào mừng nhà thám hiểm ${name}!`);
             setTimeout(() => { if (map) map.invalidateSize(); }, 200);
         }
 
@@ -459,27 +407,27 @@
 
         const categories = {
             'Gia cầm': [
-                { id: 101, name: 'Gà Ta', emoji: '🐔', spriteUrl: '', cp: 120, hp: 60, maxHp: 60, atk: 70, level: 1, rarePrice: 100, attackType: 'melee' },
-                { id: 102, name: 'Vịt Cỏ', emoji: '🦆', spriteUrl: '', cp: 110, hp: 55, maxHp: 55, atk: 65, level: 1, rarePrice: 90, attackType: 'magic' },
-                { id: 103, name: 'Ngỗng Trắng', emoji: '🦢', spriteUrl: '', cp: 140, hp: 80, maxHp: 80, atk: 85, level: 1, rarePrice: 130, attackType: 'charge' },
-                { id: 104, name: 'Ngan Đen', emoji: '🦃', spriteUrl: '', cp: 130, hp: 75, maxHp: 75, atk: 80, level: 1, rarePrice: 120, attackType: 'melee' }
+                { id: 101, name: 'Gà Ta', emoji: '🐔', spriteUrl: '', cp: 120, hp: 60, maxHp: 60, atk: 70, level: 1, rarePrice: 100 },
+                { id: 102, name: 'Vịt Cỏ', emoji: '🦆', spriteUrl: '', cp: 110, hp: 55, maxHp: 55, atk: 65, level: 1, rarePrice: 90 },
+                { id: 103, name: 'Ngỗng Trắng', emoji: '🦢', spriteUrl: '', cp: 140, hp: 80, maxHp: 80, atk: 85, level: 1, rarePrice: 130 },
+                { id: 104, name: 'Ngan Đen', emoji: '🦃', spriteUrl: '', cp: 130, hp: 75, maxHp: 75, atk: 80, level: 1, rarePrice: 120 }
             ],
             'Gia súc': [
-                { id: 201, name: 'Chó Vàng', emoji: '🐕', spriteUrl: '', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1, rarePrice: 150, attackType: 'melee' },
-                { id: 202, name: 'Mèo Mướp', emoji: '🐈', spriteUrl: '', cp: 135, hp: 70, maxHp: 70, atk: 95, level: 1, rarePrice: 140, attackType: 'magic' },
-                { id: 203, name: 'Heo Ủn Ỉn', emoji: '🐖', spriteUrl: '', cp: 150, hp: 100, maxHp: 100, atk: 75, level: 1, rarePrice: 160, attackType: 'charge' },
-                { id: 204, name: 'Bò Sữa', emoji: '🐂', spriteUrl: '', cp: 180, hp: 120, maxHp: 120, atk: 110, level: 1, rarePrice: 200, attackType: 'melee' }
+                { id: 201, name: 'Chó Vàng', emoji: '🐕', spriteUrl: '', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1, rarePrice: 150 },
+                { id: 202, name: 'Mèo Mướp', emoji: '🐈', spriteUrl: '', cp: 135, hp: 70, maxHp: 70, atk: 95, level: 1, rarePrice: 140 },
+                { id: 203, name: 'Heo Ủn Ỉn', emoji: '🐖', spriteUrl: '', cp: 150, hp: 100, maxHp: 100, atk: 75, level: 1, rarePrice: 160 },
+                { id: 204, name: 'Bò Sữa', emoji: '🐂', spriteUrl: '', cp: 180, hp: 120, maxHp: 120, atk: 110, level: 1, rarePrice: 200 }
             ],
             'Tự nhiên': [
-                { id: 301, name: 'Chuột Nước', emoji: '🐹', spriteUrl: '', cp: 110, hp: 60, maxHp: 60, atk: 65, level: 1, rarePrice: 110, attackType: 'magic' },
-                { id: 302, name: 'Chim Lửa', emoji: '🐦', spriteUrl: '', cp: 185, hp: 50, maxHp: 50, atk: 140, level: 1, rarePrice: 250, attackType: 'magic' },
-                { id: 303, name: 'Cáo Đỏ', emoji: '🦊', spriteUrl: '', cp: 160, hp: 65, maxHp: 65, atk: 115, level: 1, rarePrice: 180, attackType: 'charge' },
-                { id: 304, name: 'Sói Xám', emoji: '🐺', spriteUrl: '', cp: 175, hp: 90, maxHp: 90, atk: 125, level: 1, rarePrice: 220, attackType: 'melee' }
+                { id: 301, name: 'Chuột Nước', emoji: '🐹', spriteUrl: '', cp: 110, hp: 60, maxHp: 60, atk: 65, level: 1, rarePrice: 110 },
+                { id: 302, name: 'Chim Lửa', emoji: '🐦', spriteUrl: '', cp: 185, hp: 50, maxHp: 50, atk: 140, level: 1, rarePrice: 250 },
+                { id: 303, name: 'Cáo Đỏ', emoji: '🦊', spriteUrl: '', cp: 160, hp: 65, maxHp: 65, atk: 115, level: 1, rarePrice: 180 },
+                { id: 304, name: 'Sói Xám', emoji: '🐺', spriteUrl: '', cp: 175, hp: 90, maxHp: 90, atk: 125, level: 1, rarePrice: 220 }
             ],
             'Sách đỏ': [
-                { id: 401, name: 'Rồng Nước', emoji: '🐉', spriteUrl: '', cp: 250, hp: 150, maxHp: 150, atk: 180, level: 1, rarePrice: 500, attackType: 'magic' },
-                { id: 402, name: 'Phượng Hoàng', emoji: '🦅', spriteUrl: '', cp: 270, hp: 140, maxHp: 140, atk: 195, level: 1, rarePrice: 600, attackType: 'magic' },
-                { id: 403, name: 'Kỳ Lân', emoji: '🦄', spriteUrl: '', cp: 260, hp: 160, maxHp: 160, atk: 175, level: 1, rarePrice: 550, attackType: 'charge' }
+                { id: 401, name: 'Rồng Nước', emoji: '🐉', spriteUrl: '', cp: 250, hp: 150, maxHp: 150, atk: 180, level: 1, rarePrice: 500 },
+                { id: 402, name: 'Phượng Hoàng', emoji: '🦅', spriteUrl: '', cp: 270, hp: 140, maxHp: 140, atk: 195, level: 1, rarePrice: 600 },
+                { id: 403, name: 'Kỳ Lân', emoji: '🦄', spriteUrl: '', cp: 260, hp: 160, maxHp: 160, atk: 175, level: 1, rarePrice: 550 }
             ]
         };
 
@@ -573,17 +521,10 @@
             const randomGender = Math.random() < 0.5 ? 'Đực' : 'Cái';
 
             const hatchedPet = { 
-                ...basePet, 
-                uniqueId: Date.now(), 
-                level: 1, 
-                hunger: 80, 
-                happiness: 80, 
-                element: randomElem.name,
-                gender: randomGender,
-                critRate: Math.floor(10 + Math.random() * 20),
-                dodgeRate: Math.floor(5 + Math.random() * 15),
-                accuracy: Math.floor(10 + Math.random() * 20),
-                attackSpeed: parseFloat((1.2 + Math.random() * 0.5).toFixed(1)),
+                ...basePet, uniqueId: Date.now(), level: 1, hunger: 80, happiness: 80, 
+                element: randomElem.name, gender: randomGender,
+                critRate: Math.floor(10 + Math.random() * 20), dodgeRate: Math.floor(5 + Math.random() * 15),
+                accuracy: Math.floor(10 + Math.random() * 20), attackSpeed: parseFloat((1.2 + Math.random() * 0.5).toFixed(1)),
                 buffEffect: null
             };
 
@@ -591,11 +532,11 @@
                 team.push(hatchedPet);
                 localStorage.setItem('ar_team', JSON.stringify(team));
                 updateTeamCount();
-                alert(`🎉 Trứng nở ra ${hatchedPet.emoji} ${hatchedPet.name} [Hệ ${hatchedPet.element} - ${hatchedPet.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái'}] vào đội hình!`);
+                alert(`🎉 Trứng nở ra ${hatchedPet.emoji} ${hatchedPet.name} vào đội hình!`);
             } else {
                 farm.push(hatchedPet);
                 localStorage.setItem('ar_farm', JSON.stringify(farm));
-                alert(`🎉 Trứng nở ra ${hatchedPet.emoji} ${hatchedPet.name} [Hệ ${hatchedPet.element} - ${hatchedPet.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái'}] vào Trang Trại!`);
+                alert(`🎉 Trứng nở ra ${hatchedPet.emoji} ${hatchedPet.name} vào Trang Trại!`);
             }
             closeModal();
         }
@@ -659,28 +600,6 @@
                         <button onclick="buyBatch('trainer', 100)" class="bg-amber-600 px-3 py-1.5 rounded text-xs font-bold cursor-pointer">Mua</button>
                     </div>
                 </div>
-
-                <div class="text-xs font-bold text-yellow-400 mt-2">💎 Đá Ngũ Hành Tiến Hóa (Yêu cầu Lv.200) (150🪙 / viên)</div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
-                    <div class="text-xs">⚔️ Đá Kim (Kho: ${inventory.stoneKim})</div>
-                    <button onclick="buyBatch('stoneKim', 150)" class="bg-amber-600 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
-                    <div class="text-xs">🌿 Đá Mộc (Kho: ${inventory.stoneMoc})</div>
-                    <button onclick="buyBatch('stoneMoc', 150)" class="bg-amber-600 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
-                    <div class="text-xs">💧 Đá Thủy (Kho: ${inventory.stoneThuy})</div>
-                    <button onclick="buyBatch('stoneThuy', 150)" class="bg-amber-600 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
-                    <div class="text-xs">🔥 Đá Hỏa (Kho: ${inventory.stoneHoa})</div>
-                    <button onclick="buyBatch('stoneHoa', 150)" class="bg-amber-600 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
-                    <div class="text-xs">🪨 Đá Thổ (Kho: ${inventory.stoneTho})</div>
-                    <button onclick="buyBatch('stoneTho', 150)" class="bg-amber-600 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
             </div>`;
         }
 
@@ -695,10 +614,9 @@
             if (playerCoins < totalPrice) { alert('Bạn không đủ vàng!'); return; }
             playerCoins -= totalPrice;
             localStorage.setItem('ar_coins', playerCoins);
-
             inventory[type] = (inventory[type] || 0) + qty;
             saveInventory();
-            alert(`🛒 Mua thành công ${qty} vật phẩm!`);
+            alert(`🛒 Mua thành công!`);
             renderMarketContent();
         }
 
@@ -711,7 +629,7 @@
             stamina = Math.min(15, stamina + (qty * 5));
             localStorage.setItem('ar_stamina', stamina);
             document.getElementById('stamina-count').innerText = stamina;
-            alert(`⚡ Hồi phục +${qty * 5} Năng lượng!`);
+            alert(`⚡ Hồi phục Năng lượng!`);
             renderMarketContent();
         }
 
@@ -749,8 +667,8 @@
                         <div class="flex items-center gap-2.5">
                             <span class="text-3xl">${pet.emoji}</span>
                             <div>
-                                <div class="font-bold text-xs">${pet.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="text-yellow-400">Lv.${pet.level || 1}</span> <span class="${elemObj.color}">(${elemObj.icon}${pet.element || 'Kim'})</span></div>
-                                <div class="text-[10px] text-zinc-300">HP: ${pet.hp}/${pet.maxHp} | No: ${pet.hunger}% | Vui: ${pet.happiness}%</div>
+                                <div class="font-bold text-xs">${pet.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="text-yellow-400">Lv.${pet.level || 1}</span></div>
+                                <div class="text-[10px] text-zinc-300">HP: ${pet.hp}/${pet.maxHp} | No: ${pet.hunger}%</div>
                             </div>
                         </div>
                         <div class="flex gap-1">
@@ -778,8 +696,7 @@
                 y: Math.random() * (farmCanvas.height - 60) + 30,
                 vx: (Math.random() - 0.5) * 1.5,
                 vy: (Math.random() - 0.5) * 1.2,
-                frame: 0,
-                animTimer: 0
+                frame: 0, animTimer: 0
             }));
 
             if (farmAnimInterval) clearInterval(farmAnimInterval);
@@ -795,32 +712,15 @@
                     if (p.y < 30 || p.y > farmCanvas.height - 30) p.vy *= -1;
 
                     p.animTimer++;
-                    if (p.animTimer % 8 === 0) {
-                        p.frame = (p.frame + 1) % 4;
-                    }
+                    if (p.animTimer % 8 === 0) p.frame = (p.frame + 1) % 4;
 
-                    if (p.spriteUrl) {
-                        let img = getCachedSpriteImage(p.spriteUrl);
-                        if (img.complete && img.naturalWidth !== 0) {
-                            let fw = img.naturalWidth / 4;
-                            let fh = img.naturalHeight;
-                            farmCtx.drawImage(img, p.frame * fw, 0, fw, fh, p.x - 24, p.y - 24, 48, 48);
-                        } else {
-                            farmCtx.font = "38px sans-serif";
-                            farmCtx.textAlign = "center";
-                            farmCtx.textBaseline = "middle";
-                            farmCtx.fillText(p.emoji, p.x, p.y);
-                        }
-                    } else {
-                        farmCtx.font = "38px sans-serif";
-                        farmCtx.textAlign = "center";
-                        farmCtx.textBaseline = "middle";
-                        farmCtx.fillText(p.emoji, p.x, p.y);
-                    }
+                    farmCtx.font = "38px sans-serif";
+                    farmCtx.textAlign = "center";
+                    farmCtx.textBaseline = "middle";
+                    farmCtx.fillText(p.emoji, p.x, p.y);
 
                     farmCtx.font = "10px sans-serif";
                     farmCtx.fillStyle = "#fde047";
-                    farmCtx.textAlign = "center";
                     farmCtx.fillText(p.name, p.x, p.y + 26);
                 });
             }, 50);
@@ -873,9 +773,8 @@
                         <div class="flex items-center gap-3">
                             <span class="text-4xl bg-zinc-900 p-2 rounded-xl">${pet.emoji}</span>
                             <div>
-                                <div class="font-bold text-sm">${pet.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="text-xs text-yellow-400">Lv.${pet.level}</span> <span class="${elemObj.color}">(${elemObj.icon}${pet.element})</span></div>
-                                <div class="text-[11px] text-zinc-300">HP: ${pet.hp}/${pet.maxHp} | No: ${pet.hunger}% | Vui: ${pet.happiness}%</div>
-                                ${isRefusing ? '<div class="text-[10px] text-red-400 font-bold">⚠️ Hạnh phúc < 30%: Từ chối chiến đấu!</div>' : ''}
+                                <div class="font-bold text-sm">${pet.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="text-xs text-yellow-400">Lv.${pet.level}</span></div>
+                                <div class="text-[11px] text-zinc-300">HP: ${pet.hp}/${pet.maxHp} | No: ${pet.hunger}%</div>
                             </div>
                         </div>
                         <button onclick="event.stopPropagation(); removePet(${idx})" class="text-amber-400 text-xs px-2 py-1 bg-amber-950/40 rounded cursor-pointer">Về trại</button>
@@ -893,115 +792,21 @@
             let genderColor = pet.gender === 'Đực' ? 'text-blue-400' : 'text-pink-400';
             const content = document.getElementById('modal-content');
 
-            let stoneKey = '', stoneName = '';
-            if (pet.element === 'Kim') { stoneKey = 'stoneKim'; stoneName = 'Đá Kim'; }
-            else if (pet.element === 'Mộc') { stoneKey = 'stoneMoc'; stoneName = 'Đá Mộc'; }
-            else if (pet.element === 'Thủy') { stoneKey = 'stoneThuy'; stoneName = 'Đá Thủy'; }
-            else if (pet.element === 'Hỏa') { stoneKey = 'stoneHoa'; stoneName = 'Đá Hỏa'; }
-            else if (pet.element === 'Thổ') { stoneKey = 'stoneTho'; stoneName = 'Đá Thổ'; }
-
-            let stoneCount = inventory[stoneKey] || 0;
-            let hasBuff = pet.buffEffect ? `<span class="text-emerald-400 font-bold">✨ ${pet.buffEffect}</span>` : `<span class="text-zinc-400">Chưa tiến hóa (Yêu cầu Lv.200)</span>`;
-
             content.innerHTML = `
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold text-lg">🐾 Chăm Sóc & Trang Bị</h3>
                 <button onclick="openTeamMenu()" class="text-zinc-400 font-bold cursor-pointer">‹ Quay lại</button>
             </div>
             <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-zinc-700 mb-4 text-center">
-                <div class="text-7xl mb-2 filter drop-shadow-xl">${pet.emoji}</div>
-                <div class="text-base font-bold text-yellow-300">${pet.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="${elemObj.color} text-sm">(${elemObj.icon}${pet.element})</span></div>
-                <div class="text-[11px] text-amber-300 mt-1 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-700">
-                    Cấp độ: Lv.${pet.level || 1} | ATK: ${pet.atk}
-                </div>
-                
-                <div class="grid grid-cols-2 gap-2 w-full mt-3 text-[11px] bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-700 text-zinc-300">
-                    <div>🎯 Chí mạng: <strong class="text-yellow-400">${pet.critRate || 15}%</strong></div>
-                    <div>💨 Né tránh: <strong class="text-blue-400">${pet.dodgeRate || 10}%</strong></div>
-                    <div>🎯 Chính xác: <strong class="text-emerald-400">${pet.accuracy || 15}%</strong></div>
-                    <div>⚡ Tốc độ: <strong class="text-purple-400">${pet.attackSpeed || 1.2} t/s</strong></div>
-                </div>
-
-                <div class="w-full space-y-1.5 mt-3 text-left">
-                    <div>
-                        <div class="flex justify-between text-[10px] mb-0.5"><span>HP</span><span>${pet.hp}/${pet.maxHp}</span></div>
-                        <div class="w-full bg-zinc-900 rounded-full h-2 overflow-hidden border border-zinc-700"><div class="bg-emerald-500 h-full" style="width: ${(pet.hp/pet.maxHp)*100}%"></div></div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-[10px] mb-0.5"><span>Độ no</span><span>${pet.hunger}%</span></div>
-                        <div class="w-full bg-zinc-900 rounded-full h-2 overflow-hidden border border-zinc-700"><div class="bg-amber-500 h-full" style="width: ${pet.hunger}%"></div></div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-[10px] mb-0.5"><span>Hạnh phúc</span><span>${pet.happiness}%</span></div>
-                        <div class="w-full bg-zinc-900 rounded-full h-2 overflow-hidden border border-zinc-700"><div class="bg-pink-500 h-full" style="width: ${pet.happiness}%"></div></div>
-                    </div>
-                </div>
-
-                <div class="text-xs mt-3">${hasBuff}</div>
+                <div class="text-7xl mb-2">${pet.emoji}</div>
+                <div class="text-base font-bold text-yellow-300">${pet.name} <span class="${genderColor}">(${genderSymbol})</span></div>
+                <div class="text-[11px] text-amber-300 mt-1 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-700">Cấp độ: Lv.${pet.level || 1} | ATK: ${pet.atk}</div>
             </div>
-
-            <div class="space-y-2 mb-3">
-                <div class="bg-zinc-800 p-2.5 rounded-xl border border-zinc-700 flex items-center justify-between">
-                    <div class="text-xs font-bold text-orange-400">⚔️ Vuốt Sắc (+ATK)</div>
-                    <button onclick="upgradeGear(${index}, 'claw')" class="bg-orange-600 px-3 py-1 rounded text-xs font-bold cursor-pointer">Cường hóa (200🪙)</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl border border-zinc-700 flex items-center justify-between">
-                    <div class="text-xs font-bold text-blue-400">🛡️ Giáp Hộ Mệnh (+HP)</div>
-                    <button onclick="upgradeGear(${index}, 'armor')" class="bg-blue-600 px-3 py-1 rounded text-xs font-bold cursor-pointer">Cường hóa (200🪙)</button>
-                </div>
-            </div>
-
-            <div class="space-y-2 mb-3">
-                <button onclick="evolvePet(${index}, '${stoneKey}')" class="w-full bg-purple-600 hover:bg-purple-500 p-2.5 rounded-xl font-bold text-xs shadow flex items-center justify-between px-4 cursor-pointer">
-                    <span>🌟 Tiến Hóa Thú Bằng ${stoneName} (Cần Lv.200)</span>
-                    <span class="bg-black/40 px-2 py-0.5 rounded">Kho: ${stoneCount}</span>
-                </button>
-            </div>
-
             <div class="grid grid-cols-3 gap-2 text-center">
-                <button onclick="petAction(${index}, 'feed')" class="bg-emerald-600 p-2.5 rounded-xl font-bold text-xs cursor-pointer">🍖 Cho ăn (${inventory.food})</button>
-                <button onclick="petAction(${index}, 'play')" class="bg-amber-600 p-2.5 rounded-xl font-bold text-xs cursor-pointer">🎾 Chơi (${inventory.toy})</button>
-                <button onclick="petAction(${index}, 'train')" class="bg-indigo-600 p-2.5 rounded-xl font-bold text-xs cursor-pointer">🏋️ Tập (${inventory.trainer})</button>
+                <button onclick="petAction(${index}, 'feed')" class="bg-emerald-600 p-2.5 rounded-xl font-bold text-xs cursor-pointer">🍖 Cho ăn</button>
+                <button onclick="petAction(${index}, 'play')" class="bg-amber-600 p-2.5 rounded-xl font-bold text-xs cursor-pointer">🎾 Chơi</button>
+                <button onclick="petAction(${index}, 'train')" class="bg-indigo-600 p-2.5 rounded-xl font-bold text-xs cursor-pointer">🏋️ Tập</button>
             </div>`;
-        }
-
-        function upgradeGear(index, gearType) {
-            if (playerCoins < 200) { alert('Bạn cần 200 Vàng để cường hóa trang bị!'); return; }
-            playerCoins -= 200;
-            localStorage.setItem('ar_coins', playerCoins);
-
-            let pet = team[index];
-            if (gearType === 'claw') {
-                pet.atk += 20;
-                alert(`⚔️ Cường hóa Vuốt Sắc thành công! ATK tăng +20.`);
-            } else if (gearType === 'armor') {
-                pet.maxHp += 40;
-                pet.hp += 40;
-                alert(`🛡️ Cường hóa Giáp Hộ Mệnh thành công! HP tối đa tăng +40.`);
-            }
-            localStorage.setItem('ar_team', JSON.stringify(team));
-            openPetDetail(index);
-        }
-
-        function evolvePet(index, stoneKey) {
-            let pet = team[index];
-            if ((pet.level || 1) < 200) {
-                alert(`⚠️ Thú cưng chưa đủ cấp độ! Yêu cầu phải đạt tối thiểu Level 200 (Hiện tại: Lv.${pet.level || 1}). Hãy dùng Dụng cụ tập để luyện cấp!`);
-                return;
-            }
-            if ((inventory[stoneKey] || 0) <= 0) {
-                alert(`Bạn không có viên đá phù hợp hệ này! Hãy mua tại Chợ Đen.`);
-                return;
-            }
-            inventory[stoneKey]--;
-            saveInventory();
-            pet.buffEffect = 'Cấp Tiến Hóa Siêu Việt';
-            pet.atk += 50;
-            pet.maxHp += 100;
-            pet.hp = pet.maxHp;
-            localStorage.setItem('ar_team', JSON.stringify(team));
-            alert(`🌟 Chúc mừng ${pet.name} đã tiến hóa thành công! Chỉ số tăng cực mạnh!`);
-            openPetDetail(index);
         }
 
         function petAction(index, action) {
@@ -1010,18 +815,15 @@
                 if (inventory.food <= 0) { alert('Hết Thức ăn!'); return; }
                 inventory.food--;
                 pet.hunger = Math.min(100, pet.hunger + 25);
-                pet.hp = Math.min(pet.maxHp, pet.hp + 20);
             } else if (action === 'play') {
                 if (inventory.toy <= 0) { alert('Hết Đồ chơi!'); return; }
                 inventory.toy--;
-                pet.happiness = Math.min(100, pet.happiness + 30);
+                pet.happiness = Math.min(100, (pet.happiness || 80) + 30);
             } else if (action === 'train') {
                 if (inventory.trainer <= 0) { alert('Hết Dụng cụ tập!'); return; }
                 inventory.trainer--;
                 pet.level++;
                 pet.atk += 12;
-                pet.maxHp += 20;
-                pet.hp = pet.maxHp;
             }
             saveInventory();
             localStorage.setItem('ar_team', JSON.stringify(team));
@@ -1037,396 +839,8 @@
             openTeamMenu();
         }
 
-        let capturedTempMonster = null;
-
-        function promptCatchChoice(monster) {
-            let randomGender = Math.random() < 0.5 ? 'Đực' : 'Cái';
-            capturedTempMonster = {
-                ...monster,
-                maxHp: monster.maxHp || monster.hp || 80,
-                hp: monster.maxHp || monster.hp || 80,
-                level: 1,
-                gender: randomGender,
-                hunger: 80,
-                happiness: 80,
-                critRate: Math.floor(10 + Math.random() * 20),
-                dodgeRate: Math.floor(5 + Math.random() * 15),
-                accuracy: Math.floor(10 + Math.random() * 20),
-                attackSpeed: parseFloat((1.2 + Math.random() * 0.5).toFixed(1)),
-                buffEffect: null
-            };
-
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-
-            let elemObj = elements.find(e => e.name === monster.element) || elements[0];
-            let genderSymbol = capturedTempMonster.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái';
-            let genderColor = capturedTempMonster.gender === 'Đực' ? 'text-blue-400' : 'text-pink-400';
-
-            content.innerHTML = `
-            <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-lg">🎉 Giằng Co Thắng - Bắt Thành Công!</h3></div>
-            <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-zinc-700 mb-4 text-center">
-                <span class="text-7xl mb-2">${monster.emoji}</span>
-                <div class="text-lg font-bold text-yellow-300">${monster.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="${elemObj.color} text-sm">(${elemObj.icon}${monster.element})</span></div>
-                <div class="text-xs text-zinc-400 mt-1">CP: ${monster.cp} | Chí mạng: ${capturedTempMonster.critRate}% | Né: ${capturedTempMonster.dodgeRate}%</div>
-            </div>
-            <div class="space-y-2">
-                <button onclick="handleCatchDecision('team')" class="w-full bg-emerald-600 py-3 rounded-xl font-bold text-xs cursor-pointer">🎒 Đưa vào Đội hình (hoặc Trang Trại)</button>
-                <button onclick="handleCatchDecision('meat')" class="w-full bg-amber-600 py-3 rounded-xl font-bold text-xs cursor-pointer">🥩 Giết lấy thịt (+Thức ăn & Vàng)</button>
-                <button onclick="handleCatchDecision('sell')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs cursor-pointer">💰 Bán ngay (${monster.rarePrice} Vàng)</button>
-            </div>`;
-        }
-
-        function handleCatchDecision(action) {
-            if (action === 'team') {
-                if (team.length < 3) {
-                    team.push(capturedTempMonster);
-                    localStorage.setItem('ar_team', JSON.stringify(team));
-                    alert(`Đã đưa ${capturedTempMonster.name} vào đội hình chiến đấu!`);
-                } else {
-                    farm.push(capturedTempMonster);
-                    localStorage.setItem('ar_farm', JSON.stringify(farm));
-                    alert(`Đội hình chính đã đầy (3/3), ${capturedTempMonster.name} đã được đưa vào Trang Trại!`);
-                }
-                updateTeamCount();
-            } else if (action === 'meat') {
-                inventory.food += 2;
-                playerCoins += 30;
-                saveInventory();
-                localStorage.setItem('ar_coins', playerCoins);
-                alert(`Nhận +2 Thức ăn & +30 Vàng!`);
-            } else if (action === 'sell') {
-                playerCoins += capturedTempMonster.rarePrice;
-                localStorage.setItem('ar_coins', playerCoins);
-                alert(`Bán thành công +${capturedTempMonster.rarePrice} Vàng!`);
-            }
-
-            if (!pokedex.includes(capturedTempMonster.id)) {
-                pokedex.push(capturedTempMonster.id);
-                localStorage.setItem('ar_pokedex', JSON.stringify(pokedex));
-            }
-
-            closeModal();
-            spawnMultipleMonsters();
-        }
-
-        function openArenaMenu() {
-            checkPetSurvival();
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-
-            content.innerHTML = `
-            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Sảnh Đấu Trường</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>
-            <p class="text-xs text-zinc-300 mb-4">Thời tiết hiện tại: <strong>${currentWeather.name} (${currentWeather.effect})</strong></p>
-            <p class="text-[11px] text-zinc-400 mb-3">💡 Mẹo: Bấm trực tiếp vào các biểu tượng Bóng ma Người chơi hoặc Boss trên bản đồ để thách đấu realtime!</p>
-            <button onclick="startCanvasBattle(null)" class="w-full bg-zinc-700 py-3 rounded-xl font-bold text-xs cursor-pointer">🤖 Đấu Tập Nhanh (Với Bot)</button>
-            `;
-        }
-
-        let battleCanvas, battleCtx, battleInterval;
-        let myBattlePet, enemyBattlePet;
-        let myHp, enemyHp, myMaxHp, enemyMaxHp;
-        let battleState = 'fighting';
-        let battleModeTitle = '⚔️ ĐẤU TRƯỜNG';
-        let animActionTick = 0;
-        let activeBattleType = 'normal';
-
-        // Biến điều khiển hiệu ứng nhào lộn & giật va chạm tốc độ cao
-        let battleActionState = 'circling'; // 'circling', 'rushing_to_enemy', 'rushing_to_my', 'recoiling'
-        let rushProgress = 0;
-        let lastAttacker = null; // 'my' hoặc 'enemy'
-
-        function startCanvasBattle(opponentObj = null, isWorldBoss = false, customEnemy = null, type = 'normal') {
-            switchGameMusic('battle');
-            checkPetSurvival();
-            if (team.length === 0) { alert('Đội hình trống! Không có thú để chiến đấu.'); closeModal(); return; }
-            if (team[0].happiness < 30) { alert(`⚠️ ${team[0].name} đang bất mãn và từ chối chiến đấu!`); closeModal(); return; }
-
-            closeModal();
-            document.getElementById('map-screen').classList.add('hidden');
-            document.getElementById('battle-screen').classList.remove('hidden');
-
-            myBattlePet = team[0];
-            activeBattleType = type;
-
-            if (isWorldBoss) {
-                let scaleFactor = 1 + (bossKills * 0.35);
-                let bossHp = Math.floor(350 * scaleFactor);
-                let bossAtk = Math.floor(130 * scaleFactor);
-                let bossLv = 30 + (bossKills * 10);
-
-                enemyBattlePet = { name: `Rồng Khổng Lồ (Lv.${bossLv})`, emoji: '🐲', spriteUrl: '', hp: bossHp, maxHp: bossHp, atk: bossAtk, level: bossLv, element: 'Hỏa', critRate: 25, dodgeRate: 20, accuracy: 30, attackSpeed: 1.5 };
-                battleModeTitle = `🔥 BOSS THẾ GIỚI (Cấp ${bossKills + 1}) 🔥`;
-            } else if (customEnemy) {
-                enemyBattlePet = { ...customEnemy };
-                if (type === 'tower') battleModeTitle = `🗼 LEO THÁP: TẦNG ${towerFloor}`;
-                else if (type === 'ghost') {
-                    let ghostScale = 1 + (ghostKills * 0.25);
-                    enemyBattlePet.hp = Math.floor(enemyBattlePet.maxHp * ghostScale);
-                    enemyBattlePet.maxHp = enemyBattlePet.hp;
-                    enemyBattlePet.atk = Math.floor(enemyBattlePet.atk * ghostScale);
-                    enemyBattlePet.level += (ghostKills * 5);
-                    battleModeTitle = `👻 THÁCH ĐẤU BÓNG MA (Cấp ${ghostKills + 1})`;
-                }
-            } else if (opponentObj && opponentObj.pet) {
-                enemyBattlePet = { ...opponentObj.pet };
-                battleModeTitle = `⚔️ THÁCH ĐẤU`;
-            } else {
-                let enemyBase = allMonsters[Math.floor(Math.random() * allMonsters.length)];
-                let enemyElem = elements[Math.floor(Math.random() * elements.length)].name;
-                enemyBattlePet = { ...enemyBase, level: myBattlePet.level, element: enemyElem, critRate: 15, dodgeRate: 12, accuracy: 20, attackSpeed: 1.2, buffEffect: null };
-                battleModeTitle = `⚔️ ĐẤU TRƯỜNG LUYỆN TẬP`;
-            }
-
-            document.getElementById('battle-title-tag').innerText = battleModeTitle;
-
-            myMaxHp = myBattlePet.maxHp;
-            myHp = myBattlePet.hp;
-            enemyMaxHp = enemyBattlePet.maxHp;
-            enemyHp = enemyBattlePet.maxHp;
-            battleState = 'fighting';
-            animActionTick = 0;
-            battleActionState = 'circling';
-
-            battleCanvas = document.getElementById('battleCanvas');
-            battleCtx = battleCanvas.getContext('2d');
-            battleCanvas.width = battleCanvas.clientWidth;
-            battleCanvas.height = battleCanvas.clientHeight;
-
-            runBattleLoop();
-        }
-
-        function exitBattleScreen() {
-            switchGameMusic('map');
-            clearInterval(battleInterval);
-            document.getElementById('battle-screen').classList.add('hidden');
-            document.getElementById('map-screen').classList.remove('hidden');
-            if (map) {
-                map.invalidateSize();
-            }
-        }
-
-        function showDamagePopup(text, isCrit, x, y) {
-            const container = document.getElementById('damage-popup-container');
-            if(!container) return;
-            const el = document.createElement('div');
-            el.className = `absolute text-sm font-black damage-popup ${isCrit ? 'text-yellow-300 text-lg scale-125' : 'text-red-400'}`;
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-            el.innerText = text;
-            container.appendChild(el);
-            setTimeout(() => el.remove(), 500);
-        }
-
-        function runBattleLoop() {
-            let animStep = 0;
-            battleInterval = setInterval(() => {
-                if (!battleCtx || !battleCanvas) return;
-                battleCtx.clearRect(0, 0, battleCanvas.width, battleCanvas.height);
-                animStep++;
-                animActionTick++;
-
-                let grad = battleCtx.createRadialGradient(battleCanvas.width/2, battleCanvas.height/2, 10, battleCanvas.width/2, battleCanvas.height/2, 280);
-                grad.addColorStop(0, '#9a3412');
-                grad.addColorStop(0.6, '#451a03');
-                grad.addColorStop(1, '#09090b');
-                battleCtx.fillStyle = grad;
-                battleCtx.fillRect(0, 0, battleCanvas.width, battleCanvas.height);
-
-                let centerX = battleCanvas.width / 2;
-                let centerY = battleCanvas.height / 2 - 15;
-
-                let myX, enemyX, myY, enemyY;
-                let baseDist = 110;
-
-                // XỬ LÝ HIỆU ỨNG CHUYỂN ĐỘNG XOAY VÒNG & NHÀO VÔ NHAU TỐC ĐỘ CAO
-                if (battleActionState === 'circling') {
-                    // Xoay vòng lượn quanh tâm võ đài
-                    let angle = animStep * 0.08;
-                    myX = centerX - baseDist + Math.cos(angle) * 20;
-                    myY = centerY + Math.sin(angle) * 15;
-                    enemyX = centerX + baseDist - Math.cos(angle) * 20;
-                    enemyY = centerY - Math.sin(angle) * 15;
-                } else if (battleActionState === 'rushing_to_enemy') {
-                    // Thú của mình phóng như bay đến chỗ địch
-                    rushProgress += 0.25;
-                    let targetX = centerX - 25;
-                    let startX = centerX - baseDist;
-                    myX = startX + (targetX - startX) * Math.min(1, rushProgress);
-                    myY = centerY;
-                    
-                    enemyX = centerX + baseDist;
-                    enemyY = centerY;
-
-                    if (rushProgress >= 1) {
-                        battleActionState = 'recoiling';
-                        rushProgress = 0;
-                    }
-                } else if (battleActionState === 'rushing_to_my') {
-                    // Thú địch phóng như bay về phía thú của mình
-                    rushProgress += 0.25;
-                    let targetX = centerX + 25;
-                    let startX = centerX + baseDist;
-                    enemyX = startX - (targetX - (startX - baseDist)) * Math.min(1, rushProgress); // adjust
-                    // simplified rush
-                    let actualTarget = centerX + 25;
-                    enemyX = startX + (actualTarget - startX) * Math.min(1, rushProgress);
-                    enemyY = centerY;
-
-                    myX = centerX - baseDist;
-                    myY = centerY;
-
-                    if (rushProgress >= 1) {
-                        battleActionState = 'recoiling';
-                        rushProgress = 0;
-                    }
-                } else if (battleActionState === 'recoiling') {
-                    // Giật lùi nhanh sau khi va chạm
-                    rushProgress += 0.3;
-                    myX = centerX - 25 - (rushProgress * 30);
-                    enemyX = centerX + 25 + (rushProgress * 30);
-                    myY = centerY;
-                    enemyY = centerY;
-
-                    if (rushProgress >= 1) {
-                        battleActionState = 'circling';
-                        rushProgress = 0;
-                    }
-                }
-
-                let myElemObj = elements.find(e => e.name === myBattlePet.element) || elements[0];
-                let enemyElemObj = elements.find(e => e.name === enemyBattlePet.element) || elements[0];
-
-                // Vẽ thú của mình
-                battleCtx.font = "80px sans-serif";
-                battleCtx.textAlign = "center";
-                battleCtx.fillText(myBattlePet.emoji, myX, myY);
-
-                // Thanh HP của mình
-                battleCtx.fillStyle = "#18181b";
-                battleCtx.fillRect(25, centerY + 65, 130, 14);
-                battleCtx.fillStyle = "#10b981";
-                battleCtx.fillRect(25, centerY + 65, 130 * Math.max(0, myHp / myMaxHp), 14);
-                battleCtx.font = "10px sans-serif";
-                battleCtx.fillStyle = "#fff";
-                battleCtx.fillText(`${myBattlePet.name} (${myElemObj.icon}${myBattlePet.element})`, 90, centerY + 60);
-
-                // Vẽ thú địch
-                battleCtx.font = "80px sans-serif";
-                battleCtx.fillText(enemyBattlePet.emoji, enemyX, enemyY);
-
-                // Thanh HP địch
-                battleCtx.fillStyle = "#18181b";
-                battleCtx.fillRect(battleCanvas.width - 155, centerY + 65, 130, 14);
-                battleCtx.fillStyle = "#ef4444";
-                battleCtx.fillRect(battleCanvas.width - 155, centerY + 65, 130 * Math.max(0, enemyHp / enemyMaxHp), 14);
-                battleCtx.font = "10px sans-serif";
-                battleCtx.fillStyle = "#fff";
-                battleCtx.fillText(`${enemyBattlePet.name} (${enemyElemObj.icon}${enemyBattlePet.element})`, battleCanvas.width - 90, centerY + 60);
-
-                let tickInterval = 30;
-
-                // LOGIC RA ĐÒN & KÍCH HOẠT NHÀO LỘN TẤN CÔNG
-                if (battleState === 'fighting' && battleActionState === 'circling' && animActionTick % tickInterval === 0) {
-                    let totalDodge = Math.max(0, enemyBattlePet.dodgeRate + currentWeather.weatherDodge - myBattlePet.accuracy);
-                    
-                    // Lượt mình đánh
-                    if (Math.random() * 100 > totalDodge) {
-                        battleActionState = 'rushing_to_enemy';
-                        rushProgress = 0;
-
-                        let isCrit = Math.random() * 100 < myBattlePet.critRate;
-                        let myHasAdvantage = checkElementAdvantage(myBattlePet.element, enemyBattlePet.element);
-                        let weatherBuff = (currentWeather.name === 'Nắng gắt' && myBattlePet.element === 'Hỏa') ? 1.2 : currentWeather.buffAtk;
-                        let dmgMultiplier = isCrit ? 1.5 : 1.0;
-                        let myBaseDmg = Math.floor(myBattlePet.atk * 0.4 * dmgMultiplier * weatherBuff);
-                        if (myHasAdvantage) myBaseDmg = Math.floor(myBaseDmg * 1.35);
-
-                        enemyHp -= myBaseDmg;
-                        setTimeout(() => {
-                            showDamagePopup(`-${myBaseDmg}`, isCrit, battleCanvas.width / 2 + 20, centerY - 30);
-                        }, 150);
-                    } else {
-                        battleActionState = 'rushing_to_enemy';
-                        rushProgress = 0;
-                        setTimeout(() => {
-                            showDamagePopup(`Né!`, false, battleCanvas.width / 2 + 20, centerY - 30);
-                        }, 150);
-                    }
-
-                    if (enemyHp > 0) {
-                        setTimeout(() => {
-                            battleActionState = 'rushing_to_my';
-                            rushProgress = 0;
-                            let enemyDmg = Math.floor(enemyBattlePet.atk * 0.35);
-                            myHp -= enemyDmg;
-                            setTimeout(() => {
-                                showDamagePopup(`-${enemyDmg}`, false, battleCanvas.width / 2 - 40, centerY - 30);
-                            }, 150);
-                        }, 600);
-                    }
-
-                    if (enemyHp <= 0 || myHp <= 0) {
-                        battleState = enemyHp > 0 ? 'lost' : 'won';
-                    }
-                }
-
-                if (battleState === 'won' || battleState === 'lost') {
-                    clearInterval(battleInterval);
-                    let hpLostPercent = Math.max(0, (myMaxHp - Math.max(0, myHp)) / myMaxHp);
-                    myBattlePet.hp = Math.max(0, myHp);
-                    
-                    let rewardCoins = battleState === 'won' ? 400 : 0;
-
-                    if (battleState === 'won') {
-                        if (activeBattleType === 'boss') {
-                            bossKills++;
-                            localStorage.setItem('ar_boss_kills', bossKills);
-                            rewardCoins = 600 + (bossKills * 300);
-                        } else if (activeBattleType === 'ghost') {
-                            ghostKills++;
-                            localStorage.setItem('ar_ghost_kills', ghostKills);
-                            rewardCoins = 350 + (ghostKills * 150);
-                        } else if (activeBattleType === 'tower') {
-                            rewardCoins = 400 + (towerFloor * 150);
-                            towerFloor = Math.min(50, towerFloor + 1);
-                            localStorage.setItem('ar_tower_floor', towerFloor);
-                        }
-
-                        playerCoins += rewardCoins;
-                        localStorage.setItem('ar_coins', playerCoins);
-                        team[0] = myBattlePet;
-                        localStorage.setItem('ar_team', JSON.stringify(team));
-                    }
-                    showBattleResultModal(battleState === 'won', rewardCoins, hpLostPercent, myBattlePet.name);
-                }
-            }, 50);
-        }
-
-        function showBattleResultModal(isWon, coinsEarned, hpLostPct, petName) {
-            switchGameMusic('map');
-            exitBattleScreen();
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-
-            content.innerHTML = `
-            <div class="flex flex-col items-center text-center py-2">
-                <div class="text-6xl mb-2">${isWon ? '🏆' : '💀'}</div>
-                <h3 class="font-bold text-xl ${isWon ? 'text-yellow-400' : 'text-red-500'} mb-1">${isWon ? 'CHIẾN THẮNG VANG DỘI!' : 'THẤT BẠI THẢM HẢI!'}</h3>
-                <div class="w-full bg-zinc-800 p-4 rounded-2xl border border-zinc-700 text-left space-y-2 mb-4">
-                    <div class="flex justify-between text-xs"><span>Phần thưởng Vàng:</span><strong class="text-yellow-400">+${coinsEarned} 🪙</strong></div>
-                    <div class="flex justify-between text-xs"><span>Tổn thất HP thú:</span><strong class="text-red-400">-${Math.floor(hpLostPct * 100)}% HP</strong></div>
-                </div>
-                <button onclick="closeModal(); spawnMultipleMonsters();" class="w-full bg-amber-600 py-3 rounded-xl font-bold text-xs shadow-lg cursor-pointer">Tiếp Tục Khám Phá Bản Đồ</button>
-            </div>`;
-        }
-
         let map, userMarker;
         let activeMarkers = [];
-        let ghostMarkers = [];
         let userLat = 10.0452, userLng = 105.7469; 
 
         function initMap() {
@@ -1442,7 +856,6 @@
 
             userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
             spawnMultipleMonsters();
-            spawnGhostPlayers();
 
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition((position) => {
@@ -1453,10 +866,8 @@
             }
 
             setTimeout(() => { 
-                if(map) {
-                    map.invalidateSize();
-                }
-            }, 300);
+                if(map) map.invalidateSize();
+            }, 250);
         }
 
         function recenterMap() { 
@@ -1466,100 +877,15 @@
             }
         }
 
-        let ghostPlayers = [
-            { id: 'g1', name: 'Ghost_Viper', avatar: '👻', pet: { name: 'Xà Vương', emoji: '🐍', spriteUrl: '', cp: 180, hp: 95, maxHp: 95, atk: 110, level: 65, element: 'Mộc', gender: 'Đực', critRate: 20, dodgeRate: 25, accuracy: 25, attackSpeed: 1.4 } },
-            { id: 'g2', name: 'Ghost_Shadow', avatar: '👤', pet: { name: 'Dơi Bóng Tối', emoji: '🦇', spriteUrl: '', cp: 165, hp: 75, maxHp: 75, atk: 115, level: 50, element: 'Thủy', gender: 'Cái', critRate: 18, dodgeRate: 30, accuracy: 20, attackSpeed: 1.5 } }
-        ];
-
-        function spawnGhostPlayers() {
-            if (!map) return;
-            ghostMarkers.forEach(m => map.removeLayer(m));
-            ghostMarkers = [];
-
-            ghostPlayers.forEach((ghost) => {
-                let gLat = userLat + (Math.random() - 0.5) * 0.0025;
-                let gLng = userLng + (Math.random() - 0.5) * 0.0025;
-
-                const ghostIcon = L.divIcon({
-                    className: 'custom-ghost-icon',
-                    html: `<div style="font-size: 30px; filter: drop-shadow(0 0 8px rgba(129,140,248,0.9));">${ghost.avatar}</div>`,
-                    iconSize: [32, 32], iconAnchor: [16, 16]
-                });
-
-                const marker = L.marker([gLat, gLng], { icon: ghostIcon }).addTo(map);
-                marker.on('click', () => { openGhostModal(ghost); });
-                ghostMarkers.push(marker);
-            });
-        }
-
-        function openGhostModal(ghost) {
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-
-            let pInfo = ghost.pet;
-            let elemObj = elements.find(e => e.name === pInfo.element) || elements[0];
-            let currentGhostLevel = pInfo.level + (ghostKills * 5);
-
-            content.innerHTML = `
-            <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-lg">👻 Bóng Ma: ${ghost.name}</h3>
-                <button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button>
-            </div>
-            <div class="bg-zinc-800 p-4 rounded-2xl border border-indigo-500/50 mb-4 text-center">
-                <div class="text-5xl mb-2">${ghost.avatar}</div>
-                <div class="text-xs text-indigo-300 mb-2">Đã bị hạ ${ghostKills} lần (Cấp cường hóa: ${ghostKills + 1})</div>
-                <div class="bg-zinc-900 p-3 rounded-xl flex items-center justify-center gap-3 border border-zinc-700">
-                    <span class="text-4xl">${pInfo.emoji}</span>
-                    <div class="text-left">
-                        <div class="font-bold text-sm">${pInfo.name} <span class="${elemObj.color}">(${elemObj.icon}${pInfo.element})</span></div>
-                        <div class="text-xs text-zinc-300">Lv.${currentGhostLevel} | CP: ${Math.floor(pInfo.cp * (1 + ghostKills * 0.25))}</div>
-                    </div>
-                </div>
-            </div>
-            <button onclick="attackGhost('${ghost.id}')" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold text-xs shadow-lg cursor-pointer">⚔️ Thách Đấu Bóng Ma Realtime</button>`;
-        }
-
-        function attackGhost(id) {
-            closeModal();
-            let foundG = ghostPlayers.find(g => g.id === id);
-            startCanvasBattle(null, false, foundG.pet, 'ghost');
-        }
-
         function spawnMultipleMonsters() {
             if (!map) return;
             activeMarkers.forEach(m => map.removeLayer(m));
             activeMarkers = [];
 
-            const bossData = {
-                name: 'Rồng Khổng Lồ', emoji: '🐲', spriteUrl: '', cp: 500, element: 'Hỏa', isBoss: true,
-                lat: userLat + (Math.random() - 0.5) * 0.003,
-                lng: userLng + (Math.random() - 0.5) * 0.003
-            };
-            const bossIcon = L.divIcon({
-                className: 'custom-boss-icon',
-                html: `<div style="font-size: 40px; filter: drop-shadow(0 0 12px rgba(239,68,68,1));">🐲</div>`,
-                iconSize: [40, 40], iconAnchor: [20, 20]
-            });
-            const bossMarker = L.marker([bossData.lat, bossData.lng], { icon: bossIcon }).addTo(map);
-            bossMarker.on('click', () => {
-                if (confirm(`🔥 BOSS THẾ GIỚI (Cấp ${bossKills + 1})! Đã bị hạ ${bossKills} lần. Bạn có muốn nghênh chiến?`)) {
-                    startCanvasBattle(null, true, null, 'boss');
-                }
-            });
-            activeMarkers.push(bossMarker);
-
             for (let i = 0; i < 6; i++) {
                 const baseTemplate = allMonsters[Math.floor(Math.random() * allMonsters.length)];
-                const randomElem = elements[Math.floor(Math.random() * elements.length)];
                 const monsterData = { 
                     ...baseTemplate, 
-                    element: randomElem.name,
-                    cp: Math.floor(baseTemplate.cp * (0.9 + Math.random() * 0.3)),
-                    critRate: Math.floor(10 + Math.random() * 20),
-                    dodgeRate: Math.floor(5 + Math.random() * 15),
-                    accuracy: Math.floor(10 + Math.random() * 20),
-                    attackSpeed: parseFloat((1.2 + Math.random() * 0.5).toFixed(1)),
                     lat: userLat + (Math.random() - 0.5) * 0.0025,
                     lng: userLng + (Math.random() - 0.5) * 0.0025
                 };
@@ -1572,108 +898,33 @@
 
                 const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(map);
                 marker.on('click', () => {
-                    if (stamina <= 0) { alert('⚡ Hết Năng Lượng!'); return; }
-                    currentWildMonster = monsterData;
-                    catchAttempts = 0;
-                    document.getElementById('throw-attempt-count').innerText = `Lượt quăng: 0/3`;
-                    enterARScreen();
+                    alert(`Bấm vào thú: ${monsterData.name}`);
                 });
                 activeMarkers.push(marker);
             }
-
-            spawnGhostPlayers();
         }
 
-        let canvas, ctx;
-        let isARActive = false;
-        let rope = { x: 0, y: 0, vx: 0, vy: 0, radius: 30, flying: false };
-        let monsterPos = { x: 0, y: 0, vx: 2, vy: 1.5 };
-        let touchStart = { x: 0, y: 0 }, touchEnd = { x: 0, y: 0 };
+        function updateTeamCount() { document.getElementById('team-count').innerText = team.length; }
 
-        let isTugOfWarActive = false;
-        let tugProgress = 50; 
-        let tugTimerInterval = null;
-
-        async function enterARScreen() {
-            document.getElementById('map-screen').classList.add('hidden');
-            document.getElementById('ar-screen').classList.remove('hidden');
-            isARActive = true;
-            isTugOfWarActive = false;
-            document.getElementById('tug-of-war-ui').classList.add('hidden');
-            document.getElementById('ar-instruction').classList.remove('hidden');
-
-            let elemObj = elements.find(e => e.name === currentWildMonster.element) || elements[0];
-            document.getElementById('ar-mon-info').innerText = `${currentWildMonster.emoji} ${currentWildMonster.name} (${elemObj.icon}${currentWildMonster.element}) - CP ${currentWildMonster.cp}`;
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } }, audio: false });
-                document.getElementById('camera-feed').srcObject = stream;
-            } catch (e) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                    document.getElementById('camera-feed').srcObject = stream;
-                } catch (err) {}
-            }
-            initCanvasGame();
+        function openPokedexMenu() {
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+            content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">📖 Sổ Tay Phân Loại</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div><p class="text-xs text-zinc-400">Đã mở sổ tay thành công!</p>`;
         }
 
-        function exitARScreen() {
-            isARActive = false;
-            isTugOfWarActive = false;
-            if (tugTimerInterval) clearInterval(tugTimerInterval);
-            const videoEl = document.getElementById('camera-feed');
-            if (videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
-            document.getElementById('ar-screen').classList.add('hidden');
-            document.getElementById('map-screen').classList.remove('hidden');
-            if(map) {
-                map.invalidateSize();
-            }
-        }
+        window.onload = () => {
+            checkPlayerProfile();
+            initWeather();
+            initMap();
+            initStaminaSystem();
+            updateTeamCount();
+            setTimeout(() => { if(map) map.invalidateSize(); }, 400);
+        };
 
-        function initCanvasGame() {
-            canvas = document.getElementById('gameCanvas');
-            if (!canvas) return;
-            ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            monsterPos.x = Math.random() * (canvas.width - 120) + 60;
-            monsterPos.y = Math.random() * (canvas.height * 0.4) + 80;
-            monsterPos.vx = (Math.random() - 0.5) * 3.5;
-            monsterPos.vy = (Math.random() - 0.5) * 2.5;
-
-            resetRope();
-
-            canvas.onpointerdown = (e) => {
-                if (isTugOfWarActive) {
-                    if (tugProgress >= 100) return;
-                    
-                    tugProgress = Math.min(100, tugProgress + 6);
-                    document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
-                    
-                    monsterPos.y += 12;
-                    setTimeout(() => { monsterPos.y -= 12; }, 60);
-
-                    if (tugProgress >= 100) {
-                        triggerTugWin();
-                    }
-                    return;
-                }
-
-                if (rope.flying) return;
-                touchStart.x = e.clientX; touchStart.y = e.clientY;
-            };
-
-            canvas.onpointerup = (e) => {
-                if (isTugOfWarActive || rope.flying) return;
-                touchEnd.x = e.clientX; touchEnd.y = e.clientY;
-                let dx = touchEnd.x - touchStart.x;
-                let dy = touchEnd.y - touchStart.y;
-
-                if (dy < -30) {
-                    if (stamina > 0) {
-                        stamina--;
-                        localStorage.setItem('ar_stamina', stamina);
-                        document.getElementById('stamina-count').innerText = stamina;
-                    }
-                    
+        window.onresize = () => {
+            if (map) setTimeout(() => map.invalidateSize(), 200);
+        };
+    </script>
+</body>
+</html>
