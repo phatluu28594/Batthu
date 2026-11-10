@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Sprite Animation v4.5</title>
+    <title>Batthu - Dynamic Battle Animation v4.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -13,11 +13,16 @@
         #map { height: 100% !important; width: 100% !important; z-index: 10; }
         .leaflet-control-attribution { display: none !important; }
         
-        @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
-        .damage-popup { animation: floatText 0.7s ease-out forwards; }
+        @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.3); opacity: 0; } }
+        .damage-popup { animation: floatText 0.5s ease-out forwards; }
     </style>
 </head>
 <body class="text-white relative h-screen w-screen overflow-hidden">
+
+    <!-- KHUNG YOUTUBE PLAYER ẨN (PHÁT NHẠC NỀN) -->
+    <div id="youtube-audio-container" style="position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none;">
+        <div id="yt-player"></div>
+    </div>
 
     <!-- THÔNG BÁO CẬP NHẬT PHIÊN BẢN MỚI -->
     <div id="update-toast" class="hidden absolute top-4 inset-x-4 z-50 bg-amber-600 border border-yellow-300 text-white p-3 rounded-2xl shadow-2xl flex items-center justify-between backdrop-blur-md animate-bounce">
@@ -131,7 +136,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP / LEO THÁP -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V4.5</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V4.7</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -148,6 +153,8 @@
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto"></div>
     </div>
 
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let newWorker;
@@ -195,7 +202,44 @@
 
         let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ food: 5, toy: 5, trainer: 3, meat: 0, stoneKim: 0, stoneMoc: 0, stoneThuy: 0, stoneHoa: 0, stoneTho: 0 }));
 
-        // HỆ THỐNG CACHE ẢNH SPRITE 2D ĐỂ TRÁNH TẢI LẠI LIÊN TỤC
+        let ytPlayer = null;
+        let isMusicReady = false;
+        const LOBBY_YOUTUBE_ID = 'jfKfPfyJRdk';
+        const BATTLE_YOUTUBE_ID = '5qap5aO4i9A';
+
+        function onYouTubeIframeAPIReady() {
+            ytPlayer = new YT.Player('yt-player', {
+                height: '0',
+                width: '0',
+                videoId: LOBBY_YOUTUBE_ID,
+                playerVars: { 'autoplay': 1, 'loop': 1, 'playlist': LOBBY_YOUTUBE_ID, 'controls': 0 },
+                events: {
+                    'onReady': (event) => {
+                        isMusicReady = true;
+                        event.target.setVolume(50);
+                        event.target.playVideo();
+                    }
+                }
+            });
+        }
+
+        let isMusicPlaying = false;
+        document.addEventListener('click', () => {
+            if (!isMusicPlaying && isMusicReady && ytPlayer) {
+                isMusicPlaying = true;
+                ytPlayer.playVideo();
+            }
+        }, { once: true });
+
+        function switchGameMusic(scene) {
+            if (!isMusicReady || !ytPlayer) return;
+            if (scene === 'battle') {
+                ytPlayer.loadVideoById(BATTLE_YOUTUBE_ID);
+            } else if (scene === 'map') {
+                ytPlayer.loadVideoById(LOBBY_YOUTUBE_ID);
+            }
+        }
+
         const spriteImageCache = {};
         function getCachedSpriteImage(url) {
             if (!spriteImageCache[url]) {
@@ -239,7 +283,7 @@
             let customEnemy = {
                 name: bossName,
                 emoji: bossEmoji,
-                spriteUrl: '', // Dùng emoji dự phòng nếu chưa có sprite
+                spriteUrl: '',
                 hp: bossHp,
                 maxHp: bossHp,
                 atk: bossAtk,
@@ -357,35 +401,6 @@
             breedingSlots = { parent1: null, parent2: null };
             alert(`🧬 Lai giống thành công! Nhận được ${childPet.emoji} ${childPet.name} [Hệ ${childPet.element} - ${childPet.gender === 'Đực' ? '♂️ Đực' : '♀️ Cái'}] vào Trang Trại!`);
             openFarmMenu();
-        }
-
-        const lobbyMusic = new Audio('lobbymusic.mp3'); 
-        const battleMusic = new Audio('arena.mp3'); 
-
-        lobbyMusic.loop = true;
-        battleMusic.loop = true;
-        lobbyMusic.volume = 0.4;
-        battleMusic.volume = 0.5;
-
-        let isMusicPlaying = false;
-
-        document.addEventListener('click', () => {
-            if (!isMusicPlaying) {
-                isMusicPlaying = true;
-                lobbyMusic.play().catch(e => {});
-            }
-        }, { once: true });
-
-        function switchGameMusic(scene) {
-            if (!isMusicPlaying) return;
-            if (scene === 'battle') {
-                lobbyMusic.pause();
-                battleMusic.currentTime = 0;
-                battleMusic.play().catch(e => {});
-            } else if (scene === 'map') {
-                battleMusic.pause();
-                lobbyMusic.play().catch(e => {});
-            }
         }
 
         function checkPlayerProfile() {
@@ -781,10 +796,9 @@
 
                     p.animTimer++;
                     if (p.animTimer % 8 === 0) {
-                        p.frame = (p.frame + 1) % 4; // Giả lập chạy 4 khung hình sprite
+                        p.frame = (p.frame + 1) % 4;
                     }
 
-                    // TÍCH HỢP HỆ THỐNG SPRITE HOẶC FALLBACK EMOJI NẾU CHƯA CÓ LINK ẢNH
                     if (p.spriteUrl) {
                         let img = getCachedSpriteImage(p.spriteUrl);
                         if (img.complete && img.naturalWidth !== 0) {
@@ -1119,6 +1133,11 @@
         let animActionTick = 0;
         let activeBattleType = 'normal';
 
+        // Biến điều khiển hiệu ứng nhào lộn & giật va chạm tốc độ cao
+        let battleActionState = 'circling'; // 'circling', 'rushing_to_enemy', 'rushing_to_my', 'recoiling'
+        let rushProgress = 0;
+        let lastAttacker = null; // 'my' hoặc 'enemy'
+
         function startCanvasBattle(opponentObj = null, isWorldBoss = false, customEnemy = null, type = 'normal') {
             switchGameMusic('battle');
             checkPetSurvival();
@@ -1169,6 +1188,7 @@
             enemyHp = enemyBattlePet.maxHp;
             battleState = 'fighting';
             animActionTick = 0;
+            battleActionState = 'circling';
 
             battleCanvas = document.getElementById('battleCanvas');
             battleCtx = battleCanvas.getContext('2d');
@@ -1197,7 +1217,7 @@
             el.style.top = y + 'px';
             el.innerText = text;
             container.appendChild(el);
-            setTimeout(() => el.remove(), 700);
+            setTimeout(() => el.remove(), 500);
         }
 
         function runBattleLoop() {
@@ -1215,41 +1235,108 @@
                 battleCtx.fillStyle = grad;
                 battleCtx.fillRect(0, 0, battleCanvas.width, battleCanvas.height);
 
-                let myX = 85 + Math.sin(animStep * 0.15) * 15;
-                let enemyX = battleCanvas.width - 125 - Math.sin(animStep * 0.15) * 15;
+                let centerX = battleCanvas.width / 2;
                 let centerY = battleCanvas.height / 2 - 15;
+
+                let myX, enemyX, myY, enemyY;
+                let baseDist = 110;
+
+                // XỬ LÝ HIỆU ỨNG CHUYỂN ĐỘNG XOAY VÒNG & NHÀO VÔ NHAU TỐC ĐỘ CAO
+                if (battleActionState === 'circling') {
+                    // Xoay vòng lượn quanh tâm võ đài
+                    let angle = animStep * 0.08;
+                    myX = centerX - baseDist + Math.cos(angle) * 20;
+                    myY = centerY + Math.sin(angle) * 15;
+                    enemyX = centerX + baseDist - Math.cos(angle) * 20;
+                    enemyY = centerY - Math.sin(angle) * 15;
+                } else if (battleActionState === 'rushing_to_enemy') {
+                    // Thú của mình phóng như bay đến chỗ địch
+                    rushProgress += 0.25;
+                    let targetX = centerX - 25;
+                    let startX = centerX - baseDist;
+                    myX = startX + (targetX - startX) * Math.min(1, rushProgress);
+                    myY = centerY;
+                    
+                    enemyX = centerX + baseDist;
+                    enemyY = centerY;
+
+                    if (rushProgress >= 1) {
+                        battleActionState = 'recoiling';
+                        rushProgress = 0;
+                    }
+                } else if (battleActionState === 'rushing_to_my') {
+                    // Thú địch phóng như bay về phía thú của mình
+                    rushProgress += 0.25;
+                    let targetX = centerX + 25;
+                    let startX = centerX + baseDist;
+                    enemyX = startX - (targetX - (startX - baseDist)) * Math.min(1, rushProgress); // adjust
+                    // simplified rush
+                    let actualTarget = centerX + 25;
+                    enemyX = startX + (actualTarget - startX) * Math.min(1, rushProgress);
+                    enemyY = centerY;
+
+                    myX = centerX - baseDist;
+                    myY = centerY;
+
+                    if (rushProgress >= 1) {
+                        battleActionState = 'recoiling';
+                        rushProgress = 0;
+                    }
+                } else if (battleActionState === 'recoiling') {
+                    // Giật lùi nhanh sau khi va chạm
+                    rushProgress += 0.3;
+                    myX = centerX - 25 - (rushProgress * 30);
+                    enemyX = centerX + 25 + (rushProgress * 30);
+                    myY = centerY;
+                    enemyY = centerY;
+
+                    if (rushProgress >= 1) {
+                        battleActionState = 'circling';
+                        rushProgress = 0;
+                    }
+                }
 
                 let myElemObj = elements.find(e => e.name === myBattlePet.element) || elements[0];
                 let enemyElemObj = elements.find(e => e.name === enemyBattlePet.element) || elements[0];
 
+                // Vẽ thú của mình
                 battleCtx.font = "80px sans-serif";
                 battleCtx.textAlign = "center";
-                battleCtx.fillText(myBattlePet.emoji, myX, centerY);
+                battleCtx.fillText(myBattlePet.emoji, myX, myY);
 
+                // Thanh HP của mình
                 battleCtx.fillStyle = "#18181b";
-                battleCtx.fillRect(25, centerY + 55, 130, 14);
+                battleCtx.fillRect(25, centerY + 65, 130, 14);
                 battleCtx.fillStyle = "#10b981";
-                battleCtx.fillRect(25, centerY + 55, 130 * Math.max(0, myHp / myMaxHp), 14);
+                battleCtx.fillRect(25, centerY + 65, 130 * Math.max(0, myHp / myMaxHp), 14);
                 battleCtx.font = "10px sans-serif";
                 battleCtx.fillStyle = "#fff";
-                battleCtx.fillText(`${myBattlePet.name} (${myElemObj.icon}${myBattlePet.element})`, 90, centerY + 50);
+                battleCtx.fillText(`${myBattlePet.name} (${myElemObj.icon}${myBattlePet.element})`, 90, centerY + 60);
 
+                // Vẽ thú địch
                 battleCtx.font = "80px sans-serif";
-                battleCtx.fillText(enemyBattlePet.emoji, enemyX, centerY);
+                battleCtx.fillText(enemyBattlePet.emoji, enemyX, enemyY);
 
+                // Thanh HP địch
                 battleCtx.fillStyle = "#18181b";
-                battleCtx.fillRect(battleCanvas.width - 155, centerY + 55, 130, 14);
+                battleCtx.fillRect(battleCanvas.width - 155, centerY + 65, 130, 14);
                 battleCtx.fillStyle = "#ef4444";
-                battleCtx.fillRect(battleCanvas.width - 155, centerY + 55, 130 * Math.max(0, enemyHp / enemyMaxHp), 14);
+                battleCtx.fillRect(battleCanvas.width - 155, centerY + 65, 130 * Math.max(0, enemyHp / enemyMaxHp), 14);
                 battleCtx.font = "10px sans-serif";
                 battleCtx.fillStyle = "#fff";
-                battleCtx.fillText(`${enemyBattlePet.name} (${enemyElemObj.icon}${enemyBattlePet.element})`, battleCanvas.width - 90, centerY + 50);
+                battleCtx.fillText(`${enemyBattlePet.name} (${enemyElemObj.icon}${enemyBattlePet.element})`, battleCanvas.width - 90, centerY + 60);
 
-                let tickInterval = 25;
+                let tickInterval = 30;
 
-                if (battleState === 'fighting' && animActionTick % tickInterval === 0) {
+                // LOGIC RA ĐÒN & KÍCH HOẠT NHÀO LỘN TẤN CÔNG
+                if (battleState === 'fighting' && battleActionState === 'circling' && animActionTick % tickInterval === 0) {
                     let totalDodge = Math.max(0, enemyBattlePet.dodgeRate + currentWeather.weatherDodge - myBattlePet.accuracy);
+                    
+                    // Lượt mình đánh
                     if (Math.random() * 100 > totalDodge) {
+                        battleActionState = 'rushing_to_enemy';
+                        rushProgress = 0;
+
                         let isCrit = Math.random() * 100 < myBattlePet.critRate;
                         let myHasAdvantage = checkElementAdvantage(myBattlePet.element, enemyBattlePet.element);
                         let weatherBuff = (currentWeather.name === 'Nắng gắt' && myBattlePet.element === 'Hỏa') ? 1.2 : currentWeather.buffAtk;
@@ -1258,15 +1345,27 @@
                         if (myHasAdvantage) myBaseDmg = Math.floor(myBaseDmg * 1.35);
 
                         enemyHp -= myBaseDmg;
-                        showDamagePopup(`-${myBaseDmg}`, isCrit, battleCanvas.width - 130, centerY - 20);
+                        setTimeout(() => {
+                            showDamagePopup(`-${myBaseDmg}`, isCrit, battleCanvas.width / 2 + 20, centerY - 30);
+                        }, 150);
                     } else {
-                        showDamagePopup(`Né!`, false, battleCanvas.width - 130, centerY - 20);
+                        battleActionState = 'rushing_to_enemy';
+                        rushProgress = 0;
+                        setTimeout(() => {
+                            showDamagePopup(`Né!`, false, battleCanvas.width / 2 + 20, centerY - 30);
+                        }, 150);
                     }
 
                     if (enemyHp > 0) {
-                        let enemyDmg = Math.floor(enemyBattlePet.atk * 0.35);
-                        myHp -= enemyDmg;
-                        showDamagePopup(`-${enemyDmg}`, false, 90, centerY - 20);
+                        setTimeout(() => {
+                            battleActionState = 'rushing_to_my';
+                            rushProgress = 0;
+                            let enemyDmg = Math.floor(enemyBattlePet.atk * 0.35);
+                            myHp -= enemyDmg;
+                            setTimeout(() => {
+                                showDamagePopup(`-${enemyDmg}`, false, battleCanvas.width / 2 - 40, centerY - 30);
+                            }, 150);
+                        }, 600);
                     }
 
                     if (enemyHp <= 0 || myHp <= 0) {
@@ -1303,7 +1402,7 @@
                     }
                     showBattleResultModal(battleState === 'won', rewardCoins, hpLostPercent, myBattlePet.name);
                 }
-            }, 80);
+            }, 50);
         }
 
         function showBattleResultModal(isWon, coinsEarned, hpLostPct, petName) {
@@ -1465,7 +1564,6 @@
                     lng: userLng + (Math.random() - 0.5) * 0.0025
                 };
 
-                // NGOÀI MAP: Giữ nguyên biểu tượng TĨNH (hoặc hiển thị sprite tĩnh khung hình đầu tiên)
                 const monsterIcon = L.divIcon({
                     className: 'custom-monster-icon',
                     html: `<div style="font-size: 32px; filter: drop-shadow(0 0 8px rgba(234,179,8,0.9));">${monsterData.emoji}</div>`,
@@ -1578,203 +1676,4 @@
                         localStorage.setItem('ar_stamina', stamina);
                         document.getElementById('stamina-count').innerText = stamina;
                     }
-                    rope.vx = dx * 0.12;
-                    rope.vy = dy * 0.15;
-                    rope.flying = true;
-                }
-            };
-            requestAnimationFrame(updateCanvasGame);
-        }
-
-        function resetRope() {
-            rope.x = canvas.width / 2; rope.y = canvas.height * 0.85;
-            rope.vx = 0; rope.vy = 0; rope.flying = false;
-        }
-
-        let arAnimFrame = 0;
-        let arTick = 0;
-
-        function updateCanvasGame() {
-            if (!isARActive || !ctx || !canvas) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            arTick++;
-            if (arTick % 8 === 0) {
-                arAnimFrame = (arAnimFrame + 1) % 4;
-            }
-
-            if (!isTugOfWarActive) {
-                monsterPos.x += monsterPos.vx;
-                monsterPos.y += monsterPos.vy;
-
-                if (monsterPos.x < 60 || monsterPos.x > canvas.width - 60) monsterPos.vx *= -1;
-                if (monsterPos.y < 60 || monsterPos.y > canvas.height * 0.6) monsterPos.vy *= -1;
-
-                if (rope.flying) {
-                    let distToRope = Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y);
-                    if (distToRope < 180) {
-                        monsterPos.vx += (rope.x > monsterPos.x ? -0.4 : 0.4);
-                        monsterPos.vy += (rope.y > monsterPos.y ? -0.4 : 0.4);
-                    }
-                }
-            } else {
-                let pullOscillation = Math.sin(Date.now() * 0.01) * 35;
-                monsterPos.y = (canvas.height * 0.4) + pullOscillation;
-            }
-
-            // VẼ THÚ TRONG MINIGAME BẮT (HỖ TRỢ SPRITE 2D HOẶC EMOJI)
-            if (currentWildMonster.spriteUrl) {
-                let img = getCachedSpriteImage(currentWildMonster.spriteUrl);
-                if (img.complete && img.naturalWidth !== 0) {
-                    let fw = img.naturalWidth / 4;
-                    let fh = img.naturalHeight;
-                    ctx.drawImage(img, arAnimFrame * fw, 0, fw, fh, monsterPos.x - 35, monsterPos.y - 35, 70, 70);
-                } else {
-                    ctx.font = "80px sans-serif";
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y);
-                }
-            } else {
-                ctx.font = "80px sans-serif";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y);
-            }
-
-            if (rope.flying) {
-                rope.x += rope.vx; rope.y += rope.vy; rope.vy += 0.25;
-                ctx.beginPath(); ctx.moveTo(canvas.width / 2, canvas.height * 0.85); ctx.lineTo(rope.x, rope.y);
-                ctx.strokeStyle = "#d4a373"; ctx.lineWidth = 4; ctx.stroke();
-
-                let dist = Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y);
-                if (dist < 65) { 
-                    rope.flying = false; 
-                    startTugOfWarSession(); 
-                }
-                if (rope.y < 0 || rope.x < 0 || rope.x > canvas.width) { rope.flying = false; handleMissAttempt("Quăng hụt!"); resetRope(); }
-            }
-
-            if (isTugOfWarActive) {
-                ctx.beginPath(); 
-                ctx.moveTo(canvas.width / 2, canvas.height * 0.85); 
-                ctx.lineTo(monsterPos.x, monsterPos.y);
-                ctx.strokeStyle = "#eab308"; 
-                ctx.lineWidth = 6; 
-                ctx.stroke();
-            }
-
-            ctx.font = "40px sans-serif";
-            ctx.fillText("🪢", rope.x, rope.y);
-            requestAnimationFrame(updateCanvasGame);
-        }
-
-        function startTugOfWarSession() {
-            isTugOfWarActive = true;
-            tugProgress = 50;
-            document.getElementById('tug-progress-bar').style.width = '50%';
-            document.getElementById('tug-of-war-ui').classList.remove('hidden');
-            document.getElementById('ar-instruction').classList.add('hidden');
-
-            const feedback = document.getElementById('throw-feedback');
-            feedback.innerText = `🪢 Đã dính dây! Hãy click/chạm liên tục để kéo thú!`;
-            feedback.style.opacity = '1';
-            setTimeout(() => { feedback.style.opacity = '0'; }, 1500);
-
-            if (tugTimerInterval) clearInterval(tugTimerInterval);
-            
-            let monsterPullPower = 1.2 + (currentWildMonster.cp * 0.007);
-
-            tugTimerInterval = setInterval(() => {
-                if (!isARActive || !isTugOfWarActive) { clearInterval(tugTimerInterval); return; }
-
-                tugProgress -= monsterPullPower;
-                document.getElementById('tug-progress-bar').style.width = Math.max(0, tugProgress) + '%';
-
-                if (tugProgress >= 100) {
-                    triggerTugWin();
-                } else if (tugProgress <= 0) {
-                    clearInterval(tugTimerInterval);
-                    isTugOfWarActive = false;
-                    document.getElementById('tug-of-war-ui').classList.add('hidden');
-
-                    feedback.innerText = `💨 Thú quá mạnh, đã giật đứt dây và chạy thoát!`;
-                    feedback.style.opacity = '1';
-                    setTimeout(() => { 
-                        feedback.style.opacity = '0'; 
-                        exitARScreen(); 
-                        spawnMultipleMonsters(); 
-                    }, 1500);
-                }
-            }, 50);
-        }
-
-        function triggerTugWin() {
-            if (!isTugOfWarActive) return;
-            isTugOfWarActive = false;
-            clearInterval(tugTimerInterval);
-            document.getElementById('tug-of-war-ui').classList.add('hidden');
-
-            const feedback = document.getElementById('throw-feedback');
-            feedback.innerText = `🎉 Giằng co thắng! Bắt thành công ${currentWildMonster.name}!`;
-            feedback.style.opacity = '1';
-            setTimeout(() => { 
-                feedback.style.opacity = '0'; 
-                exitARScreen(); 
-                promptCatchChoice(currentWildMonster); 
-            }, 1000);
-        }
-
-        function handleMissAttempt(reasonMsg) {
-            catchAttempts++;
-            document.getElementById('throw-attempt-count').innerText = `Lượt quăng: ${catchAttempts}/3`;
-            const feedback = document.getElementById('throw-feedback');
-
-            if (catchAttempts >= 3) {
-                feedback.innerText = `😜 ${currentWildMonster.name} đã chạy mất!`;
-                feedback.style.opacity = '1';
-                setTimeout(() => { feedback.style.opacity = '0'; exitARScreen(); spawnMultipleMonsters(); }, 2500);
-            } else {
-                feedback.innerText = `💥 ${reasonMsg}`;
-                feedback.style.opacity = '1';
-                setTimeout(() => { feedback.style.opacity = '0'; }, 2000);
-            }
-        }
-
-        function updateTeamCount() { document.getElementById('team-count').innerText = team.length; }
-
-        function openPokedexMenu() {
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-
-            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">📖 Sổ Tay Phân Loại</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>`;
-            html += `<div class="space-y-4">`;
-            for (let [catName, list] of Object.entries(categories)) {
-                html += `<div class="bg-zinc-800/80 p-3 rounded-xl border border-zinc-700"><div class="text-yellow-400 font-bold text-sm mb-2">📁 ${catName}</div><div class="grid grid-cols-4 gap-2">`;
-                list.forEach(m => {
-                    const caught = pokedex.includes(m.id);
-                    html += `<div class="bg-zinc-900 p-2 rounded-lg flex flex-col items-center border ${caught ? 'border-emerald-500/60' : 'border-zinc-800 opacity-40'}"><span class="text-3xl mb-1">${caught ? m.emoji : '❓'}</span><div class="text-[10px] text-center font-bold truncate w-full">${m.name}</div></div>`;
-                });
-                html += `</div></div>`;
-            }
-            html += `</div>`;
-            content.innerHTML = html;
-        }
-
-        window.onload = () => {
-            checkPlayerProfile();
-            initWeather();
-            initMap();
-            initStaminaSystem();
-            updateTeamCount();
-        };
-
-        window.onresize = () => {
-            if (map) {
-                setTimeout(() => map.invalidateSize(), 200);
-            }
-        };
-    </script>
-</body>
-</html>
+                    
