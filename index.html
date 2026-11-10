@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Full Battle Effects v5.1</title>
+    <title>Batthu - Fix Map Black Screen v5.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
+        
         #map-screen { display: flex; flex-direction: column; height: 100vh; width: 100vw; position: absolute; inset: 0; background: #09090b; }
-        #map-container-wrap { flex: 1; position: relative; width: 100%; min-height: 60vh; }
+        #map-container-wrap { flex: 1; position: relative; width: 100%; min-height: 50vh; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; }
+        
         .leaflet-control-attribution { display: none !important; }
         @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-45px) scale(1.2); opacity: 0; } }
         .damage-popup { animation: floatText 0.75s ease-out forwards; }
@@ -18,7 +20,7 @@
 </head>
 <body class="text-white relative h-screen w-screen overflow-hidden">
 
-    <!-- KHUNG YOUTUBE PLAYER ẨN (PHÁT NHẠC NỀN) -->
+    <!-- KHUNG YOUTUBE PLAYER ẨN -->
     <div id="youtube-audio-container" style="position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none;">
         <div id="yt-player"></div>
     </div>
@@ -56,7 +58,7 @@
 
     <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
     <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2">
-        <div class="flex justify-between items-center z-30 pt-1 pb-1">
+        <div class="flex justify-between items-center z-30 pt-1 pb-1 shrink-0">
             <div class="bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 flex items-center gap-1.5">
                 <span id="weather-icon" class="text-sm">☀️</span>
                 <span id="weather-status" class="text-[11px] font-medium">Trời quang</span>
@@ -73,14 +75,14 @@
             </div>
         </div>
 
-        <div id="map-container-wrap" class="my-1 rounded-xl overflow-hidden border border-zinc-800 relative">
+        <div id="map-container-wrap" class="my-1 rounded-xl overflow-hidden border border-zinc-800 relative grow">
             <div id="map"></div>
             <button onclick="recenterMap()" class="absolute bottom-6 right-4 z-30 bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-lg cursor-pointer" title="Về vị trí của tôi">
                 📍
             </button>
         </div>
 
-        <div class="flex flex-col items-center z-30 pb-1">
+        <div class="flex flex-col items-center z-30 pb-1 shrink-0">
             <div id="stamina-info" class="text-[11px] font-bold text-amber-300 bg-black/80 px-3 py-1 rounded-full border border-white/20 mb-1 shadow-lg flex items-center gap-1.5">
                 ⚡ Năng lượng: <span id="stamina-count">15</span>/15 (<span id="stamina-timer">10:00</span>)
             </div>
@@ -121,7 +123,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP / LEO THÁP -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V5.1</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V5.2</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -140,7 +142,7 @@
 
     <!-- YOUTUBE IFRAME API SCRIPT -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
         let farm = JSON.parse(localStorage.getItem('ar_farm') || '[]');
@@ -821,10 +823,11 @@
                     userLat = position.coords.latitude;
                     userLng = position.coords.longitude;
                     if (userMarker) userMarker.setLatLng([userLat, userLng]);
+                    if (map) map.invalidateSize();
                 }, (error) => {}, { enableHighAccuracy: true });
             }
 
-            setTimeout(() => { if(map) map.invalidateSize(); }, 250);
+            setTimeout(() => { if(map) map.invalidateSize(); }, 300);
         }
 
         function recenterMap() { 
@@ -935,9 +938,10 @@
                 activeMarkers.push(marker);
             }
             spawnGhostPlayers();
+            setTimeout(() => { if (map) map.invalidateSize(); }, 150);
         }
 
-        // 🌟 TACTICAL COMBAT ENGINE V5.1 (HIỆU ỨNG ĐẶC BIỆT: CHOÁNG, ĐỘC, ĐỐT LỬA, BUFF MÁU)
+        // 🌟 TACTICAL COMBAT ENGINE V5.2 (HIỆU ỨNG CHOÁNG, ĐỘC, ĐỐT LỬA, BUFF MÁU)
         let battleCanvas, battleCtx, battleInterval;
         let myBattlePet, enemyBattlePet;
         let myHp, enemyHp, myMaxHp, enemyMaxHp;
@@ -951,7 +955,6 @@
         let baseMyX = 80, baseEnemyX = 300;
         let combatTimer = 0;
 
-        // Trạng thái hiệu ứng bất thường
         let myStatus = { stun: 0, poison: 0, burn: 0 };
         let enemyStatus = { stun: 0, poison: 0, burn: 0 };
 
@@ -962,6 +965,7 @@
             if (team[0].happiness < 30) { alert(`⚠️ Thú cưng đang từ chối chiến đấu!`); closeModal(); return; }
 
             closeModal();
+            document.getElementById('map-screen').classList.add('hidden');
             document.getElementById('battle-screen').classList.remove('hidden');
 
             myBattlePet = team[0];
@@ -1040,9 +1044,7 @@
                 let centerY = battleCanvas.height / 2 - 15;
                 let hoverOffsetY = Math.sin(animStep * 0.1) * 8;
 
-                // Xử lý Hiệu ứng Định kỳ (Mỗi ~3 giây / 50 tick)
                 if (combatTimer % 50 === 0) {
-                    // Xử lý hiệu ứng cho thú ta
                     if (myStatus.burn > 0) {
                         let burnDmg = 12;
                         myHp -= burnDmg;
@@ -1055,14 +1057,12 @@
                         myStatus.poison--;
                         showDamagePopup(`🟢 -${poisDmg} Độc`, 'text-emerald-400', posMyX, centerY - 45);
                     }
-                    // Cơ hội ngẫu nhiên buff máu cho thú nhà (15% mỗi nhịp)
                     if (Math.random() < 0.15 && myHp < myMaxHp) {
                         let healAmount = 20;
                         myHp = Math.min(myMaxHp, myHp + healAmount);
                         showDamagePopup(`💖 +${healAmount} Hồi máu`, 'text-pink-400', posMyX, centerY - 45);
                     }
 
-                    // Xử lý hiệu ứng cho địch
                     if (enemyStatus.burn > 0) {
                         let burnDmg = 12;
                         enemyHp -= burnDmg;
@@ -1077,7 +1077,6 @@
                     }
                 }
 
-                // Di chuyển mượt (Lerp)
                 if (combatStateMy === 'idle') {
                     posMyX += (baseMyX - posMyX) * 0.2;
                 } else if (combatStateMy === 'rushing') {
@@ -1089,7 +1088,6 @@
                         enemyHp -= myDmg;
                         showDamagePopup(`-${myDmg}`, isCrit ? 'text-yellow-300 text-lg scale-125' : 'text-red-400', posEnemyX, centerY - 20);
 
-                        // Ngẫu nhiên gân hiệu ứng đặc biệt khi đánh trúng (25% tỷ lệ)
                         let randEff = Math.random();
                         if (randEff < 0.1) { enemyStatus.stun = 1; showDamagePopup(`💫 CHOÁNG!`, 'text-purple-300 font-bold', posEnemyX, centerY - 50); }
                         else if (randEff < 0.2) { enemyStatus.burn = 2; showDamagePopup(`🔥 THIÊU ĐỐT!`, 'text-orange-400 font-bold', posEnemyX, centerY - 50); }
@@ -1123,7 +1121,6 @@
                     if (Math.abs(posEnemyX - baseEnemyX) < 5) combatStateEnemy = 'idle';
                 }
 
-                // Kích hoạt tấn công theo nhịp (nếu không bị choáng)
                 if (battleState === 'fighting' && combatTimer % 35 === 0 && combatStateMy === 'idle') {
                     if (myStatus.stun > 0) {
                         showDamagePopup(`💫 BỊ CHOÁNG!`, 'text-purple-400', posMyX, centerY - 30);
@@ -1142,12 +1139,10 @@
                     }
                 }
 
-                // Vẽ thú nhà & Trạng thái hiệu ứng
                 battleCtx.font = "80px sans-serif";
                 battleCtx.textAlign = "center";
                 battleCtx.fillText(myBattlePet.emoji, posMyX, centerY + hoverOffsetY);
                 
-                // Icon hiệu ứng trên đầu thú nhà
                 let myEffText = '';
                 if (myStatus.burn > 0) myEffText += ' 🔥';
                 if (myStatus.poison > 0) myEffText += ' 🟢';
@@ -1157,13 +1152,11 @@
                     battleCtx.fillText(myEffText, posMyX, centerY + hoverOffsetY - 45);
                 }
 
-                // Thanh HP nhà
                 battleCtx.fillStyle = "#18181b"; battleCtx.fillRect(25, centerY + 55, 130, 14);
                 battleCtx.fillStyle = "#10b981"; battleCtx.fillRect(25, centerY + 55, 130 * Math.max(0, myHp / myMaxHp), 14);
                 battleCtx.font = "10px sans-serif"; battleCtx.fillStyle = "#fff";
                 battleCtx.fillText(`${myBattlePet.name}`, 90, centerY + 50);
 
-                // Vẽ thú địch & Trạng thái hiệu ứng
                 battleCtx.font = "80px sans-serif";
                 battleCtx.fillText(enemyBattlePet.emoji, posEnemyX, centerY - hoverOffsetY);
 
@@ -1176,7 +1169,6 @@
                     battleCtx.fillText(enemyEffText, posEnemyX, centerY - hoverOffsetY - 45);
                 }
 
-                // Thanh HP địch
                 battleCtx.fillStyle = "#18181b"; battleCtx.fillRect(battleCanvas.width - 155, centerY + 55, 130, 14);
                 battleCtx.fillStyle = "#ef4444"; battleCtx.fillRect(battleCanvas.width - 155, centerY + 55, 130 * Math.max(0, enemyHp / enemyMaxHp), 14);
                 battleCtx.font = "10px sans-serif"; battleCtx.fillStyle = "#fff";
