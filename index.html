@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Full Feature Master v8.5 Interactive</title>
+    <title>Batthu - Full Feature Master v8.6 GitHub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -12,17 +12,17 @@
         #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 50vh; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; background: #18181b; }
         
-        /* BACKGROUND 3 KHU VỰC */
+        /* GẮN BACKGROUND TRỰC TIẾP TỪ KHO GITHUB CỦA ANH */
         #fullscreen-farm-screen {
-            background-image: url('https://lh3.googleusercontent.com/d/1nQj4JcA3sB-4ax9CXZkJlTdx6gCPxlJq');
+            background-image: url('farm-bg.png');
             background-size: cover; background-position: center; position: relative;
         }
         #hospital-screen {
-            background-image: url('https://lh3.googleusercontent.com/d/1oQPbOfbjNZVC9BIu3pqR3gaNCNydsMx4');
+            background-image: url('hospital-bg.png');
             background-size: cover; background-position: center; position: relative;
         }
         #battle-screen .relative.flex-1 {
-            background-image: url('https://lh3.googleusercontent.com/d/1ReuRcZwDl42AdX5eA545KBk8yg1tqIvn');
+            background-image: url('battle-bg.png');
             background-size: cover; background-position: center;
         }
 
@@ -84,31 +84,27 @@
 
     <!-- MÀN HÌNH TRANG TRẠI TƯƠNG TÁC TRỰC TIẾP TRÊN BACKGROUND -->
     <div id="fullscreen-farm-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col justify-between p-3 overflow-y-auto">
-        <!-- Header Top -->
         <div class="flex justify-between items-center bg-black/80 backdrop-blur-md p-2.5 rounded-2xl border border-emerald-500/50 shadow-xl z-20 shrink-0">
             <div class="flex items-center gap-2">
                 <span class="text-xl">🏡</span>
                 <div>
-                    <h2 class="font-bold text-xs text-emerald-400">Trang Trại Linh Thú (Chạm trực tiếp vào khu vực bên dưới)</h2>
+                    <h2 class="font-bold text-xs text-emerald-400">Trang Trại Linh Thú (Chạm trực tiếp vào khu vực trên tranh)</h2>
                     <div class="text-[9px] text-zinc-300">Kho trại: <span id="farm-count">0</span> thú</div>
                 </div>
             </div>
             <button onclick="closeFullscreenFarm()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1 rounded-xl font-bold text-xs cursor-pointer border border-zinc-600">✕ Thoát</button>
         </div>
 
-        <!-- VÙNG TƯƠNG TÁC CHẠM TRỰC TIẾP LÊN ẢNH TRANG TRẠI -->
         <div class="relative flex-grow my-2 rounded-2xl overflow-hidden border border-emerald-500/30 shadow-2xl min-h-[400px]">
-            <!-- 1. Vùng chạm Khu Luyện Tập (Nằm phía trên) -->
+            <!-- 1. Khu Luyện Tập -->
             <div onclick="showFarmSection('training')" class="hotspot" style="top: 5%; left: 10%; width: 80%; height: 28%;" title="Khu Luyện Tập Cọc Gỗ">
                 <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded-lg text-[10px] font-bold text-amber-300 border border-amber-500/50">🪵 Chạm vào Khu Luyện Tập</div>
             </div>
-
-            <!-- 2. Vùng chạm Khu Hồi Sức (Nằm giữa phải) -->
+            <!-- 2. Khu Hồi Sức -->
             <div onclick="showFarmSection('resting')" class="hotspot" style="top: 36%; left: 52%; width: 44%; height: 30%;" title="Khu Hồi Sức HP">
                 <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded-lg text-[10px] font-bold text-emerald-300 border border-emerald-500/50">🌿 Chạm vào Hồi Sức HP</div>
             </div>
-
-            <!-- 3. Vùng chạm Kho Linh Thú Trại Hộ (Nằm phía dưới) -->
+            <!-- 3. Kho Trại Hộ -->
             <div onclick="showFarmSection('storage')" class="hotspot" style="top: 68%; left: 5%; width: 90%; height: 28%;" title="Kho Trại Hộ">
                 <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded-lg text-[10px] font-bold text-yellow-300 border border-yellow-500/50">🐾 Chạm vào Kho Thú Trại</div>
             </div>
@@ -121,26 +117,23 @@
             <div class="flex items-center gap-2">
                 <span class="text-xl">🏥</span>
                 <div>
-                    <h2 class="font-bold text-xs text-cyan-400">Bệnh Viện Thú Y (Chạm trực tiếp các khu vực)</h2>
+                    <h2 class="font-bold text-xs text-cyan-400">Bệnh Viện Thú Y (Chạm trực tiếp các khu vực trên tranh)</h2>
                     <div class="text-[9px] text-zinc-300">Vàng: <span id="hospital-coin-count">1500</span>🪙</div>
                 </div>
             </div>
             <button onclick="closeHospitalMenu()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1 rounded-xl font-bold text-xs cursor-pointer border border-zinc-600">✕ Đóng</button>
         </div>
 
-        <!-- VÙNG TƯƠNG TÁC CHẠM TRỰC TIẾP LÊN ẢNH BỆNH VIỆN -->
         <div class="relative flex-grow my-2 rounded-2xl overflow-hidden border border-cyan-500/30 shadow-2xl min-h-[400px]">
-            <!-- 1. Vùng chạm Hồi Sức Tim (Khu bên trái bệnh viện) -->
+            <!-- 1. Hồi Sức Tim -->
             <div onclick="openHospitalActionModal('heal')" class="hotspot" style="top: 23%; left: 5%; width: 45%; height: 35%;" title="Khu Hồi Sức Trái Tim">
                 <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded-lg text-[10px] font-bold text-cyan-300 border border-cyan-500/50">❤️ Chạm Hồi Sức Trái Tim</div>
             </div>
-
-            <!-- 2. Vùng chạm Nâng Cấp Tiến Hóa (Khu bên phải lồng kính) -->
+            <!-- 2. Nâng Cấp Tiến Hóa -->
             <div onclick="openHospitalActionModal('evolve')" class="hotspot" style="top: 23%; left: 52%; width: 43%; height: 35%;" title="Khu Tiến Hóa Đá">
                 <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded-lg text-[10px] font-bold text-amber-300 border border-amber-500/50">💎 Chạm Tiến Hóa Đá</div>
             </div>
-
-            <!-- 3. Vùng chạm Khu Sinh Sản Lai Thú (Khu vực đền trứng phía dưới) -->
+            <!-- 3. Sinh Sản Lai Thú -->
             <div onclick="openHospitalActionModal('breed')" class="hotspot" style="top: 61%; left: 10%; width: 80%; height: 35%;" title="Khu Sinh Sản Lai Thú">
                 <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded-lg text-[10px] font-bold text-pink-300 border border-pink-500/50">🧬 Chạm Sinh Sản Lai Thú F1</div>
             </div>
@@ -173,7 +166,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH ĐẤU TRƯỜNG V8.5 -->
+    <!-- MÀN HÌNH ĐẤU TRƯỜNG V8.6 -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-3">
         <div class="flex justify-between items-center z-20 bg-black/80 backdrop-blur-md p-2.5 rounded-xl border border-white/10 shrink-0">
             <div class="flex flex-col w-5/12">
