@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Full Feature Master v8.2</title>
+    <title>Batthu - Full Feature Master v8.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -11,6 +11,24 @@
         #map-screen { display: flex; flex-direction: column; height: 100vh; width: 100vw; position: absolute; inset: 0; background: #09090b; }
         #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 50vh; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; background: #18181b; }
+        
+        /* GẮN BACKGROUND CHUẨN XÁC TỪ GOOGLE DRIVE CHO 3 KHU VỰC */
+        #fullscreen-farm-screen {
+            background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('https://lh3.googleusercontent.com/d/1nQj4JcA3sB-4ax9CXZkJlTdx6gCPxlJq');
+            background-size: cover;
+            background-position: center;
+        }
+        #hospital-screen {
+            background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('https://lh3.googleusercontent.com/d/1oQPbOfbjNZVC9BIu3pqR3gaNCNydsMx4');
+            background-size: cover;
+            background-position: center;
+        }
+        #battle-screen .relative.flex-1 {
+            background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5)), url('https://lh3.googleusercontent.com/d/1ReuRcZwDl42AdX5eA545KBk8yg1tqIvn');
+            background-size: cover;
+            background-position: center;
+        }
+
         .leaflet-control-attribution { display: none !important; }
         .leaflet-div-icon { background: transparent !important; border: none !important; }
         @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-45px) scale(1.2); opacity: 0; } }
@@ -63,36 +81,36 @@
 
     <!-- MÀN HÌNH TRANG TRẠI TOÀN MÀN HÌNH -->
     <div id="fullscreen-farm-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col justify-between p-4 overflow-y-auto">
-        <div class="flex justify-between items-center bg-zinc-900 p-3 rounded-2xl border border-emerald-500/50 shadow-xl shrink-0">
+        <div class="flex justify-between items-center bg-zinc-900/90 backdrop-blur-md p-3 rounded-2xl border border-emerald-500/50 shadow-xl shrink-0">
             <div class="flex items-center gap-2">
                 <span class="text-2xl">🏡</span>
                 <div>
                     <h2 class="font-bold text-sm text-emerald-400">Trang Trại Linh Thú Toàn Màn Hình</h2>
-                    <div class="text-[10px] text-zinc-400">Khu luyện tập cọc gỗ & khu nghỉ ngơi hồi phục HP</div>
+                    <div class="text-[10px] text-zinc-300">Khu luyện tập cọc gỗ & khu nghỉ ngơi hồi phục HP</div>
                 </div>
             </div>
             <button onclick="closeFullscreenFarm()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-1.5 rounded-xl font-bold text-xs cursor-pointer border border-zinc-600">✕ Thoát</button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-3">
-            <div class="bg-zinc-900/90 border border-amber-500/40 p-4 rounded-2xl flex flex-col shadow-xl">
+            <div class="bg-zinc-900/90 backdrop-blur-md border border-amber-500/40 p-4 rounded-2xl flex flex-col shadow-xl">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="font-bold text-xs text-amber-300">🪵 Khu Luyện Tập (4 Cọc Gỗ)</h3>
-                    <span class="text-[10px] text-zinc-400">Tự động tăng cấp theo thời gian</span>
+                    <span class="text-[10px] text-zinc-300">Tự động tăng cấp theo thời gian</span>
                 </div>
                 <div class="grid grid-cols-2 gap-2.5" id="training-poles-container"></div>
             </div>
 
-            <div class="bg-zinc-900/90 border border-emerald-500/40 p-4 rounded-2xl flex flex-col shadow-xl">
+            <div class="bg-zinc-900/90 backdrop-blur-md border border-emerald-500/40 p-4 rounded-2xl flex flex-col shadow-xl">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="font-bold text-xs text-emerald-300">🌿 Khu Nghỉ Ngơi (Hồi Phục HP)</h3>
-                    <span class="text-[10px] text-zinc-400">Tự động hồi máu theo thời gian</span>
+                    <span class="text-[10px] text-zinc-300">Tự động hồi máu theo thời gian</span>
                 </div>
                 <div class="space-y-2 max-h-56 overflow-y-auto pr-1" id="resting-pets-container"></div>
             </div>
         </div>
 
-        <div class="bg-zinc-900/90 border border-zinc-800 p-3 rounded-2xl flex flex-col flex-grow shadow-xl">
+        <div class="bg-zinc-900/90 backdrop-blur-md border border-zinc-800 p-3 rounded-2xl flex flex-col flex-grow shadow-xl">
             <h3 class="font-bold text-xs text-yellow-300 mb-2">🐾 Kho Linh Thú Trại Hộ (${farm.length})</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto max-h-48" id="farm-storage-list"></div>
         </div>
@@ -100,7 +118,7 @@
 
     <!-- MÀN HÌNH BỆNH VIỆN THÚ -->
     <div id="hospital-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col justify-between p-4">
-        <div class="flex justify-between items-center bg-zinc-900 p-3 rounded-2xl border border-cyan-500/50 shadow-xl shrink-0">
+        <div class="flex justify-between items-center bg-zinc-900/95 backdrop-blur-md p-3 rounded-2xl border border-cyan-500/50 shadow-xl shrink-0">
             <div class="flex items-center gap-2">
                 <span class="text-2xl">🏥</span>
                 <div>
@@ -110,7 +128,7 @@
             </div>
             <button onclick="closeHospitalMenu()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-1.5 rounded-xl font-bold text-xs cursor-pointer border border-zinc-600">✕ Đóng</button>
         </div>
-        <div class="my-3 flex-grow overflow-y-auto space-y-2.5 pr-1" id="hospital-pets-list"></div>
+        <div class="my-3 flex-grow overflow-y-auto space-y-2.5 pr-1 bg-black/40 backdrop-blur-sm p-3 rounded-2xl border border-zinc-800" id="hospital-pets-list"></div>
     </div>
 
     <!-- MÀN HÌNH MINIGAME BẮT THÚ AR & DÂY VÀNG -->
@@ -139,7 +157,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH ĐẤU TRƯỜNG V8.2 -->
+    <!-- MÀN HÌNH ĐẤU TRƯỜNG V8.3 -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-3">
         <div class="flex justify-between items-center z-20 bg-black/80 backdrop-blur-md p-2.5 rounded-xl border border-white/10 shrink-0">
             <div class="flex flex-col w-5/12">
@@ -159,10 +177,10 @@
             </div>
         </div>
 
-        <div class="relative flex-1 my-2 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
-            <canvas id="battleCanvas" class="absolute inset-0 w-full h-full"></canvas>
-            <div id="damage-popup-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
-            <div id="battle-log" class="absolute bottom-3 bg-black/90 px-4 py-2 rounded-xl text-xs text-yellow-300 font-bold border border-yellow-500/50 text-center max-w-sm shadow-xl">
+        <div class="relative flex-1 my-2 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
+            <canvas id="battleCanvas" class="absolute inset-0 w-full h-full z-10"></canvas>
+            <div id="damage-popup-container" class="absolute inset-0 pointer-events-none overflow-hidden z-20"></div>
+            <div id="battle-log" class="absolute bottom-3 z-20 bg-black/90 px-4 py-2 rounded-xl text-xs text-yellow-300 font-bold border border-yellow-500/50 text-center max-w-sm shadow-xl">
                 Đang giao chiến...
             </div>
         </div>
@@ -349,7 +367,7 @@
 
             let html = `<div class="text-xs text-yellow-300 font-bold mb-2">💰 Vàng hiện có: ${playerCoins} 🪙</div>`;
             if (allPets.length === 0) {
-                html += `<div class="text-center text-zinc-400 py-8 text-xs">Không có linh thú nào trong hệ thống!</div>`;
+                html += `<div class="text-center text-zinc-300 py-8 text-xs">Không có linh thú nào trong hệ thống!</div>`;
             } else {
                 allPets.forEach((pet, idx) => {
                     let missingHearts = 3 - pet.hearts;
@@ -357,7 +375,7 @@
                     let canHeal = pet.hearts < 3;
 
                     html += `
-                    <div class="bg-zinc-900 p-3 rounded-xl border border-cyan-500/40 flex items-center justify-between">
+                    <div class="bg-zinc-900/90 backdrop-blur-md p-3 rounded-xl border border-cyan-500/40 flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <span class="text-3xl">${pet.emoji}</span>
                             <div>
@@ -408,7 +426,7 @@
             trainingPoles.forEach((pet, idx) => {
                 if (pet) {
                     polesHtml += `
-                    <div class="bg-zinc-800 p-2.5 rounded-xl border border-amber-500/60 flex flex-col items-center justify-between text-center h-28">
+                    <div class="bg-zinc-900/90 backdrop-blur-md p-2.5 rounded-xl border border-amber-500/60 flex flex-col items-center justify-between text-center h-28 shadow">
                         <div class="text-3xl">${pet.emoji}</div>
                         <div class="text-[10px] font-bold text-yellow-300 truncate w-full">${pet.name} (Lv.${Math.floor(pet.level)})</div>
                         <div class="text-[9px] text-zinc-300">Đang luyện tập 🪵</div>
@@ -416,9 +434,9 @@
                     </div>`;
                 } else {
                     polesHtml += `
-                    <div class="bg-zinc-800/50 border border-dashed border-zinc-700 p-2.5 rounded-xl flex flex-col items-center justify-center text-center h-28">
-                        <span class="text-2xl text-zinc-600 mb-1">🪵</span>
-                        <div class="text-[10px] text-zinc-400 mb-1.5">Cọc gỗ trống #${idx + 1}</div>
+                    <div class="bg-zinc-900/60 backdrop-blur-md border border-dashed border-zinc-600 p-2.5 rounded-xl flex flex-col items-center justify-center text-center h-28">
+                        <span class="text-2xl text-zinc-500 mb-1">🪵</span>
+                        <div class="text-[10px] text-zinc-300 mb-1.5">Cọc gỗ trống #${idx + 1}</div>
                         <button onclick="showSelectPetForPole(${idx})" class="bg-amber-600 hover:bg-amber-500 text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer">Cho thú tập</button>
                     </div>`;
                 }
@@ -428,11 +446,11 @@
             let restingEl = document.getElementById('resting-pets-container');
             let restingHtml = '';
             if (restingPets.length === 0) {
-                restingHtml = `<div class="text-center text-zinc-500 text-xs py-4">Khu nghỉ ngơi trống!</div>`;
+                restingHtml = `<div class="text-center text-zinc-300 text-xs py-4">Khu nghỉ ngơi trống!</div>`;
             } else {
                 restingPets.forEach((pet, idx) => {
                     restingHtml += `
-                    <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/40">
+                    <div class="bg-zinc-900/90 backdrop-blur-md p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/40 shadow">
                         <div class="flex items-center gap-2">
                             <span class="text-2xl">${pet.emoji}</span>
                             <div>
@@ -449,21 +467,21 @@
             let storageEl = document.getElementById('farm-storage-list');
             let storageHtml = '';
             if (farm.length === 0) {
-                storageHtml = `<div class="text-center text-zinc-500 text-xs py-4">Kho trại trống!</div>`;
+                storageHtml = `<div class="text-center text-zinc-300 text-xs py-4">Kho trại trống!</div>`;
             } else {
                 farm.forEach((pet, idx) => {
                     let heartsStr = '❤️'.repeat(pet.hearts);
                     storageHtml += `
-                    <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border ${pet.rarity.bg}">
+                    <div class="bg-zinc-900/90 backdrop-blur-md p-2.5 rounded-xl flex items-center justify-between border ${pet.rarity.bg} shadow">
                         <div class="flex items-center gap-2.5">
                             <span class="text-3xl">${pet.emoji}</span>
                             <div>
                                 <div class="font-bold text-xs">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span></div>
-                                <div class="text-[10px] text-zinc-300">HP: ${pet.hp}/${pet.maxHp} | ❤️: ${heartsStr}</div>
+                                <div class="text-[10px] text-zinc-300">HP: ${Math.floor(pet.hp)}/${pet.maxHp} | ❤️: ${heartsStr}</div>
                             </div>
                         </div>
                         <div class="flex gap-1">
-                            <button onclick="sendPetToRest(${idx})" class="bg-emerald-600 hover:bg-emerald-500 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Nghỉ ngơi</button>
+                            <button onclick="sendPetToRest(${idx})" class="bg-emerald-600 hover:bg-emerald-500 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Nghỉ</button>
                             <button onclick="moveToTeamFromFarm(${idx})" class="bg-blue-600 hover:bg-blue-500 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Đội</button>
                         </div>
                     </div>`;
@@ -797,7 +815,7 @@
                             <span class="text-4xl bg-zinc-900 p-2 rounded-xl">${pet.emoji}</span>
                             <div>
                                 <div class="font-bold text-sm text-yellow-300">${pet.name} (${pet.gender === 'Đực' ? '♂️' : '♀️'}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span></div>
-                                <div class="text-[11px] text-zinc-300">HP: ${pet.hp}/${pet.maxHp} | ❤️: ${heartsStr}</div>
+                                <div class="text-[11px] text-zinc-300">HP: ${Math.floor(pet.hp)}/${pet.maxHp} | ❤️: ${heartsStr}</div>
                             </div>
                         </div>
                         <div class="flex flex-col gap-1">
