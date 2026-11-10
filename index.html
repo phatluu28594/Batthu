@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Auto Update v4.3</title>
+    <title>Batthu - Sprite Animation v4.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -12,8 +12,7 @@
         #map-container-wrap { flex: 1; position: relative; width: 100%; height: 100%; }
         #map { height: 100% !important; width: 100% !important; z-index: 10; }
         .leaflet-control-attribution { display: none !important; }
-        @keyframes petBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .pet-animate { animation: petBounce 2s ease-in-out infinite; }
+        
         @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
         .damage-popup { animation: floatText 0.7s ease-out forwards; }
     </style>
@@ -132,7 +131,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG PVP / LEO THÁP -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V4.3</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V4.5</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -151,7 +150,6 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // ĐĂNG KÝ SERVICE WORKER ĐỂ TỰ ĐỘNG KIỂM TRA CẬP NHẬT
         let newWorker;
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js').then(reg => {
@@ -159,7 +157,6 @@
                     newWorker = reg.installing;
                     newWorker.addEventListener('change', () => {
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            // Hiển thị thông báo cập nhật khi có bản mới trên server
                             document.getElementById('update-toast').classList.remove('hidden');
                         }
                     });
@@ -198,6 +195,17 @@
 
         let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ food: 5, toy: 5, trainer: 3, meat: 0, stoneKim: 0, stoneMoc: 0, stoneThuy: 0, stoneHoa: 0, stoneTho: 0 }));
 
+        // HỆ THỐNG CACHE ẢNH SPRITE 2D ĐỂ TRÁNH TẢI LẠI LIÊN TỤC
+        const spriteImageCache = {};
+        function getCachedSpriteImage(url) {
+            if (!spriteImageCache[url]) {
+                let img = new Image();
+                img.src = url;
+                spriteImageCache[url] = img;
+            }
+            return spriteImageCache[url];
+        }
+
         function openTowerMenu() {
             checkPetSurvival();
             const modal = document.getElementById('modal-container');
@@ -211,7 +219,7 @@
             content.innerHTML = `
             <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🗼 Tháp Vô Tận (Tầng ${towerFloor})</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>
             <div class="bg-zinc-800 p-4 rounded-2xl border border-purple-500/50 text-center space-y-2 mb-4">
-                <div class="text-5xl animate-bounce">🏰</div>
+                <div class="text-5xl">🏰</div>
                 <div class="text-xs text-zinc-300">Càng lên tầng cao, thủ vệ tháp càng mạnh mẽ nhưng phần thưởng Vàng cực khủng!</div>
                 <div class="text-sm font-bold text-yellow-300">Tầng hiện tại: ${towerFloor} / 50</div>
                 <div class="text-[11px] text-zinc-400">Dự kiến địch: HP ~${scaledBossHp} | ATK ~${scaledBossAtk} | Thưởng: ~${rewardCoins} 🪙</div>
@@ -231,6 +239,7 @@
             let customEnemy = {
                 name: bossName,
                 emoji: bossEmoji,
+                spriteUrl: '', // Dùng emoji dự phòng nếu chưa có sprite
                 hp: bossHp,
                 maxHp: bossHp,
                 atk: bossAtk,
@@ -435,27 +444,27 @@
 
         const categories = {
             'Gia cầm': [
-                { id: 101, name: 'Gà Ta', emoji: '🐔', cp: 120, hp: 60, maxHp: 60, atk: 70, level: 1, rarePrice: 100, attackType: 'melee' },
-                { id: 102, name: 'Vịt Cỏ', emoji: '🦆', cp: 110, hp: 55, maxHp: 55, atk: 65, level: 1, rarePrice: 90, attackType: 'magic' },
-                { id: 103, name: 'Ngỗng Trắng', emoji: '🦢', cp: 140, hp: 80, maxHp: 80, atk: 85, level: 1, rarePrice: 130, attackType: 'charge' },
-                { id: 104, name: 'Ngan Đen', emoji: '🦃', cp: 130, hp: 75, maxHp: 75, atk: 80, level: 1, rarePrice: 120, attackType: 'melee' }
+                { id: 101, name: 'Gà Ta', emoji: '🐔', spriteUrl: '', cp: 120, hp: 60, maxHp: 60, atk: 70, level: 1, rarePrice: 100, attackType: 'melee' },
+                { id: 102, name: 'Vịt Cỏ', emoji: '🦆', spriteUrl: '', cp: 110, hp: 55, maxHp: 55, atk: 65, level: 1, rarePrice: 90, attackType: 'magic' },
+                { id: 103, name: 'Ngỗng Trắng', emoji: '🦢', spriteUrl: '', cp: 140, hp: 80, maxHp: 80, atk: 85, level: 1, rarePrice: 130, attackType: 'charge' },
+                { id: 104, name: 'Ngan Đen', emoji: '🦃', spriteUrl: '', cp: 130, hp: 75, maxHp: 75, atk: 80, level: 1, rarePrice: 120, attackType: 'melee' }
             ],
             'Gia súc': [
-                { id: 201, name: 'Chó Vàng', emoji: '🐕', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1, rarePrice: 150, attackType: 'melee' },
-                { id: 202, name: 'Mèo Mướp', emoji: '🐈', cp: 135, hp: 70, maxHp: 70, atk: 95, level: 1, rarePrice: 140, attackType: 'magic' },
-                { id: 203, name: 'Heo Ủn Ỉn', emoji: '🐖', cp: 150, hp: 100, maxHp: 100, atk: 75, level: 1, rarePrice: 160, attackType: 'charge' },
-                { id: 204, name: 'Bò Sữa', emoji: '🐂', cp: 180, hp: 120, maxHp: 120, atk: 110, level: 1, rarePrice: 200, attackType: 'melee' }
+                { id: 201, name: 'Chó Vàng', emoji: '🐕', spriteUrl: '', cp: 145, hp: 80, maxHp: 80, atk: 90, level: 1, rarePrice: 150, attackType: 'melee' },
+                { id: 202, name: 'Mèo Mướp', emoji: '🐈', spriteUrl: '', cp: 135, hp: 70, maxHp: 70, atk: 95, level: 1, rarePrice: 140, attackType: 'magic' },
+                { id: 203, name: 'Heo Ủn Ỉn', emoji: '🐖', spriteUrl: '', cp: 150, hp: 100, maxHp: 100, atk: 75, level: 1, rarePrice: 160, attackType: 'charge' },
+                { id: 204, name: 'Bò Sữa', emoji: '🐂', spriteUrl: '', cp: 180, hp: 120, maxHp: 120, atk: 110, level: 1, rarePrice: 200, attackType: 'melee' }
             ],
             'Tự nhiên': [
-                { id: 301, name: 'Chuột Nước', emoji: '🐹', cp: 110, hp: 60, maxHp: 60, atk: 65, level: 1, rarePrice: 110, attackType: 'magic' },
-                { id: 302, name: 'Chim Lửa', emoji: '🐦', cp: 185, hp: 50, maxHp: 50, atk: 140, level: 1, rarePrice: 250, attackType: 'magic' },
-                { id: 303, name: 'Cáo Đỏ', emoji: '🦊', cp: 160, hp: 65, maxHp: 65, atk: 115, level: 1, rarePrice: 180, attackType: 'charge' },
-                { id: 304, name: 'Sói Xám', emoji: '🐺', cp: 175, hp: 90, maxHp: 90, atk: 125, level: 1, rarePrice: 220, attackType: 'melee' }
+                { id: 301, name: 'Chuột Nước', emoji: '🐹', spriteUrl: '', cp: 110, hp: 60, maxHp: 60, atk: 65, level: 1, rarePrice: 110, attackType: 'magic' },
+                { id: 302, name: 'Chim Lửa', emoji: '🐦', spriteUrl: '', cp: 185, hp: 50, maxHp: 50, atk: 140, level: 1, rarePrice: 250, attackType: 'magic' },
+                { id: 303, name: 'Cáo Đỏ', emoji: '🦊', spriteUrl: '', cp: 160, hp: 65, maxHp: 65, atk: 115, level: 1, rarePrice: 180, attackType: 'charge' },
+                { id: 304, name: 'Sói Xám', emoji: '🐺', spriteUrl: '', cp: 175, hp: 90, maxHp: 90, atk: 125, level: 1, rarePrice: 220, attackType: 'melee' }
             ],
             'Sách đỏ': [
-                { id: 401, name: 'Rồng Nước', emoji: '🐉', cp: 250, hp: 150, maxHp: 150, atk: 180, level: 1, rarePrice: 500, attackType: 'magic' },
-                { id: 402, name: 'Phượng Hoàng', emoji: '🦅', cp: 270, hp: 140, maxHp: 140, atk: 195, level: 1, rarePrice: 600, attackType: 'magic' },
-                { id: 403, name: 'Kỳ Lân', emoji: '🦄', cp: 260, hp: 160, maxHp: 160, atk: 175, level: 1, rarePrice: 550, attackType: 'charge' }
+                { id: 401, name: 'Rồng Nước', emoji: '🐉', spriteUrl: '', cp: 250, hp: 150, maxHp: 150, atk: 180, level: 1, rarePrice: 500, attackType: 'magic' },
+                { id: 402, name: 'Phượng Hoàng', emoji: '🦅', spriteUrl: '', cp: 270, hp: 140, maxHp: 140, atk: 195, level: 1, rarePrice: 600, attackType: 'magic' },
+                { id: 403, name: 'Kỳ Lân', emoji: '🦄', spriteUrl: '', cp: 260, hp: 160, maxHp: 160, atk: 175, level: 1, rarePrice: 550, attackType: 'charge' }
             ]
         };
 
@@ -525,7 +534,7 @@
             content.innerHTML = `
             <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🥚 Ấp Trứng Linh Thú</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>
             <div class="flex flex-col items-center bg-zinc-800 p-6 rounded-2xl border border-zinc-700 text-center">
-                <div class="text-7xl mb-3 animate-pulse">🥚</div>
+                <div class="text-7xl mb-3">🥚</div>
                 <div class="font-bold text-sm mb-1">Trứng Đặc Biệt</div>
                 <div class="text-xs text-zinc-400 mb-4">Đi bộ tích lũy bước chân ấp trứng!</div>
                 <div class="w-full bg-zinc-900 rounded-full h-4 overflow-hidden border border-zinc-700 mb-2">
@@ -708,7 +717,7 @@
             <div class="relative w-full h-56 bg-gradient-to-b from-emerald-900/80 to-emerald-950 rounded-2xl border-2 border-emerald-600/50 overflow-hidden mb-4 shadow-inner">
                 <canvas id="farmCanvas" class="absolute inset-0 w-full h-full"></canvas>
                 <div class="absolute bottom-2 inset-x-0 flex justify-center pointer-events-none">
-                    <span class="text-[10px] text-emerald-200 font-bold uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full border border-emerald-500/30">🌾 Khu Vườn Sinh Động 🌾</span>
+                    <span class="text-[10px] text-emerald-200 font-bold uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full border border-emerald-500/30">🌾 Khu Vườn Hoạt Họa Sprite 🌾</span>
                 </div>
             </div>`;
 
@@ -754,7 +763,8 @@
                 y: Math.random() * (farmCanvas.height - 60) + 30,
                 vx: (Math.random() - 0.5) * 1.5,
                 vy: (Math.random() - 0.5) * 1.2,
-                wobble: Math.random() * Math.PI
+                frame: 0,
+                animTimer: 0
             }));
 
             if (farmAnimInterval) clearInterval(farmAnimInterval);
@@ -765,18 +775,39 @@
                 farmCtx.fillRect(0, 0, farmCanvas.width, farmCanvas.height);
 
                 farmPetsState.forEach(p => {
-                    p.x += p.vx; p.y += p.vy; p.wobble += 0.1;
+                    p.x += p.vx; p.y += p.vy;
                     if (p.x < 30 || p.x > farmCanvas.width - 30) p.vx *= -1;
                     if (p.y < 30 || p.y > farmCanvas.height - 30) p.vy *= -1;
 
-                    let bounceY = p.y + Math.sin(p.wobble) * 4;
-                    farmCtx.font = "40px sans-serif";
-                    farmCtx.textAlign = "center";
-                    farmCtx.textBaseline = "middle";
-                    farmCtx.fillText(p.emoji, p.x, bounceY);
+                    p.animTimer++;
+                    if (p.animTimer % 8 === 0) {
+                        p.frame = (p.frame + 1) % 4; // Giả lập chạy 4 khung hình sprite
+                    }
+
+                    // TÍCH HỢP HỆ THỐNG SPRITE HOẶC FALLBACK EMOJI NẾU CHƯA CÓ LINK ẢNH
+                    if (p.spriteUrl) {
+                        let img = getCachedSpriteImage(p.spriteUrl);
+                        if (img.complete && img.naturalWidth !== 0) {
+                            let fw = img.naturalWidth / 4;
+                            let fh = img.naturalHeight;
+                            farmCtx.drawImage(img, p.frame * fw, 0, fw, fh, p.x - 24, p.y - 24, 48, 48);
+                        } else {
+                            farmCtx.font = "38px sans-serif";
+                            farmCtx.textAlign = "center";
+                            farmCtx.textBaseline = "middle";
+                            farmCtx.fillText(p.emoji, p.x, p.y);
+                        }
+                    } else {
+                        farmCtx.font = "38px sans-serif";
+                        farmCtx.textAlign = "center";
+                        farmCtx.textBaseline = "middle";
+                        farmCtx.fillText(p.emoji, p.x, p.y);
+                    }
+
                     farmCtx.font = "10px sans-serif";
                     farmCtx.fillStyle = "#fde047";
-                    farmCtx.fillText(p.name, p.x, bounceY + 26);
+                    farmCtx.textAlign = "center";
+                    farmCtx.fillText(p.name, p.x, p.y + 26);
                 });
             }, 50);
         }
@@ -826,7 +857,7 @@
                     html += `
                     <div onclick="openPetDetail(${idx})" class="bg-zinc-800 cursor-pointer p-3 rounded-xl flex items-center justify-between border ${isRefusing ? 'border-red-500' : 'border-zinc-700'}">
                         <div class="flex items-center gap-3">
-                            <span class="text-4xl bg-zinc-900 p-2 rounded-xl pet-animate">${pet.emoji}</span>
+                            <span class="text-4xl bg-zinc-900 p-2 rounded-xl">${pet.emoji}</span>
                             <div>
                                 <div class="font-bold text-sm">${pet.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="text-xs text-yellow-400">Lv.${pet.level}</span> <span class="${elemObj.color}">(${elemObj.icon}${pet.element})</span></div>
                                 <div class="text-[11px] text-zinc-300">HP: ${pet.hp}/${pet.maxHp} | No: ${pet.hunger}% | Vui: ${pet.happiness}%</div>
@@ -864,7 +895,7 @@
                 <button onclick="openTeamMenu()" class="text-zinc-400 font-bold cursor-pointer">‹ Quay lại</button>
             </div>
             <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-zinc-700 mb-4 text-center">
-                <div class="text-7xl mb-2 pet-animate filter drop-shadow-xl">${pet.emoji}</div>
+                <div class="text-7xl mb-2 filter drop-shadow-xl">${pet.emoji}</div>
                 <div class="text-base font-bold text-yellow-300">${pet.name} <span class="${genderColor}">(${genderSymbol})</span> <span class="${elemObj.color} text-sm">(${elemObj.icon}${pet.element})</span></div>
                 <div class="text-[11px] text-amber-300 mt-1 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-700">
                     Cấp độ: Lv.${pet.level || 1} | ATK: ${pet.atk}
@@ -1107,7 +1138,7 @@
                 let bossAtk = Math.floor(130 * scaleFactor);
                 let bossLv = 30 + (bossKills * 10);
 
-                enemyBattlePet = { name: `Rồng Khổng Lồ (Lv.${bossLv})`, emoji: '🐲', hp: bossHp, maxHp: bossHp, atk: bossAtk, level: bossLv, element: 'Hỏa', critRate: 25, dodgeRate: 20, accuracy: 30, attackSpeed: 1.5 };
+                enemyBattlePet = { name: `Rồng Khổng Lồ (Lv.${bossLv})`, emoji: '🐲', spriteUrl: '', hp: bossHp, maxHp: bossHp, atk: bossAtk, level: bossLv, element: 'Hỏa', critRate: 25, dodgeRate: 20, accuracy: 30, attackSpeed: 1.5 };
                 battleModeTitle = `🔥 BOSS THẾ GIỚI (Cấp ${bossKills + 1}) 🔥`;
             } else if (customEnemy) {
                 enemyBattlePet = { ...customEnemy };
@@ -1337,8 +1368,8 @@
         }
 
         let ghostPlayers = [
-            { id: 'g1', name: 'Ghost_Viper', avatar: '👻', pet: { name: 'Xà Vương', emoji: '🐍', cp: 180, hp: 95, maxHp: 95, atk: 110, level: 65, element: 'Mộc', gender: 'Đực', critRate: 20, dodgeRate: 25, accuracy: 25, attackSpeed: 1.4 } },
-            { id: 'g2', name: 'Ghost_Shadow', avatar: '👤', pet: { name: 'Dơi Bóng Tối', emoji: '🦇', cp: 165, hp: 75, maxHp: 75, atk: 115, level: 50, element: 'Thủy', gender: 'Cái', critRate: 18, dodgeRate: 30, accuracy: 20, attackSpeed: 1.5 } }
+            { id: 'g1', name: 'Ghost_Viper', avatar: '👻', pet: { name: 'Xà Vương', emoji: '🐍', spriteUrl: '', cp: 180, hp: 95, maxHp: 95, atk: 110, level: 65, element: 'Mộc', gender: 'Đực', critRate: 20, dodgeRate: 25, accuracy: 25, attackSpeed: 1.4 } },
+            { id: 'g2', name: 'Ghost_Shadow', avatar: '👤', pet: { name: 'Dơi Bóng Tối', emoji: '🦇', spriteUrl: '', cp: 165, hp: 75, maxHp: 75, atk: 115, level: 50, element: 'Thủy', gender: 'Cái', critRate: 18, dodgeRate: 30, accuracy: 20, attackSpeed: 1.5 } }
         ];
 
         function spawnGhostPlayers() {
@@ -1352,7 +1383,7 @@
 
                 const ghostIcon = L.divIcon({
                     className: 'custom-ghost-icon',
-                    html: `<div style="font-size: 30px; animation: bounce 2s infinite; filter: drop-shadow(0 0 8px rgba(129,140,248,0.9));">${ghost.avatar}</div>`,
+                    html: `<div style="font-size: 30px; filter: drop-shadow(0 0 8px rgba(129,140,248,0.9));">${ghost.avatar}</div>`,
                     iconSize: [32, 32], iconAnchor: [16, 16]
                 });
 
@@ -1402,13 +1433,13 @@
             activeMarkers = [];
 
             const bossData = {
-                name: 'Rồng Khổng Lồ', emoji: '🐲', cp: 500, element: 'Hỏa', isBoss: true,
+                name: 'Rồng Khổng Lồ', emoji: '🐲', spriteUrl: '', cp: 500, element: 'Hỏa', isBoss: true,
                 lat: userLat + (Math.random() - 0.5) * 0.003,
                 lng: userLng + (Math.random() - 0.5) * 0.003
             };
             const bossIcon = L.divIcon({
                 className: 'custom-boss-icon',
-                html: `<div style="font-size: 40px; animation: bounce 1s infinite; filter: drop-shadow(0 0 12px rgba(239,68,68,1));">🐲</div>`,
+                html: `<div style="font-size: 40px; filter: drop-shadow(0 0 12px rgba(239,68,68,1));">🐲</div>`,
                 iconSize: [40, 40], iconAnchor: [20, 20]
             });
             const bossMarker = L.marker([bossData.lat, bossData.lng], { icon: bossIcon }).addTo(map);
@@ -1434,9 +1465,10 @@
                     lng: userLng + (Math.random() - 0.5) * 0.0025
                 };
 
+                // NGOÀI MAP: Giữ nguyên biểu tượng TĨNH (hoặc hiển thị sprite tĩnh khung hình đầu tiên)
                 const monsterIcon = L.divIcon({
                     className: 'custom-monster-icon',
-                    html: `<div style="font-size: 32px; animation: bounce 1.5s infinite; filter: drop-shadow(0 0 8px rgba(234,179,8,0.9));">${monsterData.emoji}</div>`,
+                    html: `<div style="font-size: 32px; filter: drop-shadow(0 0 8px rgba(234,179,8,0.9));">${monsterData.emoji}</div>`,
                     iconSize: [35, 35], iconAnchor: [17, 17]
                 });
 
@@ -1559,9 +1591,17 @@
             rope.vx = 0; rope.vy = 0; rope.flying = false;
         }
 
+        let arAnimFrame = 0;
+        let arTick = 0;
+
         function updateCanvasGame() {
             if (!isARActive || !ctx || !canvas) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            arTick++;
+            if (arTick % 8 === 0) {
+                arAnimFrame = (arAnimFrame + 1) % 4;
+            }
 
             if (!isTugOfWarActive) {
                 monsterPos.x += monsterPos.vx;
@@ -1582,10 +1622,25 @@
                 monsterPos.y = (canvas.height * 0.4) + pullOscillation;
             }
 
-            ctx.font = "80px sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y);
+            // VẼ THÚ TRONG MINIGAME BẮT (HỖ TRỢ SPRITE 2D HOẶC EMOJI)
+            if (currentWildMonster.spriteUrl) {
+                let img = getCachedSpriteImage(currentWildMonster.spriteUrl);
+                if (img.complete && img.naturalWidth !== 0) {
+                    let fw = img.naturalWidth / 4;
+                    let fh = img.naturalHeight;
+                    ctx.drawImage(img, arAnimFrame * fw, 0, fw, fh, monsterPos.x - 35, monsterPos.y - 35, 70, 70);
+                } else {
+                    ctx.font = "80px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y);
+                }
+            } else {
+                ctx.font = "80px sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y);
+            }
 
             if (rope.flying) {
                 rope.x += rope.vx; rope.y += rope.vy; rope.vy += 0.25;
