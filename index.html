@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Full Feature Master v6.8</title>
+    <title>Batthu - Full Feature Master v6.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -89,7 +89,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG VÒNG TRÒN LAO VÀO NHAU -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V6.8</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V6.9</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -131,8 +131,8 @@
 
         let ytPlayer = null;
         let isMusicReady = false;
-        const LOBBY_YOUTUBE_ID = 'https://www.youtube.com/watch?v=b-FHfiM8ILo&list=RDb-FHfiM8ILo&start_radio=1';
-        const BATTLE_YOUTUBE_ID = 'https://www.youtube.com/watch?v=9zMW4nO7CIo&list=RD9zMW4nO7CIo&start_radio=1';
+        const LOBBY_YOUTUBE_ID = 'b-FHfiM8ILo';
+        const BATTLE_YOUTUBE_ID = '9zMW4nO7CIo';
 
         function onYouTubeIframeAPIReady() {
             try {
@@ -348,7 +348,7 @@
             content.innerHTML = `
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold text-lg text-amber-300">🛒 Chợ Đen & Vật Phẩm</h3>
-                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+                <button onclick="closeModal()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
             </div>
             <div class="text-xs text-yellow-400 font-bold mb-3">💰 Vàng hiện có: <span id="market-coins">${playerCoins}</span> 🪙</div>
             <div class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
