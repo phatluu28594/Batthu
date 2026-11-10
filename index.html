@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Full Feature Master v8.1</title>
+    <title>Batthu - Full Feature Master v8.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -61,14 +61,14 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH TRANG TRẠI TOÀN MÀN HÌNH (FULL SCREEN FARM) -->
+    <!-- MÀN HÌNH TRANG TRẠI TOÀN MÀN HÌNH -->
     <div id="fullscreen-farm-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col justify-between p-4 overflow-y-auto">
         <div class="flex justify-between items-center bg-zinc-900 p-3 rounded-2xl border border-emerald-500/50 shadow-xl shrink-0">
             <div class="flex items-center gap-2">
                 <span class="text-2xl">🏡</span>
                 <div>
                     <h2 class="font-bold text-sm text-emerald-400">Trang Trại Linh Thú Toàn Màn Hình</h2>
-                    <div class="text-[10px] text-zinc-400">Quản lý khu luyện tập cọc gỗ & khu nghỉ ngơi hồi phục HP</div>
+                    <div class="text-[10px] text-zinc-400">Khu luyện tập cọc gỗ & khu nghỉ ngơi hồi phục HP</div>
                 </div>
             </div>
             <button onclick="closeFullscreenFarm()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-1.5 rounded-xl font-bold text-xs cursor-pointer border border-zinc-600">✕ Thoát</button>
@@ -77,7 +77,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-3">
             <div class="bg-zinc-900/90 border border-amber-500/40 p-4 rounded-2xl flex flex-col shadow-xl">
                 <div class="flex justify-between items-center mb-3">
-                    <h3 class="font-bold text-xs text-amber-300">🪵 Khu Luyện Tập (4 Cọc Gỗ Tăng Cấp)</h3>
+                    <h3 class="font-bold text-xs text-amber-300">🪵 Khu Luyện Tập (4 Cọc Gỗ)</h3>
                     <span class="text-[10px] text-zinc-400">Tự động tăng cấp theo thời gian</span>
                 </div>
                 <div class="grid grid-cols-2 gap-2.5" id="training-poles-container"></div>
@@ -105,7 +105,7 @@
                 <span class="text-2xl">🏥</span>
                 <div>
                     <h2 class="font-bold text-sm text-cyan-400">Bệnh Viện Hồi Phục Trái Tim</h2>
-                    <div class="text-[10px] text-zinc-300">Phí chữa trị: 1000 🪙 để phục hồi FULL 3 Trái Tim (❤️) cho linh thú</div>
+                    <div class="text-[10px] text-zinc-300">Phí chữa trị: 1000 🪙 để phục hồi FULL 3 Trái Tim (❤️)</div>
                 </div>
             </div>
             <button onclick="closeHospitalMenu()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-1.5 rounded-xl font-bold text-xs cursor-pointer border border-zinc-600">✕ Đóng</button>
@@ -139,7 +139,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH ĐẤU TRƯỜNG V8.1 -->
+    <!-- MÀN HÌNH ĐẤU TRƯỜNG V8.2 -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-3">
         <div class="flex justify-between items-center z-20 bg-black/80 backdrop-blur-md p-2.5 rounded-xl border border-white/10 shrink-0">
             <div class="flex flex-col w-5/12">
@@ -834,9 +834,26 @@
                 
                 <div class="w-full space-y-2 mt-3 text-left text-xs bg-zinc-900/80 p-3 rounded-xl border border-zinc-700">
                     <div>
-                        <div class="flex justify-between mb-1"><span>Máu (HP):</span><span class="font-bold text-emerald-400">${pet.hp} / ${pet.maxHp}</span></div>
+                        <div class="flex justify-between mb-1"><span>Máu (HP):</span><span class="font-bold text-emerald-400">${Math.floor(pet.hp)} / ${pet.maxHp}</span></div>
                         <div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div class="bg-emerald-500 h-full" style="width: ${(pet.hp/pet.maxHp)*100}%"></div></div>
                     </div>
+                    <div>
+                        <div class="flex justify-between mb-1"><span>Độ no:</span><span class="font-bold text-yellow-400">${pet.hunger}%</span></div>
+                        <div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div class="bg-yellow-500 h-full" style="width: ${pet.hunger}%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1"><span>Hạnh phúc:</span><span class="font-bold text-pink-400">${pet.happiness}%</span></div>
+                        <div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div class="bg-pink-500 h-full" style="width: ${pet.happiness}%"></div></div>
+                    </div>
+                </div>
+
+                <div class="w-full grid grid-cols-2 gap-2 mt-3 text-xs bg-zinc-900/80 p-3 rounded-xl border border-zinc-700 text-left">
+                    <div>⚔️ ATK: <span class="font-bold text-red-400">${Math.floor(pet.atk)}</span></div>
+                    <div>💥 Chí mạng: <span class="font-bold text-blue-400">${pet.critRate ?? 20}%</span></div>
+                    <div>🛡️ Đỡ đòn: <span class="font-bold text-purple-400">${pet.blockRate ?? 15}%</span></div>
+                    <div>🏃 Né tránh: <span class="font-bold text-emerald-400">${pet.dodgeRate ?? 15}%</span></div>
+                    <div>🎯 Chính xác: <span class="font-bold text-amber-400">${pet.accuracy ?? 90}%</span></div>
+                    <div>⚡ Tốc độ: <span class="font-bold text-cyan-400">${pet.speed ?? 50}</span></div>
                 </div>
             </div>
             <div class="grid grid-cols-3 gap-2 text-center">
