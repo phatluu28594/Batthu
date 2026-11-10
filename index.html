@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Ultimate Team & Boss v5.5</title>
+    <title>Batthu - Direct Play v5.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -21,37 +21,6 @@
     <!-- KHUNG YOUTUBE PLAYER ẨN -->
     <div id="youtube-audio-container" style="position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none;">
         <div id="yt-player"></div>
-    </div>
-
-    <!-- MÀN HÌNH NHẬP THÔNG TIN CÁ NHÂN LẦN ĐẦU -->
-    <div id="player-setup-modal" class="hidden absolute inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-zinc-900 border border-amber-500/50 w-full max-w-sm rounded-2xl p-5 text-zinc-100 shadow-2xl">
-            <h3 class="font-bold text-lg text-yellow-300 mb-3 text-center">🤠 Hồ Sơ Nhà Thám Hiểm</h3>
-            <p class="text-xs text-zinc-300 mb-4 text-center">Hãy nhập thông tin của bạn để bắt đầu hành trình săn thú!</p>
-            
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-bold text-zinc-400 mb-1">Tên nhân vật:</label>
-                    <input type="text" id="setup-name" placeholder="Nhập tên của bạn..." class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-zinc-400 mb-1">Tuổi:</label>
-                    <input type="number" id="setup-age" placeholder="Ví dụ: 20" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-zinc-400 mb-1">Giới tính:</label>
-                    <select id="setup-gender" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
-                        <option value="Nam">Nam 👦</option>
-                        <option value="Nữ">Nữ 👧</option>
-                        <option value="Khác">Khác 🌟</option>
-                    </select>
-                </div>
-            </div>
-
-            <button onclick="savePlayerProfile()" class="w-full mt-5 bg-amber-600 hover:bg-amber-500 py-3 rounded-xl font-bold text-xs shadow-lg text-white cursor-pointer">
-                💾 Xác Nhận & Vào Game
-            </button>
-        </div>
     </div>
 
     <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
@@ -120,7 +89,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG / BOSS THẾ GIỚI 3 THÚ -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V5.5</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V5.6</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -151,7 +120,7 @@
         let stamina = parseInt(localStorage.getItem('ar_stamina') || '15');
         let lastStaminaTime = parseInt(localStorage.getItem('ar_stamina_time') || Date.now());
 
-        let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ food: 5, toy: 5, trainer: 3, meat: 0, stoneKim: 0, stoneMoc: 0, stoneThuy: 0, stoneHoa: 0, stoneTho: 0 }));
+        let inventory = JSON.parse(localStorage.getItem('ar_inventory') || JSON.stringify({ food: 5, toy: 5, trainer: 3, meat: 0 }));
 
         let ytPlayer = null;
         let isMusicReady = false;
@@ -192,29 +161,6 @@
             }
         }
 
-        function checkPlayerProfile() {
-            let profile = JSON.parse(localStorage.getItem('ar_player_profile') || 'null');
-            const setupModal = document.getElementById('player-setup-modal');
-            if (!profile && setupModal) {
-                setupModal.classList.remove('hidden');
-            }
-        }
-
-        function savePlayerProfile() {
-            let name = document.getElementById('setup-name').value.temp;
-            let age = document.getElementById('setup-age').value;
-            let gender = document.getElementById('setup-gender').value;
-
-            if (!name) { alert('Vui lòng nhập tên nhân vật!'); return; }
-            if (!age || age <= 0) { alert('Vui lòng nhập số tuổi hợp lệ!'); return; }
-
-            localStorage.setItem('ar_player_profile', JSON.stringify({ name, age, gender }));
-            document.getElementById('player-setup-modal').classList.add('hidden');
-            alert(`Chào mừng nhà thám hiểm ${name}!`);
-            setTimeout(() => { if (map) map.invalidateSize(); }, 200);
-        }
-
-        // Tạo ngẫu nhiên đặc kỹ (effect) cho thú khi bắt
         const possibleTraits = [
             { name: 'Khả năng Làm choáng', icon: '💫', type: 'stun', chance: 15 },
             { name: 'Đòn đánh Trúng độc', icon: '🟢', type: 'poison', chance: 20 },
@@ -340,9 +286,6 @@
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
 
-            let scaledBossHp = 180 + (towerFloor * 60);
-            let scaledBossAtk = 90 + (towerFloor * 25);
-
             content.innerHTML = `
             <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🗼 Tháp Vô Tận (Tầng ${towerFloor})</h3><button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button></div>
             <div class="bg-zinc-800 p-4 rounded-2xl border border-purple-500/50 text-center space-y-2 mb-4">
@@ -353,6 +296,7 @@
             <button onclick="openSelectPetForBattle('tower')" class="w-full bg-purple-600 hover:bg-purple-500 py-3 rounded-xl font-bold text-xs shadow-lg cursor-pointer">⚔️ Chọn Thú & Thách Đấu</button>`;
         }
 
+        let breedingSlots = { parent1: null, parent2: null };
         function openBreedingMenu() {
             checkPetSurvival();
             const modal = document.getElementById('modal-container');
@@ -412,9 +356,7 @@
             if (breedingSlots.parent1.gender === breedingSlots.parent2.gender) { alert('Cần 1 Đực và 1 Cái!'); return; }
             if (playerCoins < 300) { alert('Không đủ vàng!'); return; }
 
-            playerCoins -= 300;
-            localStorage.setItem('ar_coins', playerCoins);
-
+            playerCoins -= 300; localStorage.setItem('ar_coins', playerCoins);
             let baseTemplate = allMonsters[Math.floor(Math.random() * allMonsters.length)];
             let randomElem = elements[Math.floor(Math.random() * elements.length)];
             let randomTrait = possibleTraits[Math.floor(Math.random() * possibleTraits.length)];
@@ -427,10 +369,9 @@
                 hunger: 100, happiness: 100, trait: randomTrait
             };
 
-            farm.push(childPet);
-            localStorage.setItem('ar_farm', JSON.stringify(farm));
+            farm.push(childPet); localStorage.setItem('ar_farm', JSON.stringify(farm));
             breedingSlots = { parent1: null, parent2: null };
-            alert(`🧬 Lai giống thành công! Nhận được ${childPet.emoji} ${childPet.name} (${randomTrait.icon} ${randomTrait.name})!`);
+            alert(`🧬 Lai giống thành công! Nhận được ${childPet.emoji} ${childPet.name}!`);
             openFarmMenu();
         }
 
@@ -441,7 +382,6 @@
             renderMarketContent();
         }
 
-        let marketQtys = { food: 1, toy: 1, trainer: 1, stamina: 1 };
         function renderMarketContent() {
             const content = document.getElementById('modal-content');
             content.innerHTML = `
@@ -603,7 +543,6 @@
             updateTeamCount(); openTeamMenu();
         }
 
-        // BẢNG CHỌN THÚ XUẤT TRẬN (Yêu cầu 3)
         function openSelectPetForBattle(mode) {
             checkPetSurvival();
             const modal = document.getElementById('modal-container');
@@ -634,7 +573,6 @@
         }
 
         function confirmStartBattle(petIdx, mode) {
-            // Đưa thú được chọn lên đầu danh sách team để chiến đấu
             let selectedPet = team.splice(petIdx, 1)[0];
             team.unshift(selectedPet);
             localStorage.setItem('ar_team', JSON.stringify(team));
@@ -717,7 +655,6 @@
             }
         }
 
-        // 🌟 TACTICAL COMBAT ENGINE V5.5 (HỖ TRỢ ĐÁNH 3 THÚ VS BOSS VÀ ĐẶC KỸ)
         let battleCanvas, battleCtx, battleInterval;
         let activeBattleTeam = [];
         let currentTeamIndex = 0;
@@ -743,10 +680,8 @@
 
             isWorldBossBattle = (mode === 'boss');
             if (isWorldBossBattle) {
-                // Đưa toàn bộ đội hình vào chiến đấu lần lượt (tối đa 3 thú)
                 activeBattleTeam = [...team].slice(0, 3);
                 currentTeamIndex = 0;
-                // Boss thế giới cực mạnh: HP khủng, dame cao
                 enemyBattlePet = { name: 'Rồng Thần Tối Thượng', emoji: '🐲', hp: 900, maxHp: 900, atk: 110, level: 50, element: 'Hỏa', trait: possibleTraits[0] };
                 battleModeTitle = `🔥 BOSS THẾ GIỚI (3 THÚ RA TRẬN)`;
             } else {
@@ -798,16 +733,6 @@
             if (map) map.invalidateSize();
         }
 
-        function showDamagePopup(text, typeColor, x, y) {
-            const container = document.getElementById('damage-popup-container');
-            if(!container) return;
-            const el = document.createElement('div');
-            el.className = `absolute text-sm font-black damage-popup ${typeColor}`;
-            el.style.left = x + 'px'; el.style.top = y + 'px'; el.innerText = text;
-            container.appendChild(el);
-            setTimeout(() => el.remove(), 750);
-        }
-
         function runTacticalBattleLoop() {
             battleInterval = setInterval(() => {
                 if (!battleCtx || !battleCanvas) return;
@@ -823,9 +748,9 @@
                 let currentPet = activeBattleTeam[currentTeamIndex];
 
                 if (combatTimer % 45 === 0) {
-                    if (myStatus.burn > 0) { myHp -= 8; myStatus.burn--; showDamagePopup(`🔥 -8 Đốt`, 'text-orange-500 font-bold', posMyX, centerY - 55); }
-                    if (myStatus.poison > 0) { myHp -= 6; myStatus.poison--; showDamagePopup(`🟢 -6 Độc`, 'text-emerald-400 font-bold', posMyX, centerY - 55); }
-                    if (enemyStatus.burn > 0) { enemyHp -= 10; enemyStatus.burn--; showDamagePopup(`🔥 -10 Đốt`, 'text-orange-500 font-bold', posEnemyX, centerY - 55); }
+                    if (myStatus.burn > 0) { myHp -= 8; myStatus.burn--; }
+                    if (myStatus.poison > 0) { myHp -= 6; myStatus.poison--; }
+                    if (enemyStatus.burn > 0) { enemyHp -= 10; enemyStatus.burn--; }
                 }
 
                 if (combatStateMy === 'idle') {
@@ -837,16 +762,14 @@
                         let isCrit = Math.random() * 100 < (currentPet.critRate || 15);
                         let myDmg = Math.floor(currentPet.atk * 0.35 * (isCrit ? 1.4 : 1.0));
                         enemyHp -= myDmg;
-                        showDamagePopup(`-${myDmg}`, isCrit ? 'text-yellow-300 text-xl font-black' : 'text-red-400 font-bold', posEnemyX, centerY - 25);
 
-                        // Kích hoạt đặc kỹ ngẫu nhiên của thú (Yêu cầu 2)
                         let trait = currentPet.trait;
                         let roll = Math.random() * 100;
                         if (roll < trait.chance) {
-                            if (trait.type === 'stun') { enemyStatus.stun = 1; showDamagePopup(`💫 CHOÁNG!`, 'text-purple-300 font-bold', posEnemyX, centerY - 65); }
-                            else if (trait.type === 'poison') { enemyStatus.poison = 2; showDamagePopup(`🟢 TRÚNG ĐỘC!`, 'text-emerald-400 font-bold', posEnemyX, centerY - 65); }
-                            else if (trait.type === 'burn') { enemyStatus.burn = 2; showDamagePopup(`🔥 THIÊU ĐỐT!`, 'text-orange-400 font-bold', posEnemyX, centerY - 65); }
-                            else if (trait.type === 'slow') { enemyStatus.slow = 2; showDamagePopup(`❄️ LÀM CHẬM!`, 'text-blue-300 font-bold', posEnemyX, centerY - 65); }
+                            if (trait.type === 'stun') enemyStatus.stun = 1;
+                            else if (trait.type === 'poison') enemyStatus.poison = 2;
+                            else if (trait.type === 'burn') enemyStatus.burn = 2;
+                            else if (trait.type === 'slow') enemyStatus.slow = 2;
                         }
                         setTimeout(() => { combatStateMy = 'retreating'; }, 180);
                     }
@@ -862,9 +785,8 @@
                     if (Math.abs(posEnemyX - (baseMyX + 55)) < 5) {
                         combatStateEnemy = 'attacking';
                         let rawDmg = Math.floor(enemyBattlePet.atk * 0.25);
-                        if (myStatus.shield > 0) { rawDmg = Math.floor(rawDmg * 0.5); showDamagePopup(`🛡️ ĐỠ GIÁP`, 'text-blue-400 font-bold', posMyX, centerY - 45); }
+                        if (myStatus.shield > 0) rawDmg = Math.floor(rawDmg * 0.5);
                         myHp -= rawDmg;
-                        showDamagePopup(`-${rawDmg}`, 'text-red-400 font-bold', posMyX, centerY - 25);
                         setTimeout(() => { combatStateEnemy = 'retreating'; }, 180);
                     }
                 } else if (combatStateEnemy === 'retreating') {
@@ -874,16 +796,13 @@
 
                 let speedMultiplier = enemyStatus.slow > 0 ? 2 : 1;
                 if (battleState === 'fighting' && combatTimer % (18 * speedMultiplier) === 0 && combatStateMy === 'idle') {
-                    if (myStatus.stun > 0) { showDamagePopup(`💫 BỊ CHOÁNG!`, 'text-purple-400 font-bold', posMyX, centerY - 45); myStatus.stun--; }
-                    else { combatStateMy = 'rushing'; }
+                    if (myStatus.stun > 0) { myStatus.stun--; } else { combatStateMy = 'rushing'; }
                 }
 
                 if (battleState === 'fighting' && combatTimer % 20 === 0 && combatStateEnemy === 'idle' && enemyHp > 0) {
-                    if (enemyStatus.stun > 0) { showDamagePopup(`💫 BỊ CHOÁNG!`, 'text-purple-400 font-bold', posEnemyX, centerY - 45); enemyStatus.stun--; }
-                    else { combatStateEnemy = 'rushing'; }
+                    if (enemyStatus.stun > 0) { enemyStatus.stun--; } else { combatStateEnemy = 'rushing'; }
                 }
 
-                // Vẽ thú nhà
                 battleCtx.font = "80px sans-serif"; battleCtx.textAlign = "center";
                 battleCtx.fillText(currentPet.emoji, posMyX, centerY + hoverOffsetY);
                 battleCtx.fillStyle = "#18181b"; battleCtx.fillRect(25, centerY + 55, 130, 14);
@@ -891,7 +810,6 @@
                 battleCtx.font = "10px sans-serif"; battleCtx.fillStyle = "#fff";
                 battleCtx.fillText(`${currentPet.name} (${Math.max(0, Math.floor(myHp))}/${myMaxHp})`, 90, centerY + 50);
 
-                // Vẽ thú địch / Boss
                 battleCtx.font = "80px sans-serif";
                 battleCtx.fillText(enemyBattlePet.emoji, posEnemyX, centerY - hoverOffsetY);
                 battleCtx.fillStyle = "#18181b"; battleCtx.fillRect(battleCanvas.width - 155, centerY + 55, 130, 14);
@@ -899,23 +817,19 @@
                 battleCtx.font = "10px sans-serif"; battleCtx.fillStyle = "#fff";
                 battleCtx.fillText(`${enemyBattlePet.name} (${Math.max(0, Math.floor(enemyHp))}/${enemyMaxHp})`, battleCanvas.width - 90, centerY + 50);
 
-                // Kiểm tra kết quả trận đấu
                 if (enemyHp <= 0 || myHp <= 0) {
                     clearInterval(battleInterval);
                     if (enemyHp <= 0) {
-                        // Thắng trận hoặc hạ Boss
                         playerCoins += isWorldBossBattle ? 1000 : 400;
                         localStorage.setItem('ar_coins', playerCoins);
                         showBattleResultModal(true, isWorldBossBattle ? 1000 : 400);
                     } else {
-                        // Thú hiện tại chết, nếu là đấu Boss và còn thú trong team -> đổi thú tiếp theo (Yêu cầu 4)
                         currentPet.hp = 0;
                         if (isWorldBossBattle && currentTeamIndex < activeBattleTeam.length - 1) {
                             currentTeamIndex++;
                             alert(`⚠️ ${currentPet.name} đã ngã xuống! Đưa chiến binh tiếp theo vào trận!`);
                             initCurrentPetInBattle();
                         } else {
-                            currentPet.hp = 0;
                             team = team.filter(p => p !== currentPet);
                             localStorage.setItem('ar_team', JSON.stringify(team));
                             showBattleResultModal(false, 0);
@@ -942,7 +856,6 @@
             </div>`;
         }
 
-        // MINIGAME BẮT THÚ VỚI HIỆU ỨNG GIẰNG CO KÉO SÂU (Yêu cầu 1)
         let canvas, ctx, isARActive = false;
         let rope = { x: 0, y: 0, vx: 0, vy: 0, flying: false };
         let monsterPos = { x: 0, y: 0, vx: 2, vy: 1.5 };
@@ -1057,7 +970,6 @@
             if (tugTimerInterval) clearInterval(tugTimerInterval);
             tugTimerInterval = setInterval(() => {
                 if (!isARActive || !isTugOfWarActive) { clearInterval(tugTimerInterval); return; }
-                // Kéo xuống sâu hơn: Thú giãy giụa kéo mạnh hơn hẳn khi tiến gần mốc 100%
                 let pullDownRate = tugProgress > 75 ? 3.8 : (tugProgress > 50 ? 2.5 : 1.6);
                 tugProgress -= pullDownRate;
                 document.getElementById('tug-progress-bar').style.width = Math.max(0, tugProgress) + '%';
@@ -1120,7 +1032,7 @@
         function openPokedexMenu() { document.getElementById('modal-container').classList.add('hidden'); }
 
         window.onload = () => {
-            checkPlayerProfile(); initWeather(); initMap(); initStaminaSystem(); updateTeamCount();
+            initWeather(); initMap(); initStaminaSystem(); updateTeamCount();
             setTimeout(() => { if(map) map.invalidateSize(); }, 400);
         };
         window.onresize = () => { if (map) setTimeout(() => map.invalidateSize(), 200); };
