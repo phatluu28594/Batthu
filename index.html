@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Full Feature Master v7.1</title>
+    <title>Batthu - Full Feature Master v7.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #09090b; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
         #map-screen { display: flex; flex-direction: column; height: 100vh; width: 100vw; position: absolute; inset: 0; background: #09090b; }
-        #map-container-wrap { flex: 1; position: relative; width: 100%; min-height: 50vh; }
-        #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; }
+        #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 300px; }
+        #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; background: #18181b; }
         .leaflet-control-attribution { display: none !important; }
         .leaflet-div-icon { background: transparent !important; border: none !important; }
         @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-45px) scale(1.2); opacity: 0; } }
@@ -86,9 +86,8 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH ĐẤU TRƯỜNG V7.1: THANH MÁU CỐ ĐỊNH & HIỆU ỨNG TRẠNG THÁI -->
+    <!-- MÀN HÌNH ĐẤU TRƯỜNG V7.2 -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-3">
-        <!-- HEADER CỐ ĐỊNH TÊN & THANH MÁU HAI BÊN -->
         <div class="flex justify-between items-center z-20 bg-black/80 backdrop-blur-md p-2.5 rounded-xl border border-white/10 shrink-0">
             <div class="flex flex-col w-5/12">
                 <div id="battle-team-names" class="text-[11px] font-bold text-emerald-400 truncate">Đội hình của bạn</div>
@@ -123,7 +122,7 @@
 
     <!-- YOUTUBE IFRAME API SCRIPT -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
         let farm = JSON.parse(localStorage.getItem('ar_farm') || '[]');
@@ -666,10 +665,15 @@
                 navigator.geolocation.getCurrentPosition(position => {
                     userLat = position.coords.latitude;
                     userLng = position.coords.longitude;
-                    if (map) map.setView([userLat, userLng], 17);
+                    if (map) {
+                        map.setView([userLat, userLng], 17);
+                        map.invalidateSize();
+                    }
                     if (userMarker) userMarker.setLatLng([userLat, userLng]);
                     spawnMultipleMonsters();
-                }, error => {}, { enableHighAccuracy: true });
+                }, error => {
+                    if (map) map.invalidateSize();
+                }, { enableHighAccuracy: true });
             }
 
             map = L.map('map', { zoomControl: false }).setView([userLat, userLng], 17);
@@ -682,6 +686,7 @@
             });
             userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
             spawnMultipleMonsters();
+            setTimeout(() => { map.invalidateSize(); }, 300);
         }
 
         function recenterMap() {
@@ -689,10 +694,16 @@
                 navigator.geolocation.getCurrentPosition(position => {
                     userLat = position.coords.latitude;
                     userLng = position.coords.longitude;
-                    if (map) map.setView([userLat, userLng], 17);
+                    if (map) {
+                        map.setView([userLat, userLng], 17);
+                        map.invalidateSize();
+                    }
                     if (userMarker) userMarker.setLatLng([userLat, userLng]);
                 });
-            } else if (map) { map.setView([userLat, userLng], 17); }
+            } else if (map) { 
+                map.setView([userLat, userLng], 17); 
+                map.invalidateSize();
+            }
         }
 
         function spawnMultipleMonsters() {
@@ -755,7 +766,9 @@
             if (videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
             document.getElementById('ar-screen').classList.add('hidden');
             document.getElementById('map-screen').classList.remove('hidden');
-            if(map) map.invalidateSize();
+            if(map) {
+                map.invalidateSize();
+            }
         }
 
         function initCanvasGame() {
@@ -883,7 +896,6 @@
             updateTeamCount(); spawnMultipleMonsters();
         }
 
-        // ⚔️ ĐẤU TRƯỜNG V7.1: HIỆU ỨNG TRẠNG THÁI & SÁT THƯƠNG TRÊN ĐẦU THÚ
         let battleCanvas, battleCtx, battleInterval;
         function startBattle(mode) {
             checkPetSurvival();
@@ -960,7 +972,6 @@
                     }
                 }
 
-                // Cập nhật thanh máu Header phía trên
                 let currentTeamHpTotal = teamHpList.reduce((a, b) => Math.max(0, a) + Math.max(0, b), 0);
                 let teamHpPercent = Math.max(0, (currentTeamHpTotal / teamMaxHpTotal) * 100);
                 let enemyHpPercent = Math.max(0, (enemyHp / enemy.maxHp) * 100);
@@ -971,7 +982,6 @@
                 document.getElementById('battle-enemy-hp-bar').style.width = enemyHpPercent + '%';
                 document.getElementById('battle-enemy-hp-text').innerText = `HP: ${Math.max(0, enemyHp)}/${enemy.maxHp}`;
 
-                // Vẽ Boss ở bên phải
                 battleCtx.font = "70px sans-serif"; battleCtx.textAlign = "center";
                 battleCtx.fillText(enemy.emoji, enX, enY);
                 if (activeStatus.enemy) {
@@ -980,7 +990,6 @@
                     battleCtx.fillText(activeStatus.enemy, enX, enY - 55);
                 }
 
-                // Vẽ linh thú đội mình ở bên trái
                 activeTeam.forEach((pet, i) => {
                     if (teamHpList[i] > 0) {
                         let posY = myCenterY + (i - 1) * 45;
@@ -1025,7 +1034,9 @@
             if (battleInterval) clearInterval(battleInterval);
             document.getElementById('battle-screen').classList.add('hidden');
             document.getElementById('map-screen').classList.remove('hidden');
-            if (map) map.invalidateSize();
+            if (map) {
+                map.invalidateSize();
+            }
         }
 
         function updateTeamCount() {
@@ -1035,7 +1046,7 @@
 
         window.onload = () => {
             initMap(); initStaminaSystem(); updateTeamCount();
-            setTimeout(() => { if(map) map.invalidateSize(); }, 400);
+            setTimeout(() => { if(map) map.invalidateSize(); }, 500);
         };
         window.onresize = () => { if (map) setTimeout(() => map.invalidateSize(), 200); };
     </script>
