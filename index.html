@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Master Full Feature v6.3</title>
+    <title>Batthu - Full Original Version v6.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -59,7 +59,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH MINIGAME CANVAS BẮT THÚ & GIẰNG CO CÓ HIỆU ỨNG DÂY VÀ GIẬT LÊN GIẬT XUỐNG -->
+    <!-- MÀN HÌNH MINIGAME CANVAS BẮT THÚ & GIẰNG CO CÓ DÂY VÀNG GIẬT LÊN GIẬT XUỐNG -->
     <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -85,10 +85,10 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH ĐẤU TRƯỜNG & HIỆU ỨNG VÒNG TRÒN LAO VÀO NHAU -->
+    <!-- MÀN HÌNH ĐẤU TRƯỜNG VÒNG TRÒN LAO VÀO NHAU -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V6.3</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V6.4</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -438,7 +438,7 @@
 
         function releaseFarm(idx) { farm.splice(idx, 1); localStorage.setItem('ar_farm', JSON.stringify(farm)); openFarmMenu(); }
 
-        // 🎒 ĐỘI HÌNH & TRANG CÁ NHÂN LINH THÚ CHI TIẾT (ĐÃ FIX ĐẦY ĐỦ THÔNG SỐ)
+        // 🎒 ĐỘI HÌNH & TRANG CÁ NHÂN LINH THÚ CHI TIẾT (ĐẦY ĐỦ THÔNG SỐ)
         function openTeamMenu() {
             checkPetSurvival();
             const modal = document.getElementById('modal-container');
@@ -599,7 +599,7 @@
             }
         }
 
-        // 🎮 MINIGAME BẮT THÚ AR & HIỆU ỨNG DÂY VÀNG GIẬT LÊN GIẬT XUỐNG
+        // 🎮 MINIGAME BẮT THÚ AR & DÂY VÀNG GIẬT LÊN GIẬT XUỐNG
         let canvas, ctx, isARActive = false;
         let rope = { x: 0, y: 0, vx: 0, vy: 0, flying: false };
         let monsterPos = { x: 0, y: 0, vx: 1.5, vy: 1 };
@@ -683,7 +683,6 @@
             }
 
             if (isTugOfWarActive) {
-                // Hiệu ứng sợi dây vàng giật lên giật xuống chân thực
                 ctx.beginPath();
                 ctx.moveTo(canvas.width / 2, canvas.height * 0.85);
                 ctx.lineTo(monsterPos.x, monsterPos.y + shakeOffset);
@@ -746,7 +745,7 @@
             updateTeamCount(); spawnMultipleMonsters();
         }
 
-        // ⚔️ ĐẤU TRƯỜNG: VÒNG TRÒN & LAO VÀO NHAU, TỐC ĐỘ NHANH, GIẢM DAMAGE
+        // ⚔️ ĐẤU TRƯỜNG: VÒNG TRÒN, LAO VÀO NHAU, TỐC ĐỘ NHANH, GIẢM DAMAGE
         let battleCanvas, battleCtx, battleInterval;
         function startBattle(mode) {
             checkPetSurvival();
@@ -766,7 +765,7 @@
 
             let angle = 0;
             let battleStep = 0;
-            let state = 'circle'; // circle -> charge -> attack
+            let state = 'circle';
 
             battleInterval = setInterval(() => {
                 battleCtx.clearRect(0, 0, battleCanvas.width, battleCanvas.height);
@@ -784,9 +783,8 @@
                     enY = cy + Math.sin(angle + Math.PI) * 40;
                     if (battleStep > 50) { state = 'charge'; battleStep = 0; }
                 } else if (state === 'charge') {
-                    myX = cx - 30; enX = cx + 30; // Lao vào nhau
+                    myX = cx - 30; enX = cx + 30;
                     if (battleStep > 15) {
-                        // Gây sát thương giảm dame, tốc độ nhanh
                         let myDmg = Math.floor(myPet.atk * (0.8 + Math.random() * 0.4));
                         let enDmg = Math.floor(enemy.atk * (0.8 + Math.random() * 0.4));
                         enemyHp -= myDmg;
@@ -800,7 +798,6 @@
                 battleCtx.fillText(myPet.emoji, myX, myY);
                 battleCtx.fillText(enemy.emoji, enX, enY);
 
-                // Thanh HP
                 battleCtx.fillStyle = 'red'; battleCtx.fillRect(myX - 30, myY - 50, 60, 8);
                 battleCtx.fillStyle = 'emerald'; battleCtx.fillRect(myX - 30, myY - 50, (Math.max(0, myHp) / myPet.maxHp) * 60, 8);
 
@@ -818,7 +815,7 @@
                     }
                     exitBattleScreen();
                 }
-            }, 30); // Tốc độ nhanh mượt
+            }, 30);
         }
 
         function exitBattleScreen() {
