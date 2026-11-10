@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Full Feature Master v8.0</title>
+    <title>Batthu - Full Feature Master v8.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #09090b; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
         #map-screen { display: flex; flex-direction: column; height: 100vh; width: 100vw; position: absolute; inset: 0; background: #09090b; }
-        #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 300px; }
+        #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 50vh; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; background: #18181b; }
         .leaflet-control-attribution { display: none !important; }
         .leaflet-div-icon { background: transparent !important; border: none !important; }
@@ -26,21 +26,21 @@
 
     <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
     <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2">
-        <div class="flex justify-between items-center z-30 pt-1 pb-1 shrink-0">
-            <div class="bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 flex items-center gap-1.5">
-                <span id="weather-icon" class="text-sm">☀️</span>
-                <span id="weather-status" class="text-[11px] font-medium">Trời quang</span>
+        <div class="flex justify-between items-center z-30 pt-1 pb-1 shrink-0 gap-1">
+            <div class="bg-black/80 backdrop-blur-md px-2 py-1 rounded-full border border-white/20 flex items-center gap-1 shrink-0">
+                <span id="weather-icon" class="text-xs">☀️</span>
+                <span id="weather-status" class="text-[10px] font-medium">Trời quang</span>
             </div>
-            <div class="flex gap-1 overflow-x-auto py-1">
-                <button onclick="openWorldBossMenu()" class="bg-amber-700/90 px-2 py-1 rounded-full border border-amber-400 text-[10px] font-bold shadow cursor-pointer animate-pulse">👹 Boss (<span id="boss-lvl-tag">Lv.1</span>)</button>
-                <button onclick="openHospitalMenu()" class="bg-cyan-700/90 px-2 py-1 rounded-full border border-cyan-400 text-[10px] font-bold shadow cursor-pointer">🏥 Bệnh Viện</button>
-                <button onclick="openQuestMenu()" class="bg-yellow-600/90 px-2 py-1 rounded-full border border-yellow-400 text-[10px] font-bold shadow cursor-pointer">📜 Nhiệm Vụ</button>
-                <button onclick="openTowerMenu()" class="bg-purple-600/90 px-2 py-1 rounded-full border border-purple-400 text-[10px] font-bold shadow cursor-pointer">🗼 Tháp</button>
-                <button onclick="openBreedingMenu()" class="bg-pink-600/90 px-2 py-1 rounded-full border border-pink-400 text-[10px] font-bold shadow cursor-pointer">🧬 Lai Giống</button>
-                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2 py-1 rounded-full border border-amber-400 text-[10px] font-bold shadow cursor-pointer">🛒 Chợ</button>
-                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2 py-1 rounded-full border border-red-400 text-[10px] font-bold shadow cursor-pointer">⚔️ PvP</button>
-                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2 py-1 rounded-full border border-emerald-400 text-[10px] font-bold shadow cursor-pointer">🏡 Trại</button>
-                <button onclick="openTeamMenu()" class="bg-black/80 px-2 py-1 rounded-full border border-white/20 text-[10px] font-bold cursor-pointer">🎒(<span id="team-count">0</span>/3)</button>
+            <div class="flex gap-1 overflow-x-auto py-1 shrink grow items-center no-scrollbar">
+                <button onclick="openWorldBossMenu()" class="bg-amber-700/90 px-2 py-1 rounded-full border border-amber-400 text-[10px] font-bold shadow cursor-pointer animate-pulse whitespace-nowrap">👹 Boss</button>
+                <button onclick="openHospitalMenu()" class="bg-cyan-700/90 px-2 py-1 rounded-full border border-cyan-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">🏥 Viện</button>
+                <button onclick="openQuestMenu()" class="bg-yellow-600/90 px-2 py-1 rounded-full border border-yellow-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">📜 NV</button>
+                <button onclick="openTowerMenu()" class="bg-purple-600/90 px-2 py-1 rounded-full border border-purple-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">🗼 Tháp</button>
+                <button onclick="openBreedingMenu()" class="bg-pink-600/90 px-2 py-1 rounded-full border border-pink-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">🧬 Lai</button>
+                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2 py-1 rounded-full border border-amber-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">🛒 Chợ</button>
+                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2 py-1 rounded-full border border-red-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">⚔️ PvP</button>
+                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2 py-1 rounded-full border border-emerald-400 text-[10px] font-bold shadow cursor-pointer whitespace-nowrap">🏡 Trại</button>
+                <button onclick="openTeamMenu()" class="bg-black/80 px-2 py-1 rounded-full border border-white/20 text-[10px] font-bold cursor-pointer whitespace-nowrap">🎒(<span id="team-count">0</span>/3)</button>
             </div>
         </div>
 
@@ -63,7 +63,7 @@
 
     <!-- MÀN HÌNH TRANG TRẠI TOÀN MÀN HÌNH (FULL SCREEN FARM) -->
     <div id="fullscreen-farm-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col justify-between p-4 overflow-y-auto">
-        <div class="flex justify-between items-center bg-zinc-900 p-3 rounded-2xl border border-emerald-500/50 shadow-xl">
+        <div class="flex justify-between items-center bg-zinc-900 p-3 rounded-2xl border border-emerald-500/50 shadow-xl shrink-0">
             <div class="flex items-center gap-2">
                 <span class="text-2xl">🏡</span>
                 <div>
@@ -75,41 +75,32 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-3">
-            <!-- KHU LUYỆN TẬP 4 CỌC GỖ -->
             <div class="bg-zinc-900/90 border border-amber-500/40 p-4 rounded-2xl flex flex-col shadow-xl">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="font-bold text-xs text-amber-300">🪵 Khu Luyện Tập (4 Cọc Gỗ Tăng Cấp)</h3>
                     <span class="text-[10px] text-zinc-400">Tự động tăng cấp theo thời gian</span>
                 </div>
-                <div class="grid grid-cols-2 gap-2.5" id="training-poles-container">
-                    <!-- Sẽ render bằng JS 4 cọc gỗ -->
-                </div>
+                <div class="grid grid-cols-2 gap-2.5" id="training-poles-container"></div>
             </div>
 
-            <!-- KHU NGHỈ NGƠI HỒI PHỤC HP -->
             <div class="bg-zinc-900/90 border border-emerald-500/40 p-4 rounded-2xl flex flex-col shadow-xl">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="font-bold text-xs text-emerald-300">🌿 Khu Nghỉ Ngơi (Hồi Phục HP)</h3>
                     <span class="text-[10px] text-zinc-400">Tự động hồi máu theo thời gian</span>
                 </div>
-                <div class="space-y-2 max-h-56 overflow-y-auto pr-1" id="resting-pets-container">
-                    <!-- Sẽ render thú đang nghỉ ngơi -->
-                </div>
+                <div class="space-y-2 max-h-56 overflow-y-auto pr-1" id="resting-pets-container"></div>
             </div>
         </div>
 
-        <!-- DANH SÁCH THÚ TRONG TRẠI ĐỂ CHO VÀO TẬP HOẶC NGHỈ -->
         <div class="bg-zinc-900/90 border border-zinc-800 p-3 rounded-2xl flex flex-col flex-grow shadow-xl">
             <h3 class="font-bold text-xs text-yellow-300 mb-2">🐾 Kho Linh Thú Trại Hộ (${farm.length})</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto max-h-48" id="farm-storage-list">
-                <!-- Render danh sách thú trong trại -->
-            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto max-h-48" id="farm-storage-list"></div>
         </div>
     </div>
 
     <!-- MÀN HÌNH BỆNH VIỆN THÚ -->
     <div id="hospital-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col justify-between p-4">
-        <div class="flex justify-between items-center bg-zinc-900 p-3 rounded-2xl border border-cyan-500/50 shadow-xl">
+        <div class="flex justify-between items-center bg-zinc-900 p-3 rounded-2xl border border-cyan-500/50 shadow-xl shrink-0">
             <div class="flex items-center gap-2">
                 <span class="text-2xl">🏥</span>
                 <div>
@@ -148,7 +139,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH ĐẤU TRƯỜNG V8.0 -->
+    <!-- MÀN HÌNH ĐẤU TRƯỜNG V8.1 -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-3">
         <div class="flex justify-between items-center z-20 bg-black/80 backdrop-blur-md p-2.5 rounded-xl border border-white/10 shrink-0">
             <div class="flex flex-col w-5/12">
@@ -184,7 +175,7 @@
 
     <!-- YOUTUBE IFRAME API SCRIPT -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let team = JSON.parse(localStorage.getItem('ar_team') || '[]');
         let farm = JSON.parse(localStorage.getItem('ar_farm') || '[]');
@@ -194,7 +185,6 @@
         let stamina = parseInt(localStorage.getItem('ar_stamina') || '15');
         let lastStaminaTime = parseInt(localStorage.getItem('ar_stamina_time') || Date.now());
 
-        // 4 Cọc gỗ luyện tập & Khu nghỉ ngơi
         let trainingPoles = JSON.parse(localStorage.getItem('ar_training_poles') || '[null, null, null, null]');
         let restingPets = JSON.parse(localStorage.getItem('ar_resting_pets') || '[]');
 
@@ -271,7 +261,7 @@
                     hp: (p.hp !== undefined && p.hp > 0) ? p.hp : (p.maxHp || 150),
                     level: p.level || 1,
                     atk: p.atk || 40,
-                    hearts: p.hearts !== undefined ? p.hearts : 3, // 3 trái tim sinh mệnh
+                    hearts: p.hearts !== undefined ? p.hearts : 3,
                     gender: p.gender || (Math.random() < 0.5 ? 'Đực' : 'Cái'),
                     rarity: rarity,
                     critRate: (p.critRate && p.critRate > 0) ? p.critRate : Math.floor(15 + Math.random() * 20 * multi),
@@ -315,7 +305,6 @@
 
         function closeModal() { document.getElementById('modal-container').classList.add('hidden'); }
 
-        // Kiểm tra sinh mệnh thú: Hết trái tim (hearts <= 0) hoặc hết máu/đói sẽ chết vĩnh viễn
         function checkPetSurvival() {
             team = team.filter(p => p.hearts > 0 && p.hp > 0 && p.hunger > 0);
             farm = farm.filter(p => p.hearts > 0 && p.hp > 0 && p.hunger > 0);
@@ -325,19 +314,16 @@
             updateTeamCount();
         }
 
-        // HỆ THỐNG TỰ ĐỘNG THEO THỜI GIAN (Cọc gỗ tăng cấp & Nghỉ ngơi hồi HP)
         setInterval(() => {
             let updated = false;
-            // 1. Cọc gỗ: Tăng kinh nghiệm / cấp độ theo thời gian
             trainingPoles.forEach((pet, idx) => {
                 if (pet) {
-                    pet.level += 0.05; // Tăng dần level
+                    pet.level += 0.05;
                     pet.atk += 0.2;
                     updated = true;
                 }
             });
 
-            // 2. Khu nghỉ ngơi: Hồi phục HP theo thời gian
             restingPets.forEach(pet => {
                 if (pet && pet.hp < pet.maxHp) {
                     pet.hp = Math.min(pet.maxHp, pet.hp + 5);
@@ -351,9 +337,8 @@
                     renderFullscreenFarmUI();
                 }
             }
-        }, 3000); // Mỗi 3 giây cập nhật một lần
+        }, 3000);
 
-        // 🏥 BỆNH VIỆN LINH THÚ (1000🪙 HỒI FULL TRÁI TIM)
         function openHospitalMenu() {
             checkPetSurvival();
             const hospitalScreen = document.getElementById('hospital-screen');
@@ -397,18 +382,16 @@
             if (playerCoins < 1000) { alert('⚠️ Không đủ 1000 Vàng để chữa trị!'); return; }
             playerCoins -= 1000;
 
-            let found = false;
-            team.forEach(p => { if (p.name === petName) { p.hearts = 3; found = true; } });
-            farm.forEach(p => { if (p.name === petName) { p.hearts = 3; found = true; } });
-            restingPets.forEach(p => { if (p.name === petName) { p.hearts = 3; found = true; } });
-            trainingPoles.forEach((p, idx) => { if (p && p.name === petName) { trainingPoles[idx].hearts = 3; found = true; } });
+            team.forEach(p => { if (p.name === petName) { p.hearts = 3; } });
+            farm.forEach(p => { if (p.name === petName) { p.hearts = 3; } });
+            restingPets.forEach(p => { if (p.name === petName) { p.hearts = 3; } });
+            trainingPoles.forEach((p, idx) => { if (p && p.name === petName) { trainingPoles[idx].hearts = 3; } });
 
             saveGameData();
             alert(`🏥 Chữa trị thành công cho ${petName}! Đã phục hồi full 3 trái tim.`);
             openHospitalMenu();
         }
 
-        // 🏡 TRANG TRẠI TOÀN MÀN HÌNH (FULL SCREEN FARM)
         function openFarmMenu() {
             checkPetSurvival();
             document.getElementById('fullscreen-farm-screen').classList.remove('hidden');
@@ -420,7 +403,6 @@
         }
 
         function renderFullscreenFarmUI() {
-            // 1. Render 4 Cọc gỗ
             let polesEl = document.getElementById('training-poles-container');
             let polesHtml = '';
             trainingPoles.forEach((pet, idx) => {
@@ -443,7 +425,6 @@
             });
             polesEl.innerHTML = polesHtml;
 
-            // 2. Render Khu Nghỉ Ngơi
             let restingEl = document.getElementById('resting-pets-container');
             let restingHtml = '';
             if (restingPets.length === 0) {
@@ -465,7 +446,6 @@
             }
             restingEl.innerHTML = restingHtml;
 
-            // 3. Render Kho Thú Trong Trại
             let storageEl = document.getElementById('farm-storage-list');
             let storageHtml = '';
             if (farm.length === 0) {
@@ -502,7 +482,7 @@
             farm.forEach((pet, idx) => {
                 html += `
                 <div onclick="assignPetToPole(${poleIdx}, ${idx})" class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between cursor-pointer border border-zinc-700 hover:border-amber-500">
-                    <div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${pet.level})</div></div>
+                    <div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div>
                     <span class="text-xs text-amber-400 font-bold">Chọn ›</span>
                 </div>`;
             });
@@ -1258,7 +1238,6 @@
                         }
                         alert(`🏆 Chiến thắng vinh quang! Nhận +${rewardGold} Vàng${mode === 'boss' ? ` & Hắc Long Vương tăng cấp (Lv.${bossLevel})!` : ''}`);
                     } else {
-                        // Thua trận: Đội hình chính mất 1 trái tim ❤️
                         activeTeam.forEach(pet => {
                             pet.hearts--;
                             if (pet.hearts <= 0) {
@@ -1289,7 +1268,7 @@
 
         window.onload = () => {
             initMap(); initStaminaSystem(); updateTeamCount();
-            setTimeout(() => { if(map) map.invalidateSize(); }, 500);
+            setTimeout(() => { if(map) map.invalidateSize(); }, 400);
         };
         window.onresize = () => { if (map) setTimeout(() => map.invalidateSize(), 200); };
     </script>
