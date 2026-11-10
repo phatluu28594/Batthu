@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Speed Combat Master v9.1</title>
+    <title>Batthu - Roaming Beasts Master v9.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -59,10 +59,10 @@
 
         <div class="flex flex-col items-center z-30 pb-1 shrink-0">
             <div id="stamina-info" class="text-[11px] font-bold text-amber-300 bg-black/80 px-3 py-1 rounded-full border border-white/20 mb-1 shadow-lg flex items-center gap-1.5">
-                ⚡ Năng lượng: <span id="stamina-count">15</span>/15 (<span id="stamina-timer">10:00</span>) | 💰 <span id="coin-count">1500</span>🪙 | 👟 <span id="step-count-display">0</span> bước
+                📡 Năng lượng quét: <span id="scan-stamina-count">5</span>/5 (<span id="scan-stamina-timer">10:00</span>) | 💰 <span id="coin-count">1500</span>🪙 | 👟 <span id="step-count-display">0</span> bước
             </div>
-            <button onclick="spawnMultipleMonsters()" class="w-full max-w-xs bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-xl border border-zinc-700 shadow-xl transition-all text-[11px] cursor-pointer">
-                🔄 Quét lại khu vực (GPS & Thú)
+            <button onclick="manualTriggerScan()" class="w-full max-w-xs bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-xl border border-zinc-700 shadow-xl transition-all text-[11px] cursor-pointer">
+                🔄 Quét lại khu vực (-1 Năng lượng quét)
             </button>
         </div>
     </div>
@@ -128,7 +128,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH ĐẤU TRƯỜNG FULLSCREEN: ĐIỀU CHỈNH TỐC ĐỘ HÀNH ĐỘNG -->
+    <!-- MÀN HÌNH ĐẤU TRƯỜNG FULLSCREEN -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950">
         <div class="absolute top-3 left-3 right-3 z-30 flex justify-between items-center bg-black/75 backdrop-blur-md p-2.5 rounded-xl border border-white/20 shadow-2xl">
             <div class="flex flex-col w-5/12">
@@ -173,9 +173,11 @@
         let playerCoins = parseInt(localStorage.getItem('ar_coins') || '1500');
         let towerFloor = parseInt(localStorage.getItem('ar_tower_floor') || '1');
         let bossLevel = parseInt(localStorage.getItem('ar_boss_level') || '1');
-        let stamina = parseInt(localStorage.getItem('ar_stamina') || '15');
-        let lastStaminaTime = parseInt(localStorage.getItem('ar_stamina_time') || Date.now());
         let totalSteps = parseInt(localStorage.getItem('ar_steps') || '0');
+
+        // NĂNG LƯỢNG QUÉT KHU VỰC: TỐI ĐA 5, 10 PHÚT HỒI 1 ĐIỂM
+        let scanStamina = parseInt(localStorage.getItem('ar_scan_stamina') || '5');
+        let lastScanStaminaTime = parseInt(localStorage.getItem('ar_scan_stamina_time') || Date.now());
 
         let trainingPoles = JSON.parse(localStorage.getItem('ar_training_poles') || '[null, null, null, null]');
         let restingPets = JSON.parse(localStorage.getItem('ar_resting_pets') || '[]');
@@ -306,6 +308,8 @@
             localStorage.setItem('ar_coins', playerCoins);
             localStorage.setItem('ar_tower_floor', towerFloor);
             localStorage.setItem('ar_steps', totalSteps);
+            localStorage.setItem('ar_scan_stamina', scanStamina);
+            localStorage.setItem('ar_scan_stamina_time', lastScanStaminaTime);
             localStorage.setItem('ar_training_poles', JSON.stringify(trainingPoles));
             localStorage.setItem('ar_resting_pets', JSON.stringify(restingPets));
             let coinEl = document.getElementById('coin-count');
@@ -316,6 +320,8 @@
             if (stepEl) stepEl.innerText = totalSteps;
             let gateTag = document.getElementById('tower-gate-floor');
             if (gateTag) gateTag.innerText = towerFloor;
+            let scanCountEl = document.getElementById('scan-stamina-count');
+            if (scanCountEl) scanCountEl.innerText = scanStamina;
         }
 
         function closeModal() { document.getElementById('modal-container').classList.add('hidden'); }
@@ -329,7 +335,7 @@
             updateTeamCount();
         }
 
-        // --- THỜI TIẾT & NGÀY/ĐÊM ---
+        // --- CƠ CHẾ THỜI TIẾT & NGÀY/ĐÊM ---
         let currentWeather = { type: 'sun', name: 'Nắng gắt ☀️ (Buff Hỏa +25%)', bonusElem: 'Hoa', statBonus: 1.25 };
         function updateWeatherCycle() {
             let hour = new Date().getHours();
@@ -710,7 +716,12 @@
         function buyShopItem(itemKey, price, qty) {
             if (playerCoins < price) { alert('Không đủ vàng!'); return; }
             playerCoins -= price; saveGameData();
-            if (itemKey === 'stamina') { stamina = Math.min(15, stamina + qty); localStorage.setItem('ar_stamina', stamina); document.getElementById('stamina-count').innerText = stamina; }
+            if (itemKey === 'stamina') { 
+                scanStamina = Math.min(5, scanStamina + qty); 
+                localStorage.setItem('ar_scan_stamina', scanStamina); 
+                let scanCountEl = document.getElementById('scan-stamina-count');
+                if (scanCountEl) scanCountEl.innerText = scanStamina;
+            }
             else { inventory[itemKey] = (inventory[itemKey] || 0) + qty; localStorage.setItem('ar_inventory', JSON.stringify(inventory)); }
             alert('🛒 Mua thành công!'); openMarketMenu();
         }
@@ -822,7 +833,10 @@
             content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Đấu Trường PvP</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><button onclick="startBattle('arena')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Tìm Trận Đấu</button>`;
         }
 
+        // --- CƠ CHẾ 1 & 2: BẢN ĐỒ GPS, QUÉT KHU VỰC VÀ THÚ DI CHUYỂN TỚI LUI ---
         let map, userMarker, activeMarkers = [];
+        let mapMonstersData = []; // Dữ liệu thú đang có ngoài bản đồ
+        let roamInterval = null; // Vòng lặp di chuyển thú
         let userLat = 10.0452, userLng = 105.7469;
 
         function initMap() {
@@ -832,14 +846,20 @@
                     userLat = position.coords.latitude; userLng = position.coords.longitude;
                     if (map) { map.setView([userLat, userLng], 17); map.invalidateSize(); }
                     if (userMarker) userMarker.setLatLng([userLat, userLng]);
-                    spawnMultipleMonsters();
-                }, error => { if (map) map.invalidateSize(); }, { enableHighAccuracy: true });
+                    if (mapMonstersData.length === 0) spawnMultipleMonsters();
+                }, error => { 
+                    if (map) map.invalidateSize(); 
+                    if (mapMonstersData.length === 0) spawnMultipleMonsters();
+                }, { enableHighAccuracy: true });
             }
             map = L.map('map', { zoomControl: false }).setView([userLat, userLng], 17);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
             const userIcon = L.divIcon({ className: 'leaflet-div-icon', html: '<div style="font-size: 28px;">📍</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
             userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
-            spawnMultipleMonsters();
+            
+            // Khởi tạo thú lần đầu nếu chưa có
+            if (mapMonstersData.length === 0) spawnMultipleMonsters();
+            initRoamingBeasts();
             setTimeout(() => { map.invalidateSize(); }, 300);
         }
 
@@ -853,30 +873,82 @@
             } else if (map) { map.setView([userLat, userLng], 17); map.invalidateSize(); }
         }
 
+        // 1. THÚ DI CHUYỂN TỚI LUI NGOÀI BẢN ĐỒ
+        function initRoamingBeasts() {
+            if (roamInterval) clearInterval(roamInterval);
+            roamInterval = setInterval(() => {
+                if (!map || activeMarkers.length === 0) return;
+                mapMonstersData.forEach((m, idx) => {
+                    // Cập nhật toạ độ nhích nhẹ theo hướng vx, vy
+                    m.lat += m.vx;
+                    m.lng += m.vy;
+                    m.roamStep++;
+
+                    // Đổi hướng sau 12-20 nhịp di chuyển (tới lui quanh bán kính)
+                    if (m.roamStep > 15 || Math.abs(m.lat - m.originLat) > 0.0015 || Math.abs(m.lng - m.originLng) > 0.0015) {
+                        m.vx = (Math.random() - 0.5) * 0.00008;
+                        m.vy = (Math.random() - 0.5) * 0.00008;
+                        m.roamStep = 0;
+                    }
+
+                    // Cập nhật vị trí Marker trên Leaflet
+                    if (activeMarkers[idx]) {
+                        activeMarkers[idx].setLatLng([m.lat, m.lng]);
+                    }
+                });
+            }, 1000);
+        }
+
+        // 2. QUÉT KHU VỰC THỦ CÔNG (-1 NĂNG LƯỢNG QUÉT)
+        function manualTriggerScan() {
+            if (scanStamina <= 0) {
+                alert('⚠️ Bạn đã hết Năng lượng quét (0/5)! Cần chờ 10 phút để tự hồi 1 điểm hoặc nạp thêm ở Chợ.');
+                return;
+            }
+            scanStamina--;
+            saveGameData();
+            spawnMultipleMonsters();
+            alert('📡 Đã quét lại khu vực thành công! Toàn bộ linh thú mới đã xuất hiện.');
+        }
+
         function spawnMultipleMonsters() {
             if (!map) return;
             activeMarkers.forEach(m => map.removeLayer(m));
             activeMarkers = [];
+            mapMonstersData = [];
+
             for (let i = 0; i < 6; i++) {
                 const baseTemplate = allMonsters[Math.floor(Math.random() * allMonsters.length)];
                 let rarity = getRandomRarity();
                 let multi = rarity.statMultiplier;
+                let originLat = userLat + (Math.random() - 0.5) * 0.003;
+                let originLng = userLng + (Math.random() - 0.5) * 0.003;
+
                 const monsterData = {
                     ...baseTemplate, rarity: rarity, hearts: 3,
                     hp: Math.floor(baseTemplate.hp * multi), maxHp: Math.floor(baseTemplate.maxHp * multi),
                     atk: Math.floor(baseTemplate.atk * multi), speed: Math.floor(baseTemplate.speed * multi),
-                    lat: userLat + (Math.random() - 0.5) * 0.003, lng: userLng + (Math.random() - 0.5) * 0.003
+                    lat: originLat, lng: originLng,
+                    originLat: originLat, originLng: originLng,
+                    vx: (Math.random() - 0.5) * 0.00008,
+                    vy: (Math.random() - 0.5) * 0.00008,
+                    roamStep: 0
                 };
-                const monsterIcon = L.divIcon({ className: 'leaflet-div-icon', html: `<div style="font-size: 36px;" title="${rarity.badge}">${monsterData.emoji}</div>`, iconSize: [38, 38], iconAnchor: [19, 19] });
+                mapMonstersData.push(monsterData);
+
+                const monsterIcon = L.divIcon({ className: 'leaflet-div-icon', html: `<div style="font-size: 36px; transition: transform 0.5s;" title="${rarity.badge}">${monsterData.emoji}</div>`, iconSize: [38, 38], iconAnchor: [19, 19] });
                 const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(map);
+                
                 marker.on('click', () => {
-                    if (stamina <= 0) { alert('⚡ Hết Năng Lượng!'); return; }
-                    currentWildMonster = monsterData; enterARScreen();
+                    currentWildMonster = monsterData; 
+                    currentSelectedMarker = marker;
+                    enterARScreen();
                 });
                 activeMarkers.push(marker);
             }
         }
 
+        let currentSelectedMarker = null;
         let canvas, ctx, isARActive = false;
         let rope = { x: 0, y: 0, vx: 0, vy: 0, flying: false, flightTime: 0 };
         let monsterPos = { x: 0, y: 0, vx: 1.5, vy: 1 };
@@ -895,6 +967,7 @@
             initCanvasGame();
         }
 
+        // 3. KHÔNG TỰ ĐỘNG QUÉT LẠI KHI THOÁT HOẶC XONG TRẬN
         function exitARScreen() {
             isARActive = false; isTugOfWarActive = false;
             if (tugTimerInterval) clearInterval(tugTimerInterval);
@@ -921,7 +994,6 @@
             };
             canvas.onpointerup = (e) => {
                 if (isTugOfWarActive || rope.flying) return;
-                if (stamina > 0) { stamina--; localStorage.setItem('ar_stamina', stamina); }
                 rope.vx = (e.clientX - rope.x) * 0.12; rope.vy = (e.clientY - rope.y) * 0.12;
                 rope.flying = true; rope.flightTime = 0;
             };
@@ -982,6 +1054,17 @@
             isTugOfWarActive = false; clearInterval(tugTimerInterval);
             document.getElementById('tug-of-war-ui').classList.add('hidden');
             exitARScreen();
+
+            // Xóa con thú vừa bắt khỏi bản đồ, KHÔNG quét lại cả bản đồ
+            if (currentSelectedMarker && map) {
+                map.removeLayer(currentSelectedMarker);
+                let idx = activeMarkers.indexOf(currentSelectedMarker);
+                if (idx !== -1) {
+                    activeMarkers.splice(idx, 1);
+                    mapMonstersData.splice(idx, 1);
+                }
+            }
+
             let multi = currentWildMonster.rarity.statMultiplier || 1.0;
             let newPet = {
                 ...currentWildMonster, level: 1, hearts: 3, gender: Math.random() < 0.5 ? 'Đực' : 'Cái',
@@ -992,10 +1075,11 @@
             };
             if (team.length < 3) { team.push(newPet); saveGameData(); alert(`🎉 Bắt thành công ${newPet.name}! Đã đưa vào Đội.`); }
             else { farm.push(newPet); saveGameData(); alert(`🎉 Đội đầy, đã chuyển ${newPet.name} vào Trại!`); }
-            addQuestProgress(1, 1); updateTeamCount(); spawnMultipleMonsters();
+            addQuestProgress(1, 1); 
+            updateTeamCount();
         }
 
-        // --- ĐẤU TRƯỜNG: CHIẾN ĐẤU DỰA TRÊN TỐC ĐỘ TỪNG LINH THÚ (ATB ACTION GAUGE) ---
+        // --- ĐẤU TRƯỜNG ATB TỐC ĐỘ ---
         let battleCanvas, battleCtx, battleInterval;
         function startBattle(mode) {
             checkPetSurvival();
@@ -1011,7 +1095,6 @@
             let teamHpList = activeTeam.map(p => p.hp);
             let teamMaxHpTotal = activeTeam.reduce((sum, p) => sum + p.maxHp, 0);
 
-            // Mỗi con thú có thanh tích tốc độ riêng (0 -> 1000)
             let teamSpeedGauges = activeTeam.map(() => Math.floor(Math.random() * 150));
             let enemySpeedGauge = Math.floor(Math.random() * 150);
 
@@ -1025,17 +1108,15 @@
             battleCtx = battleCanvas.getContext('2d');
             battleCanvas.width = battleCanvas.clientWidth; battleCanvas.height = battleCanvas.clientHeight;
             
-            let attacker = null; // Ai đang lao lên tấn công: { side: 'team' | 'enemy', index: 0, step: 0 }
-            const ACTION_THRESHOLD = 800; // Ngưỡng đầy thanh nạp tốc độ để được ra đòn
+            let attacker = null;
+            const ACTION_THRESHOLD = 800;
 
             battleInterval = setInterval(() => {
                 battleCtx.clearRect(0, 0, battleCanvas.width, battleCanvas.height);
                 let cx = battleCanvas.width / 2, cy = battleCanvas.height * 0.72;
                 let defaultTeamX = cx - 80, defaultEnemyX = cx + 80;
 
-                // 1. TÍCH NẠP TỐC ĐỘ HÀNH ĐỘNG NẾU KHÔNG CÓ AI ĐANG TẤN CÔNG
                 if (!attacker) {
-                    // Nạp cho từng thú trong đội nếu còn sống
                     activeTeam.forEach((pet, i) => {
                         if (teamHpList[i] > 0) {
                             teamSpeedGauges[i] += pet.speed;
@@ -1046,7 +1127,6 @@
                         }
                     });
 
-                    // Nạp cho đối thủ
                     if (!attacker && enemyHp > 0) {
                         enemySpeedGauge += enemy.speed;
                         if (enemySpeedGauge >= ACTION_THRESHOLD) {
@@ -1056,7 +1136,6 @@
                     }
                 }
 
-                // 2. XỬ LÝ ĐỘNG TÁC LAO VÀO TẤN CÔNG DỰA TRÊN AI ĐẦY TỐC ĐỘ TRƯỚC
                 let myOffsetsX = [0, 0, 0];
                 let enemyOffsetX = 0;
 
@@ -1065,10 +1144,8 @@
                     let chargeDist = 45;
 
                     if (attacker.side === 'team') {
-                        // Thú bên mình lao về phía trước tấn công
                         if (attacker.step <= 10) myOffsetsX[attacker.index] = (attacker.step / 10) * chargeDist;
                         else if (attacker.step <= 15) {
-                            // Gây sát thương tại đỉnh điểm
                             if (attacker.step === 11) {
                                 let pet = activeTeam[attacker.index];
                                 let dmg = pet.atk * (0.8 + Math.random() * 0.4);
@@ -1086,7 +1163,6 @@
                             attacker = null;
                         }
                     } else if (attacker.side === 'enemy') {
-                        // Kẻ địch lao về phía đội hình mình tấn công
                         if (attacker.step <= 10) enemyOffsetX = - (attacker.step / 10) * chargeDist;
                         else if (attacker.step <= 15) {
                             if (attacker.step === 11) {
@@ -1095,7 +1171,7 @@
                                 if (targetIdx !== -1) {
                                     teamHpList[targetIdx] -= enDmg;
                                     activeTeam[targetIdx].hp = Math.max(0, teamHpList[targetIdx]);
-                                    document.getElementById('battle-log').innerText = `⚡ ${enemy.name} (Tốc độ ${enemy.speed}) đánh nhanh: -${enDmg} dmg lên ${activeTeam[targetIdx].name}!`;
+                                    document.getElementById('battle-log').innerText = `⚡ ${enemy.name} (Tốc độ ${enemy.speed}) đánh: -${enDmg} dmg lên ${activeTeam[targetIdx].name}!`;
                                 }
                             }
                             enemyOffsetX = - chargeDist;
@@ -1107,7 +1183,6 @@
                     }
                 }
 
-                // CẬP NHẬT THANH MÁU TRÊN MÀN HÌNH
                 let currentTeamHpTotal = teamHpList.reduce((a, b) => Math.max(0, a) + Math.max(0, b), 0);
                 let teamHpPercent = Math.max(0, (currentTeamHpTotal / teamMaxHpTotal) * 100);
                 let enemyHpPercent = Math.max(0, (enemyHp / enemy.maxHp) * 100);
@@ -1116,28 +1191,23 @@
                 document.getElementById('battle-enemy-hp-bar').style.width = enemyHpPercent + '%';
                 document.getElementById('battle-enemy-hp-text').innerText = `HP: ${Math.max(0, enemyHp)}/${enemy.maxHp}`;
                 
-                // VẼ ĐỐI THỦ VÀ THANH TỐC ĐỘ DƯỚI CHÂN
                 let finalEnX = defaultEnemyX + enemyOffsetX;
                 battleCtx.font = "65px sans-serif"; battleCtx.textAlign = "center";
                 battleCtx.fillText(enemy.emoji, finalEnX, cy);
-                // Vẽ thanh hành động tốc độ nhỏ của địch
                 battleCtx.fillStyle = 'rgba(0,0,0,0.5)'; battleCtx.fillRect(finalEnX - 25, cy + 12, 50, 4);
                 battleCtx.fillStyle = '#38bdf8'; battleCtx.fillRect(finalEnX - 25, cy + 12, Math.min(50, (enemySpeedGauge / ACTION_THRESHOLD) * 50), 4);
 
-                // VẼ ĐỘI HÌNH VÀ THANH TỐC ĐỘ DƯỚI CHÂN TỪNG THÚ
                 activeTeam.forEach((pet, i) => {
                     if (teamHpList[i] > 0) {
                         let posY = cy + (i - 1) * 38;
                         let posX = defaultTeamX + myOffsetsX[i];
                         battleCtx.font = "50px sans-serif";
                         battleCtx.fillText(pet.emoji, posX, posY);
-                        // Thanh nạp tốc độ màu vàng
                         battleCtx.fillStyle = 'rgba(0,0,0,0.5)'; battleCtx.fillRect(posX - 22, posY + 8, 44, 4);
                         battleCtx.fillStyle = '#facc15'; battleCtx.fillRect(posX - 22, posY + 8, Math.min(44, (teamSpeedGauges[i] / ACTION_THRESHOLD) * 44), 4);
                     }
                 });
 
-                // KIỂM TRA KẾT THÚC TRẬN ĐẤU
                 let allTeamDead = teamHpList.every(h => h <= 0);
                 if (enemyHp <= 0 || allTeamDead) {
                     clearInterval(battleInterval);
@@ -1146,7 +1216,7 @@
                         playerCoins += rewardGold; saveGameData(); addQuestProgress(2, 1);
                         if (mode === 'tower') { towerFloor++; localStorage.setItem('ar_tower_floor', towerFloor); }
                         else if (mode === 'boss') { bossLevel++; localStorage.setItem('ar_boss_level', bossLevel); }
-                        alert(`🏆 Chiến thắng vinh quang! Nhận +${rewardGold} Vàng!`);
+                        alert(`🏆 Chiến thắng! Nhận +${rewardGold} Vàng!`);
                     } else {
                         activeTeam.forEach(pet => {
                             pet.hearts--;
@@ -1161,6 +1231,7 @@
             }, 30);
         }
 
+        // 3. THOÁT ĐẤU TRƯỜNG CŨNG KHÔNG QUÉT LẠI BẢN ĐỒ
         function exitBattleScreen() {
             switchGameMusic('map');
             if (battleInterval) clearInterval(battleInterval);
@@ -1211,35 +1282,33 @@
             content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-amber-400">👹 Hắc Long Vương (Cấp ${bossLevel})</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-amber-500/40 mb-4 text-center"><div class="text-6xl mb-2">🐉🔥</div><div class="font-bold text-base text-yellow-300">Yêu cầu: Đội hình đủ 3 linh thú! (${team.length}/3)</div></div>${canFight ? `<button onclick="startBattle('boss')" class="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Xuất Trận Đánh Boss</button>` : `<div class="text-center text-xs text-red-400 font-bold bg-red-950/50 p-3 rounded-xl border border-red-500/50">⚠️ Đội hình chưa đủ 3 linh thú!</div>`}`;
         }
 
-        function initStaminaSystem() {
+        // HỆ THỐNG NĂNG LƯỢNG QUÉT KHU VỰC (5/5, 10 PHÚT HỒI 1 LẦN)
+        function initScanStaminaSystem() {
             setInterval(() => {
                 let now = Date.now();
-                let diffSec = Math.floor((now - lastStaminaTime) / 1000);
-                let coolDownTime = 600;
+                let diffSec = Math.floor((now - lastScanStaminaTime) / 1000);
+                let coolDownTime = 600; // 10 phút = 600s
                 let remainingSec = Math.max(0, coolDownTime - diffSec);
-                if (stamina < 15 && diffSec >= coolDownTime) {
-                    stamina = Math.min(15, stamina + 1);
-                    lastStaminaTime = now;
-                    localStorage.setItem('ar_stamina', stamina);
-                    localStorage.setItem('ar_stamina_time', lastStaminaTime);
+
+                if (scanStamina < 5 && diffSec >= coolDownTime) {
+                    scanStamina = Math.min(5, scanStamina + 1);
+                    lastScanStaminaTime = now;
+                    saveGameData();
+                    remainingSec = coolDownTime;
                 }
+
                 let minStr = String(Math.floor(remainingSec / 60)).padStart(2, '0');
                 let secStr = String(remainingSec % 60).padStart(2, '0');
-                let countEl = document.getElementById('stamina-count');
-                let timerEl = document.getElementById('stamina-timer');
-                if (countEl) countEl.innerText = stamina;
-                if (timerEl) timerEl.innerText = stamina >= 15 ? 'MAX' : `${minStr}:${secStr}`;
+                let countEl = document.getElementById('scan-stamina-count');
+                let timerEl = document.getElementById('scan-stamina-timer');
+                if (countEl) countEl.innerText = scanStamina;
+                if (timerEl) timerEl.innerText = scanStamina >= 5 ? 'MAX' : `${minStr}:${secStr}`;
             }, 1000);
-            let coinEl = document.getElementById('coin-count');
-            if (coinEl) coinEl.innerText = playerCoins;
-            let eggBadge = document.getElementById('egg-count-badge');
-            if (eggBadge) eggBadge.innerText = eggs.length;
-            let stepEl = document.getElementById('step-count-display');
-            if (stepEl) stepEl.innerText = totalSteps;
+            saveGameData();
         }
 
         window.onload = () => {
-            initMap(); initStaminaSystem(); updateTeamCount(); updateWeatherCycle(); initStepCounter();
+            initMap(); initScanStaminaSystem(); updateTeamCount(); updateWeatherCycle(); initStepCounter();
             setTimeout(() => { if(map) map.invalidateSize(); }, 400);
         };
         window.onresize = () => { if (map) setTimeout(() => map.invalidateSize(), 200); };
