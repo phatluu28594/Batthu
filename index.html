@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Batthu - Full Feature Master v6.0</title>
+    <title>Batthu - Fix Team Storage v6.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -87,7 +87,7 @@
     <!-- MÀN HÌNH ĐẤU TRƯỜNG & BOSS -->
     <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-4">
         <div class="flex justify-between items-center z-20">
-            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V6.0</div>
+            <div id="battle-title-tag" class="bg-red-600/90 px-4 py-1.5 rounded-full font-bold text-xs border border-red-400">⚔️ ĐẤU TRƯỜNG V6.1</div>
             <button onclick="exitBattleScreen()" class="bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">Rút lui</button>
         </div>
         <div class="relative flex-1 my-4 bg-gradient-to-b from-amber-950/80 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/60 overflow-hidden flex flex-col items-center justify-center shadow-2xl">
@@ -157,9 +157,10 @@
         function sanitizePetsData(petList) {
             return petList.map(p => ({
                 ...p,
-                maxHp: p.maxHp || p.hp || 100,
-                hp: (p.hp !== undefined && p.hp > 0) ? p.hp : (p.maxHp || 100),
+                maxHp: p.maxHp || p.hp || 120,
+                hp: (p.hp !== undefined && p.hp > 0) ? p.hp : (p.maxHp || 120),
                 level: p.level || 1,
+                atk: p.atk || 80,
                 gender: p.gender || (Math.random() < 0.5 ? 'Đực' : 'Cái'),
                 element: p.element || 'Kim',
                 critRate: p.critRate || 20,
@@ -208,7 +209,7 @@
             }, 1000);
         }
 
-        // 🛒 CHỢ ĐẦY ĐỦ TOÀN BỘ VẬT PHẨM & ĐÁ NGŨ HÀNH
+        // 🛒 CHỢ ĐEN ĐẦY ĐỦ VẬT PHẨM & ĐÁ NGŨ HÀNH
         function openMarketMenu() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
@@ -254,7 +255,7 @@
             alert('🛒 Mua thành công!'); openMarketMenu();
         }
 
-        // 🧬 TRUNG TÂM LAI GIỐNG ĐẦY ĐỦ
+        // 🧬 TRUNG TÂM LAI GIỐNG
         let breedingSlots = { parent1: null, parent2: null };
         function openBreedingMenu() {
             checkPetSurvival();
@@ -282,7 +283,7 @@
             let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">Chọn Thú Bố Mẹ (${slotNum})</h3><button onclick="openBreedingMenu()" class="text-zinc-400 font-bold cursor-pointer">‹ Quay lại</button></div>`;
             let allPetsPool = [...team, ...farm];
             if (allPetsPool.length === 0) {
-                html += `<div class="text-center text-xs text-zinc-400 py-6">Không có linh thú nào trong đội hoặc trại!</div>`;
+                html += `<div class="text-center text-xs text-zinc-400 py-6">Không có linh thú nào!</div>`;
             } else {
                 html += `<div class="space-y-2 max-h-60 overflow-y-auto">`;
                 allPetsPool.forEach((pet, idx) => {
@@ -308,7 +309,7 @@
             if (slotNum === 1) breedingSlots.parent1 = pet;
             else {
                 if (breedingSlots.parent1 && breedingSlots.parent1.gender === pet.gender) {
-                    alert('⚠️ Phải khác giới tính (Đực / Cái) để lai giống!'); return;
+                    alert('⚠️ Phải khác giới tính (Đực / Cái)!'); return;
                 }
                 breedingSlots.parent2 = pet;
             }
@@ -316,7 +317,7 @@
         }
 
         function executeBreeding() {
-            if (!breedingSlots.parent1 || !breedingSlots.parent2) { alert('Chọn đủ 2 thú bố mẹ!'); return; }
+            if (!breedingSlots.parent1 || !breedingSlots.parent2) { alert('Chọn đủ 2 thú!'); return; }
             if (breedingSlots.parent1.gender === breedingSlots.parent2.gender) { alert('Cần 1 Đực và 1 Cái!'); return; }
             if (playerCoins < 300) { alert('Không đủ vàng!'); return; }
 
@@ -331,7 +332,7 @@
 
             farm.push(childPet); localStorage.setItem('ar_farm', JSON.stringify(farm));
             breedingSlots = { parent1: null, parent2: null };
-            alert(`🧬 Lai giống thành công! Nhận được linh thú ${childPet.emoji} ${childPet.name}!`);
+            alert(`🧬 Lai giống thành công! Đã đưa ${childPet.name} vào Trang Trại.`);
             openFarmMenu();
         }
 
@@ -391,7 +392,7 @@
                 <h3 class="font-bold text-lg">🎒 Đội Hình Chiến Đấu (${team.length}/3)</h3>
                 <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
             </div>`;
-            if (team.length === 0) html += `<p class="text-zinc-400 text-sm text-center py-6">Đội hình trống! Hãy đưa thú từ Trang trại vào đội.</p>`;
+            if (team.length === 0) html += `<p class="text-zinc-400 text-sm text-center py-6">Đội hình trống! Hãy đưa thú từ Trang Trại vào đội.</p>`;
             else {
                 html += `<div class="space-y-3">`;
                 team.forEach((pet, idx) => {
@@ -536,7 +537,7 @@
             }
         }
 
-        // 🎮 MINIGAME BẮT THÚ AR & GIẰNG CO CÓ DÂY VÀNG
+        // 🎮 MINIGAME BẮT THÚ AR & GIẰNG CO CÓ DÂY VÀNG (ĐÃ FIX LƯU TRỮ VÀO ĐỘI HÌNH)
         let canvas, ctx, isARActive = false;
         let rope = { x: 0, y: 0, vx: 0, vy: 0, flying: false };
         let monsterPos = { x: 0, y: 0, vx: 1.5, vy: 1 };
@@ -648,15 +649,27 @@
             document.getElementById('tug-of-war-ui').classList.add('hidden');
             exitARScreen();
 
-            let newPet = { ...currentWildMonster, gender: Math.random() < 0.5 ? 'Đực' : 'Cái', trait: possibleTraits[Math.floor(Math.random() * possibleTraits.length)] };
+            // Khởi tạo chuẩn xác toàn bộ chỉ số để thú xuất hiện hoàn hảo trong đội hình/trại
+            let newPet = {
+                ...currentWildMonster,
+                level: 1,
+                hp: currentWildMonster.maxHp || 120,
+                maxHp: currentWildMonster.maxHp || 120,
+                atk: currentWildMonster.atk || 80,
+                gender: Math.random() < 0.5 ? 'Đực' : 'Cái',
+                trait: possibleTraits[Math.floor(Math.random() * possibleTraits.length)],
+                hunger: 100,
+                happiness: 100
+            };
+
             if (team.length < 3) {
                 team.push(newPet);
                 localStorage.setItem('ar_team', JSON.stringify(team));
-                alert(`🎉 Bắt thành công ${newPet.name}! Đã đưa vào đội hình.`);
+                alert(`🎉 Bắt thành công ${newPet.name}! Đã tự động đưa vào Đội Hình.`);
             } else {
                 farm.push(newPet);
                 localStorage.setItem('ar_farm', JSON.stringify(farm));
-                alert(`🎉 Đội hình đầy, đã chuyển ${newPet.name} vào Trang Trại!`);
+                alert(`🎉 Đội hình đã đầy (3/3), đã chuyển ${newPet.name} vào Trang Trại!`);
             }
             updateTeamCount(); spawnMultipleMonsters();
         }
@@ -706,6 +719,7 @@
             switchGameMusic('map');
             if (battleInterval) clearInterval(battleInterval);
             document.getElementById('battle-screen').classList.add('hidden');
+            document.getElementById('map-screen').classList.add('hidden'); // fix layout
             document.getElementById('map-screen').classList.remove('hidden');
             if (map) map.invalidateSize();
         }
@@ -713,7 +727,6 @@
         function updateTeamCount() { document.getElementById('team-count').innerText = team.length; }
 
         window.onload = () => {
-            alert('🚀 Chào mừng anh yêu đến với Batthu v6.0 Full Feature Master!');
             initMap(); initStaminaSystem(); updateTeamCount();
             setTimeout(() => { if(map) map.invalidateSize(); }, 400);
         };
