@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Arena Center & Swipe Down v10.4</title>
+    <title>Batthu - Home Hub & Sleep Recovery v10.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -12,8 +12,22 @@
         #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 150px; overflow: hidden; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; background: #e5e7eb; }
         
-        .hotspot { position: absolute; cursor: pointer; border: none; background: transparent; z-index: 20; }
-        .hotspot:active { background: rgba(255, 255, 255, 0.15); }
+        .hotspot { position: absolute; cursor: pointer; border: none; background: transparent; z-index: 20; transition: transform 0.15s; }
+        .hotspot:active { transform: scale(0.95); }
+
+        .home-label {
+            background: rgba(15, 23, 42, 0.82);
+            backdrop-filter: blur(4px);
+            border: 1.5px solid rgba(251, 191, 36, 0.75);
+            color: #fef08a;
+            font-weight: 800;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            white-space: nowrap;
+            text-shadow: 0 1px 2px #000;
+        }
 
         .leaflet-control-attribution { display: none !important; }
         .leaflet-div-icon { background: transparent !important; border: none !important; }
@@ -78,6 +92,32 @@
             pointer-events: none;
         }
 
+        @keyframes sleepPulse {
+            0%, 100% { transform: scale(1); opacity: 0.85; }
+            50% { transform: scale(1.08); opacity: 1; }
+        }
+        .sleep-text-anim {
+            animation: sleepPulse 2.4s infinite ease-in-out;
+        }
+
+        /* TÙY CHỈNH THANH TRƯỢT NGANG THỨC GIẤC */
+        input[type=range].wake-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+        input[type=range].wake-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 52px;
+            height: 44px;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, #facc15, #f59e0b);
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.8);
+            border: 2px solid #fff;
+        }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -91,10 +131,100 @@
         <div id="yt-player"></div>
     </div>
 
-    <!-- MÀN HÌNH BẢN ĐỒ GPS -->
-    <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2 pb-2">
+    <!-- ==========================================
+         1. MÀN HÌNH SẢNH CHÍNH ĐẦU GAME (background.png)
+         ========================================== -->
+    <div id="home-screen" class="absolute inset-0 z-30 bg-zinc-950 flex flex-col justify-between overflow-hidden">
+        <!-- Ảnh nền sảnh chính -->
+        <img src="./background.png" alt="Sảnh Chính" class="absolute inset-0 w-full h-full object-cover z-0">
+
+        <!-- Thanh thông tin trên cùng -->
+        <div class="relative z-20 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/80 to-transparent">
+            <div class="flex items-center gap-1.5 bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold">
+                <span>🏠 Nhà Chính</span>
+                <span class="text-yellow-400 ml-1">💰 <span id="home-coin-count">1500</span>🪙</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🎒(<span id="home-team-count">0</span>/3)</button>
+                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold cursor-pointer">🛒 Chợ</button>
+                <button onclick="openQuestMenu()" class="bg-yellow-600/90 px-2.5 py-1.5 rounded-full border border-yellow-300 text-xs font-bold cursor-pointer">📜 NV</button>
+            </div>
+        </div>
+
+        <!-- CÁC ĐIỂM CHẠM TƯƠNG TÁC TRỰC TIẾP TRÊN ẢNH SẢNH CHÍNH -->
+        <div class="relative flex-1 w-full h-full z-10">
+            
+            <!-- 2. CỬA CHÍNH Ở GIỮA: "Đi săn thú" -> Ra Map bắt thú -->
+            <div onclick="goFromHomeToMap()" class="hotspot flex flex-col items-center justify-center" style="top: 26%; left: 37%; width: 26%; height: 22%;">
+                <div class="home-label animate-bounce">🚪 Đi săn thú</div>
+            </div>
+
+            <!-- 3. CÁNH CỬA BÊN PHẢI: "Đi Trang trại" -> Qua mục Trang trại -->
+            <div onclick="openFarmMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 26%; left: 77%; width: 21%; height: 23%;">
+                <div class="home-label" style="border-color: #34d399; color: #a7f3d0;">🏡 Đi Trang trại</div>
+            </div>
+
+            <!-- 5. GIƯỜNG NGỦ BÊN TRÁI: "Giường ngủ" -> Tối màn hình hồi năng lượng nhanh -->
+            <div onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 32%; left: 2%; width: 32%; height: 20%;">
+                <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ</div>
+            </div>
+
+            <!-- 4. ĐIỆN THOẠI ĐỂ BÀN GÓC DƯỚI PHẢI: "Gọi điện bệnh viện" -> Qua Bệnh viện -->
+            <div onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 64%; left: 74%; width: 24%; height: 17%;">
+                <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi điện bệnh viện</div>
+            </div>
+
+        </div>
+
+        <!-- Thanh năng lượng dưới đáy màn hình nhà -->
+        <div class="relative z-20 p-2.5 bg-gradient-to-t from-black/90 to-transparent">
+            <div class="flex items-center justify-between text-[11px] font-bold text-zinc-200 bg-black/85 px-3.5 py-2 rounded-xl border border-white/15 shadow-lg">
+                <span class="text-amber-300">⚡ Bắt: <span id="home-catch-count">15</span>/15 (<span id="home-catch-timer">10:00</span>)</span>
+                <span class="text-cyan-300">📡 Quét: <span id="home-scan-count">5</span>/5 (<span id="home-scan-timer">10:00</span>)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         5. MÀN HÌNH CHẾ ĐỘ NGỦ HỒI PHỤC SỨC (TỐI MÀN HÌNH + THANH TRƯỢT THỨC GIẤC)
+         ========================================== -->
+    <div id="sleep-overlay" class="hidden absolute inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-6">
+        <div class="mt-8 text-center">
+            <div class="text-xs text-blue-300 font-bold tracking-widest uppercase bg-blue-950/60 px-4 py-1.5 rounded-full border border-blue-400/30">
+                ⚡ Tốc độ hồi năng lượng x5 (2 phút / 1 điểm)
+            </div>
+        </div>
+
+        <!-- Chữ zzZZ (Đang hồi phục sức) -->
+        <div class="flex flex-col items-center text-center my-auto sleep-text-anim">
+            <div class="text-6xl mb-4">😴💤</div>
+            <div class="text-3xl font-black text-blue-200 tracking-wider mb-2">zzZZ</div>
+            <div class="text-sm font-bold text-zinc-300">(Đang hồi phục sức...)</div>
+            
+            <div class="mt-6 flex gap-4 text-xs font-bold bg-zinc-900/90 px-4 py-2.5 rounded-2xl border border-white/10">
+                <span class="text-amber-300">⚡ Bắt: <span id="sleep-catch-count">15</span>/15 (<span id="sleep-catch-timer">02:00</span>)</span>
+                <span class="text-cyan-300">📡 Quét: <span id="sleep-scan-count">5</span>/5 (<span id="sleep-scan-timer">02:00</span>)</span>
+            </div>
+        </div>
+
+        <!-- Thanh ngang kéo sang phải để thức giấc -->
+        <div class="w-full max-w-xs mb-6">
+            <div class="relative w-full h-12 bg-zinc-900 rounded-full border-2 border-amber-400/50 flex items-center px-1 shadow-2xl overflow-hidden">
+                <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-amber-200/80 pointer-events-none pl-8">
+                    👉 Kéo sang phải để thức giấc ☀️
+                </div>
+                <input id="wake-up-slider" type="range" min="0" max="100" value="0" oninput="handleWakeSlider(this.value)" onchange="resetWakeSlider(this)" class="wake-slider w-full h-full z-10 cursor-pointer">
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MÀN HÌNH BẢN ĐỒ GPS (GIỮ NGUYÊN 100%)
+         ========================================== -->
+    <div id="map-screen" class="hidden absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2 pb-2">
         <div class="z-50 pt-1 pb-1 shrink-0 w-full">
             <div class="flex gap-1.5 overflow-x-auto py-1 w-full no-scrollbar items-center px-0.5">
+                <button onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0 text-amber-200">🏠 Nhà</button>
                 <button onclick="openWorldBossMenu()" class="bg-amber-700/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
                 <button onclick="openHospitalMenu()" class="bg-cyan-700/90 px-3 py-1.5 rounded-full border border-cyan-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏥 Bệnh Viện</button>
                 <button onclick="openEggIncubatorMenu()" class="bg-emerald-700/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
@@ -263,6 +393,8 @@
         let scanStamina = parseInt(localStorage.getItem('ar_scan_stamina') || '5');
         let lastScanStaminaTime = parseInt(localStorage.getItem('ar_scan_stamina_time') || Date.now());
 
+        let isSleeping = false; // Trạng thái ngủ hồi phục sức nhanh
+
         let trainingPoles = safeParse('ar_training_poles', [null, null, null, null]);
         let restingPets = safeParse('ar_resting_pets', []);
 
@@ -409,16 +541,63 @@
                 localStorage.setItem('ar_resting_pets', JSON.stringify(restingPets));
             } catch(e){}
 
-            let coinEl = document.getElementById('coin-count');
-            if (coinEl) coinEl.innerText = playerCoins;
+            // Đồng bộ hiển thị ở cả màn hình Map và màn hình Nhà Chính
+            ['coin-count', 'home-coin-count'].forEach(id => {
+                let el = document.getElementById(id);
+                if (el) el.innerText = playerCoins;
+            });
             let eggBadge = document.getElementById('egg-count-badge');
             if (eggBadge) eggBadge.innerText = eggs.length;
             let gateTag = document.getElementById('tower-gate-floor');
             if (gateTag) gateTag.innerText = towerFloor;
-            let catchCountEl = document.getElementById('catch-stamina-count');
-            if (catchCountEl) catchCountEl.innerText = catchStamina;
-            let scanCountEl = document.getElementById('scan-stamina-count');
-            if (scanCountEl) scanCountEl.innerText = scanStamina;
+
+            ['catch-stamina-count', 'home-catch-count', 'sleep-catch-count'].forEach(id => {
+                let el = document.getElementById(id);
+                if (el) el.innerText = catchStamina;
+            });
+            ['scan-stamina-count', 'home-scan-count', 'sleep-scan-count'].forEach(id => {
+                let el = document.getElementById(id);
+                if (el) el.innerText = scanStamina;
+            });
+        }
+
+        // ==========================================
+        // ĐIỀU HƯỚNG SẢNH CHÍNH <-> BẢN ĐỒ <-> GIƯỜNG NGỦ
+        // ==========================================
+        function goFromHomeToMap() {
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('map-screen').classList.remove('hidden');
+            initMap();
+            setTimeout(() => { if (map) map.invalidateSize(); }, 200);
+        }
+
+        function goBackToHome() {
+            document.getElementById('map-screen').classList.add('hidden');
+            document.getElementById('home-screen').classList.remove('hidden');
+            updateTeamCount();
+            saveGameData();
+        }
+
+        function startSleeping() {
+            isSleeping = true;
+            document.getElementById('sleep-overlay').classList.remove('hidden');
+            let slider = document.getElementById('wake-up-slider');
+            if (slider) slider.value = 0;
+        }
+
+        function handleWakeSlider(val) {
+            if (parseInt(val) >= 85) {
+                isSleeping = false;
+                document.getElementById('sleep-overlay').classList.add('hidden');
+                let slider = document.getElementById('wake-up-slider');
+                if (slider) slider.value = 0;
+            }
+        }
+
+        function resetWakeSlider(el) {
+            if (parseInt(el.value) < 85) {
+                el.value = 0;
+            }
         }
 
         function closeModal() { 
@@ -869,17 +1048,14 @@
             if (itemKey === 'catchStamina') { 
                 catchStamina = Math.min(15, catchStamina + qty); 
                 localStorage.setItem('ar_catch_stamina', catchStamina); 
-                let cEl = document.getElementById('catch-stamina-count');
-                if (cEl) cEl.innerText = catchStamina;
             } else if (itemKey === 'scanStamina') { 
                 scanStamina = Math.min(5, scanStamina + qty); 
                 localStorage.setItem('ar_scan_stamina', scanStamina); 
-                let scanCountEl = document.getElementById('scan-stamina-count');
-                if (scanCountEl) scanCountEl.innerText = scanStamina;
             } else { 
                 inventory[itemKey] = (inventory[itemKey] || 0) + qty; 
                 localStorage.setItem('ar_inventory', JSON.stringify(inventory)); 
             }
+            saveGameData();
             alert('🛒 Mua thành công!'); openMarketMenu();
         }
 
@@ -1000,7 +1176,10 @@
         let lastSelectMonsterTime = 0;
 
         function initMap() {
-            if (map) return;
+            if (map) {
+                setTimeout(() => map.invalidateSize(), 200);
+                return;
+            }
             try {
                 map = L.map('map', { zoomControl: false, tap: true }).setView([userLat, userLng], 17);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
@@ -1074,7 +1253,7 @@
 
         function manualTriggerScan() {
             if (scanStamina <= 0) {
-                alert('⚠️ Bạn đã hết Năng lượng quét (0/5)! Cần chờ 10 phút để tự hồi hoặc mua thêm ở Chợ.');
+                alert('⚠️ Bạn đã hết Năng lượng quét (0/5)! Cần chờ 10 phút hoặc vào Giường Ngủ để hồi nhanh hơn.');
                 return;
             }
             scanStamina--;
@@ -1088,7 +1267,7 @@
             lastSelectMonsterTime = now;
 
             if (catchStamina <= 0) {
-                alert('⚡ Bạn đã hết Năng Lượng Bắt Thú (0/15)! Hãy chờ 10 phút để tự hồi 1 điểm hoặc nạp ở Chợ.');
+                alert('⚡ Bạn đã hết Năng Lượng Bắt Thú (0/15)! Hãy vào Giường Ngủ để hồi sức nhanh gấp 5 lần.');
                 return;
             }
             let monsterData = mapMonstersData[idx];
@@ -1152,19 +1331,17 @@
         }
 
         // ==========================================
-        // MINIGAME AR V10.4 (THÊM VUỐT XUỐNG & THÚ DI CHUYỂN NHANH HƠN)
+        // MINIGAME AR V10.4
         // ==========================================
         let currentSelectedMarker = null;
         let canvas, ctx, isARActive = false;
         let rope = { x: 0, y: 0, vx: 0, vy: 0, flying: false, flightTime: 0 };
-        // Tăng tốc độ di chuyển ngang của thú lên 3.2 (nhanh và lắt léo hơn)
         let monsterPos = { x: 0, y: 0, vx: 3.2, vy: 0, targetY: 0, jumpTimer: 0 };
         let isTugOfWarActive = false, tugProgress = 50, tugTimerInterval = null;
         let ropeShakeTimer = 0;
 
         let targetRingRadius = 90;
         let targetRingShrinking = true;
-        // Hướng vuốt bao gồm: 'left' (vuốt phải), 'right' (vuốt trái), và 'down' (vuốt xuống)
         let beastPullDirection = 'left';
         let swipeTimer = 0;
         let touchStartX = 0, touchStartY = 0;
@@ -1209,7 +1386,7 @@
             monsterPos.x = canvas.width / 2; 
             monsterPos.y = canvas.height * 0.35;
             monsterPos.targetY = canvas.height * 0.35;
-            monsterPos.vx = 3.2; // Tốc độ di chuyển nhanh hơn để thử thách quăng dây
+            monsterPos.vx = 3.2;
             resetRope();
 
             canvas.ontouchstart = (e) => {
@@ -1292,7 +1469,6 @@
 
             if (!isTugOfWarActive) {
                 monsterPos.jumpTimer++;
-                // Thú nhảy né đòn nhanh hơn (mỗi 70 nhịp đổi hướng và vận tốc 3.2 -> 4.8)
                 if (monsterPos.jumpTimer > 70) {
                     monsterPos.targetY = canvas.height * (0.20 + Math.random() * 0.22);
                     monsterPos.vx = (Math.random() > 0.5 ? 1 : -1) * (3.2 + Math.random() * 1.8);
@@ -1501,7 +1677,6 @@
             }, 60);
         }
 
-        // HIỂN THỊ 3 HƯỚNG VUỐT: VUỐT PHẢI, VUỐT TRÁI, VUỐT XUỐNG
         function updateSwipeArrowUI() {
             let textPrompt = document.getElementById('swipe-instruction-text');
             if (!textPrompt) return;
@@ -1545,7 +1720,7 @@
         }
 
         // ==========================================
-        // ĐẤU TRƯỜNG ATB: VỊ TRÍ NẰM NGAY TÂM VÒNG TRÒN CHÂN THÚ (cy = 0.62)
+        // ĐẤU TRƯỜNG ATB V10.4
         // ==========================================
         let battleCanvas, battleCtx, battleInterval;
         function startBattle(mode) {
@@ -1594,7 +1769,6 @@
                 battleCtx.clearRect(0, 0, rect.width, rect.height);
                 idleTick += 0.14;
 
-                // DỊCH CHUYỂN TỌA ĐỘ TRỌNG TÂM LÊN NGAY GIỮA VÒNG TRÒN DẤU CHÂN THÚ (0.62)
                 let cx = rect.width / 2, cy = rect.height * 0.62;
                 let defaultTeamX = cx - 85, defaultEnemyX = cx + 85;
 
@@ -1714,7 +1888,6 @@
                     }
                 }
 
-                // Cập nhật thanh máu
                 let currentTeamHpTotal = teamHpList.reduce((a, b) => Math.max(0, a) + Math.max(0, b), 0);
                 let teamHpPercent = Math.max(0, (currentTeamHpTotal / teamMaxHpTotal) * 100);
                 let enemyHpPercent = Math.max(0, (enemyHp / enemy.maxHp) * 100);
@@ -1723,7 +1896,6 @@
                 document.getElementById('battle-enemy-hp-bar').style.width = enemyHpPercent + '%';
                 document.getElementById('battle-enemy-hp-text').innerText = `HP: ${Math.max(0, enemyHp)}/${enemy.maxHp}`;
                 
-                // VẼ ĐỐI THỦ
                 let isEnemyDead = enemyHp <= 0;
                 let enKnockback = 0;
                 if (enemyHitShake > 0) {
@@ -1754,7 +1926,6 @@
                     battleCtx.fillRect(finalEnX - 25, finalEnY + 32, Math.min(50, (enemySpeedGauge / ACTION_THRESHOLD) * 50), 4);
                 }
 
-                // VẼ ĐỘI HÌNH MÌNH TRONG VÒNG TRÒN CHÂN THÚ
                 activeTeam.forEach((pet, i) => {
                     let isPetDead = teamHpList[i] <= 0;
                     let knockback = 0;
@@ -1853,8 +2024,10 @@
         }
 
         function updateTeamCount() {
-            let countEl = document.getElementById('team-count');
-            if (countEl) countEl.innerText = team.length;
+            ['team-count', 'home-team-count'].forEach(id => {
+                let countEl = document.getElementById(id);
+                if (countEl) countEl.innerText = team.length;
+            });
         }
 
         function openQuestMenu() {
@@ -1894,11 +2067,14 @@
             content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-amber-400">👹 Hắc Long Vương (Cấp ${bossLevel})</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-amber-500/40 mb-4 text-center"><div class="text-6xl mb-2">🐉🔥</div><div class="font-bold text-base text-yellow-300">Yêu cầu: Đội hình đủ 3 linh thú! (${team.length}/3)</div></div>${canFight ? `<button onclick="startBattle('boss')" class="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Xuất Trận Đánh Boss</button>` : `<div class="text-center text-xs text-red-400 font-bold bg-red-950/50 p-3 rounded-xl border border-red-500/50">⚠️ Đội hình chưa đủ 3 linh thú!</div>`}`;
         }
 
+        // HỆ THỐNG NĂNG LƯỢNG KÉP (TỰ ĐỘNG TĂNG TỐC X5 KHI NGỦ TRÊN GIƯỜNG)
         function initDualStaminaSystem() {
             setInterval(() => {
                 let now = Date.now();
-                let coolDownTime = 600;
+                // Nếu đang ngủ (isSleeping = true) thì 120s (2 phút) hồi 1 điểm, bình thường 600s (10 phút)
+                let coolDownTime = isSleeping ? 120 : 600;
 
+                // 1. Năng Lượng Bắt Thú
                 let diffCatch = Math.floor((now - lastCatchStaminaTime) / 1000);
                 let remCatch = Math.max(0, coolDownTime - diffCatch);
                 if (catchStamina < 15 && diffCatch >= coolDownTime) {
@@ -1909,11 +2085,12 @@
                 }
                 let minC = String(Math.floor(remCatch / 60)).padStart(2, '0');
                 let secC = String(remCatch % 60).padStart(2, '0');
-                let cCountEl = document.getElementById('catch-stamina-count');
-                let cTimerEl = document.getElementById('catch-stamina-timer');
-                if (cCountEl) cCountEl.innerText = catchStamina;
-                if (cTimerEl) cTimerEl.innerText = catchStamina >= 15 ? 'MAX' : `${minC}:${secC}`;
+                ['catch-stamina-timer', 'home-catch-timer', 'sleep-catch-timer'].forEach(id => {
+                    let el = document.getElementById(id);
+                    if (el) el.innerText = catchStamina >= 15 ? 'MAX' : `${minC}:${secC}`;
+                });
 
+                // 2. Năng Lượng Quét
                 let diffScan = Math.floor((now - lastScanStaminaTime) / 1000);
                 let remScan = Math.max(0, coolDownTime - diffScan);
                 if (scanStamina < 5 && diffScan >= coolDownTime) {
@@ -1924,23 +2101,21 @@
                 }
                 let minS = String(Math.floor(remScan / 60)).padStart(2, '0');
                 let secS = String(remScan % 60).padStart(2, '0');
-                let sCountEl = document.getElementById('scan-stamina-count');
-                let sTimerEl = document.getElementById('scan-stamina-timer');
-                if (sCountEl) sCountEl.innerText = scanStamina;
-                if (sTimerEl) sTimerEl.innerText = scanStamina >= 5 ? 'MAX' : `${minS}:${secS}`;
+                ['scan-stamina-timer', 'home-scan-timer', 'sleep-scan-timer'].forEach(id => {
+                    let el = document.getElementById(id);
+                    if (el) el.innerText = scanStamina >= 5 ? 'MAX' : `${minS}:${secS}`;
+                });
 
             }, 1000);
             saveGameData();
         }
 
         window.onload = () => {
-            initMap(); 
             initDualStaminaSystem(); 
             updateTeamCount(); 
             updateWeatherCycle(); 
             initStepCounter();
-            setTimeout(() => { if (map) map.invalidateSize(); }, 300);
-            setTimeout(() => { if (map) map.invalidateSize(); }, 800);
+            saveGameData();
         };
         window.onresize = () => { if (map) setTimeout(() => map.invalidateSize(), 200); };
     </script>
