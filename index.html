@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Animated Beasts v10.2</title>
+    <title>Batthu - Battle Visuals Enhanced v10.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -18,7 +18,6 @@
         .leaflet-control-attribution { display: none !important; }
         .leaflet-div-icon { background: transparent !important; border: none !important; }
 
-        /* CHUYỂN ĐỘNG NHÚN NHẢY BƯỚC ĐI CHO THÚ NGOÀI BẢN ĐỒ */
         @keyframes petWalkHop {
             0%, 100% { transform: translateY(0px) scaleY(1); }
             50% { transform: translateY(-7px) scaleY(1.06); }
@@ -46,7 +45,6 @@
             touch-action: manipulation !important;
         }
 
-        /* CHUYỂN ĐỘNG TRONG TRANG TRẠI: ĐÁNH CỌC GỖ & NGỦ NGHỈ NGƠI */
         @keyframes trainStrike {
             0%, 100% { transform: translateX(0) rotate(0deg) scale(1); }
             40% { transform: translateX(-6px) rotate(-10deg) scale(0.95); }
@@ -134,16 +132,14 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH TRANG TRẠI FULLSCREEN (CÓ THÚ CỬ ĐỘNG TRỰC TIẾP TRÊN NỀN) -->
+    <!-- MÀN HÌNH TRANG TRẠI FULLSCREEN -->
     <div id="fullscreen-farm-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
         <button onclick="closeFullscreenFarm()" class="absolute top-3 right-3 z-30 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
         <div class="relative w-full h-full overflow-hidden">
             <img src="./farm-bg.png" alt="Trang Trai" class="absolute inset-0 w-full h-full object-cover z-0">
             
-            <!-- LỚP HIỂN THỊ THÚ ĐANG LUYỆN TẬP & NGHỈ NGƠI TRỰC QUAN -->
             <div id="farm-visual-pets" class="absolute inset-0 pointer-events-none z-10"></div>
 
-            <!-- VÙNG CHẠM MỞ MENU -->
             <div onclick="showFarmSection('training')" class="hotspot" style="top: 5%; left: 10%; width: 80%; height: 28%;" title="Khu Luyện Tập"></div>
             <div onclick="showFarmSection('resting')" class="hotspot" style="top: 36%; left: 52%; width: 44%; height: 30%;" title="Khu Hồi Sức"></div>
             <div onclick="showFarmSection('storage')" class="hotspot" style="top: 68%; left: 5%; width: 90%; height: 28%;" title="Kho Trại"></div>
@@ -174,7 +170,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH MINIGAME BẮT THÚ AR ACTION (BẢN 10.1) -->
+    <!-- MÀN HÌNH MINIGAME BẮT THÚ AR ACTION -->
     <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -549,7 +545,6 @@
             }
         }, 3000);
 
-        // --- TRANG TRẠI FULLSCREEN & VẼ THÚ CỬ ĐỘNG TRỰC TIẾP ---
         function openFarmMenu() {
             checkPetSurvival();
             document.getElementById('fullscreen-farm-screen').classList.remove('hidden');
@@ -564,7 +559,6 @@
             if (!container) return;
             let html = '';
 
-            // 1. Thú đang luyện tập trên 4 cọc gỗ (Nhảy lên húc vào cọc)
             const polePositions = [
                 { top: '16%', left: '22%' },
                 { top: '16%', left: '42%' },
@@ -585,7 +579,6 @@
                 }
             });
 
-            // 2. Thú đang nghỉ ngơi hồi máu (Ngủ nhún người kèm bong bóng zzz)
             const restPositions = [
                 { top: '48%', left: '62%' },
                 { top: '53%', left: '78%' },
@@ -998,7 +991,7 @@
         }
 
         // ==========================================
-        // KHỞI TẠO BẢN ĐỒ VÀ CHUYỂN ĐỘNG THÚ ĐI DẠO (LẬT HƯỚNG + NHÚN NHẢY)
+        // KHỞI TẠO BẢN ĐỒ VÀ LINH THÚ
         // ==========================================
         let map, userMarker, activeMarkers = [];
         let mapMonstersData = [];
@@ -1067,7 +1060,6 @@
 
                     if (activeMarkers[idx]) {
                         activeMarkers[idx].setLatLng([m.lat, m.lng]);
-                        // Lật mặt linh thú đúng chiều đang bước đi (vy > 0 là đi sang phải)
                         let el = activeMarkers[idx].getElement();
                         if (el) {
                             let innerSpan = el.querySelector('.pet-dir-wrap');
@@ -1160,7 +1152,7 @@
         }
 
         // ==========================================
-        // MINIGAME AR V10.1 (GIỮ NGUYÊN 100%)
+        // MINIGAME AR V10.1
         // ==========================================
         let currentSelectedMarker = null;
         let canvas, ctx, isARActive = false;
@@ -1536,7 +1528,7 @@
         }
 
         // ==========================================
-        // ĐẤU TRƯỜNG ATB TỐC ĐỘ CÓ CHUYỂN ĐỘNG CHIẾN ĐẤU SỐNG ĐỘNG
+        // ĐẤU TRƯỜNG ATB: ĐỘ NÉT SẮC SẢO 100% & THÚ CHẾT NẰM NGANG TẠI CHỖ
         // ==========================================
         let battleCanvas, battleCtx, battleInterval;
         function startBattle(mode) {
@@ -1562,27 +1554,35 @@
             let enemyHp = enemy.hp;
             document.getElementById('battle-enemy-name').innerText = `${enemy.name} [${elementNames[enemy.element]?.label}] (⚡${enemy.speed})`;
 
+            // 1. TỐI ƯU ĐỘ PHÂN GIẢI CANVAS RETINA ĐỂ HÌNH THÚ KHÔNG BỊ MỜ
             battleCanvas = document.getElementById('battleCanvas');
+            let dpr = window.devicePixelRatio || 1;
+            let rect = battleCanvas.getBoundingClientRect();
+            battleCanvas.width = rect.width * dpr;
+            battleCanvas.height = rect.height * dpr;
             battleCtx = battleCanvas.getContext('2d');
-            battleCanvas.width = battleCanvas.clientWidth; battleCanvas.height = battleCanvas.clientHeight;
+            battleCtx.scale(dpr, dpr);
+            battleCtx.imageSmoothingEnabled = true;
+            battleCtx.imageSmoothingQuality = 'high';
             
             let attacker = null;
             const ACTION_THRESHOLD = 800;
 
-            // Các biến hiệu ứng chuyển động: nhịp thở, giật lùi khi trúng đòn, sóng va chạm
             let idleTick = 0;
             let teamHitShake = [0, 0, 0];
             let enemyHitShake = 0;
             let impactEffects = [];
+            let battleEnded = false;
 
             battleInterval = setInterval(() => {
-                battleCtx.clearRect(0, 0, battleCanvas.width, battleCanvas.height);
+                battleCtx.clearRect(0, 0, rect.width, rect.height);
                 idleTick += 0.14;
 
-                let cx = battleCanvas.width / 2, cy = battleCanvas.height * 0.72;
-                let defaultTeamX = cx - 80, defaultEnemyX = cx + 80;
+                let cx = rect.width / 2, cy = rect.height * 0.72;
+                let defaultTeamX = cx - 85, defaultEnemyX = cx + 85;
 
-                if (!attacker) {
+                // 2. NẾU CHƯA KẾT THÚC THÌ TIẾP TỤC NẠP THANH HÀNH ĐỘNG
+                if (!attacker && !battleEnded) {
                     activeTeam.forEach((pet, i) => {
                         if (teamHpList[i] > 0) {
                             teamSpeedGauges[i] += pet.speed;
@@ -1609,9 +1609,10 @@
                 let enemyOffsetY = 0;
                 let enemyRotation = 0;
 
-                if (attacker) {
+                // NẾU CÒN ĐANG ĐÁNH THÌ XỬ LÝ CHUYỂN ĐỘNG LAO ĐÒN
+                if (attacker && !battleEnded) {
                     attacker.step++;
-                    let chargeDist = 115; // Lao sát vào đối thủ
+                    let chargeDist = 120;
 
                     if (attacker.side === 'team') {
                         let idx = attacker.index;
@@ -1619,7 +1620,6 @@
                         let startY = cy + (idx - 1) * 38;
 
                         if (attacker.step <= 9) {
-                            // Lấy đà & nhảy vọt lao tới
                             let t = attacker.step / 9;
                             myOffsetsX[idx] = t * chargeDist;
                             myOffsetsY[idx] = (targetY - startY) * t - Math.sin(t * Math.PI) * 32;
@@ -1636,9 +1636,8 @@
                                 let isCounter = false;
                                 if (elementCounterMap[pet.element] === enemy.element) { dmg *= 1.35; isCounter = true; }
                                 let finalDmg = Math.floor(dmg);
-                                enemyHp -= finalDmg;
+                                enemyHp = Math.max(0, enemyHp - finalDmg);
 
-                                // Kích hoạt hiệu ứng giật lùi & sóng va chạm
                                 enemyHitShake = 12;
                                 impactEffects.push({
                                     x: defaultEnemyX - 15,
@@ -1651,7 +1650,6 @@
                                 document.getElementById('battle-log').innerText = `⚡ ${pet.name} (Tốc độ ${pet.speed}) lao tới đánh: -${finalDmg} dmg ${isCounter ? '💥[KHẮC HỆ!]' : ''}!`;
                             }
                         } else if (attacker.step <= 22) {
-                            // Bật nảy lùi về vị trí cũ
                             let t = 1 - (attacker.step - 15) / 7;
                             myOffsetsX[idx] = chargeDist * t;
                             myOffsetsY[idx] = (targetY - startY) * t - Math.sin(t * Math.PI) * 15;
@@ -1676,8 +1674,8 @@
                             if (attacker.step === 10) {
                                 let enDmg = Math.floor(enemy.atk * (0.8 + Math.random() * 0.4));
                                 if (targetIdx !== -1) {
-                                    teamHpList[targetIdx] -= enDmg;
-                                    activeTeam[targetIdx].hp = Math.max(0, teamHpList[targetIdx]);
+                                    teamHpList[targetIdx] = Math.max(0, teamHpList[targetIdx] - enDmg);
+                                    activeTeam[targetIdx].hp = teamHpList[targetIdx];
                                     teamHitShake[targetIdx] = 12;
                                     impactEffects.push({
                                         x: defaultTeamX + 15,
@@ -1701,7 +1699,7 @@
                     }
                 }
 
-                // Cập nhật thanh HP
+                // Cập nhật thanh máu
                 let currentTeamHpTotal = teamHpList.reduce((a, b) => Math.max(0, a) + Math.max(0, b), 0);
                 let teamHpPercent = Math.max(0, (currentTeamHpTotal / teamMaxHpTotal) * 100);
                 let enemyHpPercent = Math.max(0, (enemyHp / enemy.maxHp) * 100);
@@ -1710,64 +1708,77 @@
                 document.getElementById('battle-enemy-hp-bar').style.width = enemyHpPercent + '%';
                 document.getElementById('battle-enemy-hp-text').innerText = `HP: ${Math.max(0, enemyHp)}/${enemy.maxHp}`;
                 
-                // Vẽ đối thủ với chuyển động thở & giật lùi khi trúng đòn
+                // 2. VẼ ĐỐI THỦ: NẾU MÁU VỀ 0 NẰM NGANG TẠI CHỖ BAN ĐẦU, NẾU SỐNG ĐỨNG YÊN
+                let isEnemyDead = enemyHp <= 0;
                 let enKnockback = 0;
                 if (enemyHitShake > 0) {
                     enKnockback = Math.sin(enemyHitShake * 1.8) * 10 + 6;
                     enemyHitShake--;
                 }
-                let finalEnX = defaultEnemyX + enemyOffsetX + enKnockback;
-                let finalEnY = cy + enemyOffsetY;
-                let enIdleScaleY = 1 + Math.sin(idleTick + 1) * 0.05;
+
+                // Khi đối thủ chết: nằm tại chỗ ban đầu (defaultEnemyX, cy), xoay nghiêng 90 độ
+                let finalEnX = isEnemyDead ? defaultEnemyX : (defaultEnemyX + enemyOffsetX + enKnockback);
+                let finalEnY = isEnemyDead ? (cy + 16) : (cy + enemyOffsetY);
+                let enIdleScaleY = (isEnemyDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + 1) * 0.04);
+                let finalEnRotation = isEnemyDead ? (Math.PI / 2) : enemyRotation;
 
                 battleCtx.save();
                 battleCtx.translate(finalEnX, finalEnY);
-                battleCtx.rotate(enemyRotation);
+                battleCtx.rotate(finalEnRotation);
                 battleCtx.scale(1, enIdleScaleY);
-                // Bóng đổ dưới chân
-                battleCtx.fillStyle = 'rgba(0,0,0,0.35)';
-                battleCtx.beginPath(); battleCtx.ellipse(0, 26, 26, 8, 0, 0, Math.PI * 2); battleCtx.fill();
-                // Emoji đối thủ
-                battleCtx.font = "65px sans-serif"; battleCtx.textAlign = "center"; battleCtx.textBaseline = "middle";
+                
+                // Vẽ đối thủ sắc nét, không dùng shadow mờ đục
+                battleCtx.font = "65px sans-serif"; 
+                battleCtx.textAlign = "center"; 
+                battleCtx.textBaseline = "middle";
                 battleCtx.fillText(enemy.emoji, 0, 0);
                 battleCtx.restore();
 
-                // Thanh tốc độ của địch
-                battleCtx.fillStyle = 'rgba(0,0,0,0.6)'; battleCtx.fillRect(finalEnX - 25, finalEnY + 34, 50, 4);
-                battleCtx.fillStyle = '#38bdf8'; battleCtx.fillRect(finalEnX - 25, finalEnY + 34, Math.min(50, (enemySpeedGauge / ACTION_THRESHOLD) * 50), 4);
+                // Thanh tốc độ đối thủ (khi chết thì ẩn)
+                if (!isEnemyDead) {
+                    battleCtx.fillStyle = 'rgba(0,0,0,0.7)'; 
+                    battleCtx.fillRect(finalEnX - 25, finalEnY + 32, 50, 4);
+                    battleCtx.fillStyle = '#38bdf8'; 
+                    battleCtx.fillRect(finalEnX - 25, finalEnY + 32, Math.min(50, (enemySpeedGauge / ACTION_THRESHOLD) * 50), 4);
+                }
 
-                // Vẽ đội hình mình với chuyển động thở, lật mặt hướng về kẻ địch & giật lùi khi trúng đòn
+                // 2. VẼ ĐỘI HÌNH: CON NÀO CHẾT (HP=0) NẰM NGANG TẠI CHỖ BAN ĐẦU, CON SỐNG ĐỨNG YÊN HIÊN NGANG
                 activeTeam.forEach((pet, i) => {
-                    if (teamHpList[i] > 0) {
-                        let knockback = 0;
-                        if (teamHitShake[i] > 0) {
-                            knockback = -Math.sin(teamHitShake[i] * 1.8) * 10 - 6;
-                            teamHitShake[i]--;
-                        }
-                        let posY = cy + (i - 1) * 38 + myOffsetsY[i];
-                        let posX = defaultTeamX + myOffsetsX[i] + knockback;
-                        let idleScaleY = 1 + Math.sin(idleTick + i * 1.2) * 0.05;
+                    let isPetDead = teamHpList[i] <= 0;
+                    let knockback = 0;
+                    if (teamHitShake[i] > 0) {
+                        knockback = -Math.sin(teamHitShake[i] * 1.8) * 10 - 6;
+                        teamHitShake[i]--;
+                    }
 
-                        battleCtx.save();
-                        battleCtx.translate(posX, posY);
-                        battleCtx.rotate(myRotations[i]);
-                        // Lật ngang (-1) để thú đội mình hướng mặt sang phải đối diện kẻ địch
-                        battleCtx.scale(-1, idleScaleY);
-                        // Bóng đổ dưới chân
-                        battleCtx.fillStyle = 'rgba(0,0,0,0.35)';
-                        battleCtx.beginPath(); battleCtx.ellipse(0, 20, 20, 6, 0, 0, Math.PI * 2); battleCtx.fill();
-                        // Emoji thú
-                        battleCtx.font = "50px sans-serif"; battleCtx.textAlign = "center"; battleCtx.textBaseline = "middle";
-                        battleCtx.fillText(pet.emoji, 0, 0);
-                        battleCtx.restore();
+                    // Vị trí: nếu chết nằm tại vị trí ban đầu và hạ thấp một chút
+                    let posY = isPetDead ? (cy + (i - 1) * 38 + 12) : (cy + (i - 1) * 38 + myOffsetsY[i]);
+                    let posX = isPetDead ? defaultTeamX : (defaultTeamX + myOffsetsX[i] + knockback);
+                    let idleScaleY = (isPetDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + i * 1.2) * 0.04);
+                    // Nếu chết xoay -90 độ ngả người ra sàn
+                    let petRot = isPetDead ? (-Math.PI / 2) : myRotations[i];
 
-                        // Thanh tốc độ màu vàng
-                        battleCtx.fillStyle = 'rgba(0,0,0,0.6)'; battleCtx.fillRect(posX - 22, posY + 26, 44, 4);
-                        battleCtx.fillStyle = '#facc15'; battleCtx.fillRect(posX - 22, posY + 26, Math.min(44, (teamSpeedGauges[i] / ACTION_THRESHOLD) * 44), 4);
+                    battleCtx.save();
+                    battleCtx.translate(posX, posY);
+                    battleCtx.rotate(petRot);
+                    battleCtx.scale(-1, idleScaleY); // Lật ngang đối diện kẻ địch
+
+                    battleCtx.font = "52px sans-serif"; 
+                    battleCtx.textAlign = "center"; 
+                    battleCtx.textBaseline = "middle";
+                    battleCtx.fillText(pet.emoji, 0, 0);
+                    battleCtx.restore();
+
+                    // Thanh tốc độ (khi chết thì ẩn)
+                    if (!isPetDead) {
+                        battleCtx.fillStyle = 'rgba(0,0,0,0.7)'; 
+                        battleCtx.fillRect(posX - 22, posY + 26, 44, 4);
+                        battleCtx.fillStyle = '#facc15'; 
+                        battleCtx.fillRect(posX - 22, posY + 26, Math.min(44, (teamSpeedGauges[i] / ACTION_THRESHOLD) * 44), 4);
                     }
                 });
 
-                // Vẽ hiệu ứng sóng xung kích & số sát thương bay lên khi va chạm
+                // Vẽ hiệu ứng sóng va chạm & sát thương
                 for (let idx = impactEffects.length - 1; idx >= 0; idx--) {
                     let eff = impactEffects[idx];
                     eff.radius += 4.5;
@@ -1797,25 +1808,32 @@
                     battleCtx.restore();
                 }
 
+                // KIỂM TRA ĐIỀU KIỆN KẾT THÚC TRẬN ĐẤU
                 let allTeamDead = teamHpList.every(h => h <= 0);
-                if (enemyHp <= 0 || allTeamDead) {
-                    clearInterval(battleInterval);
-                    if (enemyHp <= 0) {
-                        let rewardGold = mode === 'boss' ? 700 + (bossLevel * 200) : mode === 'tower' ? 300 + (towerFloor * 50) : 350;
-                        playerCoins += rewardGold; saveGameData(); addQuestProgress(2, 1);
-                        if (mode === 'tower') { towerFloor++; localStorage.setItem('ar_tower_floor', towerFloor); }
-                        else if (mode === 'boss') { bossLevel++; localStorage.setItem('ar_boss_level', bossLevel); }
-                        alert(`🏆 Chiến thắng! Nhận +${rewardGold} Vàng!`);
-                    } else {
-                        activeTeam.forEach(pet => {
-                            pet.hearts--;
-                            if (pet.hearts <= 0) alert(`💀 Thú ${pet.name} đã tử trận!`);
-                            else alert(`💔 Thú ${pet.name} mất 1 ❤️! Còn ${pet.hearts} ❤️.`);
-                        });
-                        team = team.filter(p => p.hearts > 0); saveGameData();
-                        alert('💀 Thất bại!');
-                    }
-                    exitBattleScreen();
+                if ((enemyHp <= 0 || allTeamDead) && !battleEnded) {
+                    battleEnded = true; // Dừng mọi hoạt động tấn công
+                    attacker = null; // Huỷ lao đòn
+
+                    // Đợi 1 giây để người chơi nhìn rõ cảnh thú chiến thắng đứng yên và thú thua nằm ngang tại chỗ
+                    setTimeout(() => {
+                        clearInterval(battleInterval);
+                        if (enemyHp <= 0) {
+                            let rewardGold = mode === 'boss' ? 700 + (bossLevel * 200) : mode === 'tower' ? 300 + (towerFloor * 50) : 350;
+                            playerCoins += rewardGold; saveGameData(); addQuestProgress(2, 1);
+                            if (mode === 'tower') { towerFloor++; localStorage.setItem('ar_tower_floor', towerFloor); }
+                            else if (mode === 'boss') { bossLevel++; localStorage.setItem('ar_boss_level', bossLevel); }
+                            alert(`🏆 Chiến thắng vẻ vang! Nhận +${rewardGold} Vàng!`);
+                        } else {
+                            activeTeam.forEach(pet => {
+                                pet.hearts--;
+                                if (pet.hearts <= 0) alert(`💀 Thú ${pet.name} đã tử trận!`);
+                                else alert(`💔 Thú ${pet.name} mất 1 ❤️! Còn ${pet.hearts} ❤️.`);
+                            });
+                            team = team.filter(p => p.hearts > 0); saveGameData();
+                            alert('💀 Thất bại!');
+                        }
+                        exitBattleScreen();
+                    }, 1100);
                 }
             }, 30);
         }
