@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Panorama Pan & Exact Hotspots v10.7</title>
+    <title>Batthu - Training Arena v1.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -83,14 +83,14 @@
             touch-action: manipulation !important;
         }
 
-        @keyframes trainStrike {
+        @keyframes trainStrikeDynamic {
             0%, 100% { transform: translateX(0) rotate(0deg) scale(1); }
-            40% { transform: translateX(-6px) rotate(-10deg) scale(0.95); }
-            70% { transform: translateX(12px) rotate(15deg) scale(1.12); }
+            35% { transform: translateX(-12px) rotate(-14deg) scale(0.92); }
+            65% { transform: translateX(16px) rotate(18deg) scale(1.15); }
         }
-        .pet-train-anim {
+        .pet-train-active {
             display: inline-block;
-            animation: trainStrike 1.1s infinite ease-in-out;
+            animation: trainStrikeDynamic 0.85s infinite ease-in-out;
         }
 
         @keyframes restSleep {
@@ -172,22 +172,18 @@
             <div class="panorama-canvas">
                 <img src="./background.png" alt="Sảnh Chính" class="panorama-img" onload="centerPanorama('home-scroller')">
 
-                <!-- GIƯỜNG NGỦ BÊN TRÁI -->
                 <div onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 34%; left: 3%; width: 25%; height: 22%;">
                     <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ</div>
                 </div>
 
-                <!-- CỬA CHÍNH Ở GIỮA: Đi săn thú -->
                 <div onclick="goFromHomeToMap()" class="hotspot flex flex-col items-center justify-center" style="top: 28%; left: 37%; width: 20%; height: 24%;">
                     <div class="home-label animate-bounce">🚪 Đi săn thú</div>
                 </div>
 
-                <!-- CÁNH CỬA BÊN PHẢI: Đi Trang trại -->
                 <div onclick="openFarmMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 28%; left: 79%; width: 18%; height: 24%;">
                     <div class="home-label" style="border-color: #34d399; color: #a7f3d0;">🏡 Đi Trang trại</div>
                 </div>
 
-                <!-- ĐIỆN THOẠI ĐỂ BÀN GÓC DƯỚI PHẢI: Gọi điện bệnh viện -->
                 <div onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 64%; left: 79%; width: 19%; height: 18%;">
                     <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi điện bệnh viện</div>
                 </div>
@@ -287,7 +283,8 @@
                 
                 <div id="farm-visual-pets" class="absolute inset-0 pointer-events-none z-10"></div>
 
-                <div onclick="showFarmSection('training')" class="hotspot flex flex-col items-center justify-end pb-2" style="top: 4%; left: 10%; width: 78%; height: 28%;">
+                <!-- KHU LUYỆN TẬP: Bấm vào mở màn hình riêng training-bg.png -->
+                <div onclick="openTrainingArenaModal()" class="hotspot flex flex-col items-center justify-end pb-2" style="top: 4%; left: 10%; width: 78%; height: 28%;">
                     <div class="home-label" style="border-color: #f59e0b; color: #fde68a;">🪵 Khu Luyện Tập</div>
                 </div>
 
@@ -297,6 +294,42 @@
 
                 <div onclick="showFarmSection('storage')" class="hotspot flex flex-col items-center justify-center" style="top: 68%; left: 8%; width: 84%; height: 26%;">
                     <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🐾 Kho Trại Hộ</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MÀN HÌNH RIÊNG KHU LUYỆN TẬP (training-bg.png)
+         ========================================== -->
+    <div id="training-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 overflow-hidden flex flex-col">
+        <button onclick="closeTrainingScreen()" class="absolute top-3 right-3 z-50 bg-black/80 hover:bg-black text-white px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/25 shadow-xl">✕ Thoát</button>
+        <div class="absolute top-3 left-3 z-40 bg-black/80 px-3.5 py-1.5 rounded-full border border-amber-400/50 text-xs font-bold text-amber-300">
+            🪵 Khu Luyện Tập Cọc Gỗ
+        </div>
+
+        <div class="relative w-full h-full overflow-hidden flex items-center justify-center">
+            <img src="./training-bg.png" alt="Khu Luyện Tập" class="absolute inset-0 w-full h-full object-cover z-0">
+            
+            <!-- 4 CỌC GỖ Ở GIỮA SÂN TẬP -->
+            <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                <div class="relative w-full max-w-md h-80">
+                    <!-- Cọc 1 (Trái trên) -->
+                    <div class="absolute" style="top: 22%; left: 22%; transform: translate(-50%, -50%);">
+                        <div id="training-slot-0" class="pointer-events-auto"></div>
+                    </div>
+                    <!-- Cọc 2 (Phải trên) -->
+                    <div class="absolute" style="top: 22%; right: 22%; transform: translate(50%, -50%);">
+                        <div id="training-slot-1" class="pointer-events-auto"></div>
+                    </div>
+                    <!-- Cọc 3 (Trái dưới) -->
+                    <div class="absolute" style="bottom: 22%; left: 22%; transform: translate(-50%, 50%);">
+                        <div id="training-slot-2" class="pointer-events-auto"></div>
+                    </div>
+                    <!-- Cọc 4 (Phải dưới) -->
+                    <div class="absolute" style="bottom: 22%; right: 22%; transform: translate(50%, 50%);">
+                        <div id="training-slot-3" class="pointer-events-auto"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -781,6 +814,9 @@
                 if (!document.getElementById('fullscreen-farm-screen').classList.contains('hidden')) {
                     renderFarmVisualPets();
                 }
+                if (!document.getElementById('training-screen').classList.contains('hidden')) {
+                    renderTrainingArena();
+                }
             }
         }, 3000);
 
@@ -818,6 +854,102 @@
             });
 
             container.innerHTML = html;
+        }
+
+        // ==========================================
+        // KHU LUYỆN TẬP (training-bg.png)
+        // ==========================================
+        function openTrainingArenaModal() {
+            checkPetSurvival();
+            document.getElementById('fullscreen-farm-screen').classList.add('hidden');
+            document.getElementById('training-screen').classList.remove('hidden');
+            renderTrainingArena();
+        }
+
+        function closeTrainingScreen() {
+            document.getElementById('training-screen').classList.add('hidden');
+            document.getElementById('fullscreen-farm-screen').classList.remove('hidden');
+        }
+
+        function renderTrainingArena() {
+            for (let i = 0; i < 4; i++) {
+                let slotEl = document.getElementById(`training-slot-${i}`);
+                if (!slotEl) continue;
+                let pet = trainingPoles[i];
+
+                if (pet) {
+                    slotEl.innerHTML = `
+                    <div class="flex flex-col items-center cursor-pointer" onclick="openTrainingSlotModal(${i})">
+                        <div class="bg-black/80 px-2 py-0.5 rounded-full border border-amber-400 text-[10px] font-bold text-yellow-300 mb-1 shadow-lg whitespace-nowrap">
+                            ${pet.name} <span class="text-white">Lv.${Math.floor(pet.level)}</span>
+                        </div>
+                        <div class="relative flex items-center gap-1">
+                            <span class="text-5xl pet-train-active" style="filter: drop-shadow(0 5px 8px rgba(0,0,0,0.9));">${pet.emoji}</span>
+                            <span class="text-3xl" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));">🪵</span>
+                            <span class="absolute -top-3 right-3 text-sm animate-ping">💥</span>
+                        </div>
+                    </div>`;
+                } else {
+                    slotEl.innerHTML = `
+                    <div onclick="openSelectPetForTraining(${i})" class="flex flex-col items-center cursor-pointer group" title="Thêm thú luyện tập">
+                        <div class="relative flex items-center justify-center">
+                            <span class="text-4xl opacity-80" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));">🪵</span>
+                            <div class="w-8 h-8 rounded-full bg-black/80 border-2 border-dashed border-amber-400 flex items-center justify-center shadow-xl ml-1 group-active:scale-95">
+                                <span class="text-lg font-black text-amber-300">+</span>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+            }
+        }
+
+        function openSelectPetForTraining(poleIdx) {
+            if (farm.length === 0) { alert('⚠️ Trại không có linh thú nào để luyện tập! Hãy bắt thêm thú.'); return; }
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">Chọn thú vào Cọc Gỗ #${poleIdx + 1}</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2 max-h-60 overflow-y-auto">`;
+            farm.forEach((pet, idx) => {
+                html += `<div onclick="assignPetToTraining(${poleIdx}, ${idx})" class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between cursor-pointer border border-zinc-700 hover:border-amber-500"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><span class="text-xs text-amber-400 font-bold">Cho tập ›</span></div>`;
+            });
+            html += `</div>`;
+            content.innerHTML = html;
+        }
+
+        function assignPetToTraining(poleIdx, farmIdx) {
+            let pet = farm.splice(farmIdx, 1)[0];
+            trainingPoles[poleIdx] = pet;
+            saveGameData(); 
+            closeModal(); 
+            renderTrainingArena();
+        }
+
+        function openTrainingSlotModal(poleIdx) {
+            let pet = trainingPoles[poleIdx];
+            if (!pet) return;
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-sm text-amber-300">🪵 Cọc Gỗ #${poleIdx + 1} (${pet.name})</h3>
+                <button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button>
+            </div>
+            <div class="text-xs text-zinc-300 mb-4 text-center">Đang luyện tập hăng say! Cấp độ: <span class="text-yellow-300 font-bold">Lv.${Math.floor(pet.level)}</span> | Tấn công: <span class="text-red-400 font-bold">${Math.floor(pet.atk)}</span></div>
+            <button onclick="retirePetFromTraining(${poleIdx})" class="w-full bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-xs font-bold text-white cursor-pointer shadow-lg">📥 Rút thú về Kho Trại</button>`;
+        }
+
+        function retirePetFromTraining(poleIdx) {
+            let pet = trainingPoles[poleIdx];
+            if (pet) {
+                farm.push(pet);
+                trainingPoles[poleIdx] = null;
+                saveGameData();
+                closeModal();
+                renderTrainingArena();
+            }
         }
 
         function showFarmSection(sectionType) {
@@ -1337,7 +1469,7 @@
         }
 
         // ==========================================
-        // MINIGAME AR V10.7
+        // MINIGAME AR V1.1
         // ==========================================
         let currentSelectedMarker = null;
         let canvas, ctx, isARActive = false;
@@ -1726,7 +1858,7 @@
         }
 
         // ==========================================
-        // ĐẤU TRƯỜNG ATB V10.6
+        // ĐẤU TRƯỜNG ATB V1.1
         // ==========================================
         let battleCanvas, battleCtx, battleInterval;
         function startBattle(mode) {
