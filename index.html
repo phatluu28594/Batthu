@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Home Hub & Map Fixed v10.6</title>
+    <title>Batthu - Home Hub & Pet Touch v10.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -12,19 +12,19 @@
         #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 150px; overflow: hidden; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; background: #18181b; }
         
-        .hotspot { position: absolute; cursor: pointer; border: none; background: transparent; z-index: 20; transition: transform 0.15s; }
-        .hotspot:active { transform: scale(0.95); }
+        .hotspot { position: absolute; cursor: pointer; border: none; background: transparent; z-index: 25; transition: transform 0.15s; -webkit-tap-highlight-color: transparent; }
+        .hotspot:active { transform: scale(0.93); }
 
         .home-label {
-            background: rgba(15, 23, 42, 0.85);
+            background: rgba(15, 23, 42, 0.88);
             backdrop-filter: blur(4px);
-            border: 1.5px solid rgba(251, 191, 36, 0.85);
+            border: 1.5px solid rgba(251, 191, 36, 0.9);
             color: #fef08a;
             font-weight: 800;
-            font-size: 11px;
-            padding: 4px 10px;
+            font-size: 10.5px;
+            padding: 3px 9px;
             border-radius: 9999px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.75);
             white-space: nowrap;
             text-shadow: 0 1px 2px #000;
         }
@@ -100,6 +100,18 @@
             animation: sleepPulse 2.4s infinite ease-in-out;
         }
 
+        @keyframes heartBurst {
+            0% { transform: translate(-50%, 0) scale(0.6); opacity: 1; }
+            100% { transform: translate(-50%, -45px) scale(1.4); opacity: 0; }
+        }
+        .pet-heart-pop {
+            position: absolute;
+            animation: heartBurst 0.9s ease-out forwards;
+            pointer-events: none;
+            z-index: 40;
+            font-size: 20px;
+        }
+
         input[type=range].wake-slider {
             -webkit-appearance: none;
             appearance: none;
@@ -131,7 +143,7 @@
     </div>
 
     <!-- ==========================================
-         1. MÀN HÌNH SẢNH CHÍNH ĐẦU GAME (background.png)
+         1. MÀN HÌNH SẢNH CHÍNH ĐẦU GAME (ĐÃ CĂN CHUẨN VỊ TRÍ ĐỒ VẬT)
          ========================================== -->
     <div id="home-screen" class="absolute inset-0 z-30 bg-zinc-950 flex flex-col justify-between overflow-hidden">
         <img src="./background.png" alt="Sảnh Chính" class="absolute inset-0 w-full h-full object-cover z-0">
@@ -148,25 +160,30 @@
             </div>
         </div>
 
-        <div class="relative flex-1 w-full h-full z-10">
-            <!-- CỬA CHÍNH Ở GIỮA: Đi săn thú -->
-            <div onclick="goFromHomeToMap()" class="hotspot flex flex-col items-center justify-center" style="top: 26%; left: 37%; width: 26%; height: 22%;">
+        <div id="home-hotspots-layer" class="relative flex-1 w-full h-full z-10">
+            <!-- CỬA CHÍNH Ở GIỮA: Dời xuống ngay trên cánh cửa gỗ tròn (top: 47%) -->
+            <div onclick="goFromHomeToMap()" class="hotspot flex flex-col items-center justify-center" style="top: 45%; left: 36%; width: 28%; height: 19%;">
                 <div class="home-label animate-bounce">🚪 Đi săn thú</div>
             </div>
 
-            <!-- CÁNH CỬA BÊN PHẢI: Đi Trang trại -->
-            <div onclick="openFarmMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 26%; left: 77%; width: 21%; height: 23%;">
+            <!-- CÁNH CỬA BÊN PHẢI: Dời xuống ngay lối cửa mở bên phải (top: 48%) -->
+            <div onclick="openFarmMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 46%; left: 78%; width: 22%; height: 17%;">
                 <div class="home-label" style="border-color: #34d399; color: #a7f3d0;">🏡 Đi Trang trại</div>
             </div>
 
-            <!-- GIƯỜNG NGỦ BÊN TRÁI: Giường ngủ -->
-            <div onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 32%; left: 2%; width: 32%; height: 20%;">
+            <!-- GIƯỜNG NGỦ BÊN TRÁI: Dời xuống ngay giữa chiếc giường chăn xanh (top: 49%) -->
+            <div onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 47%; left: 1%; width: 32%; height: 15%;">
                 <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ</div>
             </div>
 
-            <!-- ĐIỆN THOẠI ĐỂ BÀN GÓC DƯỚI PHẢI: Gọi điện bệnh viện -->
-            <div onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 64%; left: 74%; width: 24%; height: 17%;">
-                <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi điện bệnh viện</div>
+            <!-- Ổ NỆM THÚ CƯNG BÊN TRÁI (CHỖ CON MÈO/CÚN NẰM): Bấm để vuốt ve & mở Đội hình -->
+            <div onclick="interactHomePet(event)" class="hotspot flex flex-col items-center justify-center" style="top: 63%; left: 1%; width: 28%; height: 14%;">
+                <div class="home-label" style="border-color: #fb923c; color: #fed7aa;">🐱 Thú cưng</div>
+            </div>
+
+            <!-- ĐIỆN THOẠI ĐỂ BÀN BÊN PHẢI: Dời đúng lên chiếc điện thoại hồng trên bàn (top: 61%) -->
+            <div onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 60%; left: 74%; width: 26%; height: 15%;">
+                <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi bệnh viện</div>
             </div>
         </div>
 
@@ -361,7 +378,6 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // HỦY BỎ SERVICE WORKER CŨ ĐỂ TRÁNH LỖI CACHE BẢN ĐỒ XÁM HOẶC MÀN HÌNH ĐEN
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(registrations => {
                 for (let reg of registrations) {
@@ -561,13 +577,30 @@
         }
 
         // ==========================================
-        // ĐIỀU HƯỚNG SẢNH CHÍNH <-> BẢN ĐỒ (FIX BẢN ĐỒ XÁM)
+        // TƯƠNG TÁC VỚI THÚ CƯNG TRÊN Ổ ĐỆM TRONG NHÀ
         // ==========================================
+        function interactHomePet(e) {
+            const layer = document.getElementById('home-hotspots-layer');
+            if (layer) {
+                for (let i = 0; i < 3; i++) {
+                    let heart = document.createElement('div');
+                    heart.className = 'pet-heart-pop';
+                    heart.innerText = ['❤️', '💖', '🐾'][i % 3];
+                    heart.style.left = (12 + (Math.random() - 0.5) * 14) + '%';
+                    heart.style.top = (64 - i * 3) + '%';
+                    layer.appendChild(heart);
+                    setTimeout(() => heart.remove(), 950);
+                }
+            }
+            setTimeout(() => {
+                openTeamMenu();
+            }, 350);
+        }
+
         function goFromHomeToMap() {
             document.getElementById('home-screen').classList.add('hidden');
             document.getElementById('map-screen').classList.remove('hidden');
             
-            // Đợi 100ms cho màn hình map hiện đầy đủ kích thước rồi mới render Leaflet
             setTimeout(() => {
                 initMap();
                 if (map) {
@@ -1174,7 +1207,7 @@
         }
 
         // ==========================================
-        // KHỞI TẠO BẢN ĐỒ & THÚ ĐI DẠO (FIX LỖI MÀU XÁM)
+        // KHỞI TẠO BẢN ĐỒ & THÚ ĐI DẠO
         // ==========================================
         let map, userMarker, activeMarkers = [];
         let mapMonstersData = [];
@@ -1338,7 +1371,7 @@
         }
 
         // ==========================================
-        // MINIGAME AR V10.6
+        // MINIGAME AR V10.7
         // ==========================================
         let currentSelectedMarker = null;
         let canvas, ctx, isARActive = false;
@@ -1727,7 +1760,7 @@
         }
 
         // ==========================================
-        // ĐẤU TRƯỜNG ATB V10.6
+        // ĐẤU TRƯỜNG ATB V10.7
         // ==========================================
         let battleCanvas, battleCtx, battleInterval;
         function startBattle(mode) {
@@ -2010,117 +2043,4 @@
                         } else {
                             activeTeam.forEach(pet => {
                                 pet.hearts--;
-                                if (pet.hearts <= 0) alert(`💀 Thú ${pet.name} đã tử trận!`);
-                                else alert(`💔 Thú ${pet.name} mất 1 ❤️! Còn ${pet.hearts} ❤️.`);
-                            });
-                            team = team.filter(p => p.hearts > 0); saveGameData();
-                            alert('💀 Thất bại!');
-                        }
-                        exitBattleScreen();
-                    }, 1100);
-                }
-            }, 30);
-        }
-
-        function exitBattleScreen() {
-            switchGameMusic('map');
-            if (battleInterval) clearInterval(battleInterval);
-            document.getElementById('battle-screen').classList.add('hidden');
-            document.getElementById('map-screen').classList.remove('hidden');
-            setTimeout(() => { if (map) map.invalidateSize(); }, 100);
-        }
-
-        function updateTeamCount() {
-            ['team-count', 'home-team-count'].forEach(id => {
-                let countEl = document.getElementById(id);
-                if (countEl) countEl.innerText = team.length;
-            });
-        }
-
-        function openQuestMenu() {
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-yellow-300">📜 Nhiệm Vụ Hằng Ngày</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><div class="space-y-3 max-h-80 overflow-y-auto">`;
-            dailyQuests.forEach((q, idx) => {
-                let isCompleted = q.progress >= q.target;
-                let btnHtml = q.claimed ? `<span class="text-xs text-zinc-500 font-bold">Đã nhận</span>` : isCompleted ? `<button onclick="claimQuest(${idx})" class="bg-emerald-600 px-3 py-1 rounded text-xs font-bold cursor-pointer">Nhận Thưởng</button>` : `<span class="text-xs text-zinc-400">${q.progress}/${q.target}</span>`;
-                html += `<div class="bg-zinc-800 p-3 rounded-xl border border-zinc-700 flex items-center justify-between"><div><div class="font-bold text-xs text-yellow-200">${q.title}</div><div class="text-[10px] text-zinc-400">Thưởng: ${q.reward}🪙</div></div><div>${btnHtml}</div></div>`;
-            });
-            html += `</div>`; content.innerHTML = html;
-        }
-
-        function claimQuest(idx) {
-            let q = dailyQuests[idx];
-            if (q.claimed || q.progress < q.target) return;
-            q.claimed = true; playerCoins += q.reward; saveGameData();
-            alert(`🎉 Nhận ${q.reward} Vàng!`); openQuestMenu();
-        }
-
-        function addQuestProgress(questId, amount = 1) {
-            let q = dailyQuests.find(item => item.id === questId);
-            if (q && !q.claimed) {
-                q.progress = Math.min(q.target, q.progress + amount);
-                localStorage.setItem('ar_quests', JSON.stringify(dailyQuests));
-            }
-        }
-
-        function openWorldBossMenu() {
-            checkPetSurvival();
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-            let canFight = team.length === 3;
-            content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-amber-400">👹 Hắc Long Vương (Cấp ${bossLevel})</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-amber-500/40 mb-4 text-center"><div class="text-6xl mb-2">🐉🔥</div><div class="font-bold text-base text-yellow-300">Yêu cầu: Đội hình đủ 3 linh thú! (${team.length}/3)</div></div>${canFight ? `<button onclick="startBattle('boss')" class="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Xuất Trận Đánh Boss</button>` : `<div class="text-center text-xs text-red-400 font-bold bg-red-950/50 p-3 rounded-xl border border-red-500/50">⚠️ Đội hình chưa đủ 3 linh thú!</div>`}`;
-        }
-
-        function initDualStaminaSystem() {
-            setInterval(() => {
-                let now = Date.now();
-                let coolDownTime = isSleeping ? 120 : 600;
-
-                let diffCatch = Math.floor((now - lastCatchStaminaTime) / 1000);
-                let remCatch = Math.max(0, coolDownTime - diffCatch);
-                if (catchStamina < 15 && diffCatch >= coolDownTime) {
-                    catchStamina = Math.min(15, catchStamina + 1);
-                    lastCatchStaminaTime = now;
-                    saveGameData();
-                    remCatch = coolDownTime;
-                }
-                let minC = String(Math.floor(remCatch / 60)).padStart(2, '0');
-                let secC = String(remCatch % 60).padStart(2, '0');
-                ['catch-stamina-timer', 'home-catch-timer', 'sleep-catch-timer'].forEach(id => {
-                    let el = document.getElementById(id);
-                    if (el) el.innerText = catchStamina >= 15 ? 'MAX' : `${minC}:${secC}`;
-                });
-
-                let diffScan = Math.floor((now - lastScanStaminaTime) / 1000);
-                let remScan = Math.max(0, coolDownTime - diffScan);
-                if (scanStamina < 5 && diffScan >= coolDownTime) {
-                    scanStamina = Math.min(5, scanStamina + 1);
-                    lastScanStaminaTime = now;
-                    saveGameData();
-                    remScan = coolDownTime;
-                }
-                let minS = String(Math.floor(remScan / 60)).padStart(2, '0');
-                let secS = String(remScan % 60).padStart(2, '0');
-                ['scan-stamina-timer', 'home-scan-timer', 'sleep-scan-timer'].forEach(id => {
-                    let el = document.getElementById(id);
-                    if (el) el.innerText = scanStamina >= 5 ? 'MAX' : `${minS}:${secS}`;
-                });
-
-            }, 1000);
-            saveGameData();
-        }
-
-        window.onload = () => {
-            initDualStaminaSystem(); 
-            updateTeamCount(); 
-            updateWeatherCycle(); 
-            initStepCounter();
-            saveGameData();
-        };
-        window.onresize = () => { if (map) setTimeout(() => map.invalidateSize(), 200); };
-    </script>
-</body>
-</html>
+                                if (pet.hearts <= 0) alert(`💀 Thú ${pet.name} đã tử trận
