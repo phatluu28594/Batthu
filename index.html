@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Balanced Catch v10.1</title>
+    <title>Batthu - Animated Beasts v10.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -17,6 +17,16 @@
 
         .leaflet-control-attribution { display: none !important; }
         .leaflet-div-icon { background: transparent !important; border: none !important; }
+
+        /* CHUYỂN ĐỘNG NHÚN NHẢY BƯỚC ĐI CHO THÚ NGOÀI BẢN ĐỒ */
+        @keyframes petWalkHop {
+            0%, 100% { transform: translateY(0px) scaleY(1); }
+            50% { transform: translateY(-7px) scaleY(1.06); }
+        }
+        .pet-walk-anim {
+            display: inline-block;
+            animation: petWalkHop 0.65s infinite ease-in-out;
+        }
 
         .roaming-pet-marker {
             transition: transform 2.5s cubic-bezier(0.25, 1, 0.5, 1), top 2.5s ease, left 2.5s ease;
@@ -34,6 +44,40 @@
             justify-content: center;
             pointer-events: auto !important;
             touch-action: manipulation !important;
+        }
+
+        /* CHUYỂN ĐỘNG TRONG TRANG TRẠI: ĐÁNH CỌC GỖ & NGỦ NGHỈ NGƠI */
+        @keyframes trainStrike {
+            0%, 100% { transform: translateX(0) rotate(0deg) scale(1); }
+            40% { transform: translateX(-6px) rotate(-10deg) scale(0.95); }
+            70% { transform: translateX(12px) rotate(15deg) scale(1.12); }
+        }
+        .pet-train-anim {
+            display: inline-block;
+            animation: trainStrike 1.1s infinite ease-in-out;
+        }
+
+        @keyframes restSleep {
+            0%, 100% { transform: scale(1, 1) translateY(0); }
+            50% { transform: scale(1.08, 0.92) translateY(2px); }
+        }
+        .pet-rest-anim {
+            display: inline-block;
+            animation: restSleep 2.2s infinite ease-in-out;
+        }
+
+        @keyframes floatZzz {
+            0% { transform: translate(0, 0) scale(0.8); opacity: 0; }
+            40% { opacity: 1; }
+            100% { transform: translate(8px, -22px) scale(1.2); opacity: 0; }
+        }
+        .sleep-bubble {
+            position: absolute;
+            top: -10px;
+            right: -8px;
+            font-size: 13px;
+            animation: floatZzz 2s infinite ease-out;
+            pointer-events: none;
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -90,11 +134,16 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH TRANG TRẠI FULLSCREEN -->
+    <!-- MÀN HÌNH TRANG TRẠI FULLSCREEN (CÓ THÚ CỬ ĐỘNG TRỰC TIẾP TRÊN NỀN) -->
     <div id="fullscreen-farm-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
         <button onclick="closeFullscreenFarm()" class="absolute top-3 right-3 z-30 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
         <div class="relative w-full h-full overflow-hidden">
             <img src="./farm-bg.png" alt="Trang Trai" class="absolute inset-0 w-full h-full object-cover z-0">
+            
+            <!-- LỚP HIỂN THỊ THÚ ĐANG LUYỆN TẬP & NGHỈ NGƠI TRỰC QUAN -->
+            <div id="farm-visual-pets" class="absolute inset-0 pointer-events-none z-10"></div>
+
+            <!-- VÙNG CHẠM MỞ MENU -->
             <div onclick="showFarmSection('training')" class="hotspot" style="top: 5%; left: 10%; width: 80%; height: 28%;" title="Khu Luyện Tập"></div>
             <div onclick="showFarmSection('resting')" class="hotspot" style="top: 36%; left: 52%; width: 44%; height: 30%;" title="Khu Hồi Sức"></div>
             <div onclick="showFarmSection('storage')" class="hotspot" style="top: 68%; left: 5%; width: 90%; height: 28%;" title="Kho Trại"></div>
@@ -125,7 +174,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH MINIGAME BẮT THÚ AR ACTION NÂNG CẤP V10.1 -->
+    <!-- MÀN HÌNH MINIGAME BẮT THÚ AR ACTION (BẢN 10.1) -->
     <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -140,7 +189,6 @@
             </div>
         </div>
         
-        <!-- UI GIẰNG CO ĐÃ TINH GỌN (BỎ DÒNG CHỮ PHỤ, CHỈ CÒN MŨI TÊN CHỈ HƯỚNG) -->
         <div class="absolute left-0 right-0 z-20 flex flex-col items-center pointer-events-none" style="bottom: 18%;">
             <div id="tug-of-war-ui" class="hidden flex flex-col items-center w-11/12 max-w-sm bg-black/90 backdrop-blur-md p-3 rounded-2xl border-2 border-cyan-400/80 pointer-events-auto shadow-2xl animate-pulse">
                 <div class="flex items-center justify-center w-full text-sm font-black text-yellow-300 mb-1.5">
@@ -493,15 +541,70 @@
             restingPets.forEach(pet => {
                 if (pet && pet.hp < pet.maxHp) { pet.hp = Math.min(pet.maxHp, pet.hp + 5); updated = true; }
             });
-            if (updated) saveGameData();
+            if (updated) {
+                saveGameData();
+                if (!document.getElementById('fullscreen-farm-screen').classList.contains('hidden')) {
+                    renderFarmVisualPets();
+                }
+            }
         }, 3000);
 
+        // --- TRANG TRẠI FULLSCREEN & VẼ THÚ CỬ ĐỘNG TRỰC TIẾP ---
         function openFarmMenu() {
             checkPetSurvival();
             document.getElementById('fullscreen-farm-screen').classList.remove('hidden');
+            renderFarmVisualPets();
         }
         function closeFullscreenFarm() {
             document.getElementById('fullscreen-farm-screen').classList.add('hidden');
+        }
+
+        function renderFarmVisualPets() {
+            const container = document.getElementById('farm-visual-pets');
+            if (!container) return;
+            let html = '';
+
+            // 1. Thú đang luyện tập trên 4 cọc gỗ (Nhảy lên húc vào cọc)
+            const polePositions = [
+                { top: '16%', left: '22%' },
+                { top: '16%', left: '42%' },
+                { top: '21%', left: '62%' },
+                { top: '21%', left: '78%' }
+            ];
+            trainingPoles.forEach((pet, idx) => {
+                if (pet) {
+                    let pos = polePositions[idx] || { top: '18%', left: '30%' };
+                    html += `
+                    <div style="position: absolute; top: ${pos.top}; left: ${pos.left}; transform: translate(-50%, -50%);" class="flex flex-col items-center">
+                        <div class="relative">
+                            <span class="text-4xl pet-train-anim" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));">${pet.emoji}</span>
+                            <span class="absolute -top-2 -right-3 text-xs animate-ping">💥</span>
+                        </div>
+                        <span class="bg-black/75 text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-amber-500/40 mt-0.5 whitespace-nowrap">Lv.${Math.floor(pet.level)}</span>
+                    </div>`;
+                }
+            });
+
+            // 2. Thú đang nghỉ ngơi hồi máu (Ngủ nhún người kèm bong bóng zzz)
+            const restPositions = [
+                { top: '48%', left: '62%' },
+                { top: '53%', left: '78%' },
+                { top: '44%', left: '74%' },
+                { top: '56%', left: '64%' }
+            ];
+            restingPets.slice(0, 4).forEach((pet, idx) => {
+                let pos = restPositions[idx] || { top: '50%', left: '68%' };
+                html += `
+                <div style="position: absolute; top: ${pos.top}; left: ${pos.left}; transform: translate(-50%, -50%);" class="flex flex-col items-center">
+                    <div class="relative">
+                        <span class="text-4xl pet-rest-anim" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));">${pet.emoji}</span>
+                        <span class="sleep-bubble">💤</span>
+                    </div>
+                    <span class="bg-black/75 text-emerald-300 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-emerald-500/40 mt-0.5 whitespace-nowrap">💚+${Math.floor((pet.hp/pet.maxHp)*100)}%</span>
+                </div>`;
+            });
+
+            container.innerHTML = html;
         }
 
         function showFarmSection(sectionType) {
@@ -513,7 +616,7 @@
                 let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">🪵 Khu Luyện Tập Cọc Gỗ</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
                 trainingPoles.forEach((pet, idx) => {
                     if (pet) {
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/50"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><button onclick="removeFromTraining(${idx}); closeModal(); openFarmMenu();" class="bg-red-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Rút về</button></div>`;
+                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/50"><div class="flex items-center gap-2"><span class="text-2xl pet-train-anim">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><button onclick="removeFromTraining(${idx}); closeModal(); openFarmMenu();" class="bg-red-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Rút về</button></div>`;
                     } else {
                         html += `<div class="bg-zinc-800/60 p-2.5 rounded-xl flex items-center justify-between border border-dashed border-zinc-600"><div class="text-xs text-zinc-300">Cọc gỗ trống #${idx + 1}</div><button onclick="closeModal(); showSelectPetForPole(${idx});" class="bg-amber-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Cho tập</button></div>`;
                     }
@@ -525,7 +628,7 @@
                 if (restingPets.length === 0) html += `<div class="text-center text-xs text-zinc-400 py-6">Khu nghỉ ngơi trống!</div>`;
                 else {
                     restingPets.forEach((pet, idx) => {
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/50"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (HP: ${Math.floor(pet.hp)}/${pet.maxHp})</div></div><button onclick="removeFromRest(${idx}); closeModal(); openFarmMenu();" class="bg-blue-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Nhận lại</button></div>`;
+                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/50"><div class="flex items-center gap-2"><span class="text-2xl pet-rest-anim">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (HP: ${Math.floor(pet.hp)}/${pet.maxHp})</div></div><button onclick="removeFromRest(${idx}); closeModal(); openFarmMenu();" class="bg-blue-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Nhận lại</button></div>`;
                     });
                 }
                 html += `</div>`;
@@ -895,12 +998,12 @@
         }
 
         // ==========================================
-        // KHỞI TẠO BẢN ĐỒ VÀ LINH THÚ
+        // KHỞI TẠO BẢN ĐỒ VÀ CHUYỂN ĐỘNG THÚ ĐI DẠO (LẬT HƯỚNG + NHÚN NHẢY)
         // ==========================================
         let map, userMarker, activeMarkers = [];
         let mapMonstersData = [];
         let roamInterval = null;
-        let userLat = 10.0452, userLng = 105.7469; // Cần Thơ mặc định
+        let userLat = 10.0452, userLng = 105.7469;
         let lastSelectMonsterTime = 0;
 
         function initMap() {
@@ -964,6 +1067,14 @@
 
                     if (activeMarkers[idx]) {
                         activeMarkers[idx].setLatLng([m.lat, m.lng]);
+                        // Lật mặt linh thú đúng chiều đang bước đi (vy > 0 là đi sang phải)
+                        let el = activeMarkers[idx].getElement();
+                        if (el) {
+                            let innerSpan = el.querySelector('.pet-dir-wrap');
+                            if (innerSpan) {
+                                innerSpan.style.transform = m.vy > 0 ? 'scaleX(-1)' : 'scaleX(1)';
+                            }
+                        }
                     }
                 });
             }, 2500);
@@ -1008,6 +1119,7 @@
                 let multi = rarity.statMultiplier;
                 let originLat = userLat + (Math.random() - 0.5) * 0.003;
                 let originLng = userLng + (Math.random() - 0.5) * 0.003;
+                let initVy = (Math.random() - 0.5) * 0.00035;
 
                 const monsterData = {
                     ...baseTemplate, rarity: rarity, hearts: 3,
@@ -1016,14 +1128,19 @@
                     lat: originLat, lng: originLng,
                     originLat: originLat, originLng: originLng,
                     vx: (Math.random() - 0.5) * 0.00035,
-                    vy: (Math.random() - 0.5) * 0.00035,
+                    vy: initVy,
                     roamStep: 0
                 };
                 mapMonstersData.push(monsterData);
 
+                let flipStyle = initVy > 0 ? 'scaleX(-1)' : 'scaleX(1)';
                 const monsterIcon = L.divIcon({ 
                     className: 'leaflet-div-icon', 
-                    html: `<div class="roaming-pet-marker pet-hitbox" onclick="triggerSelectMonster(${i})" style="font-size: 38px; filter: drop-shadow(0 0 8px gold);">${monsterData.emoji}</div>`, 
+                    html: `<div class="roaming-pet-marker pet-hitbox" onclick="triggerSelectMonster(${i})" style="font-size: 38px; filter: drop-shadow(0 0 8px gold);">
+                        <span class="pet-dir-wrap" style="display:inline-block; transform:${flipStyle}; transition: transform 0.3s;">
+                            <span class="pet-walk-anim" style="animation-delay: ${i * 0.15}s;">${monsterData.emoji}</span>
+                        </span>
+                    </div>`, 
                     iconSize: [60, 60], 
                     iconAnchor: [30, 30] 
                 });
@@ -1043,12 +1160,11 @@
         }
 
         // ==========================================
-        // MINIGAME AR: GIẢM 25% ĐỘ KHÓ & GIAO DIỆN TINH GỌN (V10.1)
+        // MINIGAME AR V10.1 (GIỮ NGUYÊN 100%)
         // ==========================================
         let currentSelectedMarker = null;
         let canvas, ctx, isARActive = false;
         let rope = { x: 0, y: 0, vx: 0, vy: 0, flying: false, flightTime: 0 };
-        // Giảm tốc độ di chuyển cơ bản của thú để quăng dây dễ trúng hơn
         let monsterPos = { x: 0, y: 0, vx: 1.8, vy: 0, targetY: 0, jumpTimer: 0 };
         let isTugOfWarActive = false, tugProgress = 50, tugTimerInterval = null;
         let ropeShakeTimer = 0;
@@ -1114,7 +1230,6 @@
                 let diffY = endY - touchStartY;
 
                 if (isTugOfWarActive) {
-                    // Tăng lực kéo khi vuốt đúng chiều lên 17.5% (dễ hơn)
                     if (Math.abs(diffX) > 25) {
                         if (beastPullDirection === 'left' && diffX > 25) {
                             tugProgress = Math.min(100, tugProgress + 17.5);
@@ -1123,7 +1238,6 @@
                             tugProgress = Math.min(100, tugProgress + 17.5);
                             showFloatingText('GHÌM CHẶT! +18%', canvas.width/2, canvas.height*0.48, '#38bdf8');
                         } else {
-                            // Giảm mức phạt khi quẹt sai xuống chỉ còn -5%
                             tugProgress = Math.max(0, tugProgress - 5);
                             showFloatingText('SAI HƯỚNG! -5%', canvas.width/2, canvas.height*0.48, '#ef4444');
                         }
@@ -1179,7 +1293,6 @@
 
             if (!isTugOfWarActive) {
                 monsterPos.jumpTimer++;
-                // Giảm bớt tần suất nhảy vọt né đòn của thú (từ 90 lên 120 nhịp)
                 if (monsterPos.jumpTimer > 120) {
                     monsterPos.targetY = canvas.height * (0.22 + Math.random() * 0.18);
                     monsterPos.vx = (Math.random() > 0.5 ? 1 : -1) * (2.0 + Math.random() * 1.5);
@@ -1211,7 +1324,6 @@
             ctx.textBaseline = "middle";
             ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y + shakeOffset);
 
-            // CÁNH TAY CAO BỒI THẬT VÀ DÂY THỪNG 3D XOAY TRÒN
             if (!isTugOfWarActive && !rope.flying) {
                 ctx.save();
                 let handRootX = canvas.width * 0.65;
@@ -1349,10 +1461,8 @@
             requestAnimationFrame(updateCanvasGame);
         }
 
-        // BẮT ĐẦU PHIÊN GIẰNG CO (GIẢM 25% ĐỘ KHÓ)
         function startTugOfWarSession() {
             isTugOfWarActive = true; 
-            // Nâng mức khởi điểm tiến độ
             tugProgress = perfectHitBonus ? 72 : 55;
             document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
             document.getElementById('tug-of-war-ui').classList.remove('hidden');
@@ -1365,7 +1475,6 @@
             tugTimerInterval = setInterval(() => {
                 if (!isARActive || !isTugOfWarActive) { clearInterval(tugTimerInterval); return; }
 
-                // 2. GIẢM ĐỘ KHÓ 25%: Tốc độ tuột thanh giảm từ 1.6 xuống 1.2
                 tugProgress -= 1.2;
                 document.getElementById('tug-progress-bar').style.width = Math.max(0, tugProgress) + '%';
 
@@ -1387,7 +1496,6 @@
             }, 60);
         }
 
-        // 1. CẬP NHẬT GIAO DIỆN CHỈ HIỆN HƯỚNG VUỐT GỌN GÀNG (BỎ DÒNG CHỮ PHỤ BÊN PHẢI)
         function updateSwipeArrowUI() {
             let textPrompt = document.getElementById('swipe-instruction-text');
             if (beastPullDirection === 'left') {
@@ -1427,7 +1535,9 @@
             updateTeamCount();
         }
 
-        // --- ĐẤU TRƯỜNG ATB TỐC ĐỘ ---
+        // ==========================================
+        // ĐẤU TRƯỜNG ATB TỐC ĐỘ CÓ CHUYỂN ĐỘNG CHIẾN ĐẤU SỐNG ĐỘNG
+        // ==========================================
         let battleCanvas, battleCtx, battleInterval;
         function startBattle(mode) {
             checkPetSurvival();
@@ -1459,8 +1569,16 @@
             let attacker = null;
             const ACTION_THRESHOLD = 800;
 
+            // Các biến hiệu ứng chuyển động: nhịp thở, giật lùi khi trúng đòn, sóng va chạm
+            let idleTick = 0;
+            let teamHitShake = [0, 0, 0];
+            let enemyHitShake = 0;
+            let impactEffects = [];
+
             battleInterval = setInterval(() => {
                 battleCtx.clearRect(0, 0, battleCanvas.width, battleCanvas.height);
+                idleTick += 0.14;
+
                 let cx = battleCanvas.width / 2, cy = battleCanvas.height * 0.72;
                 let defaultTeamX = cx - 80, defaultEnemyX = cx + 80;
 
@@ -1485,52 +1603,105 @@
                 }
 
                 let myOffsetsX = [0, 0, 0];
+                let myOffsetsY = [0, 0, 0];
+                let myRotations = [0, 0, 0];
                 let enemyOffsetX = 0;
+                let enemyOffsetY = 0;
+                let enemyRotation = 0;
 
                 if (attacker) {
                     attacker.step++;
-                    let chargeDist = 45;
+                    let chargeDist = 115; // Lao sát vào đối thủ
 
                     if (attacker.side === 'team') {
-                        if (attacker.step <= 10) myOffsetsX[attacker.index] = (attacker.step / 10) * chargeDist;
-                        else if (attacker.step <= 15) {
-                            if (attacker.step === 11) {
-                                let pet = activeTeam[attacker.index];
+                        let idx = attacker.index;
+                        let targetY = cy;
+                        let startY = cy + (idx - 1) * 38;
+
+                        if (attacker.step <= 9) {
+                            // Lấy đà & nhảy vọt lao tới
+                            let t = attacker.step / 9;
+                            myOffsetsX[idx] = t * chargeDist;
+                            myOffsetsY[idx] = (targetY - startY) * t - Math.sin(t * Math.PI) * 32;
+                            myRotations[idx] = t * 0.25;
+                        } else if (attacker.step <= 15) {
+                            myOffsetsX[idx] = chargeDist;
+                            myOffsetsY[idx] = targetY - startY;
+                            myRotations[idx] = 0.25;
+
+                            if (attacker.step === 10) {
+                                let pet = activeTeam[idx];
                                 let dmg = pet.atk * (0.8 + Math.random() * 0.4);
                                 if (pet.element === currentWeather.bonusElem) dmg *= currentWeather.statBonus;
                                 let isCounter = false;
                                 if (elementCounterMap[pet.element] === enemy.element) { dmg *= 1.35; isCounter = true; }
                                 let finalDmg = Math.floor(dmg);
                                 enemyHp -= finalDmg;
-                                document.getElementById('battle-log').innerText = `⚡ ${pet.name} (Tốc độ ${pet.speed}) đánh trước: -${finalDmg} dmg ${isCounter ? '💥[KHẮC HỆ!]' : ''}!`;
+
+                                // Kích hoạt hiệu ứng giật lùi & sóng va chạm
+                                enemyHitShake = 12;
+                                impactEffects.push({
+                                    x: defaultEnemyX - 15,
+                                    y: cy,
+                                    radius: 10,
+                                    alpha: 1,
+                                    color: isCounter ? '#facc15' : '#38bdf8',
+                                    text: `-${finalDmg}${isCounter ? ' 💥' : ''}`
+                                });
+                                document.getElementById('battle-log').innerText = `⚡ ${pet.name} (Tốc độ ${pet.speed}) lao tới đánh: -${finalDmg} dmg ${isCounter ? '💥[KHẮC HỆ!]' : ''}!`;
                             }
-                            myOffsetsX[attacker.index] = chargeDist;
                         } else if (attacker.step <= 22) {
-                            myOffsetsX[attacker.index] = chargeDist * (1 - (attacker.step - 15) / 7);
+                            // Bật nảy lùi về vị trí cũ
+                            let t = 1 - (attacker.step - 15) / 7;
+                            myOffsetsX[idx] = chargeDist * t;
+                            myOffsetsY[idx] = (targetY - startY) * t - Math.sin(t * Math.PI) * 15;
+                            myRotations[idx] = t * 0.25;
                         } else {
                             attacker = null;
                         }
                     } else if (attacker.side === 'enemy') {
-                        if (attacker.step <= 10) enemyOffsetX = - (attacker.step / 10) * chargeDist;
-                        else if (attacker.step <= 15) {
-                            if (attacker.step === 11) {
+                        let targetIdx = teamHpList.findIndex(h => h > 0);
+                        let targetY = targetIdx !== -1 ? cy + (targetIdx - 1) * 38 : cy;
+
+                        if (attacker.step <= 9) {
+                            let t = attacker.step / 9;
+                            enemyOffsetX = -t * chargeDist;
+                            enemyOffsetY = (targetY - cy) * t - Math.sin(t * Math.PI) * 32;
+                            enemyRotation = -t * 0.25;
+                        } else if (attacker.step <= 15) {
+                            enemyOffsetX = -chargeDist;
+                            enemyOffsetY = targetY - cy;
+                            enemyRotation = -0.25;
+
+                            if (attacker.step === 10) {
                                 let enDmg = Math.floor(enemy.atk * (0.8 + Math.random() * 0.4));
-                                let targetIdx = teamHpList.findIndex(h => h > 0);
                                 if (targetIdx !== -1) {
                                     teamHpList[targetIdx] -= enDmg;
                                     activeTeam[targetIdx].hp = Math.max(0, teamHpList[targetIdx]);
-                                    document.getElementById('battle-log').innerText = `⚡ ${enemy.name} (Tốc độ ${enemy.speed}) đánh: -${enDmg} dmg lên ${activeTeam[targetIdx].name}!`;
+                                    teamHitShake[targetIdx] = 12;
+                                    impactEffects.push({
+                                        x: defaultTeamX + 15,
+                                        y: targetY,
+                                        radius: 10,
+                                        alpha: 1,
+                                        color: '#ef4444',
+                                        text: `-${enDmg}`
+                                    });
+                                    document.getElementById('battle-log').innerText = `⚡ ${enemy.name} (Tốc độ ${enemy.speed}) tấn công: -${enDmg} dmg lên ${activeTeam[targetIdx].name}!`;
                                 }
                             }
-                            enemyOffsetX = - chargeDist;
                         } else if (attacker.step <= 22) {
-                            enemyOffsetX = - chargeDist * (1 - (attacker.step - 15) / 7);
+                            let t = 1 - (attacker.step - 15) / 7;
+                            enemyOffsetX = -chargeDist * t;
+                            enemyOffsetY = (targetY - cy) * t - Math.sin(t * Math.PI) * 15;
+                            enemyRotation = -t * 0.25;
                         } else {
                             attacker = null;
                         }
                     }
                 }
 
+                // Cập nhật thanh HP
                 let currentTeamHpTotal = teamHpList.reduce((a, b) => Math.max(0, a) + Math.max(0, b), 0);
                 let teamHpPercent = Math.max(0, (currentTeamHpTotal / teamMaxHpTotal) * 100);
                 let enemyHpPercent = Math.max(0, (enemyHp / enemy.maxHp) * 100);
@@ -1539,22 +1710,92 @@
                 document.getElementById('battle-enemy-hp-bar').style.width = enemyHpPercent + '%';
                 document.getElementById('battle-enemy-hp-text').innerText = `HP: ${Math.max(0, enemyHp)}/${enemy.maxHp}`;
                 
-                let finalEnX = defaultEnemyX + enemyOffsetX;
-                battleCtx.font = "65px sans-serif"; battleCtx.textAlign = "center";
-                battleCtx.fillText(enemy.emoji, finalEnX, cy);
-                battleCtx.fillStyle = 'rgba(0,0,0,0.5)'; battleCtx.fillRect(finalEnX - 25, cy + 12, 50, 4);
-                battleCtx.fillStyle = '#38bdf8'; battleCtx.fillRect(finalEnX - 25, cy + 12, Math.min(50, (enemySpeedGauge / ACTION_THRESHOLD) * 50), 4);
+                // Vẽ đối thủ với chuyển động thở & giật lùi khi trúng đòn
+                let enKnockback = 0;
+                if (enemyHitShake > 0) {
+                    enKnockback = Math.sin(enemyHitShake * 1.8) * 10 + 6;
+                    enemyHitShake--;
+                }
+                let finalEnX = defaultEnemyX + enemyOffsetX + enKnockback;
+                let finalEnY = cy + enemyOffsetY;
+                let enIdleScaleY = 1 + Math.sin(idleTick + 1) * 0.05;
 
+                battleCtx.save();
+                battleCtx.translate(finalEnX, finalEnY);
+                battleCtx.rotate(enemyRotation);
+                battleCtx.scale(1, enIdleScaleY);
+                // Bóng đổ dưới chân
+                battleCtx.fillStyle = 'rgba(0,0,0,0.35)';
+                battleCtx.beginPath(); battleCtx.ellipse(0, 26, 26, 8, 0, 0, Math.PI * 2); battleCtx.fill();
+                // Emoji đối thủ
+                battleCtx.font = "65px sans-serif"; battleCtx.textAlign = "center"; battleCtx.textBaseline = "middle";
+                battleCtx.fillText(enemy.emoji, 0, 0);
+                battleCtx.restore();
+
+                // Thanh tốc độ của địch
+                battleCtx.fillStyle = 'rgba(0,0,0,0.6)'; battleCtx.fillRect(finalEnX - 25, finalEnY + 34, 50, 4);
+                battleCtx.fillStyle = '#38bdf8'; battleCtx.fillRect(finalEnX - 25, finalEnY + 34, Math.min(50, (enemySpeedGauge / ACTION_THRESHOLD) * 50), 4);
+
+                // Vẽ đội hình mình với chuyển động thở, lật mặt hướng về kẻ địch & giật lùi khi trúng đòn
                 activeTeam.forEach((pet, i) => {
                     if (teamHpList[i] > 0) {
-                        let posY = cy + (i - 1) * 38;
-                        let posX = defaultTeamX + myOffsetsX[i];
-                        battleCtx.font = "50px sans-serif";
-                        battleCtx.fillText(pet.emoji, posX, posY);
-                        battleCtx.fillStyle = 'rgba(0,0,0,0.5)'; battleCtx.fillRect(posX - 22, posY + 8, 44, 4);
-                        battleCtx.fillStyle = '#facc15'; battleCtx.fillRect(posX - 22, posY + 8, Math.min(44, (teamSpeedGauges[i] / ACTION_THRESHOLD) * 44), 4);
+                        let knockback = 0;
+                        if (teamHitShake[i] > 0) {
+                            knockback = -Math.sin(teamHitShake[i] * 1.8) * 10 - 6;
+                            teamHitShake[i]--;
+                        }
+                        let posY = cy + (i - 1) * 38 + myOffsetsY[i];
+                        let posX = defaultTeamX + myOffsetsX[i] + knockback;
+                        let idleScaleY = 1 + Math.sin(idleTick + i * 1.2) * 0.05;
+
+                        battleCtx.save();
+                        battleCtx.translate(posX, posY);
+                        battleCtx.rotate(myRotations[i]);
+                        // Lật ngang (-1) để thú đội mình hướng mặt sang phải đối diện kẻ địch
+                        battleCtx.scale(-1, idleScaleY);
+                        // Bóng đổ dưới chân
+                        battleCtx.fillStyle = 'rgba(0,0,0,0.35)';
+                        battleCtx.beginPath(); battleCtx.ellipse(0, 20, 20, 6, 0, 0, Math.PI * 2); battleCtx.fill();
+                        // Emoji thú
+                        battleCtx.font = "50px sans-serif"; battleCtx.textAlign = "center"; battleCtx.textBaseline = "middle";
+                        battleCtx.fillText(pet.emoji, 0, 0);
+                        battleCtx.restore();
+
+                        // Thanh tốc độ màu vàng
+                        battleCtx.fillStyle = 'rgba(0,0,0,0.6)'; battleCtx.fillRect(posX - 22, posY + 26, 44, 4);
+                        battleCtx.fillStyle = '#facc15'; battleCtx.fillRect(posX - 22, posY + 26, Math.min(44, (teamSpeedGauges[i] / ACTION_THRESHOLD) * 44), 4);
                     }
                 });
+
+                // Vẽ hiệu ứng sóng xung kích & số sát thương bay lên khi va chạm
+                for (let idx = impactEffects.length - 1; idx >= 0; idx--) {
+                    let eff = impactEffects[idx];
+                    eff.radius += 4.5;
+                    eff.alpha -= 0.055;
+                    eff.y -= 1.5;
+
+                    if (eff.alpha <= 0) {
+                        impactEffects.splice(idx, 1);
+                        continue;
+                    }
+
+                    battleCtx.save();
+                    battleCtx.globalAlpha = Math.max(0, eff.alpha);
+                    battleCtx.beginPath();
+                    battleCtx.arc(eff.x, eff.y, eff.radius, 0, Math.PI * 2);
+                    battleCtx.strokeStyle = eff.color;
+                    battleCtx.lineWidth = 3.5;
+                    battleCtx.stroke();
+
+                    battleCtx.font = "900 18px sans-serif";
+                    battleCtx.fillStyle = eff.color;
+                    battleCtx.textAlign = "center";
+                    battleCtx.strokeStyle = "#000000";
+                    battleCtx.lineWidth = 3;
+                    battleCtx.strokeText(eff.text, eff.x, eff.y - 18);
+                    battleCtx.fillText(eff.text, eff.x, eff.y - 18);
+                    battleCtx.restore();
+                }
 
                 let allTeamDead = teamHpList.every(h => h <= 0);
                 if (enemyHp <= 0 || allTeamDead) {
