@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Map Fixed v9.9</title>
+    <title>Batthu - Realistic Cowboy AR v10.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body, html { margin: 0; padding: 0; height: 100%; height: 100dvh; width: 100%; overflow: hidden; background: #09090b; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
         #map-screen { display: flex; flex-direction: column; height: 100vh; height: 100dvh; width: 100vw; position: absolute; inset: 0; background: #09090b; overflow: hidden; }
-        
-        /* CỐ ĐỊNH CHIỀU CAO CHO KHUNG BẢN ĐỒ KHÔNG BỊ CO VỀ 0PX */
         #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 150px; overflow: hidden; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; background: #e5e7eb; }
         
@@ -127,7 +125,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH MINIGAME BẮT THÚ AR ACTION -->
+    <!-- MÀN HÌNH MINIGAME BẮT THÚ AR ACTION NÂNG CẤP V10.0 -->
     <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -142,19 +140,21 @@
             </div>
         </div>
         
-        <div class="flex flex-col items-center z-20 pb-8 pointer-events-none">
-            <div id="tug-of-war-ui" class="hidden flex flex-col items-center w-full max-w-xs bg-black/85 p-3 rounded-2xl border-2 border-amber-500/70 pointer-events-auto mb-2 shadow-2xl">
-                <div class="flex items-center gap-1.5 text-xs font-extrabold text-amber-300 mb-1 animate-pulse">
-                    <span id="swipe-arrow-icon">⬅️</span>
-                    <span id="swipe-instruction-text">VUỐT NGƯỢC CHIỀU KÉO CỦA THÚ!</span>
+        <!-- UI DỜI LÊN VỊ TRÍ KHUNG XANH ANH YÊU VẼ (CÁCH ĐÁY KHOẢNG 18%) -->
+        <div class="absolute left-0 right-0 z-20 flex flex-col items-center pointer-events-none" style="bottom: 18%;">
+            <div id="tug-of-war-ui" class="hidden flex flex-col items-center w-11/12 max-w-sm bg-black/90 backdrop-blur-md p-3 rounded-2xl border-2 border-cyan-400/80 pointer-events-auto shadow-2xl animate-pulse">
+                <div class="flex items-center gap-1.5 text-xs font-black text-yellow-300 mb-1">
+                    <span id="swipe-arrow-icon" class="text-sm">➡️</span>
+                    <span id="swipe-instruction-text">VUỐT SANG PHẢI!</span>
                 </div>
                 <div class="w-full bg-zinc-900 rounded-full h-3.5 overflow-hidden border border-zinc-700 mb-1 relative">
                     <div id="tug-progress-bar" class="bg-gradient-to-r from-red-500 via-yellow-500 to-emerald-400 h-full transition-all duration-75" style="width: 50%"></div>
                 </div>
                 <div class="text-[10px] text-zinc-300">Vuốt theo chiều ngược lại để ghìm chặt thú!</div>
             </div>
-            <div id="ar-instruction" class="text-[11px] text-zinc-200 mt-1 bg-black/75 px-3.5 py-1.5 rounded-full border border-white/15 text-center shadow-lg">
-                🤠 Chạm hoặc vuốt để quăng dây thừng! (⚡-1)
+            
+            <div id="ar-instruction" class="text-[11px] text-zinc-200 mt-2 bg-black/80 px-4 py-1.5 rounded-full border border-white/20 text-center shadow-lg">
+                🤠 Canh vòng tròn thu nhỏ rồi quăng dây! (⚡-1)
             </div>
         </div>
     </div>
@@ -896,18 +896,17 @@
         }
 
         // ==========================================
-        // KHẮC PHỤC TRIỆT ĐỂ: SÁNG BẢN ĐỒ NGAY LẬP TỨC & CHẠM THÚ NHẠY
+        // KHỞI TẠO BẢN ĐỒ VÀ LINH THÚ
         // ==========================================
         let map, userMarker, activeMarkers = [];
         let mapMonstersData = [];
         let roamInterval = null;
-        let userLat = 10.0452, userLng = 105.7469; // Cần Thơ mặc định
+        let userLat = 10.0452, userLng = 105.7469;
         let lastSelectMonsterTime = 0;
 
         function initMap() {
             if (map) return;
             try {
-                // Khởi tạo map ngay lập tức với tọa độ mặc định, không đợi GPS để tránh màn hình đen
                 map = L.map('map', { zoomControl: false, tap: true }).setView([userLat, userLng], 17);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
                     maxZoom: 19,
@@ -917,7 +916,6 @@
                 const userIcon = L.divIcon({ className: 'leaflet-div-icon', html: '<div style="font-size: 28px;">📍</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
                 userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
 
-                // Sau đó mới cập nhật GPS ngầm nếu người dùng cấp quyền
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(position => {
                         userLat = position.coords.latitude; 
@@ -933,7 +931,6 @@
                 if (mapMonstersData.length === 0) spawnMultipleMonsters();
                 initRoamingBeasts();
                 
-                // Cưỡng chế Leaflet render toàn bộ layer
                 setTimeout(() => { if (map) map.invalidateSize(); }, 200);
                 setTimeout(() => { if (map) map.invalidateSize(); }, 600);
             } catch(e) {
@@ -1046,6 +1043,9 @@
             }
         }
 
+        // ==========================================
+        // MINIGAME AR: TAY QUAY DÂY CHÂN THẬT & MŨI TÊN DỜI VỊ TRÍ
+        // ==========================================
         let currentSelectedMarker = null;
         let canvas, ctx, isARActive = false;
         let rope = { x: 0, y: 0, vx: 0, vy: 0, flying: false, flightTime: 0 };
@@ -1150,7 +1150,7 @@
 
         function resetRope() { 
             rope.x = canvas.width / 2; 
-            rope.y = canvas.height * 0.85; 
+            rope.y = canvas.height * 0.88; 
             rope.flying = false; 
             rope.flightTime = 0; 
         }
@@ -1165,7 +1165,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             ropeShakeTimer += 0.2;
-            lassoSpinAngle += 0.18;
+            lassoSpinAngle += 0.16;
 
             if (targetRingShrinking) {
                 targetRingRadius -= 1.4;
@@ -1208,43 +1208,90 @@
             ctx.textBaseline = "middle";
             ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y + shakeOffset);
 
+            // ==========================================
+            // VẼ CÁNH TAY CAO BỒI THẬT & VÒNG DÂY THỪNG 3D XOAY TRÒN
+            // ==========================================
             if (!isTugOfWarActive && !rope.flying) {
                 ctx.save();
-                let handX = canvas.width / 2;
-                let handY = canvas.height * 0.88;
+                let handRootX = canvas.width * 0.65;
+                let handRootY = canvas.height * 1.05;
+                let wristX = canvas.width * 0.55 + Math.cos(lassoSpinAngle) * 12;
+                let wristY = canvas.height * 0.88 + Math.sin(lassoSpinAngle) * 6;
 
-                let loopRadiusX = 45;
-                let loopRadiusY = 18;
-                let loopCenterX = handX + Math.cos(lassoSpinAngle) * 22;
-                let loopCenterY = handY - 45 + Math.sin(lassoSpinAngle) * 8;
-
+                // 1. Cánh tay áo da cao bồi (Brown Leather Sleeve)
                 ctx.beginPath();
-                ctx.ellipse(loopCenterX, loopCenterY, loopRadiusX, loopRadiusY, lassoSpinAngle * 0.5, 0, Math.PI * 2);
-                ctx.strokeStyle = "#eab308";
+                ctx.moveTo(handRootX - 45, handRootY);
+                ctx.lineTo(wristX - 18, wristY);
+                ctx.lineTo(wristX + 18, wristY + 8);
+                ctx.lineTo(handRootX + 45, handRootY);
+                ctx.closePath();
+                let armGrad = ctx.createLinearGradient(handRootX - 45, handRootY, wristX + 18, wristY);
+                armGrad.addColorStop(0, '#5c2c16');
+                armGrad.addColorStop(0.5, '#8b4513');
+                armGrad.addColorStop(1, '#a0522d');
+                ctx.fillStyle = armGrad;
+                ctx.fill();
+
+                // Nếp gấp ống tay áo
+                ctx.beginPath();
+                ctx.moveTo(wristX - 22, wristY + 2);
+                ctx.lineTo(wristX + 22, wristY + 8);
+                ctx.strokeStyle = '#3e1a0b';
                 ctx.lineWidth = 4;
                 ctx.stroke();
 
+                // 2. Bàn tay cầm dây thừng (Nắm tay da người)
                 ctx.beginPath();
-                ctx.ellipse(loopCenterX, loopCenterY, loopRadiusX + 8, loopRadiusY + 4, lassoSpinAngle * 0.5, 0, Math.PI);
-                ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-                ctx.lineWidth = 2;
+                ctx.arc(wristX, wristY - 6, 16, 0, Math.PI * 2);
+                ctx.fillStyle = '#e0a97a';
+                ctx.fill();
+                ctx.strokeStyle = '#b87c4f';
+                ctx.lineWidth = 2.5;
                 ctx.stroke();
 
+                // 3. Vòng dây thừng 3D xoay tròn trên đỉnh tay
+                let loopCenterX = wristX + Math.cos(lassoSpinAngle) * 35;
+                let loopCenterY = wristY - 60 + Math.sin(lassoSpinAngle) * 14;
+                let rx = 55 + Math.sin(lassoSpinAngle) * 8;
+                let ry = 22 + Math.cos(lassoSpinAngle) * 4;
+
+                // Dây thừng nối từ tay lên vòng xoay
                 ctx.beginPath();
-                ctx.moveTo(handX, handY);
+                ctx.moveTo(wristX, wristY - 6);
                 ctx.lineTo(loopCenterX, loopCenterY);
-                ctx.strokeStyle = "#d4a373";
-                ctx.lineWidth = 3.5;
+                ctx.strokeStyle = '#d97706';
+                ctx.lineWidth = 4;
                 ctx.stroke();
 
-                ctx.font = "42px sans-serif";
-                ctx.fillText("✊", handX, handY);
+                // Vệt gió chuyển động tròn (Wind trail)
+                ctx.beginPath();
+                ctx.ellipse(loopCenterX, loopCenterY, rx + 10, ry + 6, lassoSpinAngle * 0.3, 0, Math.PI * 1.5);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // Vòng thừng chính (Xoắn 3D có viền đổ bóng)
+                ctx.beginPath();
+                ctx.ellipse(loopCenterX, loopCenterY, rx, ry, lassoSpinAngle * 0.3, 0, Math.PI * 2);
+                ctx.strokeStyle = '#b45309';
+                ctx.lineWidth = 6;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.ellipse(loopCenterX, loopCenterY, rx, ry, lassoSpinAngle * 0.3, 0, Math.PI * 2);
+                ctx.strokeStyle = '#fde68a';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([10, 6]); // Họa tiết bện thừng xoắn
+                ctx.stroke();
+                ctx.setLineDash([]); // Reset nét đứt
+
                 ctx.restore();
             }
 
+            // GIAI ĐOẠN GIẰNG CO KÉO THÚ
             if (isTugOfWarActive) {
                 ctx.beginPath();
-                ctx.moveTo(canvas.width / 2, canvas.height * 0.85);
+                ctx.moveTo(canvas.width / 2, canvas.height * 0.88);
                 ctx.lineTo(monsterPos.x, monsterPos.y + shakeOffset);
                 ctx.strokeStyle = "#f59e0b";
                 ctx.lineWidth = 6 + Math.sin(ropeShakeTimer * 5) * 2;
@@ -1260,22 +1307,23 @@
                 ctx.stroke();
             }
 
+            // QUĂNG VÒNG DÂY THỪNG BAY LÊN
             if (rope.flying) {
                 rope.x += rope.vx; 
                 rope.y += rope.vy;
                 rope.flightTime++;
 
                 ctx.beginPath(); 
-                ctx.moveTo(canvas.width / 2, canvas.height * 0.85); 
+                ctx.moveTo(canvas.width / 2, canvas.height * 0.88); 
                 ctx.lineTo(rope.x, rope.y);
-                ctx.strokeStyle = "#d4a373"; 
-                ctx.lineWidth = 4; 
+                ctx.strokeStyle = "#b45309"; 
+                ctx.lineWidth = 4.5; 
                 ctx.stroke();
 
                 ctx.beginPath();
-                ctx.arc(rope.x, rope.y, 24, 0, Math.PI * 2);
-                ctx.strokeStyle = "#eab308";
-                ctx.lineWidth = 3.5;
+                ctx.arc(rope.x, rope.y, 25, 0, Math.PI * 2);
+                ctx.strokeStyle = "#f59e0b";
+                ctx.lineWidth = 4;
                 ctx.stroke();
 
                 if (Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y) < 65) {
@@ -1380,12 +1428,13 @@
                 slowResist: Math.floor(10 + Math.random() * 15), speed: Math.floor(40 + Math.random() * 30 * multi),
                 trait: possibleTraits[Math.floor(Math.random() * possibleTraits.length)], hunger: 100, happiness: 100
             };
-            if (team.length < 3) { team.push(newPet); saveGameData(); alert(`🎉 Bắt thành công ${newPet.name}! Đã đưa vào Đội.`); }
+            if (team.length < 3) { team.push(newPet); saveGameData(); alert(`🎉 Bắt thành công ${newPet.name} (${newPet.rarity.badge})! Đã đưa vào Đội.`); }
             else { farm.push(newPet); saveGameData(); alert(`🎉 Đội đầy, đã chuyển ${newPet.name} vào Trại!`); }
             addQuestProgress(1, 1); 
             updateTeamCount();
         }
 
+        // --- ĐẤU TRƯỜNG ATB TỐC ĐỘ ---
         let battleCanvas, battleCtx, battleInterval;
         function startBattle(mode) {
             checkPetSurvival();
