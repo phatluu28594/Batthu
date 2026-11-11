@@ -3,44 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Panorama Home Hub v10.7</title>
+    <title>Batthu - Tab Switch Fixed v10.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body, html { margin: 0; padding: 0; height: 100%; height: 100dvh; width: 100%; overflow: hidden; background: #09090b; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
         #map-screen { display: flex; flex-direction: column; height: 100vh; height: 100dvh; width: 100vw; position: absolute; inset: 0; background: #09090b; overflow: hidden; }
+        #map-screen.hidden { display: none !important; }
         #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 150px; overflow: hidden; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; background: #18181b; }
         
-        /* KHUNG VUỐT NGANG TOÀN CẢNH SẢNH CHÍNH */
-        #home-panorama-scroll {
-            width: 100vw;
-            height: 100%;
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-            position: relative;
-        }
-        #home-panorama-canvas {
-            position: relative;
-            height: 100%;
-            width: 148vw; /* Rộng hơn màn hình điện thoại để vuốt ngang trái/phải */
-            min-width: 620px;
-        }
-
-        .hotspot { 
-            position: absolute; 
-            cursor: pointer; 
-            border: none; 
-            background: transparent; 
-            z-index: 35 !important; 
-            pointer-events: auto !important;
-            touch-action: manipulation !important;
-            transition: transform 0.15s; 
-        }
-        .hotspot:active { transform: scale(0.94); }
+        .hotspot { position: absolute; cursor: pointer; border: none; background: transparent; z-index: 30; transition: transform 0.15s; touch-action: manipulation; }
+        .hotspot:active { transform: scale(0.95); }
 
         .home-label {
+            pointer-events: none;
             background: rgba(15, 23, 42, 0.88);
             backdrop-filter: blur(4px);
             border: 1.5px solid rgba(251, 191, 36, 0.9);
@@ -49,10 +26,9 @@
             font-size: 11px;
             padding: 5px 11px;
             border-radius: 9999px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.75);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
             white-space: nowrap;
             text-shadow: 0 1px 2px #000;
-            pointer-events: none;
         }
 
         .leaflet-control-attribution { display: none !important; }
@@ -157,59 +133,48 @@
     </div>
 
     <!-- ==========================================
-         1. MÀN HÌNH SẢNH CHÍNH VUỐT NGANG TOÀN CẢNH (background.png)
+         1. MÀN HÌNH SẢNH CHÍNH ĐẦU GAME (background.png)
          ========================================== -->
-    <div id="home-screen" class="absolute inset-0 z-30 bg-zinc-950 overflow-hidden">
-        
-        <!-- Thanh thông tin cố định trên cùng (pointer-events-none ở khung ngoài để không chắn click ảnh) -->
-        <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-            <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold pointer-events-auto">
+    <div id="home-screen" class="absolute inset-0 z-20 bg-zinc-950 flex flex-col justify-between overflow-hidden">
+        <img src="./background.png" alt="Sảnh Chính" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
+
+        <div class="relative z-30 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/80 to-transparent">
+            <div class="flex items-center gap-1.5 bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold">
                 <span>🏠 Nhà Chính</span>
                 <span class="text-yellow-400 ml-1">💰 <span id="home-coin-count">1500</span>🪙</span>
             </div>
-            <div class="flex items-center gap-1.5 pointer-events-auto">
-                <button onclick="openMarketMenu()" class="bg-amber-600/95 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold cursor-pointer shadow">🛒 Chợ</button>
-                <button onclick="openQuestMenu()" class="bg-yellow-600/95 px-2.5 py-1.5 rounded-full border border-yellow-300 text-xs font-bold cursor-pointer shadow">📜 NV</button>
+            <div class="flex items-center gap-1.5">
+                <button type="button" onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🎒(<span id="home-team-count">0</span>/3)</button>
+                <button type="button" onclick="openMarketMenu()" class="bg-amber-600/90 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold cursor-pointer">🛒 Chợ</button>
+                <button type="button" onclick="openQuestMenu()" class="bg-yellow-600/90 px-2.5 py-1.5 rounded-full border border-yellow-300 text-xs font-bold cursor-pointer">📜 NV</button>
             </div>
         </div>
 
-        <!-- Khung vuốt ngang toàn cảnh căn nhà -->
-        <div id="home-panorama-scroll" class="no-scrollbar">
-            <div id="home-panorama-canvas">
-                <img src="./background.png" alt="Sảnh Chính" class="w-full h-full object-fill select-none pointer-events-none">
+        <div class="relative flex-1 w-full h-full z-20">
+            <!-- CỬA CHÍNH Ở GIỮA: Đi săn thú -->
+            <button type="button" onclick="goFromHomeToMap()" class="hotspot flex flex-col items-center justify-center" style="top: 24%; left: 35%; width: 30%; height: 25%;">
+                <span class="home-label animate-bounce">🚪 Đi săn thú</span>
+            </button>
 
-                <!-- 1. CỬA CHÍNH Ở GIỮA: "Đi săn thú" -> Ra Map bắt thú -->
-                <div onclick="goFromHomeToMap()" class="hotspot flex flex-col items-center justify-center" style="top: 26%; left: 37%; width: 26%; height: 23%;">
-                    <div class="home-label animate-bounce">🚪 Đi săn thú</div>
-                </div>
+            <!-- CÁNH CỬA BÊN PHẢI: Đi Trang trại -->
+            <button type="button" onclick="openFarmMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 24%; left: 74%; width: 24%; height: 25%;">
+                <span class="home-label" style="border-color: #34d399; color: #a7f3d0;">🏡 Đi Trang trại</span>
+            </button>
 
-                <!-- 2. CÁNH CỬA BÊN PHẢI: "Đi Trang trại" -> Qua mục Trang trại -->
-                <div onclick="openFarmMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 26%; left: 77%; width: 21%; height: 24%;">
-                    <div class="home-label" style="border-color: #34d399; color: #a7f3d0;">🏡 Đi Trang trại</div>
-                </div>
+            <!-- GIƯỜNG NGỦ BÊN TRÁI: Giường ngủ -->
+            <button type="button" onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 30%; left: 2%; width: 32%; height: 22%;">
+                <span class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ</span>
+            </button>
 
-                <!-- 3. GIƯỜNG NGỦ BÊN TRÁI: "Giường ngủ" -> Tối màn hình hồi năng lượng nhanh -->
-                <div onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 31%; left: 3%; width: 30%; height: 19%;">
-                    <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ</div>
-                </div>
-
-                <!-- 4. CON MÈO NGỦ TRÊN ĐỆM XANH BÊN TRÁI: Nút qua Túi Pet -->
-                <div onclick="openTeamMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 52%; left: 10%; width: 23%; height: 16%;">
-                    <div class="home-label" style="border-color: #fb923c; color: #fed7aa;">🎒 Túi Pet (<span id="home-team-count">0</span>/3)</div>
-                </div>
-
-                <!-- 5. ĐIỆN THOẠI ĐỂ BÀN GÓC DƯỚI PHẢI: "Gọi điện bệnh viện" -> Qua Bệnh viện -->
-                <div onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 63%; left: 74%; width: 24%; height: 18%;">
-                    <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi điện bệnh viện</div>
-                </div>
-            </div>
+            <!-- ĐIỆN THOẠI ĐỂ BÀN GÓC DƯỚI PHẢI: Gọi điện bệnh viện -->
+            <button type="button" onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 62%; left: 72%; width: 26%; height: 20%;">
+                <span class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi điện bệnh viện</span>
+            </button>
         </div>
 
-        <!-- Thanh năng lượng cố định dưới đáy (pointer-events-none ở khung ngoài) -->
-        <div class="fixed bottom-0 left-0 right-0 z-40 p-2.5 bg-gradient-to-t from-black/90 to-transparent pointer-events-none">
+        <div class="relative z-30 p-2.5 bg-gradient-to-t from-black/90 to-transparent">
             <div class="flex items-center justify-between text-[11px] font-bold text-zinc-200 bg-black/85 px-3.5 py-2 rounded-xl border border-white/15 shadow-lg">
                 <span class="text-amber-300">⚡ Bắt: <span id="home-catch-count">15</span>/15 (<span id="home-catch-timer">10:00</span>)</span>
-                <span class="text-zinc-400 text-[10px]">↔️ Vuốt ngang xem nhà</span>
                 <span class="text-cyan-300">📡 Quét: <span id="home-scan-count">5</span>/5 (<span id="home-scan-timer">10:00</span>)</span>
             </div>
         </div>
@@ -247,21 +212,21 @@
     </div>
 
     <!-- ==========================================
-         MÀN HÌNH BẢN ĐỒ GPS
+         MÀN HÌNH BẢN ĐỒ GPS (Z-30 CAO HƠN HOME)
          ========================================== -->
-    <div id="map-screen" class="hidden absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2 pb-2">
+    <div id="map-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950 p-2 pb-2">
         <div class="z-50 pt-1 pb-1 shrink-0 w-full">
             <div class="flex gap-1.5 overflow-x-auto py-1 w-full no-scrollbar items-center px-0.5">
-                <button onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0 text-amber-200">🏠 Nhà</button>
-                <button onclick="openWorldBossMenu()" class="bg-amber-700/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
-                <button onclick="openHospitalMenu()" class="bg-cyan-700/90 px-3 py-1.5 rounded-full border border-cyan-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏥 Bệnh Viện</button>
-                <button onclick="openEggIncubatorMenu()" class="bg-emerald-700/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
-                <button onclick="openQuestMenu()" class="bg-yellow-600/90 px-3 py-1.5 rounded-full border border-yellow-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">📜 NV</button>
-                <button onclick="openTowerMenu()" class="bg-purple-600/90 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🗼 Tháp</button>
-                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🛒 Chợ</button>
-                <button onclick="openArenaMenu()" class="bg-red-600/90 px-3 py-1.5 rounded-full border border-red-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">⚔️ PvP</button>
-                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏡 Trại</button>
-                <button onclick="openTeamMenu()" class="bg-black/85 px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">🎒(<span id="team-count">0</span>/3)</button>
+                <button type="button" onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0 text-amber-200">🏠 Nhà</button>
+                <button type="button" onclick="openWorldBossMenu()" class="bg-amber-700/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
+                <button type="button" onclick="openHospitalMenu()" class="bg-cyan-700/90 px-3 py-1.5 rounded-full border border-cyan-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏥 Bệnh Viện</button>
+                <button type="button" onclick="openEggIncubatorMenu()" class="bg-emerald-700/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
+                <button type="button" onclick="openQuestMenu()" class="bg-yellow-600/90 px-3 py-1.5 rounded-full border border-yellow-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">📜 NV</button>
+                <button type="button" onclick="openTowerMenu()" class="bg-purple-600/90 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🗼 Tháp</button>
+                <button type="button" onclick="openMarketMenu()" class="bg-amber-600/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🛒 Chợ</button>
+                <button type="button" onclick="openArenaMenu()" class="bg-red-600/90 px-3 py-1.5 rounded-full border border-red-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">⚔️ PvP</button>
+                <button type="button" onclick="openFarmMenu()" class="bg-emerald-600/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏡 Trại</button>
+                <button type="button" onclick="openTeamMenu()" class="bg-black/85 px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">🎒(<span id="team-count">0</span>/3)</button>
             </div>
         </div>
 
@@ -274,10 +239,10 @@
             </div>
 
             <div class="absolute bottom-3 right-3 z-30 flex items-center gap-2">
-                <button onclick="manualTriggerScan()" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white p-3 rounded-full shadow-2xl border border-emerald-400 flex items-center justify-center text-lg cursor-pointer transition-transform" title="Quét lại khu vực">
+                <button type="button" onclick="manualTriggerScan()" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white p-3 rounded-full shadow-2xl border border-emerald-400 flex items-center justify-center text-lg cursor-pointer transition-transform" title="Quét lại khu vực">
                     🔄
                 </button>
-                <button onclick="recenterMap()" class="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white p-3 rounded-full shadow-2xl border border-blue-400 flex items-center justify-center text-lg cursor-pointer transition-transform" title="Về vị trí của tôi">
+                <button type="button" onclick="recenterMap()" class="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white p-3 rounded-full shadow-2xl border border-blue-400 flex items-center justify-center text-lg cursor-pointer transition-transform" title="Về vị trí của tôi">
                     📍
                 </button>
             </div>
@@ -292,9 +257,9 @@
 
     <!-- MÀN HÌNH TRANG TRẠI FULLSCREEN -->
     <div id="fullscreen-farm-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
-        <button onclick="closeFullscreenFarm()" class="absolute top-3 right-3 z-50 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
+        <button type="button" onclick="closeFullscreenFarm()" class="absolute top-3 right-3 z-30 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
         <div class="relative w-full h-full overflow-hidden">
-            <img src="./farm-bg.png" alt="Trang Trai" class="absolute inset-0 w-full h-full object-cover z-0">
+            <img src="./farm-bg.png" alt="Trang Trai" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
             
             <div id="farm-visual-pets" class="absolute inset-0 pointer-events-none z-10"></div>
 
@@ -306,9 +271,9 @@
 
     <!-- MÀN HÌNH BỆNH VIỆN FULLSCREEN -->
     <div id="hospital-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
-        <button onclick="closeHospitalMenu()" class="absolute top-3 right-3 z-50 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Đóng</button>
+        <button type="button" onclick="closeHospitalMenu()" class="absolute top-3 right-3 z-30 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Đóng</button>
         <div class="relative w-full h-full overflow-hidden">
-            <img src="./hospital-bg.png" alt="Bệnh Viện" class="absolute inset-0 w-full h-full object-cover z-0">
+            <img src="./hospital-bg.png" alt="Bệnh Viện" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
             <div onclick="openHospitalActionModal('heal')" class="hotspot" style="top: 23%; left: 5%; width: 45%; height: 35%;" title="Hồi Sức Tim"></div>
             <div onclick="openHospitalActionModal('evolve')" class="hotspot" style="top: 23%; left: 52%; width: 43%; height: 35%;" title="Tiến Hóa Đá"></div>
             <div onclick="openHospitalActionModal('breed')" class="hotspot" style="top: 61%; left: 10%; width: 80%; height: 35%;" title="Lai Giống F1"></div>
@@ -317,11 +282,11 @@
 
     <!-- MÀN HÌNH THÁP VÔ TẬN FULLSCREEN -->
     <div id="tower-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
-        <button onclick="closeTowerScreen()" class="absolute top-3 right-3 z-50 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
+        <button type="button" onclick="closeTowerScreen()" class="absolute top-3 right-3 z-30 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
         <div class="relative w-full h-full overflow-hidden flex flex-col items-center justify-end pb-12">
-            <img src="./tower-bg.png" alt="Tháp Vô Tận" class="absolute inset-0 w-full h-full object-cover z-0">
+            <img src="./tower-bg.png" alt="Tháp Vô Tận" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
             <div onclick="startBattle('tower')" class="hotspot flex flex-col items-center justify-center animate-pulse" style="top: 60%; left: 35%; width: 30%; height: 20%;" title="Khiêu chiến Tháp">
-                <div class="bg-purple-900/90 text-yellow-300 font-extrabold px-3 py-1.5 rounded-full border-2 border-yellow-400 text-xs shadow-2xl tracking-wider text-center">
+                <div class="bg-purple-900/90 text-yellow-300 font-extrabold px-3 py-1.5 rounded-full border-2 border-yellow-400 text-xs shadow-2xl tracking-wider text-center pointer-events-none">
                     🗼 TẦNG <span id="tower-gate-floor">1</span><br><span class="text-[9px] text-white">CHẠM ĐỂ ĐẤU</span>
                 </div>
             </div>
@@ -329,13 +294,13 @@
     </div>
 
     <!-- MÀN HÌNH MINIGAME BẮT THÚ AR ACTION -->
-    <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
+    <div id="ar-screen" class="hidden absolute inset-0 z-40 flex flex-col justify-between bg-zinc-900">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
         </div>
         <canvas id="gameCanvas" class="absolute inset-0 z-10 touch-none"></canvas>
         <div class="flex justify-between items-center z-20 p-4 pointer-events-auto">
-            <button onclick="exitARScreen()" class="bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">
+            <button type="button" onclick="exitARScreen()" class="bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">
                 ⬅️ Quay lại bản đồ
             </button>
             <div id="ar-mon-info" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold text-yellow-300">
@@ -361,7 +326,7 @@
     </div>
 
     <!-- MÀN HÌNH ĐẤU TRƯỜNG FULLSCREEN -->
-    <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950">
+    <div id="battle-screen" class="hidden absolute inset-0 z-40 flex flex-col justify-between bg-zinc-950">
         <div class="absolute top-3 left-3 right-3 z-30 flex justify-between items-center bg-black/75 backdrop-blur-md p-2.5 rounded-xl border border-white/20 shadow-2xl">
             <div class="flex flex-col w-5/12">
                 <div id="battle-team-names" class="text-[11px] font-bold text-emerald-400 truncate">Đội hình của bạn</div>
@@ -370,7 +335,7 @@
                 </div>
                 <div id="battle-team-hp-text" class="text-[9px] text-zinc-300 mt-0.5">HP: --/--</div>
             </div>
-            <button onclick="exitBattleScreen()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1 rounded-lg border border-zinc-600 text-[10px] font-bold cursor-pointer">Rút lui</button>
+            <button type="button" onclick="exitBattleScreen()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1 rounded-lg border border-zinc-600 text-[10px] font-bold cursor-pointer">Rút lui</button>
             <div class="flex flex-col w-5/12 text-right">
                 <div id="battle-enemy-name" class="text-[11px] font-bold text-red-400 truncate">Đối thủ</div>
                 <div class="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden mt-1 border border-zinc-700">
@@ -381,7 +346,7 @@
         </div>
 
         <div class="relative w-full h-full overflow-hidden flex flex-col items-center justify-center">
-            <img src="./battle-bg.png" alt="Dau Truong" class="absolute inset-0 w-full h-full object-cover z-0">
+            <img src="./battle-bg.png" alt="Dau Truong" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
             <canvas id="battleCanvas" class="absolute inset-0 w-full h-full z-10"></canvas>
             <div id="damage-popup-container" class="absolute inset-0 pointer-events-none overflow-hidden z-20"></div>
             <div id="battle-log" class="absolute bottom-6 z-20 bg-black/85 px-4 py-2 rounded-xl text-xs text-yellow-300 font-bold border border-yellow-500/50 text-center max-w-sm shadow-xl">
@@ -596,17 +561,13 @@
             });
         }
 
-        // Căn giữa khung vuốt ngang Sảnh Chính lúc mở game
-        function centerHomePanorama() {
-            let scroller = document.getElementById('home-panorama-scroll');
-            let canvas = document.getElementById('home-panorama-canvas');
-            if (scroller && canvas) {
-                let centerScroll = (canvas.offsetWidth - scroller.offsetWidth) / 2;
-                if (centerScroll > 0) scroller.scrollLeft = centerScroll;
-            }
-        }
+        // ==========================================
+        // QUẢN LÝ CHUYỂN TAB / MÀN HÌNH ĐỘC LẬP (V10.7)
+        // ==========================================
+        let previousScreen = 'home';
 
         function goFromHomeToMap() {
+            previousScreen = 'map';
             document.getElementById('home-screen').classList.add('hidden');
             document.getElementById('map-screen').classList.remove('hidden');
             
@@ -617,11 +578,15 @@
                     setTimeout(() => map.invalidateSize(), 300);
                     setTimeout(() => map.invalidateSize(), 700);
                 }
-            }, 100);
+            }, 80);
         }
 
         function goBackToHome() {
+            previousScreen = 'home';
             document.getElementById('map-screen').classList.add('hidden');
+            document.getElementById('fullscreen-farm-screen').classList.add('hidden');
+            document.getElementById('hospital-screen').classList.add('hidden');
+            document.getElementById('tower-screen').classList.add('hidden');
             document.getElementById('home-screen').classList.remove('hidden');
             updateTeamCount();
             saveGameData();
@@ -1113,7 +1078,7 @@
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
-            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Túi Pet / Đội Hình (${team.length}/3)</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div>`;
+            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Đội Hình (${team.length}/3)</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div>`;
             if (team.length === 0) html += `<p class="text-zinc-400 text-sm text-center py-6">Đội hình trống!</p>`;
             else {
                 html += `<div class="space-y-3">`;
@@ -1215,6 +1180,9 @@
             content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Đấu Trường PvP</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><button onclick="startBattle('arena')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Tìm Trận Đấu</button>`;
         }
 
+        // ==========================================
+        // KHỞI TẠO BẢN ĐỒ & THÚ ĐI DẠO
+        // ==========================================
         let map, userMarker, activeMarkers = [];
         let mapMonstersData = [];
         let roamInterval = null;
@@ -1663,4 +1631,425 @@
                         showFloatingText('NICE HIT! 🪢', canvas.width/2, canvas.height*0.4, '#94a3b8');
                     }
                     startTugOfWarSession();
-                } else if (rope.flightTime >
+                } else if (rope.flightTime > 40 || rope.x < 0 || rope.x > canvas.width || rope.y < 0) {
+                    resetRope();
+                }
+            }
+
+            floatingTexts.forEach((ft, i) => {
+                ft.y -= 1.2;
+                ft.life--;
+                ctx.save();
+                ctx.font = "bold 18px sans-serif";
+                ctx.fillStyle = ft.color;
+                ctx.textAlign = "center";
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+                if (ft.life <= 0) floatingTexts.splice(i, 1);
+            });
+
+            requestAnimationFrame(updateCanvasGame);
+        }
+
+        function getRandomPullDirection() {
+            const dirs = ['left', 'right', 'down'];
+            return dirs[Math.floor(Math.random() * dirs.length)];
+        }
+
+        function startTugOfWarSession() {
+            isTugOfWarActive = true; 
+            tugProgress = perfectHitBonus ? 72 : 55;
+            document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
+            document.getElementById('tug-of-war-ui').classList.remove('hidden');
+
+            swipeTimer = 0;
+            beastPullDirection = getRandomPullDirection();
+            updateSwipeArrowUI();
+
+            if (tugTimerInterval) clearInterval(tugTimerInterval);
+            tugTimerInterval = setInterval(() => {
+                if (!isARActive || !isTugOfWarActive) { clearInterval(tugTimerInterval); return; }
+
+                tugProgress -= 1.2;
+                document.getElementById('tug-progress-bar').style.width = Math.max(0, tugProgress) + '%';
+
+                swipeTimer++;
+                if (swipeTimer > 28) {
+                    beastPullDirection = getRandomPullDirection();
+                    updateSwipeArrowUI();
+                    swipeTimer = 0;
+                }
+
+                if (tugProgress >= 100) triggerTugWin();
+                else if (tugProgress <= 0) {
+                    clearInterval(tugTimerInterval); 
+                    isTugOfWarActive = false;
+                    document.getElementById('tug-of-war-ui').classList.add('hidden');
+                    alert('💨 Dây thừng bị đứt! Linh thú đã nhanh chân giãy thoát.');
+                    exitARScreen();
+                }
+            }, 60);
+        }
+
+        function updateSwipeArrowUI() {
+            let textPrompt = document.getElementById('swipe-instruction-text');
+            if (!textPrompt) return;
+            if (beastPullDirection === 'left') {
+                textPrompt.innerText = '➡️ VUỐT SANG PHẢI! ➡️';
+            } else if (beastPullDirection === 'right') {
+                textPrompt.innerText = '⬅️ VUỐT SANG TRÁI! ⬅️';
+            } else {
+                textPrompt.innerText = '⬇️ VUỐT XUỐNG! ⬇️';
+            }
+        }
+
+        function triggerTugWin() {
+            if (!isTugOfWarActive) return;
+            isTugOfWarActive = false; 
+            clearInterval(tugTimerInterval);
+            document.getElementById('tug-of-war-ui').classList.add('hidden');
+            exitARScreen();
+
+            if (currentSelectedMarker && map) {
+                map.removeLayer(currentSelectedMarker);
+                let idx = activeMarkers.indexOf(currentSelectedMarker);
+                if (idx !== -1) {
+                    activeMarkers.splice(idx, 1);
+                    mapMonstersData.splice(idx, 1);
+                }
+            }
+
+            let multi = currentWildMonster.rarity.statMultiplier || 1.0;
+            let newPet = {
+                ...currentWildMonster, level: 1, hearts: 3, gender: Math.random() < 0.5 ? 'Đực' : 'Cái',
+                critRate: Math.floor(15 + Math.random() * 20 * multi), dodgeRate: Math.floor(10 + Math.random() * 15 * multi),
+                accuracy: Math.floor(85 + Math.random() * 10), blockRate: Math.floor(10 + Math.random() * 20 * multi),
+                slowResist: Math.floor(10 + Math.random() * 15), speed: Math.floor(40 + Math.random() * 30 * multi),
+                trait: possibleTraits[Math.floor(Math.random() * possibleTraits.length)], hunger: 100, happiness: 100
+            };
+            if (team.length < 3) { team.push(newPet); saveGameData(); alert(`🎉 Bắt thành công ${newPet.name} (${newPet.rarity.badge})! Đã đưa vào Đội.`); }
+            else { farm.push(newPet); saveGameData(); alert(`🎉 Đội đầy, đã chuyển ${newPet.name} vào Trại!`); }
+            addQuestProgress(1, 1); 
+            updateTeamCount();
+        }
+
+        // ==========================================
+        // ĐẤU TRƯỜNG ATB V10.7
+        // ==========================================
+        let battleCanvas, battleCtx, battleInterval;
+        function startBattle(mode) {
+            checkPetSurvival();
+            if (team.length === 0) { alert('Đội hình trống!'); return; }
+            if (mode === 'boss' && team.length < 3) { alert('⚠️ Boss yêu cầu đủ 3 linh thú!'); return; }
+            closeModal();
+            closeTowerScreen();
+            document.getElementById('map-screen').classList.add('hidden');
+            document.getElementById('battle-screen').classList.remove('hidden');
+            switchGameMusic('battle');
+
+            let activeTeam = mode === 'boss' ? [...team] : [team[0]];
+            let teamHpList = activeTeam.map(p => p.hp);
+            let teamMaxHpTotal = activeTeam.reduce((sum, p) => sum + p.maxHp, 0);
+
+            let teamSpeedGauges = activeTeam.map(() => Math.floor(Math.random() * 150));
+            let enemySpeedGauge = Math.floor(Math.random() * 150);
+
+            let enemy = mode === 'boss' ? { name: `Hắc Long Vương (Lv.${bossLevel})`, element: 'Hoa', emoji: '🐉', hp: 300 + (bossLevel * 100), maxHp: 300 + (bossLevel * 100), atk: 30 + (bossLevel * 8), speed: 45 + bossLevel * 3 } :
+                        mode === 'tower' ? { name: `Thủ Vệ Tầng ${towerFloor}`, element: elementList[towerFloor % elementList.length], emoji: '👹', hp: 120 + (towerFloor * 25), maxHp: 120 + (towerFloor * 25), atk: 20 + towerFloor * 4, speed: 40 + towerFloor * 2 } :
+                        { name: 'Đối Thủ PvP', element: 'Tho', emoji: '🤖', hp: 160, maxHp: 160, atk: 25, speed: 52 };
+            let enemyHp = enemy.hp;
+            document.getElementById('battle-enemy-name').innerText = `${enemy.name} [${elementNames[enemy.element]?.label}] (⚡${enemy.speed})`;
+
+            battleCanvas = document.getElementById('battleCanvas');
+            let dpr = window.devicePixelRatio || 1;
+            let rect = battleCanvas.getBoundingClientRect();
+            battleCanvas.width = rect.width * dpr;
+            battleCanvas.height = rect.height * dpr;
+            battleCtx = battleCanvas.getContext('2d');
+            battleCtx.scale(dpr, dpr);
+            battleCtx.imageSmoothingEnabled = true;
+            battleCtx.imageSmoothingQuality = 'high';
+            
+            let attacker = null;
+            const ACTION_THRESHOLD = 800;
+
+            let idleTick = 0;
+            let teamHitShake = [0, 0, 0];
+            let enemyHitShake = 0;
+            let impactEffects = [];
+            let battleEnded = false;
+
+            battleInterval = setInterval(() => {
+                battleCtx.clearRect(0, 0, rect.width, rect.height);
+                idleTick += 0.14;
+
+                let cx = rect.width / 2, cy = rect.height * 0.62;
+                let defaultTeamX = cx - 85, defaultEnemyX = cx + 85;
+
+                if (!attacker && !battleEnded) {
+                    activeTeam.forEach((pet, i) => {
+                        if (teamHpList[i] > 0) {
+                            teamSpeedGauges[i] += pet.speed;
+                            if (teamSpeedGauges[i] >= ACTION_THRESHOLD && !attacker) {
+                                attacker = { side: 'team', index: i, step: 0 };
+                                teamSpeedGauges[i] -= ACTION_THRESHOLD;
+                            }
+                        }
+                    });
+
+                    if (!attacker && enemyHp > 0) {
+                        enemySpeedGauge += enemy.speed;
+                        if (enemySpeedGauge >= ACTION_THRESHOLD) {
+                            attacker = { side: 'enemy', index: 0, step: 0 };
+                            enemySpeedGauge -= ACTION_THRESHOLD;
+                        }
+                    }
+                }
+
+                let myOffsetsX = [0, 0, 0];
+                let myOffsetsY = [0, 0, 0];
+                let myRotations = [0, 0, 0];
+                let enemyOffsetX = 0;
+                let enemyOffsetY = 0;
+                let enemyRotation = 0;
+
+                if (attacker && !battleEnded) {
+                    attacker.step++;
+                    let chargeDist = 120;
+
+                    if (attacker.side === 'team') {
+                        let idx = attacker.index;
+                        let targetY = cy;
+                        let startY = cy + (idx - 1) * 32;
+
+                        if (attacker.step <= 9) {
+                            let t = attacker.step / 9;
+                            myOffsetsX[idx] = t * chargeDist;
+                            myOffsetsY[idx] = (targetY - startY) * t - Math.sin(t * Math.PI) * 32;
+                            myRotations[idx] = t * 0.25;
+                        } else if (attacker.step <= 15) {
+                            myOffsetsX[idx] = chargeDist;
+                            myOffsetsY[idx] = targetY - startY;
+                            myRotations[idx] = 0.25;
+
+                            if (attacker.step === 10) {
+                                let pet = activeTeam[idx];
+                                let dmg = pet.atk * (0.8 + Math.random() * 0.4);
+                                if (pet.element === currentWeather.bonusElem) dmg *= currentWeather.statBonus;
+                                let isCounter = false;
+                                if (elementCounterMap[pet.element] === enemy.element) { dmg *= 1.35; isCounter = true; }
+                                let finalDmg = Math.floor(dmg);
+                                enemyHp = Math.max(0, enemyHp - finalDmg);
+
+                                enemyHitShake = 12;
+                                impactEffects.push({
+                                    x: defaultEnemyX - 15,
+                                    y: cy,
+                                    radius: 10,
+                                    alpha: 1,
+                                    color: isCounter ? '#facc15' : '#38bdf8',
+                                    text: `-${finalDmg}${isCounter ? ' 💥' : ''}`
+                                });
+                                document.getElementById('battle-log').innerText = `⚡ ${pet.name} (Tốc độ ${pet.speed}) lao tới đánh: -${finalDmg} dmg ${isCounter ? '💥[KHẮC HỆ!]' : ''}!`;
+                            }
+                        } else if (attacker.step <= 22) {
+                            let t = 1 - (attacker.step - 15) / 7;
+                            myOffsetsX[idx] = chargeDist * t;
+                            myOffsetsY[idx] = (targetY - startY) * t - Math.sin(t * Math.PI) * 15;
+                            myRotations[idx] = t * 0.25;
+                        } else {
+                            attacker = null;
+                        }
+                    } else if (attacker.side === 'enemy') {
+                        let targetIdx = teamHpList.findIndex(h => h > 0);
+                        let targetY = targetIdx !== -1 ? cy + (targetIdx - 1) * 32 : cy;
+
+                        if (attacker.step <= 9) {
+                            let t = attacker.step / 9;
+                            enemyOffsetX = -t * chargeDist;
+                            enemyOffsetY = (targetY - cy) * t - Math.sin(t * Math.PI) * 32;
+                            enemyRotation = -t * 0.25;
+                        } else if (attacker.step <= 15) {
+                            enemyOffsetX = -chargeDist;
+                            enemyOffsetY = targetY - cy;
+                            enemyRotation = -0.25;
+
+                            if (attacker.step === 10) {
+                                let enDmg = Math.floor(enemy.atk * (0.8 + Math.random() * 0.4));
+                                if (targetIdx !== -1) {
+                                    teamHpList[targetIdx] = Math.max(0, teamHpList[targetIdx] - enDmg);
+                                    activeTeam[targetIdx].hp = teamHpList[targetIdx];
+                                    teamHitShake[targetIdx] = 12;
+                                    impactEffects.push({
+                                        x: defaultTeamX + 15,
+                                        y: targetY,
+                                        radius: 10,
+                                        alpha: 1,
+                                        color: '#ef4444',
+                                        text: `-${enDmg}`
+                                    });
+                                    document.getElementById('battle-log').innerText = `⚡ ${enemy.name} (Tốc độ ${enemy.speed}) tấn công: -${enDmg} dmg lên ${activeTeam[targetIdx].name}!`;
+                                }
+                            }
+                        } else if (attacker.step <= 22) {
+                            let t = 1 - (attacker.step - 15) / 7;
+                            enemyOffsetX = -chargeDist * t;
+                            enemyOffsetY = (targetY - cy) * t - Math.sin(t * Math.PI) * 15;
+                            enemyRotation = -t * 0.25;
+                        } else {
+                            attacker = null;
+                        }
+                    }
+                }
+
+                let currentTeamHpTotal = teamHpList.reduce((a, b) => Math.max(0, a) + Math.max(0, b), 0);
+                let teamHpPercent = Math.max(0, (currentTeamHpTotal / teamMaxHpTotal) * 100);
+                let enemyHpPercent = Math.max(0, (enemyHp / enemy.maxHp) * 100);
+                document.getElementById('battle-team-hp-bar').style.width = teamHpPercent + '%';
+                document.getElementById('battle-team-hp-text').innerText = `HP: ${currentTeamHpTotal}/${teamMaxHpTotal}`;
+                document.getElementById('battle-enemy-hp-bar').style.width = enemyHpPercent + '%';
+                document.getElementById('battle-enemy-hp-text').innerText = `HP: ${Math.max(0, enemyHp)}/${enemy.maxHp}`;
+                
+                let isEnemyDead = enemyHp <= 0;
+                let enKnockback = 0;
+                if (enemyHitShake > 0) {
+                    enKnockback = Math.sin(enemyHitShake * 1.8) * 10 + 6;
+                    enemyHitShake--;
+                }
+
+                let finalEnX = isEnemyDead ? defaultEnemyX : (defaultEnemyX + enemyOffsetX + enKnockback);
+                let finalEnY = isEnemyDead ? (cy + 14) : (cy + enemyOffsetY);
+                let enIdleScaleY = (isEnemyDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + 1) * 0.04);
+                let finalEnRotation = isEnemyDead ? (Math.PI / 2) : enemyRotation;
+
+                battleCtx.save();
+                battleCtx.translate(finalEnX, finalEnY);
+                battleCtx.rotate(finalEnRotation);
+                battleCtx.scale(1, enIdleScaleY);
+                
+                battleCtx.font = "65px sans-serif"; 
+                battleCtx.textAlign = "center"; 
+                battleCtx.textBaseline = "middle";
+                battleCtx.fillText(enemy.emoji, 0, 0);
+                battleCtx.restore();
+
+                if (!isEnemyDead) {
+                    battleCtx.fillStyle = 'rgba(0,0,0,0.7)'; 
+                    battleCtx.fillRect(finalEnX - 25, finalEnY + 32, 50, 4);
+                    battleCtx.fillStyle = '#38bdf8'; 
+                    battleCtx.fillRect(finalEnX - 25, finalEnY + 32, Math.min(50, (enemySpeedGauge / ACTION_THRESHOLD) * 50), 4);
+                }
+
+                activeTeam.forEach((pet, i) => {
+                    let isPetDead = teamHpList[i] <= 0;
+                    let knockback = 0;
+                    if (teamHitShake[i] > 0) {
+                        knockback = -Math.sin(teamHitShake[i] * 1.8) * 10 - 6;
+                        teamHitShake[i]--;
+                    }
+
+                    let posY = isPetDead ? (cy + (i - 1) * 32 + 12) : (cy + (i - 1) * 32 + myOffsetsY[i]);
+                    let posX = isPetDead ? defaultTeamX : (defaultTeamX + myOffsetsX[i] + knockback);
+                    let idleScaleY = (isPetDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + i * 1.2) * 0.04);
+                    let petRot = isPetDead ? (-Math.PI / 2) : myRotations[i];
+
+                    battleCtx.save();
+                    battleCtx.translate(posX, posY);
+                    battleCtx.rotate(petRot);
+                    battleCtx.scale(-1, idleScaleY);
+
+                    battleCtx.font = "52px sans-serif"; 
+                    battleCtx.textAlign = "center"; 
+                    battleCtx.textBaseline = "middle";
+                    battleCtx.fillText(pet.emoji, 0, 0);
+                    battleCtx.restore();
+
+                    if (!isPetDead) {
+                        battleCtx.fillStyle = 'rgba(0,0,0,0.7)'; 
+                        battleCtx.fillRect(posX - 22, posY + 26, 44, 4);
+                        battleCtx.fillStyle = '#facc15'; 
+                        battleCtx.fillRect(posX - 22, posY + 26, Math.min(44, (teamSpeedGauges[i] / ACTION_THRESHOLD) * 44), 4);
+                    }
+                });
+
+                for (let idx = impactEffects.length - 1; idx >= 0; idx--) {
+                    let eff = impactEffects[idx];
+                    eff.radius += 4.5;
+                    eff.alpha -= 0.055;
+                    eff.y -= 1.5;
+
+                    if (eff.alpha <= 0) {
+                        impactEffects.splice(idx, 1);
+                        continue;
+                    }
+
+                    battleCtx.save();
+                    battleCtx.globalAlpha = Math.max(0, eff.alpha);
+                    battleCtx.beginPath();
+                    battleCtx.arc(eff.x, eff.y, eff.radius, 0, Math.PI * 2);
+                    battleCtx.strokeStyle = eff.color;
+                    battleCtx.lineWidth = 3.5;
+                    battleCtx.stroke();
+
+                    battleCtx.font = "900 18px sans-serif";
+                    battleCtx.fillStyle = eff.color;
+                    battleCtx.textAlign = "center";
+                    battleCtx.strokeStyle = "#000000";
+                    battleCtx.lineWidth = 3;
+                    battleCtx.strokeText(eff.text, eff.x, eff.y - 18);
+                    battleCtx.fillText(eff.text, eff.x, eff.y - 18);
+                    battleCtx.restore();
+                }
+
+                let allTeamDead = teamHpList.every(h => h <= 0);
+                if ((enemyHp <= 0 || allTeamDead) && !battleEnded) {
+                    battleEnded = true;
+                    attacker = null;
+
+                    setTimeout(() => {
+                        clearInterval(battleInterval);
+                        if (enemyHp <= 0) {
+                            let rewardGold = mode === 'boss' ? 700 + (bossLevel * 200) : mode === 'tower' ? 300 + (towerFloor * 50) : 350;
+                            playerCoins += rewardGold; saveGameData(); addQuestProgress(2, 1);
+                            if (mode === 'tower') { towerFloor++; localStorage.setItem('ar_tower_floor', towerFloor); }
+                            else if (mode === 'boss') { bossLevel++; localStorage.setItem('ar_boss_level', bossLevel); }
+                            alert(`🏆 Chiến thắng vẻ vang! Nhận +${rewardGold} Vàng!`);
+                        } else {
+                            activeTeam.forEach(pet => {
+                                pet.hearts--;
+                                if (pet.hearts <= 0) alert(`💀 Thú ${pet.name} đã tử trận!`);
+                                else alert(`💔 Thú ${pet.name} mất 1 ❤️! Còn ${pet.hearts} ❤️.`);
+                            });
+                            team = team.filter(p => p.hearts > 0); saveGameData();
+                            alert('💀 Thất bại!');
+                        }
+                        exitBattleScreen();
+                    }, 1100);
+                }
+            }, 30);
+        }
+
+        function exitBattleScreen() {
+            switchGameMusic('map');
+            if (battleInterval) clearInterval(battleInterval);
+            document.getElementById('battle-screen').classList.add('hidden');
+            document.getElementById('map-screen').classList.remove('hidden');
+            setTimeout(() => { if (map) map.invalidateSize(); }, 100);
+        }
+
+        function updateTeamCount() {
+            ['team-count', 'home-team-count'].forEach(id => {
+                let countEl = document.getElementById(id);
+                if (countEl) countEl.innerText = team.length;
+            });
+        }
+
+        function openQuestMenu() {
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-yellow-300">📜 Nhiệm Vụ Hằng Ngày</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><div class="space-y-3 max-h-80 overflow-y-auto">`;
+            dailyQuests.forEach((q, idx) => {
+                let isCompleted = q.progress >= q.target;
+                let btnHtml = q.claimed ? `<span class="text-xs text-zinc-500 font-bold">Đã nhận</span>` : isCompleted ? `<button onclick="claimQuest(${idx})" class="bg-emerald-600 px-3 py-1 rounded text-xs font-bold cursor-pointer">Nhận Thưởng</button>` : `<span class="text-xs text-zinc-400">${q.progress}/${q.target}</span>`;
+                html += `<div class="bg-zinc-800 p-3 rounded-xl border border-zinc-700 flex items-center justify-between"><div><div class="font-bold text-xs text-yellow-200">${q.title}</div><div class="text-[10px] text-zinc-400">Thưởng: ${q.reward}🪙</div></div><div>${btnHtml}</div>
