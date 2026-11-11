@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Smooth Scene Navigation v10.7</title>
+    <title>Batthu - Panorama Home Hub v10.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -12,25 +12,33 @@
         #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 150px; overflow: hidden; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; background: #18181b; }
         
-        /* TỐI ƯU VÙNG CHẠM CHUYỂN CẢNH NHẠY 100% TRÊN ĐIỆN THOẠI */
+        /* KHUNG VUỐT NGANG TOÀN CẢNH SẢNH CHÍNH */
+        #home-panorama-scroll {
+            width: 100vw;
+            height: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+        }
+        #home-panorama-canvas {
+            position: relative;
+            height: 100%;
+            width: 148vw; /* Rộng hơn màn hình điện thoại để vuốt ngang trái/phải */
+            min-width: 620px;
+        }
+
         .hotspot { 
             position: absolute; 
             cursor: pointer; 
             border: none; 
             background: transparent; 
-            z-index: 40; 
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-            transition: transform 0.12s ease; 
+            z-index: 35 !important; 
+            pointer-events: auto !important;
+            touch-action: manipulation !important;
+            transition: transform 0.15s; 
         }
-        .hotspot:active { transform: scale(0.93); }
-
-        .tab-btn {
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-            cursor: pointer;
-        }
-        .tab-btn:active { transform: scale(0.94); }
+        .hotspot:active { transform: scale(0.94); }
 
         .home-label {
             background: rgba(15, 23, 42, 0.88);
@@ -41,7 +49,7 @@
             font-size: 11px;
             padding: 5px 11px;
             border-radius: 9999px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.75);
             white-space: nowrap;
             text-shadow: 0 1px 2px #000;
             pointer-events: none;
@@ -149,48 +157,59 @@
     </div>
 
     <!-- ==========================================
-         1. MÀN HÌNH SẢNH CHÍNH ĐẦU GAME (background.png)
+         1. MÀN HÌNH SẢNH CHÍNH VUỐT NGANG TOÀN CẢNH (background.png)
          ========================================== -->
-    <div id="home-screen" class="screen-panel absolute inset-0 z-30 bg-zinc-950 flex flex-col justify-between overflow-hidden">
-        <img src="./background.png" alt="Sảnh Chính" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
-
-        <div class="relative z-40 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/85 to-transparent">
-            <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold">
+    <div id="home-screen" class="absolute inset-0 z-30 bg-zinc-950 overflow-hidden">
+        
+        <!-- Thanh thông tin cố định trên cùng (pointer-events-none ở khung ngoài để không chắn click ảnh) -->
+        <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+            <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold pointer-events-auto">
                 <span>🏠 Nhà Chính</span>
                 <span class="text-yellow-400 ml-1">💰 <span id="home-coin-count">1500</span>🪙</span>
             </div>
-            <div class="flex items-center gap-1.5">
-                <button type="button" onclick="openTeamMenu()" class="tab-btn bg-black/85 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold">🎒(<span id="home-team-count">0</span>/3)</button>
-                <button type="button" onclick="openMarketMenu()" class="tab-btn bg-amber-600/95 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold">🛒 Chợ</button>
-                <button type="button" onclick="openQuestMenu()" class="tab-btn bg-yellow-600/95 px-2.5 py-1.5 rounded-full border border-yellow-300 text-xs font-bold">📜 NV</button>
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+                <button onclick="openMarketMenu()" class="bg-amber-600/95 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold cursor-pointer shadow">🛒 Chợ</button>
+                <button onclick="openQuestMenu()" class="bg-yellow-600/95 px-2.5 py-1.5 rounded-full border border-yellow-300 text-xs font-bold cursor-pointer shadow">📜 NV</button>
             </div>
         </div>
 
-        <div class="relative flex-1 w-full h-full z-30">
-            <!-- CỬA CHÍNH Ở GIỮA: Đi săn thú -->
-            <button type="button" onclick="goFromHomeToMap()" class="hotspot flex flex-col items-center justify-center" style="top: 22%; left: 34%; width: 32%; height: 26%;">
-                <div class="home-label animate-bounce">🚪 Đi săn thú</div>
-            </button>
+        <!-- Khung vuốt ngang toàn cảnh căn nhà -->
+        <div id="home-panorama-scroll" class="no-scrollbar">
+            <div id="home-panorama-canvas">
+                <img src="./background.png" alt="Sảnh Chính" class="w-full h-full object-fill select-none pointer-events-none">
 
-            <!-- CÁNH CỬA BÊN PHẢI: Đi Trang trại -->
-            <button type="button" onclick="openFarmMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 22%; left: 74%; width: 25%; height: 26%;">
-                <div class="home-label" style="border-color: #34d399; color: #a7f3d0;">🏡 Đi Trang trại</div>
-            </button>
+                <!-- 1. CỬA CHÍNH Ở GIỮA: "Đi săn thú" -> Ra Map bắt thú -->
+                <div onclick="goFromHomeToMap()" class="hotspot flex flex-col items-center justify-center" style="top: 26%; left: 37%; width: 26%; height: 23%;">
+                    <div class="home-label animate-bounce">🚪 Đi săn thú</div>
+                </div>
 
-            <!-- GIƯỜNG NGỦ BÊN TRÁI: Giường ngủ -->
-            <button type="button" onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 28%; left: 1%; width: 33%; height: 24%;">
-                <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ</div>
-            </button>
+                <!-- 2. CÁNH CỬA BÊN PHẢI: "Đi Trang trại" -> Qua mục Trang trại -->
+                <div onclick="openFarmMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 26%; left: 77%; width: 21%; height: 24%;">
+                    <div class="home-label" style="border-color: #34d399; color: #a7f3d0;">🏡 Đi Trang trại</div>
+                </div>
 
-            <!-- ĐIỆN THOẠI ĐỂ BÀN GÓC DƯỚI PHẢI: Gọi điện bệnh viện -->
-            <button type="button" onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 60%; left: 70%; width: 29%; height: 22%;">
-                <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi điện bệnh viện</div>
-            </button>
+                <!-- 3. GIƯỜNG NGỦ BÊN TRÁI: "Giường ngủ" -> Tối màn hình hồi năng lượng nhanh -->
+                <div onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 31%; left: 3%; width: 30%; height: 19%;">
+                    <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ</div>
+                </div>
+
+                <!-- 4. CON MÈO NGỦ TRÊN ĐỆM XANH BÊN TRÁI: Nút qua Túi Pet -->
+                <div onclick="openTeamMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 52%; left: 10%; width: 23%; height: 16%;">
+                    <div class="home-label" style="border-color: #fb923c; color: #fed7aa;">🎒 Túi Pet (<span id="home-team-count">0</span>/3)</div>
+                </div>
+
+                <!-- 5. ĐIỆN THOẠI ĐỂ BÀN GÓC DƯỚI PHẢI: "Gọi điện bệnh viện" -> Qua Bệnh viện -->
+                <div onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 63%; left: 74%; width: 24%; height: 18%;">
+                    <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi điện bệnh viện</div>
+                </div>
+            </div>
         </div>
 
-        <div class="relative z-40 p-2.5 bg-gradient-to-t from-black/90 to-transparent pointer-events-none">
+        <!-- Thanh năng lượng cố định dưới đáy (pointer-events-none ở khung ngoài) -->
+        <div class="fixed bottom-0 left-0 right-0 z-40 p-2.5 bg-gradient-to-t from-black/90 to-transparent pointer-events-none">
             <div class="flex items-center justify-between text-[11px] font-bold text-zinc-200 bg-black/85 px-3.5 py-2 rounded-xl border border-white/15 shadow-lg">
                 <span class="text-amber-300">⚡ Bắt: <span id="home-catch-count">15</span>/15 (<span id="home-catch-timer">10:00</span>)</span>
+                <span class="text-zinc-400 text-[10px]">↔️ Vuốt ngang xem nhà</span>
                 <span class="text-cyan-300">📡 Quét: <span id="home-scan-count">5</span>/5 (<span id="home-scan-timer">10:00</span>)</span>
             </div>
         </div>
@@ -230,19 +249,19 @@
     <!-- ==========================================
          MÀN HÌNH BẢN ĐỒ GPS
          ========================================== -->
-    <div id="map-screen" class="screen-panel hidden absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2 pb-2">
+    <div id="map-screen" class="hidden absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2 pb-2">
         <div class="z-50 pt-1 pb-1 shrink-0 w-full">
             <div class="flex gap-1.5 overflow-x-auto py-1 w-full no-scrollbar items-center px-0.5">
-                <button type="button" onclick="goBackToHome()" class="tab-btn bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow whitespace-nowrap shrink-0 text-amber-200">🏠 Nhà</button>
-                <button type="button" onclick="openWorldBossMenu()" class="tab-btn bg-amber-700/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
-                <button type="button" onclick="openHospitalMenu()" class="tab-btn bg-cyan-700/90 px-3 py-1.5 rounded-full border border-cyan-400 text-xs font-bold shadow whitespace-nowrap shrink-0">🏥 Bệnh Viện</button>
-                <button type="button" onclick="openEggIncubatorMenu()" class="tab-btn bg-emerald-700/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
-                <button type="button" onclick="openQuestMenu()" class="tab-btn bg-yellow-600/90 px-3 py-1.5 rounded-full border border-yellow-400 text-xs font-bold shadow whitespace-nowrap shrink-0">📜 NV</button>
-                <button type="button" onclick="openTowerMenu()" class="tab-btn bg-purple-600/90 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow whitespace-nowrap shrink-0">🗼 Tháp</button>
-                <button type="button" onclick="openMarketMenu()" class="tab-btn bg-amber-600/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow whitespace-nowrap shrink-0">🛒 Chợ</button>
-                <button type="button" onclick="openArenaMenu()" class="tab-btn bg-red-600/90 px-3 py-1.5 rounded-full border border-red-400 text-xs font-bold shadow whitespace-nowrap shrink-0">⚔️ PvP</button>
-                <button type="button" onclick="openFarmMenu()" class="tab-btn bg-emerald-600/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow whitespace-nowrap shrink-0">🏡 Trại</button>
-                <button type="button" onclick="openTeamMenu()" class="tab-btn bg-black/85 px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold whitespace-nowrap shrink-0">🎒(<span id="team-count">0</span>/3)</button>
+                <button onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0 text-amber-200">🏠 Nhà</button>
+                <button onclick="openWorldBossMenu()" class="bg-amber-700/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
+                <button onclick="openHospitalMenu()" class="bg-cyan-700/90 px-3 py-1.5 rounded-full border border-cyan-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏥 Bệnh Viện</button>
+                <button onclick="openEggIncubatorMenu()" class="bg-emerald-700/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
+                <button onclick="openQuestMenu()" class="bg-yellow-600/90 px-3 py-1.5 rounded-full border border-yellow-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">📜 NV</button>
+                <button onclick="openTowerMenu()" class="bg-purple-600/90 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🗼 Tháp</button>
+                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🛒 Chợ</button>
+                <button onclick="openArenaMenu()" class="bg-red-600/90 px-3 py-1.5 rounded-full border border-red-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">⚔️ PvP</button>
+                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏡 Trại</button>
+                <button onclick="openTeamMenu()" class="bg-black/85 px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">🎒(<span id="team-count">0</span>/3)</button>
             </div>
         </div>
 
@@ -255,10 +274,10 @@
             </div>
 
             <div class="absolute bottom-3 right-3 z-30 flex items-center gap-2">
-                <button type="button" onclick="manualTriggerScan()" class="tab-btn bg-emerald-600 hover:bg-emerald-500 text-white p-3 rounded-full shadow-2xl border border-emerald-400 flex items-center justify-center text-lg transition-transform" title="Quét lại khu vực">
+                <button onclick="manualTriggerScan()" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white p-3 rounded-full shadow-2xl border border-emerald-400 flex items-center justify-center text-lg cursor-pointer transition-transform" title="Quét lại khu vực">
                     🔄
                 </button>
-                <button type="button" onclick="recenterMap()" class="tab-btn bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-full shadow-2xl border border-blue-400 flex items-center justify-center text-lg transition-transform" title="Về vị trí của tôi">
+                <button onclick="recenterMap()" class="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white p-3 rounded-full shadow-2xl border border-blue-400 flex items-center justify-center text-lg cursor-pointer transition-transform" title="Về vị trí của tôi">
                     📍
                 </button>
             </div>
@@ -272,51 +291,51 @@
     </div>
 
     <!-- MÀN HÌNH TRANG TRẠI FULLSCREEN -->
-    <div id="fullscreen-farm-screen" class="screen-panel hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
-        <button type="button" onclick="closeFullscreenFarm()" class="tab-btn absolute top-3 right-3 z-50 bg-black/80 hover:bg-black text-white px-3.5 py-1.5 rounded-full font-bold text-xs border border-white/25 shadow-xl">✕ Thoát</button>
+    <div id="fullscreen-farm-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
+        <button onclick="closeFullscreenFarm()" class="absolute top-3 right-3 z-50 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
         <div class="relative w-full h-full overflow-hidden">
-            <img src="./farm-bg.png" alt="Trang Trai" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
+            <img src="./farm-bg.png" alt="Trang Trai" class="absolute inset-0 w-full h-full object-cover z-0">
             
             <div id="farm-visual-pets" class="absolute inset-0 pointer-events-none z-10"></div>
 
-            <button type="button" onclick="showFarmSection('training')" class="hotspot" style="top: 5%; left: 10%; width: 80%; height: 28%;" title="Khu Luyện Tập"></button>
-            <button type="button" onclick="showFarmSection('resting')" class="hotspot" style="top: 36%; left: 52%; width: 44%; height: 30%;" title="Khu Hồi Sức"></button>
-            <button type="button" onclick="showFarmSection('storage')" class="hotspot" style="top: 68%; left: 5%; width: 90%; height: 28%;" title="Kho Trại"></button>
+            <div onclick="showFarmSection('training')" class="hotspot" style="top: 5%; left: 10%; width: 80%; height: 28%;" title="Khu Luyện Tập"></div>
+            <div onclick="showFarmSection('resting')" class="hotspot" style="top: 36%; left: 52%; width: 44%; height: 30%;" title="Khu Hồi Sức"></div>
+            <div onclick="showFarmSection('storage')" class="hotspot" style="top: 68%; left: 5%; width: 90%; height: 28%;" title="Kho Trại"></div>
         </div>
     </div>
 
     <!-- MÀN HÌNH BỆNH VIỆN FULLSCREEN -->
-    <div id="hospital-screen" class="screen-panel hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
-        <button type="button" onclick="closeHospitalMenu()" class="tab-btn absolute top-3 right-3 z-50 bg-black/80 hover:bg-black text-white px-3.5 py-1.5 rounded-full font-bold text-xs border border-white/25 shadow-xl">✕ Đóng</button>
+    <div id="hospital-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
+        <button onclick="closeHospitalMenu()" class="absolute top-3 right-3 z-50 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Đóng</button>
         <div class="relative w-full h-full overflow-hidden">
-            <img src="./hospital-bg.png" alt="Bệnh Viện" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
-            <button type="button" onclick="openHospitalActionModal('heal')" class="hotspot" style="top: 23%; left: 5%; width: 45%; height: 35%;" title="Hồi Sức Tim"></button>
-            <button type="button" onclick="openHospitalActionModal('evolve')" class="hotspot" style="top: 23%; left: 52%; width: 43%; height: 35%;" title="Tiến Hóa Đá"></button>
-            <button type="button" onclick="openHospitalActionModal('breed')" class="hotspot" style="top: 61%; left: 10%; width: 80%; height: 35%;" title="Lai Giống F1"></button>
+            <img src="./hospital-bg.png" alt="Bệnh Viện" class="absolute inset-0 w-full h-full object-cover z-0">
+            <div onclick="openHospitalActionModal('heal')" class="hotspot" style="top: 23%; left: 5%; width: 45%; height: 35%;" title="Hồi Sức Tim"></div>
+            <div onclick="openHospitalActionModal('evolve')" class="hotspot" style="top: 23%; left: 52%; width: 43%; height: 35%;" title="Tiến Hóa Đá"></div>
+            <div onclick="openHospitalActionModal('breed')" class="hotspot" style="top: 61%; left: 10%; width: 80%; height: 35%;" title="Lai Giống F1"></div>
         </div>
     </div>
 
     <!-- MÀN HÌNH THÁP VÔ TẬN FULLSCREEN -->
-    <div id="tower-screen" class="screen-panel hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
-        <button type="button" onclick="closeTowerScreen()" class="tab-btn absolute top-3 right-3 z-50 bg-black/80 hover:bg-black text-white px-3.5 py-1.5 rounded-full font-bold text-xs border border-white/25 shadow-xl">✕ Thoát</button>
+    <div id="tower-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
+        <button onclick="closeTowerScreen()" class="absolute top-3 right-3 z-50 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
         <div class="relative w-full h-full overflow-hidden flex flex-col items-center justify-end pb-12">
-            <img src="./tower-bg.png" alt="Tháp Vô Tận" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
-            <button type="button" onclick="startBattle('tower')" class="hotspot flex flex-col items-center justify-center animate-pulse" style="top: 60%; left: 35%; width: 30%; height: 20%;" title="Khiêu chiến Tháp">
-                <div class="bg-purple-900/90 text-yellow-300 font-extrabold px-3 py-1.5 rounded-full border-2 border-yellow-400 text-xs shadow-2xl tracking-wider text-center pointer-events-none">
+            <img src="./tower-bg.png" alt="Tháp Vô Tận" class="absolute inset-0 w-full h-full object-cover z-0">
+            <div onclick="startBattle('tower')" class="hotspot flex flex-col items-center justify-center animate-pulse" style="top: 60%; left: 35%; width: 30%; height: 20%;" title="Khiêu chiến Tháp">
+                <div class="bg-purple-900/90 text-yellow-300 font-extrabold px-3 py-1.5 rounded-full border-2 border-yellow-400 text-xs shadow-2xl tracking-wider text-center">
                     🗼 TẦNG <span id="tower-gate-floor">1</span><br><span class="text-[9px] text-white">CHẠM ĐỂ ĐẤU</span>
                 </div>
-            </button>
+            </div>
         </div>
     </div>
 
     <!-- MÀN HÌNH MINIGAME BẮT THÚ AR ACTION -->
-    <div id="ar-screen" class="screen-panel hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
+    <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
         </div>
         <canvas id="gameCanvas" class="absolute inset-0 z-10 touch-none"></canvas>
         <div class="flex justify-between items-center z-20 p-4 pointer-events-auto">
-            <button type="button" onclick="exitARScreen()" class="tab-btn bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold">
+            <button onclick="exitARScreen()" class="bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">
                 ⬅️ Quay lại bản đồ
             </button>
             <div id="ar-mon-info" class="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold text-yellow-300">
@@ -342,7 +361,7 @@
     </div>
 
     <!-- MÀN HÌNH ĐẤU TRƯỜNG FULLSCREEN -->
-    <div id="battle-screen" class="screen-panel hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950">
+    <div id="battle-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-950">
         <div class="absolute top-3 left-3 right-3 z-30 flex justify-between items-center bg-black/75 backdrop-blur-md p-2.5 rounded-xl border border-white/20 shadow-2xl">
             <div class="flex flex-col w-5/12">
                 <div id="battle-team-names" class="text-[11px] font-bold text-emerald-400 truncate">Đội hình của bạn</div>
@@ -351,7 +370,7 @@
                 </div>
                 <div id="battle-team-hp-text" class="text-[9px] text-zinc-300 mt-0.5">HP: --/--</div>
             </div>
-            <button type="button" onclick="exitBattleScreen()" class="tab-btn bg-zinc-800 hover:bg-zinc-700 px-3 py-1 rounded-lg border border-zinc-600 text-[10px] font-bold">Rút lui</button>
+            <button onclick="exitBattleScreen()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1 rounded-lg border border-zinc-600 text-[10px] font-bold cursor-pointer">Rút lui</button>
             <div class="flex flex-col w-5/12 text-right">
                 <div id="battle-enemy-name" class="text-[11px] font-bold text-red-400 truncate">Đối thủ</div>
                 <div class="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden mt-1 border border-zinc-700">
@@ -362,7 +381,7 @@
         </div>
 
         <div class="relative w-full h-full overflow-hidden flex flex-col items-center justify-center">
-            <img src="./battle-bg.png" alt="Dau Truong" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
+            <img src="./battle-bg.png" alt="Dau Truong" class="absolute inset-0 w-full h-full object-cover z-0">
             <canvas id="battleCanvas" class="absolute inset-0 w-full h-full z-10"></canvas>
             <div id="damage-popup-container" class="absolute inset-0 pointer-events-none overflow-hidden z-20"></div>
             <div id="battle-log" class="absolute bottom-6 z-20 bg-black/85 px-4 py-2 rounded-xl text-xs text-yellow-300 font-bold border border-yellow-500/50 text-center max-w-sm shadow-xl">
@@ -379,7 +398,6 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // HỦY SERVICE WORKER CŨ ĐỂ ĐẢM BẢO KHÔNG KẸT CACHE
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(registrations => {
                 for (let reg of registrations) {
@@ -412,7 +430,6 @@
         let lastScanStaminaTime = parseInt(localStorage.getItem('ar_scan_stamina_time') || Date.now());
 
         let isSleeping = false;
-        let lastActiveBaseScreen = 'home-screen'; // Ghi nhớ đang ở Nhà hay ở Map để quay lại chuẩn xác
 
         let trainingPoles = safeParse('ar_training_poles', [null, null, null, null]);
         let restingPets = safeParse('ar_resting_pets', []);
@@ -579,25 +596,20 @@
             });
         }
 
-        // ==========================================
-        // HÀM CHUYỂN CẢNH TẬP TRUNG (KHÔNG BAO GIỜ BỊ KẸT HAY ĐÈ TAB)
-        // ==========================================
-        function switchScreen(targetId) {
-            closeModal();
-            document.querySelectorAll('.screen-panel').forEach(panel => {
-                panel.classList.add('hidden');
-            });
-            let target = document.getElementById(targetId);
-            if (target) {
-                target.classList.remove('hidden');
-            }
-            if (targetId === 'home-screen' || targetId === 'map-screen') {
-                lastActiveBaseScreen = targetId;
+        // Căn giữa khung vuốt ngang Sảnh Chính lúc mở game
+        function centerHomePanorama() {
+            let scroller = document.getElementById('home-panorama-scroll');
+            let canvas = document.getElementById('home-panorama-canvas');
+            if (scroller && canvas) {
+                let centerScroll = (canvas.offsetWidth - scroller.offsetWidth) / 2;
+                if (centerScroll > 0) scroller.scrollLeft = centerScroll;
             }
         }
 
         function goFromHomeToMap() {
-            switchScreen('map-screen');
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('map-screen').classList.remove('hidden');
+            
             setTimeout(() => {
                 initMap();
                 if (map) {
@@ -605,11 +617,12 @@
                     setTimeout(() => map.invalidateSize(), 300);
                     setTimeout(() => map.invalidateSize(), 700);
                 }
-            }, 80);
+            }, 100);
         }
 
         function goBackToHome() {
-            switchScreen('home-screen');
+            document.getElementById('map-screen').classList.add('hidden');
+            document.getElementById('home-screen').classList.remove('hidden');
             updateTeamCount();
             saveGameData();
         }
@@ -698,7 +711,7 @@
             let html = `
             <div class="flex justify-between items-center mb-3">
                 <h3 class="font-bold text-sm text-emerald-300">🥚 Khu Ấp Trứng Linh Thú (Đi bộ để nở)</h3>
-                <button type="button" onclick="closeModal()" class="text-zinc-400 font-bold">✕</button>
+                <button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button>
             </div>
             <div class="text-[10px] text-zinc-300 mb-2">Bước chân hiện tại: <span class="text-emerald-400 font-bold">${totalSteps}</span> bước</div>
             <div class="space-y-2.5 max-h-72 overflow-y-auto">`;
@@ -721,7 +734,7 @@
                                 </div>
                             </div>
                             <div>
-                                ${isReady ? `<button type="button" onclick="hatchEgg(${idx})" class="bg-emerald-500 hover:bg-emerald-400 text-black px-3 py-1 rounded-lg text-xs font-extrabold cursor-pointer animate-pulse">ẤP NỞ! 🎉</button>` : `<span class="text-[10px] text-zinc-400 font-bold">Đang ấp...</span>`}
+                                ${isReady ? `<button onclick="hatchEgg(${idx})" class="bg-emerald-500 hover:bg-emerald-400 text-black px-3 py-1 rounded-lg text-xs font-extrabold cursor-pointer animate-pulse">ẤP NỞ! 🎉</button>` : `<span class="text-[10px] text-zinc-400 font-bold">Đang ấp...</span>`}
                             </div>
                         </div>
                         <div class="w-full bg-zinc-900 rounded-full h-2 overflow-hidden border border-zinc-700">
@@ -731,7 +744,7 @@
                 });
             }
             html += `</div>
-            <button type="button" onclick="addPlayerSteps(20); openEggIncubatorMenu();" class="mt-3 w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] py-1.5 rounded-lg border border-zinc-600">👟 Thử nghiệm: Giả lập đi +20 bước</button>`;
+            <button onclick="addPlayerSteps(20); openEggIncubatorMenu();" class="mt-3 w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] py-1.5 rounded-lg border border-zinc-600">👟 Thử nghiệm: Giả lập đi +20 bước</button>`;
             content.innerHTML = html;
         }
 
@@ -760,17 +773,13 @@
             }
         }, 3000);
 
-        // --- CHUYỂN CẢNH TRANG TRẠI ---
         function openFarmMenu() {
             checkPetSurvival();
-            switchScreen('fullscreen-farm-screen');
+            document.getElementById('fullscreen-farm-screen').classList.remove('hidden');
             renderFarmVisualPets();
         }
         function closeFullscreenFarm() {
-            switchScreen(lastActiveBaseScreen);
-            if (lastActiveBaseScreen === 'map-screen' && map) {
-                setTimeout(() => map.invalidateSize(), 100);
-            }
+            document.getElementById('fullscreen-farm-screen').classList.add('hidden');
         }
 
         function renderFarmVisualPets() {
@@ -825,33 +834,33 @@
             modal.classList.remove('hidden');
 
             if (sectionType === 'training') {
-                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">🪵 Khu Luyện Tập Cọc Gỗ</h3><button type="button" onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
+                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">🪵 Khu Luyện Tập Cọc Gỗ</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
                 trainingPoles.forEach((pet, idx) => {
                     if (pet) {
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/50"><div class="flex items-center gap-2"><span class="text-2xl pet-train-anim">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><button type="button" onclick="removeFromTraining(${idx}); closeModal(); renderFarmVisualPets();" class="bg-red-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Rút về</button></div>`;
+                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/50"><div class="flex items-center gap-2"><span class="text-2xl pet-train-anim">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><button onclick="removeFromTraining(${idx}); closeModal(); openFarmMenu();" class="bg-red-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Rút về</button></div>`;
                     } else {
-                        html += `<div class="bg-zinc-800/60 p-2.5 rounded-xl flex items-center justify-between border border-dashed border-zinc-600"><div class="text-xs text-zinc-300">Cọc gỗ trống #${idx + 1}</div><button type="button" onclick="closeModal(); showSelectPetForPole(${idx});" class="bg-amber-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Cho tập</button></div>`;
+                        html += `<div class="bg-zinc-800/60 p-2.5 rounded-xl flex items-center justify-between border border-dashed border-zinc-600"><div class="text-xs text-zinc-300">Cọc gỗ trống #${idx + 1}</div><button onclick="closeModal(); showSelectPetForPole(${idx});" class="bg-amber-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Cho tập</button></div>`;
                     }
                 });
                 html += `</div>`;
                 content.innerHTML = html;
             } else if (sectionType === 'resting') {
-                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-emerald-300">🌿 Khu Hồi Sức HP</h3><button type="button" onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
+                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-emerald-300">🌿 Khu Hồi Sức HP</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
                 if (restingPets.length === 0) html += `<div class="text-center text-xs text-zinc-400 py-6">Khu nghỉ ngơi trống!</div>`;
                 else {
                     restingPets.forEach((pet, idx) => {
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/50"><div class="flex items-center gap-2"><span class="text-2xl pet-rest-anim">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (HP: ${Math.floor(pet.hp)}/${pet.maxHp})</div></div><button type="button" onclick="removeFromRest(${idx}); closeModal(); renderFarmVisualPets();" class="bg-blue-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Nhận lại</button></div>`;
+                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/50"><div class="flex items-center gap-2"><span class="text-2xl pet-rest-anim">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (HP: ${Math.floor(pet.hp)}/${pet.maxHp})</div></div><button onclick="removeFromRest(${idx}); closeModal(); openFarmMenu();" class="bg-blue-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Nhận lại</button></div>`;
                     });
                 }
                 html += `</div>`;
                 content.innerHTML = html;
             } else if (sectionType === 'storage') {
-                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-yellow-300">🐾 Kho Linh Thú Trại Hộ (${farm.length})</h3><button type="button" onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
+                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-yellow-300">🐾 Kho Linh Thú Trại Hộ (${farm.length})</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
                 if (farm.length === 0) html += `<div class="text-center text-xs text-zinc-400 py-6">Kho trại trống!</div>`;
                 else {
                     farm.forEach((pet, idx) => {
                         let heartsStr = '❤️'.repeat(pet.hearts);
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border ${pet.rarity.bg}"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span><div class="text-[10px] text-zinc-300">HP: ${Math.floor(pet.hp)} | ${heartsStr} | ${elementNames[pet.element]?.label} | ⚡${pet.speed}</div></div></div><div class="flex gap-1"><button type="button" onclick="sendPetToRest(${idx}); closeModal(); renderFarmVisualPets();" class="bg-emerald-600 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Nghỉ</button><button type="button" onclick="moveToTeamFromFarm(${idx}); closeModal();" class="bg-blue-600 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Đội</button></div></div>`;
+                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border ${pet.rarity.bg}"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span><div class="text-[10px] text-zinc-300">HP: ${Math.floor(pet.hp)} | ${heartsStr} | ${elementNames[pet.element]?.label} | ⚡${pet.speed}</div></div></div><div class="flex gap-1"><button onclick="sendPetToRest(${idx}); closeModal(); openFarmMenu();" class="bg-emerald-600 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Nghỉ</button><button onclick="moveToTeamFromFarm(${idx}); closeModal(); openFarmMenu();" class="bg-blue-600 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Đội</button></div></div>`;
                     });
                 }
                 html += `</div>`;
@@ -865,7 +874,7 @@
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
 
-            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">Chọn thú lên cọc gỗ #${poleIdx + 1}</h3><button type="button" onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2 max-h-60 overflow-y-auto">`;
+            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">Chọn thú lên cọc gỗ #${poleIdx + 1}</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2 max-h-60 overflow-y-auto">`;
             farm.forEach((pet, idx) => {
                 html += `<div onclick="assignPetToPole(${poleIdx}, ${idx})" class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between cursor-pointer border border-zinc-700 hover:border-amber-500"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><span class="text-xs text-amber-400 font-bold">Chọn ›</span></div>`;
             });
@@ -876,7 +885,7 @@
         function assignPetToPole(poleIdx, farmIdx) {
             let pet = farm.splice(farmIdx, 1)[0];
             trainingPoles[poleIdx] = pet;
-            saveGameData(); closeModal(); renderFarmVisualPets();
+            saveGameData(); closeModal(); openFarmMenu();
         }
 
         function removeFromTraining(poleIdx) {
@@ -900,16 +909,12 @@
             saveGameData(); updateTeamCount();
         }
 
-        // --- CHUYỂN CẢNH BỆNH VIỆN ---
         function openHospitalMenu() {
             checkPetSurvival();
-            switchScreen('hospital-screen');
+            document.getElementById('hospital-screen').classList.remove('hidden');
         }
         function closeHospitalMenu() {
-            switchScreen(lastActiveBaseScreen);
-            if (lastActiveBaseScreen === 'map-screen' && map) {
-                setTimeout(() => map.invalidateSize(), 100);
-            }
+            document.getElementById('hospital-screen').classList.add('hidden');
         }
 
         function openHospitalActionModal(actionType) {
@@ -919,33 +924,33 @@
 
             if (actionType === 'heal') {
                 let allPets = [...team, ...farm, ...restingPets, ...trainingPoles.filter(p => p !== null)];
-                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-cyan-400">❤️ Phục Hồi Tim (1000🪙)</h3><button type="button" onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
+                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-cyan-400">❤️ Phục Hồi Tim (1000🪙)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
                 if (allPets.length === 0) html += `<div class="text-center text-xs text-zinc-400 py-6">Không có linh thú nào!</div>`;
                 else {
                     allPets.forEach(pet => {
                         let missingHearts = 3 - pet.hearts;
                         let heartsStr = '❤️'.repeat(pet.hearts) + '🖤'.repeat(missingHearts);
                         let canHeal = pet.hearts < 3;
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-cyan-500/50"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div><div class="text-xs font-bold">${pet.name}</div><div class="text-[10px]">${heartsStr}</div></div></div>${canHeal ? `<button type="button" onclick="healPetHearts('${pet.name}')" class="bg-cyan-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Chữa (1000🪙)</button>` : `<span class="text-xs text-emerald-400 font-bold">Full ❤️</span>`}</div>`;
+                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-cyan-500/50"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div><div class="text-xs font-bold">${pet.name}</div><div class="text-[10px]">${heartsStr}</div></div></div>${canHeal ? `<button onclick="healPetHearts('${pet.name}')" class="bg-cyan-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Chữa (1000🪙)</button>` : `<span class="text-xs text-emerald-400 font-bold">Full ❤️</span>`}</div>`;
                     });
                 }
                 html += `</div>`;
                 content.innerHTML = html;
             } else if (actionType === 'breed') {
                 content.innerHTML = `
-                <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-pink-400">🧬 Sinh Sản Tạo Trứng F1 (300🪙)</h3><button type="button" onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
+                <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-pink-400">🧬 Sinh Sản Tạo Trứng F1 (300🪙)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
                 <div class="text-xs text-zinc-300 mb-3 text-center">Yêu cầu: 2 thú cùng loài, khác giới tính. Sẽ tạo thành quả trứng cần đi bộ để ấp nở!</div>
                 <div class="grid grid-cols-2 gap-2 mb-3">
-                    <button type="button" onclick="openSelectHospitalParentSlot(1)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 text-xs font-bold text-pink-300">Chọn Thú 1</button>
-                    <button type="button" onclick="openSelectHospitalParentSlot(2)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 text-xs font-bold text-pink-300">Chọn Thú 2</button>
+                    <button onclick="openSelectHospitalParentSlot(1)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 text-xs font-bold text-pink-300">Chọn Thú 1</button>
+                    <button onclick="openSelectHospitalParentSlot(2)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 text-xs font-bold text-pink-300">Chọn Thú 2</button>
                 </div>`;
             } else if (actionType === 'evolve') {
                 let allPetsPool = [...team, ...farm];
-                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">💎 Tiến Hóa Đá Ngũ Hành</h3><button type="button" onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="text-[10px] text-yellow-300 mb-2">Kho đá: Kim:${inventory.stoneKim} | Mộc:${inventory.stoneMoc} | Thủy:${inventory.stoneThuy} | Hỏa:${inventory.stoneHoa} | Thổ:${inventory.stoneTho}</div><div class="space-y-2 max-h-60 overflow-y-auto">`;
+                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">💎 Tiến Hóa Đá Ngũ Hành</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="text-[10px] text-yellow-300 mb-2">Kho đá: Kim:${inventory.stoneKim} | Mộc:${inventory.stoneMoc} | Thủy:${inventory.stoneThuy} | Hỏa:${inventory.stoneHoa} | Thổ:${inventory.stoneTho}</div><div class="space-y-2 max-h-60 overflow-y-auto">`;
                 if (allPetsPool.length === 0) html += `<div class="text-center text-xs text-zinc-400 py-6">Không có linh thú!</div>`;
                 else {
                     allPetsPool.forEach((pet, idx) => {
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/50"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><button type="button" onclick="evolvePetWithStone(${idx}); closeModal();" class="bg-amber-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Tiến Hóa (1 Đá)</button></div>`;
+                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/50"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><button onclick="evolvePetWithStone(${idx}); closeModal(); openHospitalMenu();" class="bg-amber-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Tiến Hóa (1 Đá)</button></div>`;
                     });
                 }
                 html += `</div>`;
@@ -961,7 +966,7 @@
             restingPets.forEach(p => { if (p.name === petName) p.hearts = 3; });
             saveGameData();
             alert(`🏥 Chữa trị thành công cho ${petName}!`);
-            closeModal();
+            closeModal(); openHospitalMenu();
         }
 
         let hospitalBreedingSlots = { parent1: null, parent2: null };
@@ -969,7 +974,7 @@
             let allPetsPool = [...team, ...farm];
             if (allPetsPool.length === 0) { alert('Không có linh thú!'); return; }
             const content = document.getElementById('modal-content');
-            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-pink-400">Chọn Thú Bố/Mẹ (${slotNum})</h3><button type="button" onclick="openHospitalActionModal('breed')" class="text-zinc-400 font-bold">‹ Quay lại</button></div><div class="space-y-2 max-h-60 overflow-y-auto">`;
+            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-pink-400">Chọn Thú Bố/Mẹ (${slotNum})</h3><button onclick="openHospitalActionModal('breed')" class="text-zinc-400 font-bold">‹ Quay lại</button></div><div class="space-y-2 max-h-60 overflow-y-auto">`;
             allPetsPool.forEach((pet, idx) => {
                 html += `<div onclick="selectHospitalParentSlot(${slotNum}, ${idx})" class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between cursor-pointer border border-zinc-700 hover:border-pink-500"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (${pet.gender})</div></div><span class="text-xs text-pink-400 font-bold">Chọn ›</span></div>`;
             });
@@ -1035,18 +1040,14 @@
             alert(`💎 Tiến hóa thành công cho ${pet.name}!`);
         }
 
-        // --- CHUYỂN CẢNH THÁP VÔ TẬN ---
         function openTowerMenu() {
             checkPetSurvival();
             let gateTag = document.getElementById('tower-gate-floor');
             if (gateTag) gateTag.innerText = towerFloor;
-            switchScreen('tower-screen');
+            document.getElementById('tower-screen').classList.remove('hidden');
         }
         function closeTowerScreen() {
-            switchScreen(lastActiveBaseScreen);
-            if (lastActiveBaseScreen === 'map-screen' && map) {
-                setTimeout(() => map.invalidateSize(), 100);
-            }
+            document.getElementById('tower-screen').classList.add('hidden');
         }
 
         function openMarketMenu() {
@@ -1056,37 +1057,37 @@
             content.innerHTML = `
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold text-lg text-amber-300">🛒 Chợ Đen & Vật Phẩm</h3>
-                <button type="button" onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
             </div>
             <div class="text-xs text-yellow-400 font-bold mb-3">💰 Vàng hiện có: ${playerCoins} 🪙</div>
             <div class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
                 <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/40">
                     <div class="text-xs">⚡ Năng Lượng Bắt x5 (500🪙)</div>
-                    <button type="button" onclick="buyShopItem('catchStamina', 500, 5)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
+                    <button onclick="buyShopItem('catchStamina', 500, 5)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
                 </div>
                 <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-cyan-500/40">
                     <div class="text-xs">📡 Năng Lượng Quét x2 (400🪙)</div>
-                    <button type="button" onclick="buyShopItem('scanStamina', 400, 2)" class="bg-cyan-600 hover:bg-cyan-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
+                    <button onclick="buyShopItem('scanStamina', 400, 2)" class="bg-cyan-600 hover:bg-cyan-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
                 </div>
                 <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
                     <div class="text-xs">🍖 Thức Ăn (50🪙) [Kho: ${inventory.food}]</div>
-                    <button type="button" onclick="buyShopItem('food', 50, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
+                    <button onclick="buyShopItem('food', 50, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
                 </div>
                 <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
                     <div class="text-xs">🎾 Đồ Chơi (50🪙) [Kho: ${inventory.toy}]</div>
-                    <button type="button" onclick="buyShopItem('toy', 50, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
+                    <button onclick="buyShopItem('toy', 50, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
                 </div>
                 <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
                     <div class="text-xs">🏋️ Dụng Cụ Tập (100🪙) [Kho: ${inventory.trainer}]</div>
-                    <button type="button" onclick="buyShopItem('trainer', 100, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
+                    <button onclick="buyShopItem('trainer', 100, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
                 </div>
                 
                 <div class="text-xs font-bold text-yellow-400 mt-2">💎 Đá Ngũ Hành Cường Hóa (150🪙 / viên)</div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">⚔️ Đá Kim [Kho: ${inventory.stoneKim}]</div><button type="button" onclick="buyShopItem('stoneKim', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🌿 Đá Mộc [Kho: ${inventory.stoneMoc}]</div><button type="button" onclick="buyShopItem('stoneMoc', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">💧 Đá Thủy [Kho: ${inventory.stoneThuy}]</div><button type="button" onclick="buyShopItem('stoneThuy', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🔥 Đá Hỏa [Kho: ${inventory.stoneHoa}]</div><button type="button" onclick="buyShopItem('stoneHoa', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🪨 Đá Thổ [Kho: ${inventory.stoneTho}]</div><button type="button" onclick="buyShopItem('stoneTho', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
+                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">⚔️ Đá Kim [Kho: ${inventory.stoneKim}]</div><button onclick="buyShopItem('stoneKim', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
+                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🌿 Đá Mộc [Kho: ${inventory.stoneMoc}]</div><button onclick="buyShopItem('stoneMoc', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
+                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">💧 Đá Thủy [Kho: ${inventory.stoneThuy}]</div><button onclick="buyShopItem('stoneThuy', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
+                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🔥 Đá Hỏa [Kho: ${inventory.stoneHoa}]</div><button onclick="buyShopItem('stoneHoa', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
+                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🪨 Đá Thổ [Kho: ${inventory.stoneTho}]</div><button onclick="buyShopItem('stoneTho', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
             </div>`;
         }
 
@@ -1112,7 +1113,7 @@
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
-            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Đội Hình (${team.length}/3)</h3><button type="button" onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div>`;
+            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Túi Pet / Đội Hình (${team.length}/3)</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div>`;
             if (team.length === 0) html += `<p class="text-zinc-400 text-sm text-center py-6">Đội hình trống!</p>`;
             else {
                 html += `<div class="space-y-3">`;
@@ -1128,8 +1129,8 @@
                             </div>
                         </div>
                         <div class="flex flex-col gap-1">
-                            <button type="button" onclick="moveTeamToFarm(${idx})" class="bg-amber-600 text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer">Về Trại</button>
-                            <button type="button" onclick="openPetDetail(${idx})" class="bg-blue-600 text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer">Xem</button>
+                            <button onclick="moveTeamToFarm(${idx})" class="bg-amber-600 text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer">Về Trại</button>
+                            <button onclick="openPetDetail(${idx})" class="bg-blue-600 text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer">Xem</button>
                         </div>
                     </div>`;
                 });
@@ -1150,7 +1151,7 @@
             content.innerHTML = `
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold text-lg">🐾 Trang Cá Nhân Linh Thú</h3>
-                <button type="button" onclick="openTeamMenu()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">‹ Quay lại</button>
+                <button onclick="openTeamMenu()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">‹ Quay lại</button>
             </div>
             <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border ${pet.rarity.bg} mb-4 text-center">
                 <div class="text-6xl mb-2">${pet.emoji}</div>
@@ -1184,9 +1185,9 @@
                 </div>
             </div>
             <div class="grid grid-cols-3 gap-2 text-center">
-                <button type="button" onclick="petAction(${index}, 'feed')" class="bg-emerald-600 p-2 rounded font-bold text-xs cursor-pointer">🍖 Ăn (${inventory.food})</button>
-                <button type="button" onclick="petAction(${index}, 'play')" class="bg-amber-600 p-2 rounded font-bold text-xs cursor-pointer">🎾 Chơi (${inventory.toy})</button>
-                <button type="button" onclick="petAction(${index}, 'train')" class="bg-indigo-600 p-2 rounded font-bold text-xs cursor-pointer">🏋️ Tập (${inventory.trainer})</button>
+                <button onclick="petAction(${index}, 'feed')" class="bg-emerald-600 p-2 rounded font-bold text-xs cursor-pointer">🍖 Ăn (${inventory.food})</button>
+                <button onclick="petAction(${index}, 'play')" class="bg-amber-600 p-2 rounded font-bold text-xs cursor-pointer">🎾 Chơi (${inventory.toy})</button>
+                <button onclick="petAction(${index}, 'train')" class="bg-indigo-600 p-2 rounded font-bold text-xs cursor-pointer">🏋️ Tập (${inventory.trainer})</button>
             </div>`;
         }
 
@@ -1211,12 +1212,9 @@
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
-            content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Đấu Trường PvP</h3><button type="button" onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><button type="button" onclick="startBattle('arena')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Tìm Trận Đấu</button>`;
+            content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Đấu Trường PvP</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><button onclick="startBattle('arena')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Tìm Trận Đấu</button>`;
         }
 
-        // ==========================================
-        // KHỞI TẠO BẢN ĐỒ & THÚ ĐI DẠO
-        // ==========================================
         let map, userMarker, activeMarkers = [];
         let mapMonstersData = [];
         let roamInterval = null;
@@ -1397,7 +1395,8 @@
         let lassoSpinAngle = 0;
 
         function enterARScreen() {
-            switchScreen('ar-screen');
+            document.getElementById('map-screen').classList.add('hidden');
+            document.getElementById('ar-screen').classList.remove('hidden');
             isARActive = true; 
             isTugOfWarActive = false;
             perfectHitBonus = false;
@@ -1420,7 +1419,8 @@
             if (videoEl && videoEl.srcObject) {
                 videoEl.srcObject.getTracks().forEach(t => t.stop());
             }
-            switchScreen('map-screen');
+            document.getElementById('ar-screen').classList.add('hidden');
+            document.getElementById('map-screen').classList.remove('hidden');
             setTimeout(() => { if(map) map.invalidateSize(); }, 100);
         }
 
@@ -1663,231 +1663,4 @@
                         showFloatingText('NICE HIT! 🪢', canvas.width/2, canvas.height*0.4, '#94a3b8');
                     }
                     startTugOfWarSession();
-                } else if (rope.flightTime > 40 || rope.x < 0 || rope.x > canvas.width || rope.y < 0) {
-                    resetRope();
-                }
-            }
-
-            floatingTexts.forEach((ft, i) => {
-                ft.y -= 1.2;
-                ft.life--;
-                ctx.save();
-                ctx.font = "bold 18px sans-serif";
-                ctx.fillStyle = ft.color;
-                ctx.textAlign = "center";
-                ctx.fillText(ft.text, ft.x, ft.y);
-                ctx.restore();
-                if (ft.life <= 0) floatingTexts.splice(i, 1);
-            });
-
-            requestAnimationFrame(updateCanvasGame);
-        }
-
-        function getRandomPullDirection() {
-            const dirs = ['left', 'right', 'down'];
-            return dirs[Math.floor(Math.random() * dirs.length)];
-        }
-
-        function startTugOfWarSession() {
-            isTugOfWarActive = true; 
-            tugProgress = perfectHitBonus ? 72 : 55;
-            document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
-            document.getElementById('tug-of-war-ui').classList.remove('hidden');
-
-            swipeTimer = 0;
-            beastPullDirection = getRandomPullDirection();
-            updateSwipeArrowUI();
-
-            if (tugTimerInterval) clearInterval(tugTimerInterval);
-            tugTimerInterval = setInterval(() => {
-                if (!isARActive || !isTugOfWarActive) { clearInterval(tugTimerInterval); return; }
-
-                tugProgress -= 1.2;
-                document.getElementById('tug-progress-bar').style.width = Math.max(0, tugProgress) + '%';
-
-                swipeTimer++;
-                if (swipeTimer > 28) {
-                    beastPullDirection = getRandomPullDirection();
-                    updateSwipeArrowUI();
-                    swipeTimer = 0;
-                }
-
-                if (tugProgress >= 100) triggerTugWin();
-                else if (tugProgress <= 0) {
-                    clearInterval(tugTimerInterval); 
-                    isTugOfWarActive = false;
-                    document.getElementById('tug-of-war-ui').classList.add('hidden');
-                    alert('💨 Dây thừng bị đứt! Linh thú đã nhanh chân giãy thoát.');
-                    exitARScreen();
-                }
-            }, 60);
-        }
-
-        function updateSwipeArrowUI() {
-            let textPrompt = document.getElementById('swipe-instruction-text');
-            if (!textPrompt) return;
-            if (beastPullDirection === 'left') {
-                textPrompt.innerText = '➡️ VUỐT SANG PHẢI! ➡️';
-            } else if (beastPullDirection === 'right') {
-                textPrompt.innerText = '⬅️ VUỐT SANG TRÁI! ⬅️';
-            } else {
-                textPrompt.innerText = '⬇️ VUỐT XUỐNG! ⬇️';
-            }
-        }
-
-        function triggerTugWin() {
-            if (!isTugOfWarActive) return;
-            isTugOfWarActive = false; 
-            clearInterval(tugTimerInterval);
-            document.getElementById('tug-of-war-ui').classList.add('hidden');
-            exitARScreen();
-
-            if (currentSelectedMarker && map) {
-                map.removeLayer(currentSelectedMarker);
-                let idx = activeMarkers.indexOf(currentSelectedMarker);
-                if (idx !== -1) {
-                    activeMarkers.splice(idx, 1);
-                    mapMonstersData.splice(idx, 1);
-                }
-            }
-
-            let multi = currentWildMonster.rarity.statMultiplier || 1.0;
-            let newPet = {
-                ...currentWildMonster, level: 1, hearts: 3, gender: Math.random() < 0.5 ? 'Đực' : 'Cái',
-                critRate: Math.floor(15 + Math.random() * 20 * multi), dodgeRate: Math.floor(10 + Math.random() * 15 * multi),
-                accuracy: Math.floor(85 + Math.random() * 10), blockRate: Math.floor(10 + Math.random() * 20 * multi),
-                slowResist: Math.floor(10 + Math.random() * 15), speed: Math.floor(40 + Math.random() * 30 * multi),
-                trait: possibleTraits[Math.floor(Math.random() * possibleTraits.length)], hunger: 100, happiness: 100
-            };
-            if (team.length < 3) { team.push(newPet); saveGameData(); alert(`🎉 Bắt thành công ${newPet.name} (${newPet.rarity.badge})! Đã đưa vào Đội.`); }
-            else { farm.push(newPet); saveGameData(); alert(`🎉 Đội đầy, đã chuyển ${newPet.name} vào Trại!`); }
-            addQuestProgress(1, 1); 
-            updateTeamCount();
-        }
-
-        // ==========================================
-        // ĐẤU TRƯỜNG ATB V10.7
-        // ==========================================
-        let battleCanvas, battleCtx, battleInterval;
-        function startBattle(mode) {
-            checkPetSurvival();
-            if (team.length === 0) { alert('Đội hình trống!'); return; }
-            if (mode === 'boss' && team.length < 3) { alert('⚠️ Boss yêu cầu đủ 3 linh thú!'); return; }
-            switchScreen('battle-screen');
-            switchGameMusic('battle');
-
-            let activeTeam = mode === 'boss' ? [...team] : [team[0]];
-            let teamHpList = activeTeam.map(p => p.hp);
-            let teamMaxHpTotal = activeTeam.reduce((sum, p) => sum + p.maxHp, 0);
-
-            let teamSpeedGauges = activeTeam.map(() => Math.floor(Math.random() * 150));
-            let enemySpeedGauge = Math.floor(Math.random() * 150);
-
-            let enemy = mode === 'boss' ? { name: `Hắc Long Vương (Lv.${bossLevel})`, element: 'Hoa', emoji: '🐉', hp: 300 + (bossLevel * 100), maxHp: 300 + (bossLevel * 100), atk: 30 + (bossLevel * 8), speed: 45 + bossLevel * 3 } :
-                        mode === 'tower' ? { name: `Thủ Vệ Tầng ${towerFloor}`, element: elementList[towerFloor % elementList.length], emoji: '👹', hp: 120 + (towerFloor * 25), maxHp: 120 + (towerFloor * 25), atk: 20 + towerFloor * 4, speed: 40 + towerFloor * 2 } :
-                        { name: 'Đối Thủ PvP', element: 'Tho', emoji: '🤖', hp: 160, maxHp: 160, atk: 25, speed: 52 };
-            let enemyHp = enemy.hp;
-            document.getElementById('battle-enemy-name').innerText = `${enemy.name} [${elementNames[enemy.element]?.label}] (⚡${enemy.speed})`;
-
-            battleCanvas = document.getElementById('battleCanvas');
-            let dpr = window.devicePixelRatio || 1;
-            let rect = battleCanvas.getBoundingClientRect();
-            battleCanvas.width = rect.width * dpr;
-            battleCanvas.height = rect.height * dpr;
-            battleCtx = battleCanvas.getContext('2d');
-            battleCtx.scale(dpr, dpr);
-            battleCtx.imageSmoothingEnabled = true;
-            battleCtx.imageSmoothingQuality = 'high';
-            
-            let attacker = null;
-            const ACTION_THRESHOLD = 800;
-
-            let idleTick = 0;
-            let teamHitShake = [0, 0, 0];
-            let enemyHitShake = 0;
-            let impactEffects = [];
-            let battleEnded = false;
-
-            battleInterval = setInterval(() => {
-                battleCtx.clearRect(0, 0, rect.width, rect.height);
-                idleTick += 0.14;
-
-                let cx = rect.width / 2, cy = rect.height * 0.62;
-                let defaultTeamX = cx - 85, defaultEnemyX = cx + 85;
-
-                if (!attacker && !battleEnded) {
-                    activeTeam.forEach((pet, i) => {
-                        if (teamHpList[i] > 0) {
-                            teamSpeedGauges[i] += pet.speed;
-                            if (teamSpeedGauges[i] >= ACTION_THRESHOLD && !attacker) {
-                                attacker = { side: 'team', index: i, step: 0 };
-                                teamSpeedGauges[i] -= ACTION_THRESHOLD;
-                            }
-                        }
-                    });
-
-                    if (!attacker && enemyHp > 0) {
-                        enemySpeedGauge += enemy.speed;
-                        if (enemySpeedGauge >= ACTION_THRESHOLD) {
-                            attacker = { side: 'enemy', index: 0, step: 0 };
-                            enemySpeedGauge -= ACTION_THRESHOLD;
-                        }
-                    }
-                }
-
-                let myOffsetsX = [0, 0, 0];
-                let myOffsetsY = [0, 0, 0];
-                let myRotations = [0, 0, 0];
-                let enemyOffsetX = 0;
-                let enemyOffsetY = 0;
-                let enemyRotation = 0;
-
-                if (attacker && !battleEnded) {
-                    attacker.step++;
-                    let chargeDist = 120;
-
-                    if (attacker.side === 'team') {
-                        let idx = attacker.index;
-                        let targetY = cy;
-                        let startY = cy + (idx - 1) * 32;
-
-                        if (attacker.step <= 9) {
-                            let t = attacker.step / 9;
-                            myOffsetsX[idx] = t * chargeDist;
-                            myOffsetsY[idx] = (targetY - startY) * t - Math.sin(t * Math.PI) * 32;
-                            myRotations[idx] = t * 0.25;
-                        } else if (attacker.step <= 15) {
-                            myOffsetsX[idx] = chargeDist;
-                            myOffsetsY[idx] = targetY - startY;
-                            myRotations[idx] = 0.25;
-
-                            if (attacker.step === 10) {
-                                let pet = activeTeam[idx];
-                                let dmg = pet.atk * (0.8 + Math.random() * 0.4);
-                                if (pet.element === currentWeather.bonusElem) dmg *= currentWeather.statBonus;
-                                let isCounter = false;
-                                if (elementCounterMap[pet.element] === enemy.element) { dmg *= 1.35; isCounter = true; }
-                                let finalDmg = Math.floor(dmg);
-                                enemyHp = Math.max(0, enemyHp - finalDmg);
-
-                                enemyHitShake = 12;
-                                impactEffects.push({
-                                    x: defaultEnemyX - 15,
-                                    y: cy,
-                                    radius: 10,
-                                    alpha: 1,
-                                    color: isCounter ? '#facc15' : '#38bdf8',
-                                    text: `-${finalDmg}${isCounter ? ' 💥' : ''}`
-                                });
-                                document.getElementById('battle-log').innerText = `⚡ ${pet.name} (Tốc độ ${pet.speed}) lao tới đánh: -${finalDmg} dmg ${isCounter ? '💥[KHẮC HỆ!]' : ''}!`;
-                            }
-                        } else if (attacker.step <= 22) {
-                            let t = 1 - (attacker.step - 15) / 7;
-                            myOffsetsX[idx] = chargeDist * t;
-                            myOffsetsY[idx] = (targetY - startY) * t - Math.sin(t * Math.PI) * 15;
-                            myRotations[idx] = t * 0.25;
-                        } else {
-                            attacker = null;
-                        }
-                    } else if (attacker.side === 'enemy') {
-                        let targetIdx = teamHpList.findIndex(h
+                } else if (rope.flightTime >
