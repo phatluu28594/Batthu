@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Panorama Pan & Exact Hotspots v10.7</title>
+    <title>Batthu v1.1 - Training Ground Canvas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -159,7 +159,6 @@
          1. MÀN HÌNH SẢNH CHÍNH ĐẦU GAME (VUỐT NGANG PANORAMA)
          ========================================== -->
     <div id="home-screen" class="absolute inset-0 z-30 bg-zinc-950 overflow-hidden">
-        <!-- Thanh thông tin cố định trên cùng -->
         <div class="fixed top-0 left-0 right-0 z-30 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/85 to-transparent pointer-events-none">
             <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold pointer-events-auto">
                 <span>🏠 Nhà Chính</span>
@@ -172,34 +171,32 @@
             </div>
         </div>
 
-        <!-- Khung vuốt ngang giữ nguyên tỷ lệ ảnh background.png -->
         <div id="home-scroller" class="panorama-scroller no-scrollbar">
             <div class="panorama-canvas">
                 <img src="./background.png" alt="Sảnh Chính" class="panorama-img" onload="centerPanorama('home-scroller')">
 
-                <!-- GIƯỜNG NGỦ BÊN TRÁI (Khớp chính xác vị trí giường màu xanh bên trái) -->
+                <!-- GIƯỜNG NGỦ BÊN TRÁI -->
                 <div onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 34%; left: 3%; width: 25%; height: 22%;">
                     <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ</div>
                 </div>
 
-                <!-- CỬA CHÍNH Ở GIỮA (Khớp chính xác cánh cửa gỗ dấu chân ở giữa) -->
+                <!-- CỬA CHÍNH Ở GIỮA -->
                 <div onclick="goFromHomeToMap()" class="hotspot flex flex-col items-center justify-center" style="top: 28%; left: 37%; width: 20%; height: 24%;">
                     <div class="home-label animate-bounce">🚪 Đi săn thú</div>
                 </div>
 
-                <!-- CÁNH CỬA BÊN PHẢI (Khớp chính xác lối ra cánh đồng bên phải) -->
+                <!-- CÁNH CỬA BÊN PHẢI -->
                 <div onclick="openFarmMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 28%; left: 79%; width: 18%; height: 24%;">
                     <div class="home-label" style="border-color: #34d399; color: #a7f3d0;">🏡 Đi Trang trại</div>
                 </div>
 
-                <!-- ĐIỆN THOẠI BÀN MÀU HỒNG GÓC DƯỚI PHẢI (Khớp chính xác chiếc điện thoại bàn) -->
+                <!-- ĐIỆN THOẠI BÀN GÓC DƯỚI PHẢI -->
                 <div onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 64%; left: 79%; width: 19%; height: 18%;">
                     <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi điện bệnh viện</div>
                 </div>
             </div>
         </div>
 
-        <!-- Thanh năng lượng cố định dưới đáy -->
         <div class="fixed bottom-0 left-0 right-0 z-30 p-2.5 bg-gradient-to-t from-black/95 to-transparent pointer-events-none">
             <div class="text-center text-[10px] text-zinc-300 mb-1 animate-pulse">↔️ Vuốt ngang màn hình để khám phá toàn bộ căn nhà</div>
             <div class="flex items-center justify-between text-[11px] font-bold text-zinc-200 bg-black/90 px-3.5 py-2 rounded-xl border border-white/15 shadow-lg pointer-events-auto">
@@ -297,11 +294,10 @@
             <div class="panorama-canvas">
                 <img src="./farm-bg.png" alt="Trang Trai" class="panorama-img" onload="centerPanorama('farm-scroller')">
                 
-                <!-- LỚP THÚ CỬ ĐỘNG TRỰC TIẾP TRÊN ẢNH -->
                 <div id="farm-visual-pets" class="absolute inset-0 pointer-events-none z-10"></div>
 
-                <!-- CÁC ĐIỂM CHẠM & NHÃN KHỚP CHÍNH XÁC VỚI ẢNH TRANG TRẠI -->
-                <div onclick="showFarmSection('training')" class="hotspot flex flex-col items-center justify-end pb-2" style="top: 4%; left: 10%; width: 78%; height: 28%;">
+                <!-- Bấm vào Khu Luyện Tập sẽ mở thẳng màn hình Khu Luyện Tập mới (training-bg.png) -->
+                <div onclick="openTrainingGroundScreen()" class="hotspot flex flex-col items-center justify-end pb-2" style="top: 4%; left: 10%; width: 78%; height: 28%;">
                     <div class="home-label" style="border-color: #f59e0b; color: #fde68a;">🪵 Khu Luyện Tập</div>
                 </div>
 
@@ -312,6 +308,36 @@
                 <div onclick="showFarmSection('storage')" class="hotspot flex flex-col items-center justify-center" style="top: 68%; left: 8%; width: 84%; height: 26%;">
                     <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🐾 Kho Trại Hộ</div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MÀN HÌNH KHU LUYỆN TẬP MỚI (training-bg.png + 4 CỌC GỖ + DẤU + + HIỆU ỨNG ĐÁNH NHAU)
+         ========================================== -->
+    <div id="training-ground-screen" class="hidden absolute inset-0 z-50 bg-zinc-950 overflow-hidden">
+        <!-- Thanh Header cố định -->
+        <div class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-3 bg-gradient-to-b from-black/85 to-transparent pointer-events-none">
+            <div class="bg-black/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-amber-400/50 text-xs font-extrabold text-amber-300 pointer-events-auto shadow-lg">
+                🪵 Khu Luyện Tập Linh Thú (+EXP Tự Động)
+            </div>
+            <button onclick="closeTrainingGroundScreen()" class="bg-black/85 hover:bg-black text-white px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/25 shadow-xl pointer-events-auto">✕ Thoát</button>
+        </div>
+
+        <div class="fixed bottom-3 left-0 right-0 z-40 text-center pointer-events-none">
+            <span class="bg-black/80 text-zinc-200 text-[10px] px-3.5 py-1.5 rounded-full border border-white/15 shadow-lg">Chạm dấu + để thêm thú vào luyện | Chạm vào thú đang tập để rút về</span>
+        </div>
+
+        <!-- Khung Panorama Khu Luyện Tập -->
+        <div id="training-scroller" class="panorama-scroller no-scrollbar">
+            <div id="training-canvas-wrap" class="panorama-canvas">
+                <img id="training-bg-img" src="./training-bg.png" alt="Khu Luyện Tập" class="panorama-img" onload="initTrainingGroundCanvas()">
+                
+                <!-- Canvas vẽ 4 cọc gỗ cố định (không rung) + thú lao vào đánh + sóng va chạm + tên/cấp độ -->
+                <canvas id="trainingCanvas" class="absolute inset-0 w-full h-full z-10 pointer-events-none"></canvas>
+
+                <!-- Lớp các nút tương tác dấu (+) hoặc rút thú đè lên trên canvas -->
+                <div id="training-slots-overlay" class="absolute inset-0 z-20"></div>
             </div>
         </div>
     </div>
@@ -329,7 +355,6 @@
             <div class="panorama-canvas">
                 <img src="./hospital-bg.png" alt="Bệnh Viện" class="panorama-img" onload="centerPanorama('hospital-scroller')">
 
-                <!-- CÁC ĐIỂM CHẠM & NHÃN KHỚP CHÍNH XÁC VỚI ẢNH BỆNH VIỆN -->
                 <div onclick="openHospitalActionModal('heal')" class="hotspot flex flex-col items-center justify-end pb-2" style="top: 23%; left: 5%; width: 44%; height: 35%;">
                     <div class="home-label" style="border-color: #22d3ee; color: #cffafe;">❤️ Hồi Sức Tim</div>
                 </div>
@@ -421,7 +446,7 @@
     </div>
 
     <!-- MODAL OVERLAY CHUNG -->
-    <div id="modal-container" class="hidden absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div id="modal-container" class="hidden absolute inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto relative"></div>
     </div>
 
@@ -436,7 +461,6 @@
             });
         }
 
-        // HÀM CĂN GIỮA KHUNG PANORAMA KHI MỞ ĐỂ DỄ VUỐT TRÁI/PHẢI
         function centerPanorama(scrollerId) {
             const scroller = document.getElementById(scrollerId);
             if (scroller && scroller.scrollWidth > scroller.clientWidth) {
@@ -827,7 +851,7 @@
                 if (pet) {
                     let pos = polePositions[idx] || { top: '16%', left: '30%' };
                     html += `
-                    <div style="position: absolute; top: ${pos.top}; left: ${pos.left}; transform: translate(-50%, -50%);" class="flex flex-col items-center">
+                    <div style="position: absolute; top: ${pos.top}; left:${pos.left}; transform: translate(-50%, -50%);" class="flex flex-col items-center">
                         <div class="relative">
                             <span class="text-4xl pet-train-anim" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));">${pet.emoji}</span>
                             <span class="absolute -top-2 -right-3 text-xs animate-ping">💥</span>
@@ -846,7 +870,7 @@
             restingPets.slice(0, 4).forEach((pet, idx) => {
                 let pos = restPositions[idx] || { top: '48%', left: '68%' };
                 html += `
-                <div style="position: absolute; top: ${pos.top}; left: ${pos.left}; transform: translate(-50%, -50%);" class="flex flex-col items-center">
+                <div style="position: absolute; top: ${pos.top}; left:${pos.left}; transform: translate(-50%, -50%);" class="flex flex-col items-center">
                     <div class="relative">
                         <span class="text-4xl pet-rest-anim" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));">${pet.emoji}</span>
                         <span class="sleep-bubble">💤</span>
@@ -858,23 +882,327 @@
             container.innerHTML = html;
         }
 
+        // ==========================================
+        // MÀN HÌNH KHU LUYỆN TẬP MỚI (training-bg.png + 4 CỌC GỖ CỐ ĐỊNH + DẤU + + HIỆU ỨNG CHIẾN ĐẤU)
+        // ==========================================
+        let trainingAnimInterval = null;
+        let trainingCombatStates = [
+            { step: 0, delay: 0, impacts: [] },
+            { step: 0, delay: 14, impacts: [] },
+            { step: 0, delay: 28, impacts: [] },
+            { step: 0, delay: 42, impacts: [] }
+        ];
+
+        // 4 vị trí cọc gỗ bao quanh sân luyện tập ở giữa (tọa độ % trên ảnh training-bg.png)
+        const TRAINING_SLOTS_CONFIG = [
+            // Cọc 1: Góc trên trái sân tập (Thú đứng bên trái cọc, đánh sang phải)
+            { poleX: 0.36, poleY: 0.36, petBaseX: 0.23, petBaseY: 0.36, dir: 1 },
+            // Cọc 2: Góc trên phải sân tập (Thú đứng bên phải cọc, đánh sang trái)
+            { poleX: 0.64, poleY: 0.36, petBaseX: 0.77, petBaseY: 0.36, dir: -1 },
+            // Cọc 3: Góc dưới trái sân tập (Thú đứng bên trái cọc, đánh sang phải)
+            { poleX: 0.35, poleY: 0.49, petBaseX: 0.21, petBaseY: 0.49, dir: 1 },
+            // Cọc 4: Góc dưới phải sân tập (Thú đứng bên phải cọc, đánh sang trái)
+            { poleX: 0.65, poleY: 0.49, petBaseX: 0.79, petBaseY: 0.49, dir: -1 }
+        ];
+
+        function openTrainingGroundScreen() {
+            document.getElementById('training-ground-screen').classList.remove('hidden');
+            setTimeout(() => {
+                centerPanorama('training-scroller');
+                initTrainingGroundCanvas();
+            }, 60);
+        }
+
+        function closeTrainingGroundScreen() {
+            document.getElementById('training-ground-screen').classList.add('hidden');
+            if (trainingAnimInterval) {
+                clearInterval(trainingAnimInterval);
+                trainingAnimInterval = null;
+            }
+            renderFarmVisualPets();
+        }
+
+        function renderTrainingSlotButtons() {
+            const overlay = document.getElementById('training-slots-overlay');
+            if (!overlay) return;
+            let html = '';
+
+            TRAINING_SLOTS_CONFIG.forEach((cfg, idx) => {
+                let pet = trainingPoles[idx];
+                if (!pet) {
+                    // Cọc trống -> Hiển thị nút dấu (+) ở vị trí đứng của thú để thêm thú vào luyện
+                    html += `
+                    <button onclick="showSelectPetForPole(${idx})" style="position: absolute; top: ${cfg.petBaseY * 100}\%; left:${cfg.petBaseX * 100}%; transform: translate(-50%, -50%);" 
+                        class="w-11 h-11 rounded-full bg-amber-500/90 hover:bg-amber-400 active:scale-90 text-black font-black text-2xl flex items-center justify-center border-2 border-white shadow-2xl animate-bounce cursor-pointer" title="Thêm thú vào cọc #${idx + 1}">
+                        +
+                    </button>`;
+                } else {
+                    // Cọc có thú đang luyện -> Vùng chạm trên thú để rút thú về nếu muốn
+                    html += `
+                    <div onclick="confirmRemoveTrainingPet(${idx})" style="position: absolute; top: ${cfg.petBaseY * 100}\%; left:${cfg.petBaseX * 100}%; width: 70px; height: 70px; transform: translate(-50%, -50%);" 
+                        class="cursor-pointer rounded-full" title="Chạm để rút ${pet.name} về">
+                    </div>`;
+                }
+            });
+
+            overlay.innerHTML = html;
+        }
+
+        function confirmRemoveTrainingPet(poleIdx) {
+            let pet = trainingPoles[poleIdx];
+            if (!pet) return;
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-sm text-amber-300">🪵 Đang Luyện Tập</h3>
+                <button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button>
+            </div>
+            <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-xl border border-amber-500/50 mb-4 text-center">
+                <span class="text-5xl mb-2">${pet.emoji}</span>
+                <div class="font-bold text-sm text-yellow-300">${pet.name} - Lv.${Math.floor(pet.level)}</div>
+                <div class="text-xs text-zinc-300 mt-1">⚔️ Sức tấn công hiện tại: <span class="text-red-400 font-bold">${Math.floor(pet.atk)}</span></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="closeModal()" class="bg-zinc-700 py-2.5 rounded-xl font-bold text-xs cursor-pointer">Tiếp tục tập</button>
+                <button onclick="removeFromTraining(${poleIdx}); closeModal(); renderTrainingSlotButtons();" class="bg-red-600 hover:bg-red-500 py-2.5 rounded-xl font-bold text-xs cursor-pointer">Rút về Trại</button>
+            </div>`;
+        }
+
+        // Hàm vẽ cây cọc gỗ hình nhân luyện tập (Đứng yên tuyệt đối, không bị rung)
+        function drawWoodenDummy(ctx, x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            // Bóng đổ dưới chân cọc
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
+            ctx.beginPath();
+            ctx.ellipse(0, 26, 18, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Đế gỗ tròn dưới cùng
+            ctx.fillStyle = '#5c2c16';
+            ctx.beginPath();
+            ctx.ellipse(0, 24, 15, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Thân cột gỗ chính
+            let trunkGrad = ctx.createLinearGradient(-9, 0, 9, 0);
+            trunkGrad.addColorStop(0, '#78350f');
+            trunkGrad.addColorStop(0.5, '#b45309');
+            trunkGrad.addColorStop(1, '#5c2c16');
+            ctx.fillStyle = trunkGrad;
+            ctx.fillRect(-9, -22, 18, 46);
+            ctx.strokeStyle = '#3e1a0b';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(-9, -22, 18, 46);
+
+            // Đai rơm / dây thừng quấn quanh thân cọc
+            ctx.fillStyle = '#fde68a';
+            ctx.fillRect(-10, -6, 20, 12);
+            ctx.strokeStyle = '#b45309';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(-10, -6, 20, 12);
+            // Vân rơm quấn
+            ctx.beginPath();
+            ctx.moveTo(-10, -2); ctx.lineTo(10, 2);
+            ctx.moveTo(-10, 2); ctx.lineTo(10, 6);
+            ctx.stroke();
+
+            // Thanh tay gỗ ngang (cọc tập Vịnh Xuân)
+            ctx.fillStyle = '#92400e';
+            ctx.fillRect(-20, -14, 40, 6);
+            ctx.strokeStyle = '#3e1a0b';
+            ctx.strokeRect(-20, -14, 40, 6);
+
+            // Chỏm đầu cọc bo tròn
+            ctx.fillStyle = '#d97706';
+            ctx.beginPath();
+            ctx.arc(0, -22, 9, Math.PI, 0);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function initTrainingGroundCanvas() {
+            const img = document.getElementById('training-bg-img');
+            const canvas = document.getElementById('trainingCanvas');
+            if (!img || !canvas) return;
+
+            let dpr = window.devicePixelRatio || 1;
+            let w = img.clientWidth || window.innerWidth;
+            let h = img.clientHeight || window.innerHeight;
+
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            renderTrainingSlotButtons();
+
+            if (trainingAnimInterval) clearInterval(trainingAnimInterval);
+            let idleTick = 0;
+
+            trainingAnimInterval = setInterval(() => {
+                if (document.getElementById('training-ground-screen').classList.contains('hidden')) {
+                    clearInterval(trainingAnimInterval);
+                    return;
+                }
+
+                // Cập nhật kích thước nếu ảnh mới load xong
+                let curW = img.clientWidth;
+                let curH = img.clientHeight;
+                if (curW > 0 && Math.abs(canvas.width - curW * dpr) > 5) {
+                    canvas.width = curW * dpr;
+                    canvas.height = curH * dpr;
+                    ctx.scale(dpr, dpr);
+                    w = curW;
+                    h = curH;
+                }
+
+                ctx.clearRect(0, 0, w, h);
+                idleTick += 0.14;
+
+                TRAINING_SLOTS_CONFIG.forEach((cfg, idx) => {
+                    let poleX = w * cfg.poleX;
+                    let poleY = h * cfg.poleY;
+                    let petBaseX = w * cfg.petBaseX;
+                    let petBaseY = h * cfg.petBaseY;
+
+                    // 1. VẼ CỌC GỖ ĐỨNG YÊN TUYỆT ĐỐI (KHÔNG RUNG)
+                    drawWoodenDummy(ctx, poleX, poleY);
+
+                    let pet = trainingPoles[idx];
+                    let state = trainingCombatStates[idx];
+
+                    if (pet) {
+                        // Tiến trình tấn công cọc gỗ liên tục như trong đấu trường
+                        state.step++;
+                        let cycle = (state.step + state.delay) % 42;
+                        let offsetX = 0;
+                        let offsetY = 0;
+                        let rot = 0;
+                        let chargeDist = Math.abs(poleX - petBaseX) - 24;
+
+                        if (cycle <= 9) {
+                            // Lấy đà lao tới cọc gỗ
+                            let t = cycle / 9;
+                            offsetX = cfg.dir * (t * chargeDist);
+                            offsetY = -Math.sin(t * Math.PI) * 22;
+                            rot = cfg.dir * (t * 0.25);
+                        } else if (cycle <= 15) {
+                            // Chạm cọc tung đòn
+                            offsetX = cfg.dir * chargeDist;
+                            rot = cfg.dir * 0.25;
+
+                            if (cycle === 10) {
+                                // Tạo hiệu ứng va chạm & số kinh nghiệm bay lên
+                                state.impacts.push({
+                                    x: poleX - cfg.dir * 10,
+                                    y: poleY - 8,
+                                    radius: 8,
+                                    alpha: 1,
+                                    text: `+EXP 💥`
+                                });
+                            }
+                        } else if (cycle <= 22) {
+                            // Bật lùi về vị trí ban đầu
+                            let t = 1 - (cycle - 15) / 7;
+                            offsetX = cfg.dir * (chargeDist * t);
+                            offsetY = -Math.sin(t * Math.PI) * 10;
+                            rot = cfg.dir * (t * 0.25);
+                        }
+
+                        let curPetX = petBaseX + offsetX;
+                        let curPetY = petBaseY + offsetY;
+                        let scaleY = 1 + Math.sin(idleTick + idx) * 0.04;
+
+                        // Vẽ linh thú
+                        ctx.save();
+                        ctx.translate(curPetX, curPetY);
+                        ctx.rotate(rot);
+                        // Nếu thú đánh sang phải (dir=1) thì lật ngang (-1) để hướng mặt về cọc gỗ
+                        ctx.scale(cfg.dir === 1 ? -1 : 1, scaleY);
+
+                        ctx.font = "46px sans-serif";
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(pet.emoji, 0, 0);
+                        ctx.restore();
+
+                        // 2. VẼ TÊN VÀ CẤP ĐỘ Ở TRÊN ĐẦU MỖI THÚ
+                        let labelText = `${pet.name} - Lv.${Math.floor(pet.level)}`;
+                        ctx.save();
+                        ctx.font = "bold 11px system-ui, sans-serif";
+                        let textWidth = ctx.measureText(labelText).width;
+                        let boxW = textWidth + 14;
+                        let boxH = 18;
+                        let boxX = curPetX - boxW / 2;
+                        let boxY = curPetY - 38;
+
+                        // Nền badge đen viền vàng trên đầu thú
+                        ctx.fillStyle = "rgba(9, 9, 11, 0.85)";
+                        ctx.beginPath();
+                        ctx.roundRect(boxX, boxY, boxW, boxH, 9);
+                        ctx.fill();
+                        ctx.strokeStyle = "#facc15";
+                        ctx.lineWidth = 1.2;
+                        ctx.stroke();
+
+                        ctx.fillStyle = "#fef08a";
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(labelText, curPetX, boxY + boxH / 2);
+                        ctx.restore();
+                    }
+
+                    // 3. VẼ HIỆU ỨNG VA CHẠM (SÓNG XUNG KÍCH + CHỮ +EXP BAY LÊN)
+                    for (let i = state.impacts.length - 1; i >= 0; i--) {
+                        let eff = state.impacts[i];
+                        eff.radius += 3.8;
+                        eff.alpha -= 0.06;
+                        eff.y -= 1.3;
+
+                        if (eff.alpha <= 0) {
+                            state.impacts.splice(i, 1);
+                            continue;
+                        }
+
+                        ctx.save();
+                        ctx.globalAlpha = Math.max(0, eff.alpha);
+                        ctx.beginPath();
+                        ctx.arc(eff.x, eff.y, eff.radius, 0, Math.PI * 2);
+                        ctx.strokeStyle = "#facc15";
+                        ctx.lineWidth = 3;
+                        ctx.stroke();
+
+                        ctx.font = "900 14px sans-serif";
+                        ctx.fillStyle = "#38bdf8";
+                        ctx.textAlign = "center";
+                        ctx.strokeStyle = "#000";
+                        ctx.lineWidth = 2.5;
+                        ctx.strokeText(eff.text, eff.x, eff.y - 14);
+                        ctx.fillText(eff.text, eff.x, eff.y - 14);
+                        ctx.restore();
+                    }
+                });
+            }, 30);
+        }
+
         function showFarmSection(sectionType) {
+            if (sectionType === 'training') {
+                openTrainingGroundScreen();
+                return;
+            }
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
 
-            if (sectionType === 'training') {
-                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">🪵 Khu Luyện Tập Cọc Gỗ</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
-                trainingPoles.forEach((pet, idx) => {
-                    if (pet) {
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/50"><div class="flex items-center gap-2"><span class="text-2xl pet-train-anim">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><button onclick="removeFromTraining(${idx}); closeModal(); openFarmMenu();" class="bg-red-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Rút về</button></div>`;
-                    } else {
-                        html += `<div class="bg-zinc-800/60 p-2.5 rounded-xl flex items-center justify-between border border-dashed border-zinc-600"><div class="text-xs text-zinc-300">Cọc gỗ trống #${idx + 1}</div><button onclick="closeModal(); showSelectPetForPole(${idx});" class="bg-amber-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Cho tập</button></div>`;
-                    }
-                });
-                html += `</div>`;
-                content.innerHTML = html;
-            } else if (sectionType === 'resting') {
+            if (sectionType === 'resting') {
                 let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-emerald-300">🌿 Khu Hồi Sức HP</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
                 if (restingPets.length === 0) html += `<div class="text-center text-xs text-zinc-400 py-6">Khu nghỉ ngơi trống!</div>`;
                 else {
@@ -890,7 +1218,7 @@
                 else {
                     farm.forEach((pet, idx) => {
                         let heartsStr = '❤️'.repeat(pet.hearts);
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border ${pet.rarity.bg}"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span><div class="text-[10px] text-zinc-300">HP: ${Math.floor(pet.hp)} | ${heartsStr} | ${elementNames[pet.element]?.label} | ⚡${pet.speed}</div></div></div><div class="flex gap-1"><button onclick="sendPetToRest(${idx}); closeModal(); openFarmMenu();" class="bg-emerald-600 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Nghỉ</button><button onclick="moveToTeamFromFarm(${idx}); closeModal(); openFarmMenu();" class="bg-blue-600 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Đội</button></div></div>`;
+                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border ${pet.rarity.bg}"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span><div class="text-[10px] text-zinc-300">HP: ${Math.floor(pet.hp)} \vert{}${heartsStr} | ${elementNames[pet.element]?.label} \vert{} ⚡${pet.speed}</div></div></div><div class="flex gap-1"><button onclick="sendPetToRest(${idx}); closeModal(); openFarmMenu();" class="bg-emerald-600 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Nghỉ</button><button onclick="moveToTeamFromFarm(${idx}); closeModal(); openFarmMenu();" class="bg-blue-600 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Đội</button></div></div>`;
                     });
                 }
                 html += `</div>`;
@@ -899,1302 +1227,11 @@
         }
 
         function showSelectPetForPole(poleIdx) {
-            if (farm.length === 0) { alert('⚠️ Trại không có linh thú nào!'); return; }
+            if (farm.length === 0) { alert('⚠️ Kho Trại Hộ đang trống! Hãy chuyển thú từ Đội về Trại hoặc bắt thêm thú mới nhé.'); return; }
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
 
-            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">Chọn thú lên cọc gỗ #${poleIdx + 1}</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2 max-h-60 overflow-y-auto">`;
+            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">Chọn thú vào cọc gỗ #${poleIdx + 1}</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2 max-h-60 overflow-y-auto">`;
             farm.forEach((pet, idx) => {
-                html += `<div onclick="assignPetToPole(${poleIdx}, ${idx})" class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between cursor-pointer border border-zinc-700 hover:border-amber-500"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><span class="text-xs text-amber-400 font-bold">Chọn ›</span></div>`;
-            });
-            html += `</div>`;
-            content.innerHTML = html;
-        }
-
-        function assignPetToPole(poleIdx, farmIdx) {
-            let pet = farm.splice(farmIdx, 1)[0];
-            trainingPoles[poleIdx] = pet;
-            saveGameData(); closeModal(); openFarmMenu();
-        }
-
-        function removeFromTraining(poleIdx) {
-            let pet = trainingPoles[poleIdx];
-            if (pet) { farm.push(pet); trainingPoles[poleIdx] = null; saveGameData(); }
-        }
-
-        function sendPetToRest(farmIdx) {
-            let pet = farm.splice(farmIdx, 1)[0];
-            restingPets.push(pet); saveGameData();
-        }
-
-        function removeFromRest(restingIdx) {
-            let pet = restingPets.splice(restingIdx, 1)[0];
-            farm.push(pet); saveGameData();
-        }
-
-        function moveToTeamFromFarm(farmIdx) {
-            if (team.length >= 3) { alert('Đội hình chính đã đầy (3/3)!'); return; }
-            team.push(farm.splice(farmIdx, 1)[0]);
-            saveGameData(); updateTeamCount();
-        }
-
-        function openHospitalMenu() {
-            checkPetSurvival();
-            document.getElementById('hospital-screen').classList.remove('hidden');
-            setTimeout(() => centerPanorama('hospital-scroller'), 50);
-        }
-        function closeHospitalMenu() {
-            document.getElementById('hospital-screen').classList.add('hidden');
-        }
-
-        function openHospitalActionModal(actionType) {
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-
-            if (actionType === 'heal') {
-                let allPets = [...team, ...farm, ...restingPets, ...trainingPoles.filter(p => p !== null)];
-                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-cyan-400">❤️ Phục Hồi Tim (1000🪙)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
-                if (allPets.length === 0) html += `<div class="text-center text-xs text-zinc-400 py-6">Không có linh thú nào!</div>`;
-                else {
-                    allPets.forEach(pet => {
-                        let missingHearts = 3 - pet.hearts;
-                        let heartsStr = '❤️'.repeat(pet.hearts) + '🖤'.repeat(missingHearts);
-                        let canHeal = pet.hearts < 3;
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-cyan-500/50"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div><div class="text-xs font-bold">${pet.name}</div><div class="text-[10px]">${heartsStr}</div></div></div>${canHeal ? `<button onclick="healPetHearts('${pet.name}')" class="bg-cyan-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Chữa (1000🪙)</button>` : `<span class="text-xs text-emerald-400 font-bold">Full ❤️</span>`}</div>`;
-                    });
-                }
-                html += `</div>`;
-                content.innerHTML = html;
-            } else if (actionType === 'breed') {
-                content.innerHTML = `
-                <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-pink-400">🧬 Sinh Sản Tạo Trứng F1 (300🪙)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
-                <div class="text-xs text-zinc-300 mb-3 text-center">Yêu cầu: 2 thú cùng loài, khác giới tính. Sẽ tạo thành quả trứng cần đi bộ để ấp nở!</div>
-                <div class="grid grid-cols-2 gap-2 mb-3">
-                    <button onclick="openSelectHospitalParentSlot(1)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 text-xs font-bold text-pink-300">Chọn Thú 1</button>
-                    <button onclick="openSelectHospitalParentSlot(2)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 text-xs font-bold text-pink-300">Chọn Thú 2</button>
-                </div>`;
-            } else if (actionType === 'evolve') {
-                let allPetsPool = [...team, ...farm];
-                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">💎 Tiến Hóa Đá Ngũ Hành</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="text-[10px] text-yellow-300 mb-2">Kho đá: Kim:${inventory.stoneKim} | Mộc:${inventory.stoneMoc} | Thủy:${inventory.stoneThuy} | Hỏa:${inventory.stoneHoa} | Thổ:${inventory.stoneTho}</div><div class="space-y-2 max-h-60 overflow-y-auto">`;
-                if (allPetsPool.length === 0) html += `<div class="text-center text-xs text-zinc-400 py-6">Không có linh thú!</div>`;
-                else {
-                    allPetsPool.forEach((pet, idx) => {
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/50"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><button onclick="evolvePetWithStone(${idx}); closeModal(); openHospitalMenu();" class="bg-amber-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Tiến Hóa (1 Đá)</button></div>`;
-                    });
-                }
-                html += `</div>`;
-                content.innerHTML = html;
-            }
-        }
-
-        function healPetHearts(petName) {
-            if (playerCoins < 1000) { alert('⚠️ Không đủ 1000 Vàng!'); return; }
-            playerCoins -= 1000;
-            team.forEach(p => { if (p.name === petName) p.hearts = 3; });
-            farm.forEach(p => { if (p.name === petName) p.hearts = 3; });
-            restingPets.forEach(p => { if (p.name === petName) p.hearts = 3; });
-            saveGameData();
-            alert(`🏥 Chữa trị thành công cho ${petName}!`);
-            closeModal(); openHospitalMenu();
-        }
-
-        let hospitalBreedingSlots = { parent1: null, parent2: null };
-        function openSelectHospitalParentSlot(slotNum) {
-            let allPetsPool = [...team, ...farm];
-            if (allPetsPool.length === 0) { alert('Không có linh thú!'); return; }
-            const content = document.getElementById('modal-content');
-            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-pink-400">Chọn Thú Bố/Mẹ (${slotNum})</h3><button onclick="openHospitalActionModal('breed')" class="text-zinc-400 font-bold">‹ Quay lại</button></div><div class="space-y-2 max-h-60 overflow-y-auto">`;
-            allPetsPool.forEach((pet, idx) => {
-                html += `<div onclick="selectHospitalParentSlot(${slotNum}, ${idx})" class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between cursor-pointer border border-zinc-700 hover:border-pink-500"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (${pet.gender})</div></div><span class="text-xs text-pink-400 font-bold">Chọn ›</span></div>`;
-            });
-            html += `</div>`;
-            content.innerHTML = html;
-        }
-
-        function selectHospitalParentSlot(slotNum, idx) {
-            let allPetsPool = [...team, ...farm];
-            let pet = allPetsPool[idx];
-            if (slotNum === 1) hospitalBreedingSlots.parent1 = pet;
-            else {
-                if (!hospitalBreedingSlots.parent1) { alert('Chọn thú 1 trước!'); return; }
-                if (hospitalBreedingSlots.parent1.emoji !== pet.emoji) { alert('Phải cùng loài!'); return; }
-                if (hospitalBreedingSlots.parent1.gender === pet.gender) { alert('Phải khác giới tính!'); return; }
-                hospitalBreedingSlots.parent2 = pet;
-
-                if (playerCoins < 300) { alert('Không đủ 300 Vàng!'); return; }
-                playerCoins -= 300;
-                let template = hospitalBreedingSlots.parent1;
-                let randomTrait = possibleTraits[Math.floor(Math.random() * possibleTraits.length)];
-                let newRarity = getRandomRarity();
-                let multi = newRarity.statMultiplier;
-
-                let childPet = {
-                    ...template, name: `F1_${template.name}`, level: 1, hearts: 3,
-                    element: Math.random() < 0.5 ? hospitalBreedingSlots.parent1.element : hospitalBreedingSlots.parent2.element,
-                    gender: Math.random() < 0.5 ? 'Đực' : 'Cái', rarity: newRarity, trait: randomTrait,
-                    hp: Math.floor((template.maxHp + 40) * multi), maxHp: Math.floor((template.maxHp + 40) * multi),
-                    atk: Math.floor((template.atk + 20) * multi),
-                    critRate: Math.floor(18 + Math.random() * 20 * multi), dodgeRate: Math.floor(12 + Math.random() * 15 * multi),
-                    accuracy: Math.floor(85 + Math.random() * 10), blockRate: Math.floor(12 + Math.random() * 20 * multi),
-                    slowResist: Math.floor(15 + Math.random() * 15), speed: Math.floor(45 + Math.random() * 30 * multi),
-                    hunger: 100, happiness: 100
-                };
-
-                eggs.push({
-                    name: `Trứng F1_${template.name}`,
-                    element: childPet.element,
-                    steps: 0,
-                    requiredSteps: 80,
-                    petData: childPet
-                });
-                hospitalBreedingSlots = { parent1: null, parent2: null };
-                saveGameData();
-                alert('🧬 Lai giống thành công! Đã tạo ra 1 Quả Trứng F1. Hãy mở menu Ấp Trứng và đi bộ để nở nhé!');
-                closeModal();
-                return;
-            }
-            openHospitalActionModal('breed');
-        }
-
-        function evolvePetWithStone(idx) {
-            let allPetsPool = [...team, ...farm];
-            let pet = allPetsPool[idx];
-            let stoneKeys = ['stoneKim', 'stoneMoc', 'stoneThuy', 'stoneHoa', 'stoneTho'];
-            let availableStone = stoneKeys.find(k => inventory[k] > 0);
-            if (!availableStone) { alert('⚠️ Bạn hết Đá Ngũ Hành trong kho!'); return; }
-            inventory[availableStone]--;
-            localStorage.setItem('ar_inventory', JSON.stringify(inventory));
-            pet.level += 2; pet.atk += 25; pet.maxHp += 50; pet.hp = pet.maxHp;
-            saveGameData();
-            alert(`💎 Tiến hóa thành công cho ${pet.name}!`);
-        }
-
-        function openTowerMenu() {
-            checkPetSurvival();
-            let gateTag = document.getElementById('tower-gate-floor');
-            if (gateTag) gateTag.innerText = towerFloor;
-            document.getElementById('tower-screen').classList.remove('hidden');
-        }
-        function closeTowerScreen() {
-            document.getElementById('tower-screen').classList.add('hidden');
-        }
-
-        function openMarketMenu() {
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-            content.innerHTML = `
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-lg text-amber-300">🛒 Chợ Đen & Vật Phẩm</h3>
-                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
-            </div>
-            <div class="text-xs text-yellow-400 font-bold mb-3">💰 Vàng hiện có: ${playerCoins} 🪙</div>
-            <div class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/40">
-                    <div class="text-xs">⚡ Năng Lượng Bắt x5 (500🪙)</div>
-                    <button onclick="buyShopItem('catchStamina', 500, 5)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-cyan-500/40">
-                    <div class="text-xs">📡 Năng Lượng Quét x2 (400🪙)</div>
-                    <button onclick="buyShopItem('scanStamina', 400, 2)" class="bg-cyan-600 hover:bg-cyan-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
-                    <div class="text-xs">🍖 Thức Ăn (50🪙) [Kho: ${inventory.food}]</div>
-                    <button onclick="buyShopItem('food', 50, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
-                    <div class="text-xs">🎾 Đồ Chơi (50🪙) [Kho: ${inventory.toy}]</div>
-                    <button onclick="buyShopItem('toy', 50, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
-                    <div class="text-xs">🏋️ Dụng Cụ Tập (100🪙) [Kho: ${inventory.trainer}]</div>
-                    <button onclick="buyShopItem('trainer', 100, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                
-                <div class="text-xs font-bold text-yellow-400 mt-2">💎 Đá Ngũ Hành Cường Hóa (150🪙 / viên)</div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">⚔️ Đá Kim [Kho: ${inventory.stoneKim}]</div><button onclick="buyShopItem('stoneKim', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🌿 Đá Mộc [Kho: ${inventory.stoneMoc}]</div><button onclick="buyShopItem('stoneMoc', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">💧 Đá Thủy [Kho: ${inventory.stoneThuy}]</div><button onclick="buyShopItem('stoneThuy', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🔥 Đá Hỏa [Kho: ${inventory.stoneHoa}]</div><button onclick="buyShopItem('stoneHoa', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🪨 Đá Thổ [Kho: ${inventory.stoneTho}]</div><button onclick="buyShopItem('stoneTho', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-            </div>`;
-        }
-
-        function buyShopItem(itemKey, price, qty) {
-            if (playerCoins < price) { alert('Không đủ vàng!'); return; }
-            playerCoins -= price; saveGameData();
-            if (itemKey === 'catchStamina') { 
-                catchStamina = Math.min(15, catchStamina + qty); 
-                localStorage.setItem('ar_catch_stamina', catchStamina); 
-            } else if (itemKey === 'scanStamina') { 
-                scanStamina = Math.min(5, scanStamina + qty); 
-                localStorage.setItem('ar_scan_stamina', scanStamina); 
-            } else { 
-                inventory[itemKey] = (inventory[itemKey] || 0) + qty; 
-                localStorage.setItem('ar_inventory', JSON.stringify(inventory)); 
-            }
-            saveGameData();
-            alert('🛒 Mua thành công!'); openMarketMenu();
-        }
-
-        function openTeamMenu() {
-            checkPetSurvival();
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Đội Hình (${team.length}/3)</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div>`;
-            if (team.length === 0) html += `<p class="text-zinc-400 text-sm text-center py-6">Đội hình trống!</p>`;
-            else {
-                html += `<div class="space-y-3">`;
-                team.forEach((pet, idx) => {
-                    let heartsStr = '❤️'.repeat(pet.hearts);
-                    html += `
-                    <div class="bg-zinc-800 p-3 rounded-xl flex items-center justify-between border ${pet.rarity.bg}">
-                        <div onclick="openPetDetail(${idx})" class="flex items-center gap-3 cursor-pointer flex-grow">
-                            <span class="text-4xl bg-zinc-900 p-2 rounded-xl">${pet.emoji}</span>
-                            <div>
-                                <div class="font-bold text-sm text-yellow-300">${pet.name} (${pet.gender === 'Đực' ? '♂️' : '♀️'}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs ${elementNames[pet.element]?.color}">[${elementNames[pet.element]?.label}]</span></div>
-                                <div class="text-[11px] text-zinc-300">HP: ${Math.floor(pet.hp)}/${pet.maxHp} | ❤️: ${heartsStr} | ⚡Tốc: ${pet.speed}</div>
-                            </div>
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <button onclick="moveTeamToFarm(${idx})" class="bg-amber-600 text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer">Về Trại</button>
-                            <button onclick="openPetDetail(${idx})" class="bg-blue-600 text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer">Xem</button>
-                        </div>
-                    </div>`;
-                });
-                html += `</div>`;
-            }
-            content.innerHTML = html;
-        }
-
-        function moveTeamToFarm(idx) {
-            farm.push(team.splice(idx, 1)[0]);
-            saveGameData(); updateTeamCount(); openTeamMenu();
-        }
-
-        function openPetDetail(index) {
-            let pet = team[index];
-            let heartsStr = '❤️'.repeat(pet.hearts);
-            const content = document.getElementById('modal-content');
-            content.innerHTML = `
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-lg">🐾 Trang Cá Nhân Linh Thú</h3>
-                <button onclick="openTeamMenu()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">‹ Quay lại</button>
-            </div>
-            <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border ${pet.rarity.bg} mb-4 text-center">
-                <div class="text-6xl mb-2">${pet.emoji}</div>
-                <div class="text-base font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${pet.level}</span></div>
-                <div class="text-xs font-bold ${elementNames[pet.element]?.color} mt-0.5">Hệ Nguyên Tố: ${elementNames[pet.element]?.label}</div>
-                <div class="text-sm mt-1">Trái tim: ${heartsStr}</div>
-                <div class="text-xs text-amber-300 mt-1">Đặc kỹ: ${pet.trait.icon} ${pet.trait.name} (${pet.trait.chance}%)</div>
-                
-                <div class="w-full space-y-2 mt-3 text-left text-xs bg-zinc-900/80 p-3 rounded-xl border border-zinc-700">
-                    <div>
-                        <div class="flex justify-between mb-1"><span>Máu (HP):</span><span class="font-bold text-emerald-400">${Math.floor(pet.hp)} / ${pet.maxHp}</span></div>
-                        <div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div class="bg-emerald-500 h-full" style="width: ${(pet.hp/pet.maxHp)*100}%"></div></div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between mb-1"><span>Độ no:</span><span class="font-bold text-yellow-400">${pet.hunger}%</span></div>
-                        <div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div class="bg-yellow-500 h-full" style="width: ${pet.hunger}%"></div></div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between mb-1"><span>Hạnh phúc:</span><span class="font-bold text-pink-400">${pet.happiness}%</span></div>
-                        <div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div class="bg-pink-500 h-full" style="width: ${pet.happiness}%"></div></div>
-                    </div>
-                </div>
-
-                <div class="w-full grid grid-cols-2 gap-2 mt-3 text-xs bg-zinc-900/80 p-3 rounded-xl border border-zinc-700 text-left">
-                    <div>⚔️ ATK: <span class="font-bold text-red-400">${Math.floor(pet.atk)}</span></div>
-                    <div>💥 Chí mạng: <span class="font-bold text-blue-400">${pet.critRate ?? 20}%</span></div>
-                    <div>🛡️ Đỡ đòn: <span class="font-bold text-purple-400">${pet.blockRate ?? 15}%</span></div>
-                    <div>🏃 Né tránh: <span class="font-bold text-emerald-400">${pet.dodgeRate ?? 15}%</span></div>
-                    <div>🎯 Chính xác: <span class="font-bold text-amber-400">${pet.accuracy ?? 90}%</span></div>
-                    <div>⚡ Tốc độ: <span class="font-bold text-cyan-400">${pet.speed ?? 50}</span></div>
-                </div>
-            </div>
-            <div class="grid grid-cols-3 gap-2 text-center">
-                <button onclick="petAction(${index}, 'feed')" class="bg-emerald-600 p-2 rounded font-bold text-xs cursor-pointer">🍖 Ăn (${inventory.food})</button>
-                <button onclick="petAction(${index}, 'play')" class="bg-amber-600 p-2 rounded font-bold text-xs cursor-pointer">🎾 Chơi (${inventory.toy})</button>
-                <button onclick="petAction(${index}, 'train')" class="bg-indigo-600 p-2 rounded font-bold text-xs cursor-pointer">🏋️ Tập (${inventory.trainer})</button>
-            </div>`;
-        }
-
-        function petAction(index, action) {
-            let pet = team[index];
-            if (action === 'feed') {
-                if (inventory.food <= 0) { alert('Hết thức ăn!'); return; }
-                inventory.food--; pet.hunger = Math.min(100, pet.hunger + 30); pet.hp = Math.min(pet.maxHp, pet.hp + 25); addQuestProgress(3, 1);
-            } else if (action === 'play') {
-                if (inventory.toy <= 0) { alert('Hết đồ chơi!'); return; }
-                inventory.toy--; pet.happiness = Math.min(100, pet.happiness + 35);
-            } else if (action === 'train') {
-                if (inventory.trainer <= 0) { alert('Hết dụng cụ!'); return; }
-                inventory.trainer--; pet.level++; pet.atk += 10; pet.maxHp += 20; pet.hp = pet.maxHp;
-            }
-            localStorage.setItem('ar_inventory', JSON.stringify(inventory));
-            saveGameData(); openPetDetail(index);
-        }
-
-        function openArenaMenu() {
-            checkPetSurvival();
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-            content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Đấu Trường PvP</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><button onclick="startBattle('arena')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Tìm Trận Đấu</button>`;
-        }
-
-        // ==========================================
-        // KHỞI TẠO BẢN ĐỒ & THÚ ĐI DẠO
-        // ==========================================
-        let map, userMarker, activeMarkers = [];
-        let mapMonstersData = [];
-        let roamInterval = null;
-        let userLat = 10.0452, userLng = 105.7469;
-        let lastSelectMonsterTime = 0;
-
-        function initMap() {
-            if (map) {
-                map.invalidateSize();
-                return;
-            }
-            try {
-                map = L.map('map', { zoomControl: false, tap: true }).setView([userLat, userLng], 17);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-                    maxZoom: 19,
-                    attribution: ''
-                }).addTo(map);
-
-                const userIcon = L.divIcon({ className: 'leaflet-div-icon', html: '<div style="font-size: 28px;">📍</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
-                userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
-
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(position => {
-                        userLat = position.coords.latitude; 
-                        userLng = position.coords.longitude;
-                        if (map) { 
-                            map.setView([userLat, userLng], 17); 
-                            map.invalidateSize(); 
-                        }
-                        if (userMarker) userMarker.setLatLng([userLat, userLng]);
-                    }, error => {}, { enableHighAccuracy: true, timeout: 5000 });
-                }
-                
-                if (mapMonstersData.length === 0) spawnMultipleMonsters();
-                initRoamingBeasts();
-                
-                setTimeout(() => { if (map) map.invalidateSize(); }, 150);
-                setTimeout(() => { if (map) map.invalidateSize(); }, 500);
-            } catch(e) {
-                console.error("Lỗi khởi tạo map:", e);
-            }
-        }
-
-        function recenterMap() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    userLat = position.coords.latitude; userLng = position.coords.longitude;
-                    if (map) { map.setView([userLat, userLng], 17); map.invalidateSize(); }
-                    if (userMarker) userMarker.setLatLng([userLat, userLng]);
-                });
-            } else if (map) { map.setView([userLat, userLng], 17); map.invalidateSize(); }
-        }
-
-        function initRoamingBeasts() {
-            if (roamInterval) clearInterval(roamInterval);
-            roamInterval = setInterval(() => {
-                if (!map || activeMarkers.length === 0) return;
-                mapMonstersData.forEach((m, idx) => {
-                    m.lat += m.vx;
-                    m.lng += m.vy;
-                    m.roamStep++;
-
-                    if (m.roamStep > 5 || Math.abs(m.lat - m.originLat) > 0.002 || Math.abs(m.lng - m.originLng) > 0.002) {
-                        m.vx = (Math.random() - 0.5) * 0.00035;
-                        m.vy = (Math.random() - 0.5) * 0.00035;
-                        m.roamStep = 0;
-                    }
-
-                    if (activeMarkers[idx]) {
-                        activeMarkers[idx].setLatLng([m.lat, m.lng]);
-                        let el = activeMarkers[idx].getElement();
-                        if (el) {
-                            let innerSpan = el.querySelector('.pet-dir-wrap');
-                            if (innerSpan) {
-                                innerSpan.style.transform = m.vy > 0 ? 'scaleX(-1)' : 'scaleX(1)';
-                            }
-                        }
-                    }
-                });
-            }, 2500);
-        }
-
-        function manualTriggerScan() {
-            if (scanStamina <= 0) {
-                alert('⚠️ Bạn đã hết Năng lượng quét (0/5)! Cần chờ 10 phút hoặc vào Giường Ngủ để hồi nhanh hơn.');
-                return;
-            }
-            scanStamina--;
-            saveGameData();
-            spawnMultipleMonsters();
-        }
-
-        function triggerSelectMonster(idx) {
-            let now = Date.now();
-            if (now - lastSelectMonsterTime < 800) return;
-            lastSelectMonsterTime = now;
-
-            if (catchStamina <= 0) {
-                alert('⚡ Bạn đã hết Năng Lượng Bắt Thú (0/15)! Hãy vào Giường Ngủ để hồi sức nhanh gấp 5 lần.');
-                return;
-            }
-            let monsterData = mapMonstersData[idx];
-            if (!monsterData) return;
-
-            currentWildMonster = monsterData;
-            currentSelectedMarker = activeMarkers[idx];
-            enterARScreen();
-        }
-
-        function spawnMultipleMonsters() {
-            if (!map) return;
-            activeMarkers.forEach(m => map.removeLayer(m));
-            activeMarkers = [];
-            mapMonstersData = [];
-
-            for (let i = 0; i < 6; i++) {
-                const baseTemplate = allMonsters[Math.floor(Math.random() * allMonsters.length)];
-                let rarity = getRandomRarity();
-                let multi = rarity.statMultiplier;
-                let originLat = userLat + (Math.random() - 0.5) * 0.003;
-                let originLng = userLng + (Math.random() - 0.5) * 0.003;
-                let initVy = (Math.random() - 0.5) * 0.00035;
-
-                const monsterData = {
-                    ...baseTemplate, rarity: rarity, hearts: 3,
-                    hp: Math.floor(baseTemplate.hp * multi), maxHp: Math.floor(baseTemplate.maxHp * multi),
-                    atk: Math.floor(baseTemplate.atk * multi), speed: Math.floor(baseTemplate.speed * multi),
-                    lat: originLat, lng: originLng,
-                    originLat: originLat, originLng: originLng,
-                    vx: (Math.random() - 0.5) * 0.00035,
-                    vy: initVy,
-                    roamStep: 0
-                };
-                mapMonstersData.push(monsterData);
-
-                let flipStyle = initVy > 0 ? 'scaleX(-1)' : 'scaleX(1)';
-                const monsterIcon = L.divIcon({ 
-                    className: 'leaflet-div-icon', 
-                    html: `<div class="roaming-pet-marker pet-hitbox" onclick="triggerSelectMonster(${i})" style="font-size: 38px; filter: drop-shadow(0 0 8px gold);">
-                        <span class="pet-dir-wrap" style="display:inline-block; transform:${flipStyle}; transition: transform 0.3s;">
-                            <span class="pet-walk-anim" style="animation-delay: ${i * 0.15}s;">${monsterData.emoji}</span>
-                        </span>
-                    </div>`, 
-                    iconSize: [60, 60], 
-                    iconAnchor: [30, 30] 
-                });
-                const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(map);
-                
-                marker.on('click', (e) => {
-                    if (e && e.originalEvent) L.DomEvent.stopPropagation(e);
-                    triggerSelectMonster(i);
-                });
-                marker.on('touchstart', (e) => {
-                    if (e && e.originalEvent) L.DomEvent.stopPropagation(e);
-                    triggerSelectMonster(i);
-                });
-
-                activeMarkers.push(marker);
-            }
-        }
-
-        // ==========================================
-        // MINIGAME AR V10.7
-        // ==========================================
-        let currentSelectedMarker = null;
-        let canvas, ctx, isARActive = false;
-        let rope = { x: 0, y: 0, vx: 0, vy: 0, flying: false, flightTime: 0 };
-        let monsterPos = { x: 0, y: 0, vx: 3.2, vy: 0, targetY: 0, jumpTimer: 0 };
-        let isTugOfWarActive = false, tugProgress = 50, tugTimerInterval = null;
-        let ropeShakeTimer = 0;
-
-        let targetRingRadius = 90;
-        let targetRingShrinking = true;
-        let beastPullDirection = 'left';
-        let swipeTimer = 0;
-        let touchStartX = 0, touchStartY = 0;
-        let perfectHitBonus = false;
-        let lassoSpinAngle = 0;
-
-        function enterARScreen() {
-            document.getElementById('map-screen').classList.add('hidden');
-            document.getElementById('ar-screen').classList.remove('hidden');
-            isARActive = true; 
-            isTugOfWarActive = false;
-            perfectHitBonus = false;
-            document.getElementById('tug-of-war-ui').classList.add('hidden');
-            document.getElementById('ar-mon-info').innerHTML = `${currentWildMonster.emoji} ${currentWildMonster.name} <span class="${currentWildMonster.rarity.color}">${currentWildMonster.rarity.badge}</span> [${elementNames[currentWildMonster.element]?.label}]`;
-            
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
-                    let v = document.getElementById('camera-feed');
-                    if (v) v.srcObject = stream;
-                }).catch(e => {});
-            }
-            initCanvasGame();
-        }
-
-        function exitARScreen() {
-            isARActive = false; isTugOfWarActive = false;
-            if (tugTimerInterval) clearInterval(tugTimerInterval);
-            const videoEl = document.getElementById('camera-feed');
-            if (videoEl && videoEl.srcObject) {
-                videoEl.srcObject.getTracks().forEach(t => t.stop());
-            }
-            document.getElementById('ar-screen').classList.add('hidden');
-            document.getElementById('map-screen').classList.remove('hidden');
-            setTimeout(() => { if(map) map.invalidateSize(); }, 100);
-        }
-
-        function initCanvasGame() {
-            canvas = document.getElementById('gameCanvas');
-            if (!canvas) return;
-            ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            monsterPos.x = canvas.width / 2; 
-            monsterPos.y = canvas.height * 0.35;
-            monsterPos.targetY = canvas.height * 0.35;
-            monsterPos.vx = 3.2;
-            resetRope();
-
-            canvas.ontouchstart = (e) => {
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-            };
-
-            canvas.ontouchend = (e) => {
-                let endX = e.changedTouches[0].clientX;
-                let endY = e.changedTouches[0].clientY;
-                let diffX = endX - touchStartX;
-                let diffY = endY - touchStartY;
-
-                if (isTugOfWarActive) {
-                    let success = false;
-                    let isSwipeGesture = Math.abs(diffX) > 25 || Math.abs(diffY) > 25;
-
-                    if (isSwipeGesture) {
-                        if (beastPullDirection === 'left' && diffX > 25 && Math.abs(diffX) > Math.abs(diffY)) {
-                            success = true;
-                        } else if (beastPullDirection === 'right' && diffX < -25 && Math.abs(diffX) > Math.abs(diffY)) {
-                            success = true;
-                        } else if (beastPullDirection === 'down' && diffY > 25 && Math.abs(diffY) > Math.abs(diffX)) {
-                            success = true;
-                        }
-
-                        if (success) {
-                            tugProgress = Math.min(100, tugProgress + 18);
-                            showFloatingText('GHÌM CHẶT! +18%', canvas.width/2, canvas.height*0.48, '#38bdf8');
-                        } else {
-                            tugProgress = Math.max(0, tugProgress - 5);
-                            showFloatingText('SAI HƯỚNG! -5%', canvas.width/2, canvas.height*0.48, '#ef4444');
-                        }
-                        document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
-                        if (tugProgress >= 100) triggerTugWin();
-                    }
-                    return;
-                }
-
-                if (rope.flying) return;
-                if (catchStamina > 0) { 
-                    catchStamina--; 
-                    saveGameData(); 
-                }
-                rope.vx = (endX - rope.x) * 0.13; 
-                rope.vy = (endY - rope.y) * 0.13;
-                rope.flying = true; 
-                rope.flightTime = 0;
-            };
-
-            requestAnimationFrame(updateCanvasGame);
-        }
-
-        function resetRope() { 
-            rope.x = canvas.width / 2; 
-            rope.y = canvas.height * 0.88; 
-            rope.flying = false; 
-            rope.flightTime = 0; 
-        }
-
-        let floatingTexts = [];
-        function showFloatingText(text, x, y, color = '#facc15') {
-            floatingTexts.push({ text, x, y, color, life: 30 });
-        }
-
-        function updateCanvasGame() {
-            if (!isARActive || !ctx || !canvas) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            ropeShakeTimer += 0.2;
-            lassoSpinAngle += 0.16;
-
-            if (targetRingShrinking) {
-                targetRingRadius -= 1.4;
-                if (targetRingRadius <= 30) targetRingShrinking = false;
-            } else {
-                targetRingRadius += 1.4;
-                if (targetRingRadius >= 85) targetRingShrinking = true;
-            }
-
-            if (!isTugOfWarActive) {
-                monsterPos.jumpTimer++;
-                if (monsterPos.jumpTimer > 70) {
-                    monsterPos.targetY = canvas.height * (0.20 + Math.random() * 0.22);
-                    monsterPos.vx = (Math.random() > 0.5 ? 1 : -1) * (3.2 + Math.random() * 1.8);
-                    monsterPos.jumpTimer = 0;
-                }
-                monsterPos.y += (monsterPos.targetY - monsterPos.y) * 0.10;
-
-                monsterPos.x += monsterPos.vx;
-                if (monsterPos.x < 55) { monsterPos.x = 55; monsterPos.vx *= -1; }
-                if (monsterPos.x > canvas.width - 55) { monsterPos.x = canvas.width - 55; monsterPos.vx *= -1; }
-            }
-
-            let shakeOffset = isTugOfWarActive ? Math.sin(ropeShakeTimer * 3) * 15 : 0;
-
-            if (!isTugOfWarActive) {
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(monsterPos.x, monsterPos.y, targetRingRadius, 0, Math.PI * 2);
-                let ringColor = targetRingRadius < 42 ? '#22c55e' : targetRingRadius < 62 ? '#eab308' : '#ef4444';
-                ctx.strokeStyle = ringColor;
-                ctx.lineWidth = targetRingRadius < 42 ? 4.5 : 3;
-                ctx.setLineDash([8, 6]);
-                ctx.stroke();
-                ctx.restore();
-            }
-
-            ctx.font = "78px sans-serif"; 
-            ctx.textAlign = "center"; 
-            ctx.textBaseline = "middle";
-            ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y + shakeOffset);
-
-            if (!isTugOfWarActive && !rope.flying) {
-                ctx.save();
-                let handRootX = canvas.width * 0.65;
-                let handRootY = canvas.height * 1.05;
-                let wristX = canvas.width * 0.55 + Math.cos(lassoSpinAngle) * 12;
-                let wristY = canvas.height * 0.88 + Math.sin(lassoSpinAngle) * 6;
-
-                ctx.beginPath();
-                ctx.moveTo(handRootX - 45, handRootY);
-                ctx.lineTo(wristX - 18, wristY);
-                ctx.lineTo(wristX + 18, wristY + 8);
-                ctx.lineTo(handRootX + 45, handRootY);
-                ctx.closePath();
-                let armGrad = ctx.createLinearGradient(handRootX - 45, handRootY, wristX + 18, wristY);
-                armGrad.addColorStop(0, '#5c2c16');
-                armGrad.addColorStop(0.5, '#8b4513');
-                armGrad.addColorStop(1, '#a0522d');
-                ctx.fillStyle = armGrad;
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.moveTo(wristX - 22, wristY + 2);
-                ctx.lineTo(wristX + 22, wristY + 8);
-                ctx.strokeStyle = '#3e1a0b';
-                ctx.lineWidth = 4;
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.arc(wristX, wristY - 6, 16, 0, Math.PI * 2);
-                ctx.fillStyle = '#e0a97a';
-                ctx.fill();
-                ctx.strokeStyle = '#b87c4f';
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-
-                let loopCenterX = wristX + Math.cos(lassoSpinAngle) * 35;
-                let loopCenterY = wristY - 60 + Math.sin(lassoSpinAngle) * 14;
-                let rx = 55 + Math.sin(lassoSpinAngle) * 8;
-                let ry = 22 + Math.cos(lassoSpinAngle) * 4;
-
-                ctx.beginPath();
-                ctx.moveTo(wristX, wristY - 6);
-                ctx.lineTo(loopCenterX, loopCenterY);
-                ctx.strokeStyle = '#d97706';
-                ctx.lineWidth = 4;
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.ellipse(loopCenterX, loopCenterY, rx + 10, ry + 6, lassoSpinAngle * 0.3, 0, Math.PI * 1.5);
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.ellipse(loopCenterX, loopCenterY, rx, ry, lassoSpinAngle * 0.3, 0, Math.PI * 2);
-                ctx.strokeStyle = '#b45309';
-                ctx.lineWidth = 6;
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.ellipse(loopCenterX, loopCenterY, rx, ry, lassoSpinAngle * 0.3, 0, Math.PI * 2);
-                ctx.strokeStyle = '#fde68a';
-                ctx.lineWidth = 3;
-                ctx.setLineDash([10, 6]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                ctx.restore();
-            }
-
-            if (isTugOfWarActive) {
-                ctx.beginPath();
-                ctx.moveTo(canvas.width / 2, canvas.height * 0.88);
-                ctx.lineTo(monsterPos.x, monsterPos.y + shakeOffset);
-                ctx.strokeStyle = "#f59e0b";
-                ctx.lineWidth = 6 + Math.sin(ropeShakeTimer * 5) * 2;
-                ctx.stroke();
-
-                ctx.font = "40px sans-serif";
-                ctx.fillText("🪢", rope.x, rope.y + shakeOffset);
-
-                ctx.beginPath();
-                ctx.arc(monsterPos.x, monsterPos.y + shakeOffset, 55, 0, Math.PI * 2);
-                ctx.strokeStyle = "#38bdf8";
-                ctx.lineWidth = 4;
-                ctx.stroke();
-            }
-
-            if (rope.flying) {
-                rope.x += rope.vx; 
-                rope.y += rope.vy;
-                rope.flightTime++;
-
-                ctx.beginPath(); 
-                ctx.moveTo(canvas.width / 2, canvas.height * 0.88); 
-                ctx.lineTo(rope.x, rope.y);
-                ctx.strokeStyle = "#b45309"; 
-                ctx.lineWidth = 4.5; 
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.arc(rope.x, rope.y, 25, 0, Math.PI * 2);
-                ctx.strokeStyle = "#f59e0b";
-                ctx.lineWidth = 4;
-                ctx.stroke();
-
-                if (Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y) < 60) {
-                    rope.flying = false;
-                    if (targetRingRadius < 42) {
-                        perfectHitBonus = true;
-                        showFloatingText('PERFECT SHOT! 🎯 (+35%)', canvas.width/2, canvas.height*0.4, '#22c55e');
-                    } else if (targetRingRadius < 62) {
-                        showFloatingText('GREAT! 👍 (+20%)', canvas.width/2, canvas.height*0.4, '#eab308');
-                    } else {
-                        showFloatingText('NICE HIT! 🪢', canvas.width/2, canvas.height*0.4, '#94a3b8');
-                    }
-                    startTugOfWarSession();
-                } else if (rope.flightTime > 40 || rope.x < 0 || rope.x > canvas.width || rope.y < 0) {
-                    resetRope();
-                }
-            }
-
-            floatingTexts.forEach((ft, i) => {
-                ft.y -= 1.2;
-                ft.life--;
-                ctx.save();
-                ctx.font = "bold 18px sans-serif";
-                ctx.fillStyle = ft.color;
-                ctx.textAlign = "center";
-                ctx.fillText(ft.text, ft.x, ft.y);
-                ctx.restore();
-                if (ft.life <= 0) floatingTexts.splice(i, 1);
-            });
-
-            requestAnimationFrame(updateCanvasGame);
-        }
-
-        function getRandomPullDirection() {
-            const dirs = ['left', 'right', 'down'];
-            return dirs[Math.floor(Math.random() * dirs.length)];
-        }
-
-        function startTugOfWarSession() {
-            isTugOfWarActive = true; 
-            tugProgress = perfectHitBonus ? 72 : 55;
-            document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
-            document.getElementById('tug-of-war-ui').classList.remove('hidden');
-
-            swipeTimer = 0;
-            beastPullDirection = getRandomPullDirection();
-            updateSwipeArrowUI();
-
-            if (tugTimerInterval) clearInterval(tugTimerInterval);
-            tugTimerInterval = setInterval(() => {
-                if (!isARActive || !isTugOfWarActive) { clearInterval(tugTimerInterval); return; }
-
-                tugProgress -= 1.2;
-                document.getElementById('tug-progress-bar').style.width = Math.max(0, tugProgress) + '%';
-
-                swipeTimer++;
-                if (swipeTimer > 28) {
-                    beastPullDirection = getRandomPullDirection();
-                    updateSwipeArrowUI();
-                    swipeTimer = 0;
-                }
-
-                if (tugProgress >= 100) triggerTugWin();
-                else if (tugProgress <= 0) {
-                    clearInterval(tugTimerInterval); 
-                    isTugOfWarActive = false;
-                    document.getElementById('tug-of-war-ui').classList.add('hidden');
-                    alert('💨 Dây thừng bị đứt! Linh thú đã nhanh chân giãy thoát.');
-                    exitARScreen();
-                }
-            }, 60);
-        }
-
-        function updateSwipeArrowUI() {
-            let textPrompt = document.getElementById('swipe-instruction-text');
-            if (!textPrompt) return;
-            if (beastPullDirection === 'left') {
-                textPrompt.innerText = '➡️ VUỐT SANG PHẢI! ➡️';
-            } else if (beastPullDirection === 'right') {
-                textPrompt.innerText = '⬅️ VUỐT SANG TRÁI! ⬅️';
-            } else {
-                textPrompt.innerText = '⬇️ VUỐT XUỐNG! ⬇️';
-            }
-        }
-
-        function triggerTugWin() {
-            if (!isTugOfWarActive) return;
-            isTugOfWarActive = false; 
-            clearInterval(tugTimerInterval);
-            document.getElementById('tug-of-war-ui').classList.add('hidden');
-            exitARScreen();
-
-            if (currentSelectedMarker && map) {
-                map.removeLayer(currentSelectedMarker);
-                let idx = activeMarkers.indexOf(currentSelectedMarker);
-                if (idx !== -1) {
-                    activeMarkers.splice(idx, 1);
-                    mapMonstersData.splice(idx, 1);
-                }
-            }
-
-            let multi = currentWildMonster.rarity.statMultiplier || 1.0;
-            let newPet = {
-                ...currentWildMonster, level: 1, hearts: 3, gender: Math.random() < 0.5 ? 'Đực' : 'Cái',
-                critRate: Math.floor(15 + Math.random() * 20 * multi), dodgeRate: Math.floor(10 + Math.random() * 15 * multi),
-                accuracy: Math.floor(85 + Math.random() * 10), blockRate: Math.floor(10 + Math.random() * 20 * multi),
-                slowResist: Math.floor(10 + Math.random() * 15), speed: Math.floor(40 + Math.random() * 30 * multi),
-                trait: possibleTraits[Math.floor(Math.random() * possibleTraits.length)], hunger: 100, happiness: 100
-            };
-            if (team.length < 3) { team.push(newPet); saveGameData(); alert(`🎉 Bắt thành công ${newPet.name} (${newPet.rarity.badge})! Đã đưa vào Đội.`); }
-            else { farm.push(newPet); saveGameData(); alert(`🎉 Đội đầy, đã chuyển ${newPet.name} vào Trại!`); }
-            addQuestProgress(1, 1); 
-            updateTeamCount();
-        }
-
-        // ==========================================
-        // ĐẤU TRƯỜNG ATB V10.7
-        // ==========================================
-        let battleCanvas, battleCtx, battleInterval;
-        function startBattle(mode) {
-            checkPetSurvival();
-            if (team.length === 0) { alert('Đội hình trống!'); return; }
-            if (mode === 'boss' && team.length < 3) { alert('⚠️ Boss yêu cầu đủ 3 linh thú!'); return; }
-            closeModal();
-            closeTowerScreen();
-            document.getElementById('map-screen').classList.add('hidden');
-            document.getElementById('battle-screen').classList.remove('hidden');
-            switchGameMusic('battle');
-
-            let activeTeam = mode === 'boss' ? [...team] : [team[0]];
-            let teamHpList = activeTeam.map(p => p.hp);
-            let teamMaxHpTotal = activeTeam.reduce((sum, p) => sum + p.maxHp, 0);
-
-            let teamSpeedGauges = activeTeam.map(() => Math.floor(Math.random() * 150));
-            let enemySpeedGauge = Math.floor(Math.random() * 150);
-
-            let enemy = mode === 'boss' ? { name: `Hắc Long Vương (Lv.${bossLevel})`, element: 'Hoa', emoji: '🐉', hp: 300 + (bossLevel * 100), maxHp: 300 + (bossLevel * 100), atk: 30 + (bossLevel * 8), speed: 45 + bossLevel * 3 } :
-                        mode === 'tower' ? { name: `Thủ Vệ Tầng ${towerFloor}`, element: elementList[towerFloor % elementList.length], emoji: '👹', hp: 120 + (towerFloor * 25), maxHp: 120 + (towerFloor * 25), atk: 20 + towerFloor * 4, speed: 40 + towerFloor * 2 } :
-                        { name: 'Đối Thủ PvP', element: 'Tho', emoji: '🤖', hp: 160, maxHp: 160, atk: 25, speed: 52 };
-            let enemyHp = enemy.hp;
-            document.getElementById('battle-enemy-name').innerText = `${enemy.name} [${elementNames[enemy.element]?.label}] (⚡${enemy.speed})`;
-
-            battleCanvas = document.getElementById('battleCanvas');
-            let dpr = window.devicePixelRatio || 1;
-            let rect = battleCanvas.getBoundingClientRect();
-            battleCanvas.width = rect.width * dpr;
-            battleCanvas.height = rect.height * dpr;
-            battleCtx = battleCanvas.getContext('2d');
-            battleCtx.scale(dpr, dpr);
-            battleCtx.imageSmoothingEnabled = true;
-            battleCtx.imageSmoothingQuality = 'high';
-            
-            let attacker = null;
-            const ACTION_THRESHOLD = 800;
-
-            let idleTick = 0;
-            let teamHitShake = [0, 0, 0];
-            let enemyHitShake = 0;
-            let impactEffects = [];
-            let battleEnded = false;
-
-            battleInterval = setInterval(() => {
-                battleCtx.clearRect(0, 0, rect.width, rect.height);
-                idleTick += 0.14;
-
-                let cx = rect.width / 2, cy = rect.height * 0.62;
-                let defaultTeamX = cx - 85, defaultEnemyX = cx + 85;
-
-                if (!attacker && !battleEnded) {
-                    activeTeam.forEach((pet, i) => {
-                        if (teamHpList[i] > 0) {
-                            teamSpeedGauges[i] += pet.speed;
-                            if (teamSpeedGauges[i] >= ACTION_THRESHOLD && !attacker) {
-                                attacker = { side: 'team', index: i, step: 0 };
-                                teamSpeedGauges[i] -= ACTION_THRESHOLD;
-                            }
-                        }
-                    });
-
-                    if (!attacker && enemyHp > 0) {
-                        enemySpeedGauge += enemy.speed;
-                        if (enemySpeedGauge >= ACTION_THRESHOLD) {
-                            attacker = { side: 'enemy', index: 0, step: 0 };
-                            enemySpeedGauge -= ACTION_THRESHOLD;
-                        }
-                    }
-                }
-
-                let myOffsetsX = [0, 0, 0];
-                let myOffsetsY = [0, 0, 0];
-                let myRotations = [0, 0, 0];
-                let enemyOffsetX = 0;
-                let enemyOffsetY = 0;
-                let enemyRotation = 0;
-
-                if (attacker && !battleEnded) {
-                    attacker.step++;
-                    let chargeDist = 120;
-
-                    if (attacker.side === 'team') {
-                        let idx = attacker.index;
-                        let targetY = cy;
-                        let startY = cy + (idx - 1) * 32;
-
-                        if (attacker.step <= 9) {
-                            let t = attacker.step / 9;
-                            myOffsetsX[idx] = t * chargeDist;
-                            myOffsetsY[idx] = (targetY - startY) * t - Math.sin(t * Math.PI) * 32;
-                            myRotations[idx] = t * 0.25;
-                        } else if (attacker.step <= 15) {
-                            myOffsetsX[idx] = chargeDist;
-                            myOffsetsY[idx] = targetY - startY;
-                            myRotations[idx] = 0.25;
-
-                            if (attacker.step === 10) {
-                                let pet = activeTeam[idx];
-                                let dmg = pet.atk * (0.8 + Math.random() * 0.4);
-                                if (pet.element === currentWeather.bonusElem) dmg *= currentWeather.statBonus;
-                                let isCounter = false;
-                                if (elementCounterMap[pet.element] === enemy.element) { dmg *= 1.35; isCounter = true; }
-                                let finalDmg = Math.floor(dmg);
-                                enemyHp = Math.max(0, enemyHp - finalDmg);
-
-                                enemyHitShake = 12;
-                                impactEffects.push({
-                                    x: defaultEnemyX - 15,
-                                    y: cy,
-                                    radius: 10,
-                                    alpha: 1,
-                                    color: isCounter ? '#facc15' : '#38bdf8',
-                                    text: `-${finalDmg}${isCounter ? ' 💥' : ''}`
-                                });
-                                document.getElementById('battle-log').innerText = `⚡ ${pet.name} (Tốc độ ${pet.speed}) lao tới đánh: -${finalDmg} dmg ${isCounter ? '💥[KHẮC HỆ!]' : ''}!`;
-                            }
-                        } else if (attacker.step <= 22) {
-                            let t = 1 - (attacker.step - 15) / 7;
-                            myOffsetsX[idx] = chargeDist * t;
-                            myOffsetsY[idx] = (targetY - startY) * t - Math.sin(t * Math.PI) * 15;
-                            myRotations[idx] = t * 0.25;
-                        } else {
-                            attacker = null;
-                        }
-                    } else if (attacker.side === 'enemy') {
-                        let targetIdx = teamHpList.findIndex(h => h > 0);
-                        let targetY = targetIdx !== -1 ? cy + (targetIdx - 1) * 32 : cy;
-
-                        if (attacker.step <= 9) {
-                            let t = attacker.step / 9;
-                            enemyOffsetX = -t * chargeDist;
-                            enemyOffsetY = (targetY - cy) * t - Math.sin(t * Math.PI) * 32;
-                            enemyRotation = -t * 0.25;
-                        } else if (attacker.step <= 15) {
-                            enemyOffsetX = -chargeDist;
-                            enemyOffsetY = targetY - cy;
-                            enemyRotation = -0.25;
-
-                            if (attacker.step === 10) {
-                                let enDmg = Math.floor(enemy.atk * (0.8 + Math.random() * 0.4));
-                                if (targetIdx !== -1) {
-                                    teamHpList[targetIdx] = Math.max(0, teamHpList[targetIdx] - enDmg);
-                                    activeTeam[targetIdx].hp = teamHpList[targetIdx];
-                                    teamHitShake[targetIdx] = 12;
-                                    impactEffects.push({
-                                        x: defaultTeamX + 15,
-                                        y: targetY,
-                                        radius: 10,
-                                        alpha: 1,
-                                        color: '#ef4444',
-                                        text: `-${enDmg}`
-                                    });
-                                    document.getElementById('battle-log').innerText = `⚡ ${enemy.name} (Tốc độ ${enemy.speed}) tấn công: -${enDmg} dmg lên ${activeTeam[targetIdx].name}!`;
-                                }
-                            }
-                        } else if (attacker.step <= 22) {
-                            let t = 1 - (attacker.step - 15) / 7;
-                            enemyOffsetX = -chargeDist * t;
-                            enemyOffsetY = (targetY - cy) * t - Math.sin(t * Math.PI) * 15;
-                            enemyRotation = -t * 0.25;
-                        } else {
-                            attacker = null;
-                        }
-                    }
-                }
-
-                let currentTeamHpTotal = teamHpList.reduce((a, b) => Math.max(0, a) + Math.max(0, b), 0);
-                let teamHpPercent = Math.max(0, (currentTeamHpTotal / teamMaxHpTotal) * 100);
-                let enemyHpPercent = Math.max(0, (enemyHp / enemy.maxHp) * 100);
-                document.getElementById('battle-team-hp-bar').style.width = teamHpPercent + '%';
-                document.getElementById('battle-team-hp-text').innerText = `HP: ${currentTeamHpTotal}/${teamMaxHpTotal}`;
-                document.getElementById('battle-enemy-hp-bar').style.width = enemyHpPercent + '%';
-                document.getElementById('battle-enemy-hp-text').innerText = `HP: ${Math.max(0, enemyHp)}/${enemy.maxHp}`;
-                
-                let isEnemyDead = enemyHp <= 0;
-                let enKnockback = 0;
-                if (enemyHitShake > 0) {
-                    enKnockback = Math.sin(enemyHitShake * 1.8) * 10 + 6;
-                    enemyHitShake--;
-                }
-
-                let finalEnX = isEnemyDead ? defaultEnemyX : (defaultEnemyX + enemyOffsetX + enKnockback);
-                let finalEnY = isEnemyDead ? (cy + 14) : (cy + enemyOffsetY);
-                let enIdleScaleY = (isEnemyDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + 1) * 0.04);
-                let finalEnRotation = isEnemyDead ? (Math.PI / 2) : enemyRotation;
-
-                battleCtx.save();
-                battleCtx.translate(finalEnX, finalEnY);
-                battleCtx.rotate(finalEnRotation);
-                battleCtx.scale(1, enIdleScaleY);
-                
-                battleCtx.font = "65px sans-serif"; 
-                battleCtx.textAlign = "center"; 
-                battleCtx.textBaseline = "middle";
-                battleCtx.fillText(enemy.emoji, 0, 0);
-                battleCtx.restore();
-
-                if (!isEnemyDead) {
-                    battleCtx.fillStyle = 'rgba(0,0,0,0.7)'; 
-                    battleCtx.fillRect(finalEnX - 25, finalEnY + 32, 50, 4);
-                    battleCtx.fillStyle = '#38bdf8'; 
-                    battleCtx.fillRect(finalEnX - 25, finalEnY + 32, Math.min(50, (enemySpeedGauge / ACTION_THRESHOLD) * 50), 4);
-                }
-
-                activeTeam.forEach((pet, i) => {
-                    let isPetDead = teamHpList[i] <= 0;
-                    let knockback = 0;
-                    if (teamHitShake[i] > 0) {
-                        knockback = -Math.sin(teamHitShake[i] * 1.8) * 10 - 6;
-                        teamHitShake[i]--;
-                    }
-
-                    let posY = isPetDead ? (cy + (i - 1) * 32 + 12) : (cy + (i - 1) * 32 + myOffsetsY[i]);
-                    let posX = isPetDead ? defaultTeamX : (defaultTeamX + myOffsetsX[i] + knockback);
-                    let idleScaleY = (isPetDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + i * 1.2) * 0.04);
-                    let petRot = isPetDead ? (-Math.PI / 2) : myRotations[i];
-
-                    battleCtx.save();
-                    battleCtx.translate(posX, posY);
-                    battleCtx.rotate(petRot);
-                    battleCtx.scale(-1, idleScaleY);
-
-                    battleCtx.font = "52px sans-serif"; 
-                    battleCtx.textAlign = "center"; 
-                    battleCtx.textBaseline = "middle";
-                    battleCtx.fillText(pet.emoji, 0, 0);
-                    battleCtx.restore();
-
-                    if (!isPetDead) {
-                        battleCtx.fillStyle = 'rgba(0,0,0,0.7)'; 
-                        battleCtx.fillRect(posX - 22, posY + 26, 44, 4);
-                        battleCtx.fillStyle = '#facc15'; 
-                        battleCtx.fillRect(posX - 22, posY + 26, Math.min(44, (teamSpeedGauges[i] / ACTION_THRESHOLD) * 44), 4);
-                    }
-                });
-
-                for (let idx = impactEffects.length - 1; idx >= 0; idx--) {
-                    let eff = impactEffects[idx];
-                    eff.radius += 4.5;
-                    eff.alpha -= 0.055;
-                    eff.y -= 1.5;
-
-                    if (eff.alpha <= 0) {
-                        impactEffects.splice(idx, 1);
-                        continue;
-                    }
-
-                    battleCtx.save();
-                    battleCtx.globalAlpha = Math.max(0, eff.alpha);
-                    battleCtx.beginPath();
-                    battleCtx.arc(eff.x, eff.y, eff.radius, 0, Math.PI * 2);
-                    battleCtx.strokeStyle = eff.color;
-                    battleCtx.lineWidth = 3.5;
-                    battleCtx.stroke();
-
-                    battleCtx.font = "900 18px sans-serif";
-                    battleCtx.fillStyle = eff.color;
-                    battleCtx.textAlign = "center";
-                    battleCtx.strokeStyle = "#000000";
-                    battleCtx.lineWidth = 3;
-                    battleCtx.strokeText(eff.text, eff.x, eff.y - 18);
-                    battleCtx.fillText(eff.text, eff.x, eff.y - 18);
-                    battleCtx.restore();
-                }
-
-                let allTeamDead = teamHpList.every(h => h <= 0);
-                if ((enemyHp <= 0 || allTeamDead) && !battleEnded) {
-                    battleEnded = true;
-                    attacker = null;
-
-                    setTimeout(() => {
-                        clearInterval(battleInterval);
-                        if (enemyHp <= 0) {
-                            let rewardGold = mode === 'boss' ? 700 + (bossLevel * 200) : mode === 'tower' ? 300 + (towerFloor * 50) : 350;
-                            playerCoins += rewardGold; saveGameData(); addQuestProgress(2, 1);
-                            if (mode === 'tower') { towerFloor++; localStorage.setItem('ar_tower_floor', towerFloor); }
-                            else if (mode === 'boss') { bossLevel++; localStorage.setItem('ar_boss_level', bossLevel); }
-                            alert(`🏆 Chiến thắng vẻ vang! Nhận +${rewardGold} Vàng!`);
-                        } else {
-                            activeTeam.forEach(pet => {
-                                pet.hearts--;
-                                if (pet.hearts <= 0) alert(`💀 Thú ${pet.name} đã tử trận!`);
-                                else alert(`💔 Thú ${pet.name} mất 1 ❤️! Còn ${pet.hearts} ❤️.`);
-                            });
-                            team = team.filter(p => p.hearts > 0); saveGameData();
-                            alert('💀 Thất bại!');
-                        }
-                        exitBattleScreen();
-                    }, 1100);
-                }
-            }, 30);
-        }
-
-        function exitBattleScreen() {
-            switchGameMusic('map');
-            if (battleInterval) clearInterval(battleInterval);
-            document.getElementById('battle-screen').classList.add('hidden');
-            document.getElementById('map-screen').classList.remove('hidden');
-            setTimeout(() => { if (map) map.invalidateSize(); }, 100);
-        }
-
-        function updateTeamCount() {
-            ['team-count', 'home-team-count'].forEach(id => {
-                let countEl = document.getElementById(id);
-                if (countEl) countEl.innerText = team.length;
-            });
-        }
-
-        function openQuestMenu() {
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-yellow-300">📜 Nhiệm Vụ Hằng Ngày</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><div class="space-y-3 max-h-80 overflow-y-auto">`;
-            dailyQuests.forEach((q, idx) => {
-                let isCompleted = q.progress >= q.target;
-                let btnHtml = q.claimed ? `<span class="text-xs text-zinc-500 font-bold">Đã nhận</span>` : isCompleted ? `<button onclick="claimQuest(${idx})" class="bg-emerald-600 px-3 py-1 rounded text-xs font-bold cursor-pointer">Nhận Thưởng</button>` : `<span class="text-xs text-zinc-400">${q.progress}/${q.target}</span>`;
-                html += `<div class="bg-zinc-800 p-3 rounded-xl border border-zinc-700 flex items-center justify-between"><div><div class="font-bold text-xs text-yellow-200">${q.title}</div><div class="text-[10px] text-zinc-400">Thưởng: ${q.reward}🪙</div></div><div>${btnHtml}</div></div>`;
-            });
-            html += `</div>`; content.innerHTML = html;
-        }
-
-        function claimQuest(idx) {
-            let q = dailyQuests[idx];
-            if (q.claimed || q.progress < q.target) return;
-            q.claimed = true; playerCoins += q.reward; saveGameData();
-            alert(`🎉 Nhận ${q.reward} Vàng!`); openQuestMenu();
-        }
-
-        function addQuestProgress(questId, amount = 1) {
-            let q = dailyQuests.find(item => item.id === questId);
-            if (q && !q.claimed) {
-                q.progress = Math.min(q.target, q.progress + amount);
-                localStorage.setItem('ar_quests', JSON.stringify(dailyQuests));
-            }
-        }
-
-        function openWorldBossMenu() {
-            checkPetSurvival();
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-            let canFight = team.length === 3;
-            content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-amber-400">👹 Hắc Long Vương (Cấp ${bossLevel})</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-amber-500/40 mb-4 text-center"><div class="text-6xl mb-2">🐉🔥</div><div class="font-bold text-base text-yellow-300">Yêu cầu: Đội hình đủ 3 linh thú! (${team.length}/3)</div></div>${canFight ? `<button onclick="startBattle('boss')" class="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Xuất Trận Đánh Boss</button>` : `<div class="text-center text-xs text-red-400 font-bold bg-red-950/50 p-3 rounded-xl border border-red-500/50">⚠️ Đội hình chưa đủ 3 linh thú!</div>`}`;
-        }
-
-        function initDualStaminaSystem() {
-            setInterval(() => {
-                let now = Date.now();
-                let coolDownTime = isSleeping ? 120 : 600;
-
-                let diffCatch = Math.floor((now - lastCatchStaminaTime) / 1000);
-                let remCatch = Math.max(0, coolDownTime - diffCatch);
-                if (catchStamina < 15 && diffCatch >= coolDownTime) {
-                    catchStamina = Math.min(15, catchStamina + 1);
-                    lastCatchStaminaTime = now;
-                    saveGameData();
-                    remCatch = coolDownTime;
-                }
-                let minC = String(Math.floor(remCatch / 60)).padStart(2, '0');
-                let secC = String(remCatch % 60).padStart(2, '0');
-                ['catch-stamina-timer', 'home-catch-timer', 'sleep-catch-timer'].forEach(id => {
-                    let el = document.getElementById(id);
-                    if (el) el.innerText = catchStamina >= 15 ? 'MAX' : `${minC}:${secC}`;
-                });
-
-                let diffScan = Math.floor((now - lastScanStaminaTime) / 1000);
-                let remScan = Math.max(0, coolDownTime - diffScan);
-                if (scanStamina < 5 && diffScan >= coolDownTime) {
-                    scanStamina = Math.min(5, scanStamina + 1);
-                    lastScanStaminaTime = now;
-                    saveGameData();
-                    remScan = coolDownTime;
-                }
-                let minS = String(Math.floor(remScan / 60)).padStart(2, '0');
-                let secS = String(remScan % 60).padStart(2, '0');
-                ['scan-stamina-timer', 'home-scan-timer', 'sleep-scan-timer'].forEach(id => {
-                    let el = document.getElementById(id);
-                    if (el) el.innerText = scanStamina >= 5 ? 'MAX' : `${minS}:${secS}`;
-                });
-
-            }, 1000);
-            saveGameData();
-        }
-
-        window.onload = () => {
-            initDualStaminaSystem(); 
-            updateTeamCount(); 
-            updateWeatherCycle(); 
-            initStepCounter();
-            saveGameData();
-            setTimeout(() => centerPanorama('home-scroller'), 100);
-        };
-        window.onresize = () => { if (map) setTimeout(() => map.invalidateSize(), 200); };
-    </script>
-</body>
-</html>
+                html += `<div onclick="assignPetToPole(${poleIdx},${idx})" class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between cursor-pointer border border-zinc-700 hover:border-amber-500"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs
