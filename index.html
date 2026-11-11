@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Master UI v9.5</title>
+    <title>Batthu - AR Hunter Action v9.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -20,7 +20,6 @@
         .leaflet-control-attribution { display: none !important; }
         .leaflet-div-icon { background: transparent !important; border: none !important; }
 
-        /* HIỆU ỨNG THÚ LƯỚT DI CHUYỂN LIỀN MẠCH, MƯỢT MÀ */
         .roaming-pet-marker {
             transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1), top 1.2s ease, left 1.2s ease;
             will-change: transform;
@@ -42,7 +41,6 @@
 
     <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
     <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2 pb-2">
-        <!-- 1. KHÔI PHỤC THANH CÔNG CỤ TRÊN CÙNG RÕ RÀNG, KHÔNG BỊ TRÀN HAY MẤT -->
         <div class="z-50 pt-1 pb-1 shrink-0 w-full">
             <div class="flex gap-1.5 overflow-x-auto py-1 w-full no-scrollbar items-center px-0.5">
                 <button onclick="openWorldBossMenu()" class="bg-amber-700/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
@@ -57,30 +55,24 @@
             </div>
         </div>
 
-        <!-- KHUNG BẢN ĐỒ -->
         <div id="map-container-wrap" class="my-1 rounded-xl overflow-hidden border border-zinc-800 relative grow">
             <div id="map"></div>
 
-            <!-- BẢNG THỜI TIẾT Ở GÓC TRÊN BẢN ĐỒ -->
             <div class="absolute top-2.5 left-2.5 z-30 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 flex items-center gap-1.5 shadow-lg pointer-events-none">
                 <span id="weather-icon" class="text-xs">☀️</span>
                 <span id="weather-status" class="text-[10px] font-medium text-zinc-200">Trời quang</span>
             </div>
 
-            <!-- 2. CỤM NÚT TRÒN: NÚT QUÉT BẢN ĐỒ NHỎ ĐẶT KẾ BÊN NÚT ĐỊNH VỊ -->
             <div class="absolute bottom-3 right-3 z-30 flex items-center gap-2">
-                <!-- Nút quét bản đồ nhỏ tròn -->
                 <button onclick="manualTriggerScan()" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white p-3 rounded-full shadow-2xl border border-emerald-400 flex items-center justify-center text-lg cursor-pointer transition-transform" title="Quét lại khu vực (-1 Quét)">
                     🔄
                 </button>
-                <!-- Nút định vị GPS tròn -->
                 <button onclick="recenterMap()" class="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white p-3 rounded-full shadow-2xl border border-blue-400 flex items-center justify-center text-lg cursor-pointer transition-transform" title="Về vị trí của tôi">
                     📍
                 </button>
             </div>
         </div>
 
-        <!-- CỤM THÔNG TIN NĂNG LƯỢNG GỌN GÀNG DƯỚI ĐÁY -->
         <div class="flex items-center justify-between text-[11px] font-bold text-zinc-200 bg-black/90 px-3.5 py-2 rounded-xl border border-white/15 shadow-lg w-full shrink-0">
             <span class="text-amber-300">⚡ Bắt: <span id="catch-stamina-count">15</span>/15 (<span id="catch-stamina-timer">10:00</span>)</span>
             <span class="text-cyan-300">📡 Quét: <span id="scan-stamina-count">5</span>/5 (<span id="scan-stamina-timer">10:00</span>)</span>
@@ -123,7 +115,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH MINIGAME BẮT THÚ AR & DÂY VÀNG -->
+    <!-- MÀN HÌNH MINIGAME BẮT THÚ AR ACTION NÂNG CẤP V9.6 -->
     <div id="ar-screen" class="hidden absolute inset-0 z-30 flex flex-col justify-between bg-zinc-900">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -137,15 +129,22 @@
                 Mục tiêu: Đang tải...
             </div>
         </div>
+        
+        <!-- UI GIẰNG CO & VUỐT NGƯỢC CHIỀU CẢNH BÁO -->
         <div class="flex flex-col items-center z-20 pb-8 pointer-events-none">
-            <div id="tug-of-war-ui" class="hidden flex flex-col items-center w-full max-w-xs bg-black/85 p-3 rounded-2xl border border-amber-500/50 pointer-events-auto mb-2 shadow-2xl">
-                <div class="text-xs font-bold text-amber-300 mb-1 animate-pulse">🎣 GIẰNG CO KÉO THÚ! CHẠM LIÊN TỤC!</div>
-                <div class="w-full bg-zinc-900 rounded-full h-3 overflow-hidden border border-zinc-700 mb-1 relative">
+            <div id="tug-of-war-ui" class="hidden flex flex-col items-center w-full max-w-xs bg-black/85 p-3 rounded-2xl border-2 border-amber-500/70 pointer-events-auto mb-2 shadow-2xl">
+                <div class="flex items-center gap-1.5 text-xs font-extrabold text-amber-300 mb-1 animate-pulse">
+                    <span id="swipe-arrow-icon">⬅️</span>
+                    <span id="swipe-instruction-text">VUỐT NGƯỢC CHIỀU KÉO CỦA THÚ!</span>
+                </div>
+                <div class="w-full bg-zinc-900 rounded-full h-3.5 overflow-hidden border border-zinc-700 mb-1 relative">
                     <div id="tug-progress-bar" class="bg-gradient-to-r from-red-500 via-yellow-500 to-emerald-400 h-full transition-all duration-75" style="width: 50%"></div>
                 </div>
-                <div class="text-[10px] text-zinc-300">Tap liên tay để kéo đầy thanh thừng!</div>
+                <div class="text-[10px] text-zinc-300">Vuốt theo chiều ngược lại để ghìm chặt thú!</div>
             </div>
-            <div id="ar-instruction" class="text-[11px] text-zinc-300 mt-1 bg-black/60 px-3 py-1 rounded-full border border-white/10">🤠 Chạm vào màn hình để quăng vòng dây thừng! (⚡-1)</div>
+            <div id="ar-instruction" class="text-[11px] text-zinc-200 mt-1 bg-black/75 px-3.5 py-1.5 rounded-full border border-white/15 text-center shadow-lg">
+                🎯 Canh vòng tròn thu nhỏ nhất để ném Perfect! (⚡-1)
+            </div>
         </div>
     </div>
 
@@ -985,19 +984,38 @@
             }
         }
 
+        // ==========================================
+        // MINIGAME AR CATCH ACTION V9.6 (1, 3, 4)
+        // 1: Vòng tròn định tâm đổi màu & Perfect Shot
+        // 3: Thú phản kháng né đòn & gầm sóng chấn động
+        // 4: Vuốt ngược chiều kéo của thú
+        // ==========================================
         let currentSelectedMarker = null;
         let canvas, ctx, isARActive = false;
         let rope = { x: 0, y: 0, vx: 0, vy: 0, flying: false, flightTime: 0 };
-        let monsterPos = { x: 0, y: 0, vx: 1.5, vy: 1 };
+        let monsterPos = { x: 0, y: 0, vx: 2, vy: 0, targetY: 0, jumpTimer: 0, isEnraged: false, enrageTimer: 0 };
         let isTugOfWarActive = false, tugProgress = 50, tugTimerInterval = null;
         let ropeShakeTimer = 0;
+
+        // Vòng tròn định tâm đổi màu (Ring Target)
+        let targetRingRadius = 90;
+        let targetRingShrinking = true;
+
+        // Cơ chế vuốt ngược chiều (Swipe Mechanics)
+        let beastPullDirection = 'left'; // 'left' | 'right'
+        let swipeTimer = 0;
+        let touchStartX = 0, touchStartY = 0;
+        let perfectHitBonus = false;
 
         function enterARScreen() {
             document.getElementById('map-screen').classList.add('hidden');
             document.getElementById('ar-screen').classList.remove('hidden');
-            isARActive = true; isTugOfWarActive = false;
+            isARActive = true; 
+            isTugOfWarActive = false;
+            perfectHitBonus = false;
             document.getElementById('tug-of-war-ui').classList.add('hidden');
             document.getElementById('ar-mon-info').innerHTML = `${currentWildMonster.emoji} ${currentWildMonster.name} <span class="${currentWildMonster.rarity.color}">${currentWildMonster.rarity.badge}</span> [${elementNames[currentWildMonster.element]?.label}]`;
+            
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
                 document.getElementById('camera-feed').srcObject = stream;
             }).catch(e => {});
@@ -1019,79 +1037,256 @@
             if (!canvas) return;
             ctx = canvas.getContext('2d');
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            monsterPos.x = canvas.width / 2; monsterPos.y = canvas.height * 0.3;
+            monsterPos.x = canvas.width / 2; 
+            monsterPos.y = canvas.height * 0.35;
+            monsterPos.targetY = canvas.height * 0.35;
+            monsterPos.vx = 2.2;
+            monsterPos.isEnraged = false;
             resetRope();
-            canvas.onpointerdown = () => {
+
+            // SỰ KIỆN CHẠM & VUỐT (SWIPE DETECTOR)
+            canvas.ontouchstart = (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            };
+
+            canvas.ontouchend = (e) => {
+                let endX = e.changedTouches[0].clientX;
+                let endY = e.changedTouches[0].clientY;
+                let diffX = endX - touchStartX;
+                let diffY = endY - touchStartY;
+
+                // NẾU ĐANG TRONG GIAI ĐOẠN GIẰNG CO: KIỂM TRA VUỐT NGƯỢC CHIỀU THÚ KÉO
                 if (isTugOfWarActive) {
-                    tugProgress = Math.min(100, tugProgress + 12);
+                    if (Math.abs(diffX) > 30) {
+                        // Thú kéo sang trái -> Người chơi phải vuốt sang phải
+                        if (beastPullDirection === 'left' && diffX > 30) {
+                            tugProgress = Math.min(100, tugProgress + 14);
+                            showFloatingText('GHÌM CHẶT! +14%', canvas.width/2, canvas.height*0.5, '#38bdf8');
+                        } 
+                        // Thú kéo sang phải -> Người chơi phải vuốt sang trái
+                        else if (beastPullDirection === 'right' && diffX < -30) {
+                            tugProgress = Math.min(100, tugProgress + 14);
+                            showFloatingText('GHÌM CHẶT! +14%', canvas.width/2, canvas.height*0.5, '#38bdf8');
+                        } else {
+                            tugProgress = Math.max(0, tugProgress - 8);
+                            showFloatingText('SAI HƯỚNG! -8%', canvas.width/2, canvas.height*0.5, '#ef4444');
+                        }
+                    } else if (diffY > 40) {
+                        // Vuốt kéo dây giật lùi về đáy
+                        tugProgress = Math.min(100, tugProgress + 10);
+                        showFloatingText('KÉO LÙI! +10%', canvas.width/2, canvas.height*0.5, '#facc15');
+                    }
                     document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
                     if (tugProgress >= 100) triggerTugWin();
+                    return;
                 }
-            };
-            canvas.onpointerup = (e) => {
-                if (isTugOfWarActive || rope.flying) return;
+
+                // GIAI ĐOẠN QUĂNG DÂY THỪNG (CANH NHỊP VÒNG TRÒN PERFECT)
+                if (rope.flying) return;
                 if (catchStamina > 0) { 
                     catchStamina--; 
                     saveGameData(); 
                 }
-                rope.vx = (e.clientX - rope.x) * 0.12; rope.vy = (e.clientY - rope.y) * 0.12;
-                rope.flying = true; rope.flightTime = 0;
+                rope.vx = (endX - rope.x) * 0.13; 
+                rope.vy = (endY - rope.y) * 0.13;
+                rope.flying = true; 
+                rope.flightTime = 0;
             };
+
             requestAnimationFrame(updateCanvasGame);
         }
 
-        function resetRope() { rope.x = canvas.width / 2; rope.y = canvas.height * 0.85; rope.flying = false; rope.flightTime = 0; }
+        function resetRope() { 
+            rope.x = canvas.width / 2; 
+            rope.y = canvas.height * 0.85; 
+            rope.flying = false; 
+            rope.flightTime = 0; 
+        }
+
+        let floatingTexts = [];
+        function showFloatingText(text, x, y, color = '#facc15') {
+            floatingTexts.push({ text, x, y, color, life: 30, opacity: 1 });
+        }
 
         function updateCanvasGame() {
             if (!isARActive || !ctx || !canvas) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
             ropeShakeTimer += 0.2;
-            let shakeOffset = isTugOfWarActive ? Math.sin(ropeShakeTimer * 3) * 12 : 0;
-            if (!isTugOfWarActive) {
-                monsterPos.x += monsterPos.vx;
-                if (monsterPos.x < 50 || monsterPos.x > canvas.width - 50) monsterPos.vx *= -1;
+
+            // 1. CẬP NHẬT VÒNG TRÒN ĐỊNH TÂM THU NHỎ ĐỔI MÀU (PRECISION RING)
+            if (targetRingShrinking) {
+                targetRingRadius -= 1.4;
+                if (targetRingRadius <= 30) targetRingShrinking = false;
+            } else {
+                targetRingRadius += 1.4;
+                if (targetRingRadius >= 85) targetRingShrinking = true;
             }
-            ctx.font = "75px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+
+            // 3. LINH THÚ PHẢN KHÁNG: NHẢY VỌT NÉ ĐÒN & GẦM SÓNG NĂNG LƯỢNG
+            if (!isTugOfWarActive) {
+                monsterPos.jumpTimer++;
+                // Thỉnh thoảng thú nhảy né vọt lên cao
+                if (monsterPos.jumpTimer > 90) {
+                    monsterPos.targetY = canvas.height * (0.2 + Math.random() * 0.2);
+                    monsterPos.vx = (Math.random() > 0.5 ? 1 : -1) * (2.5 + Math.random() * 2);
+                    monsterPos.jumpTimer = 0;
+                }
+                monsterPos.y += (monsterPos.targetY - monsterPos.y) * 0.08;
+
+                // Thú di chuyển ngang
+                monsterPos.x += monsterPos.vx;
+                if (monsterPos.x < 55) { monsterPos.x = 55; monsterPos.vx *= -1; }
+                if (monsterPos.x > canvas.width - 55) { monsterPos.x = canvas.width - 55; monsterPos.vx *= -1; }
+            }
+
+            let shakeOffset = isTugOfWarActive ? Math.sin(ropeShakeTimer * 3) * 15 : 0;
+
+            // VẼ VÒNG TRÒN ĐỊNH TÂM QUANH THÚ (KHI CHƯA BẮT ĐƯỢC)
+            if (!isTugOfWarActive) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(monsterPos.x, monsterPos.y, targetRingRadius, 0, Math.PI * 2);
+                // Vòng càng nhỏ càng chuyển sang màu xanh lá (Perfect Shot)
+                let ringColor = targetRingRadius < 42 ? '#22c55e' : targetRingRadius < 62 ? '#eab308' : '#ef4444';
+                ctx.strokeStyle = ringColor;
+                ctx.lineWidth = targetRingRadius < 42 ? 4.5 : 3;
+                ctx.setLineDash([8, 6]);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // VẼ LINH THÚ VÀ BIỂU CẢM
+            ctx.font = "78px sans-serif"; 
+            ctx.textAlign = "center"; 
+            ctx.textBaseline = "middle";
             ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y + shakeOffset);
+
+            // 4. KHI ĐANG GIẰNG CO: VẼ DÂY VÀNG CĂNG & MŨI TÊN CHỈ HƯỚNG VUỐT NGƯỢC CHIỀU
+            if (isTugOfWarActive) {
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 2, canvas.height * 0.85);
+                ctx.lineTo(monsterPos.x, monsterPos.y + shakeOffset);
+                ctx.strokeStyle = "#f59e0b";
+                ctx.lineWidth = 6 + Math.sin(ropeShakeTimer * 5) * 2;
+                ctx.stroke();
+
+                ctx.font = "40px sans-serif";
+                ctx.fillText("🪢", rope.x, rope.y + shakeOffset);
+
+                // Vẽ vòng bẫy sáng trói quanh thú
+                ctx.beginPath();
+                ctx.arc(monsterPos.x, monsterPos.y + shakeOffset, 55, 0, Math.PI * 2);
+                ctx.strokeStyle = "#38bdf8";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            }
+
+            // QUĂNG VÒNG DÂY BAY LÊN
             if (rope.flying) {
-                rope.x += rope.vx; rope.y += rope.vy; rope.flightTime++;
-                ctx.beginPath(); ctx.moveTo(canvas.width / 2, canvas.height * 0.85); ctx.lineTo(rope.x, rope.y);
-                ctx.strokeStyle = "#d4a373"; ctx.lineWidth = 4; ctx.stroke();
-                if (Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y) < 60) {
-                    rope.flying = false; startTugOfWarSession();
+                rope.x += rope.vx; 
+                rope.y += rope.vy;
+                rope.flightTime++;
+
+                ctx.beginPath(); 
+                ctx.moveTo(canvas.width / 2, canvas.height * 0.85); 
+                ctx.lineTo(rope.x, rope.y);
+                ctx.strokeStyle = "#d4a373"; 
+                ctx.lineWidth = 4; 
+                ctx.stroke();
+
+                // Kiểm tra va chạm trúng linh thú
+                if (Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y) < 65) {
+                    rope.flying = false;
+                    // ĐÁNH GIÁ ĐỘ CHUẨN XÁC CỦA VÒNG TRÒN (PRECISION CHECK)
+                    if (targetRingRadius < 42) {
+                        perfectHitBonus = true;
+                        showFloatingText('PERFECT SHOT! 🎯 (+30%)', canvas.width/2, canvas.height*0.4, '#22c55e');
+                    } else if (targetRingRadius < 62) {
+                        showFloatingText('GREAT! 👍 (+15%)', canvas.width/2, canvas.height*0.4, '#eab308');
+                    } else {
+                        showFloatingText('NICE HIT! 🪢', canvas.width/2, canvas.height*0.4, '#94a3b8');
+                    }
+                    startTugOfWarSession();
                 } else if (rope.flightTime > 40 || rope.x < 0 || rope.x > canvas.width || rope.y < 0) {
                     resetRope();
                 }
             }
-            if (isTugOfWarActive) {
-                ctx.beginPath(); ctx.moveTo(canvas.width / 2, canvas.height * 0.85); ctx.lineTo(monsterPos.x, monsterPos.y + shakeOffset);
-                ctx.strokeStyle = "#eab308"; ctx.lineWidth = 6; ctx.stroke();
-                ctx.font = "40px sans-serif"; ctx.fillText("🪢", rope.x, rope.y + shakeOffset);
-            }
+
+            // VẼ CHỮ POPUP HIỆU ỨNG BAY LÊN
+            floatingTexts.forEach((ft, i) => {
+                ft.y -= 1.2;
+                ft.life--;
+                ctx.save();
+                ctx.font = "bold 18px sans-serif";
+                ctx.fillStyle = ft.color;
+                ctx.textAlign = "center";
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+                if (ft.life <= 0) floatingTexts.splice(i, 1);
+            });
+
             requestAnimationFrame(updateCanvasGame);
         }
 
+        // BẮT ĐẦU PHIÊN GIẰNG CO & ĐỔI HƯỚNG KÉO CỦA THÚ
         function startTugOfWarSession() {
-            isTugOfWarActive = true; tugProgress = 50;
-            document.getElementById('tug-progress-bar').style.width = '50%';
+            isTugOfWarActive = true; 
+            // Nếu ném Perfect Shot được khởi đầu với 65% thanh tiến độ!
+            tugProgress = perfectHitBonus ? 68 : 50;
+            document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
             document.getElementById('tug-of-war-ui').classList.remove('hidden');
+
+            swipeTimer = 0;
+            beastPullDirection = Math.random() > 0.5 ? 'left' : 'right';
+            updateSwipeArrowUI();
+
             if (tugTimerInterval) clearInterval(tugTimerInterval);
             tugTimerInterval = setInterval(() => {
                 if (!isARActive || !isTugOfWarActive) { clearInterval(tugTimerInterval); return; }
-                tugProgress -= 1.5;
+
+                // Thú liên tục giằng kéo làm giảm tiến độ
+                tugProgress -= 1.6;
                 document.getElementById('tug-progress-bar').style.width = Math.max(0, tugProgress) + '%';
+
+                // Thú bất ngờ đổi chiều giãy giụa mỗi 2 giây
+                swipeTimer++;
+                if (swipeTimer > 25) {
+                    beastPullDirection = beastPullDirection === 'left' ? 'right' : 'left';
+                    updateSwipeArrowUI();
+                    swipeTimer = 0;
+                }
+
                 if (tugProgress >= 100) triggerTugWin();
                 else if (tugProgress <= 0) {
-                    clearInterval(tugTimerInterval); isTugOfWarActive = false;
+                    clearInterval(tugTimerInterval); 
+                    isTugOfWarActive = false;
                     document.getElementById('tug-of-war-ui').classList.add('hidden');
+                    alert('💨 Dây thừng bị đứt! Linh thú đã nhanh chân giãy thoát.');
                     exitARScreen();
                 }
-            }, 50);
+            }, 60);
+        }
+
+        function updateSwipeArrowUI() {
+            let arrowIcon = document.getElementById('swipe-arrow-icon');
+            let textPrompt = document.getElementById('swipe-instruction-text');
+            if (beastPullDirection === 'left') {
+                // Thú chạy sang trái -> Người chơi vuốt sang phải
+                if (arrowIcon) arrowIcon.innerText = '➡️ VUỐT SANG PHẢI! ➡️';
+                if (textPrompt) textPrompt.innerText = 'THÚ KÉO TRÁI! VUỐT PHẢI ĐỂ GHÌM!';
+            } else {
+                // Thú chạy sang phải -> Người chơi vuốt sang trái
+                if (arrowIcon) arrowIcon.innerText = '⬅️ VUỐT SANG TRÁI! ⬅️';
+                if (textPrompt) textPrompt.innerText = 'THÚ KÉO PHẢI! VUỐT TRÁI ĐỂ GHÌM!';
+            }
         }
 
         function triggerTugWin() {
             if (!isTugOfWarActive) return;
-            isTugOfWarActive = false; clearInterval(tugTimerInterval);
+            isTugOfWarActive = false; 
+            clearInterval(tugTimerInterval);
             document.getElementById('tug-of-war-ui').classList.add('hidden');
             exitARScreen();
 
@@ -1112,7 +1307,7 @@
                 slowResist: Math.floor(10 + Math.random() * 15), speed: Math.floor(40 + Math.random() * 30 * multi),
                 trait: possibleTraits[Math.floor(Math.random() * possibleTraits.length)], hunger: 100, happiness: 100
             };
-            if (team.length < 3) { team.push(newPet); saveGameData(); alert(`🎉 Bắt thành công ${newPet.name}! Đã đưa vào Đội.`); }
+            if (team.length < 3) { team.push(newPet); saveGameData(); alert(`🎉 Bắt thành công ${newPet.name} (${newPet.rarity.badge})! Đã đưa vào Đội.`); }
             else { farm.push(newPet); saveGameData(); alert(`🎉 Đội đầy, đã chuyển ${newPet.name} vào Trại!`); }
             addQuestProgress(1, 1); 
             updateTeamCount();
@@ -1320,13 +1515,11 @@
             content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-amber-400">👹 Hắc Long Vương (Cấp ${bossLevel})</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border border-amber-500/40 mb-4 text-center"><div class="text-6xl mb-2">🐉🔥</div><div class="font-bold text-base text-yellow-300">Yêu cầu: Đội hình đủ 3 linh thú! (${team.length}/3)</div></div>${canFight ? `<button onclick="startBattle('boss')" class="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Xuất Trận Đánh Boss</button>` : `<div class="text-center text-xs text-red-400 font-bold bg-red-950/50 p-3 rounded-xl border border-red-500/50">⚠️ Đội hình chưa đủ 3 linh thú!</div>`}`;
         }
 
-        // HỆ THỐNG NĂNG LƯỢNG KÉP: BẮT THÚ (15/15) & QUÉT KHU VỰC (5/5)
         function initDualStaminaSystem() {
             setInterval(() => {
                 let now = Date.now();
                 let coolDownTime = 600;
 
-                // 1. Hồi Năng Lượng Bắt Thú
                 let diffCatch = Math.floor((now - lastCatchStaminaTime) / 1000);
                 let remCatch = Math.max(0, coolDownTime - diffCatch);
                 if (catchStamina < 15 && diffCatch >= coolDownTime) {
@@ -1342,7 +1535,6 @@
                 if (cCountEl) cCountEl.innerText = catchStamina;
                 if (cTimerEl) cTimerEl.innerText = catchStamina >= 15 ? 'MAX' : `${minC}:${secC}`;
 
-                // 2. Hồi Năng Lượng Quét
                 let diffScan = Math.floor((now - lastScanStaminaTime) / 1000);
                 let remScan = Math.max(0, coolDownTime - diffScan);
                 if (scanStamina < 5 && diffScan >= coolDownTime) {
