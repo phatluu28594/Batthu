@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Cowboy Arcade Catch v9.7</title>
+    <title>Batthu - Touch Fixed Master v9.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -20,9 +20,23 @@
         .leaflet-control-attribution { display: none !important; }
         .leaflet-div-icon { background: transparent !important; border: none !important; }
 
+        /* VÙNG CHẠM THÚ RỘNG 60x60px VÀ LƯỚT DI CHUYỂN ÊM ÁI */
         .roaming-pet-marker {
-            transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1), top 1.2s ease, left 1.2s ease;
+            transition: transform 2.5s cubic-bezier(0.25, 1, 0.5, 1), top 2.5s ease, left 2.5s ease;
             will-change: transform;
+            pointer-events: auto !important;
+            touch-action: manipulation !important;
+            cursor: pointer !important;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .pet-hitbox {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto !important;
+            touch-action: manipulation !important;
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -49,7 +63,7 @@
                 <button onclick="openQuestMenu()" class="bg-yellow-600/90 px-3 py-1.5 rounded-full border border-yellow-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">📜 NV</button>
                 <button onclick="openTowerMenu()" class="bg-purple-600/90 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🗼 Tháp</button>
                 <button onclick="openMarketMenu()" class="bg-amber-600/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🛒 Chợ</button>
-                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2 py-1.5 rounded-full border border-red-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">⚔️ PvP</button>
+                <button onclick="openArenaMenu()" class="bg-red-600/90 px-3 py-1.5 rounded-full border border-red-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">⚔️ PvP</button>
                 <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏡 Trại</button>
                 <button onclick="openTeamMenu()" class="bg-black/85 px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">🎒(<span id="team-count">0</span>/3)</button>
             </div>
@@ -866,11 +880,14 @@
             content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Đấu Trường PvP</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><button onclick="startBattle('arena')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Tìm Trận Đấu</button>`;
         }
 
-        // --- BẢN ĐỒ GPS, QUÉT KHU VỰC VÀ THÚ DI CHUYỂN LIỀN LẠC ---
+        // ==========================================
+        // KHẮC PHỤC TRIỆT ĐỂ: CHẠM VÀO THÚ ĐỂ BẮT (TOUCH-EVENT & HITBOX 60px)
+        // ==========================================
         let map, userMarker, activeMarkers = [];
         let mapMonstersData = [];
         let roamInterval = null;
         let userLat = 10.0452, userLng = 105.7469;
+        let lastSelectMonsterTime = 0;
 
         function initMap() {
             if (map) return;
@@ -885,7 +902,7 @@
                     if (mapMonstersData.length === 0) spawnMultipleMonsters();
                 }, { enableHighAccuracy: true });
             }
-            map = L.map('map', { zoomControl: false }).setView([userLat, userLng], 17);
+            map = L.map('map', { zoomControl: false, tap: true }).setView([userLat, userLng], 17);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
             const userIcon = L.divIcon({ className: 'leaflet-div-icon', html: '<div style="font-size: 28px;">📍</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
             userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
@@ -907,6 +924,7 @@
 
         function initRoamingBeasts() {
             if (roamInterval) clearInterval(roamInterval);
+            // Giãn nhịp cập nhật toạ độ lên 2.5s để ngón tay chạm không bị trượt
             roamInterval = setInterval(() => {
                 if (!map || activeMarkers.length === 0) return;
                 mapMonstersData.forEach((m, idx) => {
@@ -914,7 +932,7 @@
                     m.lng += m.vy;
                     m.roamStep++;
 
-                    if (m.roamStep > 6 || Math.abs(m.lat - m.originLat) > 0.002 || Math.abs(m.lng - m.originLng) > 0.002) {
+                    if (m.roamStep > 5 || Math.abs(m.lat - m.originLat) > 0.002 || Math.abs(m.lng - m.originLng) > 0.002) {
                         m.vx = (Math.random() - 0.5) * 0.00035;
                         m.vy = (Math.random() - 0.5) * 0.00035;
                         m.roamStep = 0;
@@ -924,7 +942,7 @@
                         activeMarkers[idx].setLatLng([m.lat, m.lng]);
                     }
                 });
-            }, 1200);
+            }, 2500);
         }
 
         function manualTriggerScan() {
@@ -935,6 +953,24 @@
             scanStamina--;
             saveGameData();
             spawnMultipleMonsters();
+        }
+
+        // HÀM XỬ LÝ CHẠM VÀO THÚ ĐỂ VÀO BẮT
+        function triggerSelectMonster(idx) {
+            let now = Date.now();
+            if (now - lastSelectMonsterTime < 800) return;
+            lastSelectMonsterTime = now;
+
+            if (catchStamina <= 0) {
+                alert('⚡ Bạn đã hết Năng Lượng Bắt Thú (0/15)! Hãy chờ 10 phút để tự hồi 1 điểm hoặc nạp ở Chợ.');
+                return;
+            }
+            let monsterData = mapMonstersData[idx];
+            if (!monsterData) return;
+
+            currentWildMonster = monsterData;
+            currentSelectedMarker = activeMarkers[idx];
+            enterARScreen();
         }
 
         function spawnMultipleMonsters() {
@@ -962,25 +998,377 @@
                 };
                 mapMonstersData.push(monsterData);
 
+                // Hitbox mở rộng 60x60px nhận diện cảm ứng mượt mà
                 const monsterIcon = L.divIcon({ 
                     className: 'leaflet-div-icon', 
-                    html: `<div class="roaming-pet-marker" style="font-size: 36px; filter: drop-shadow(0 0 6px gold);" title="${rarity.badge}">${monsterData.emoji}</div>`, 
-                    iconSize: [38, 38], 
-                    iconAnchor: [19, 19] 
+                    html: `<div class="roaming-pet-marker pet-hitbox" onclick="triggerSelectMonster(${i})" style="font-size: 38px; filter: drop-shadow(0 0 8px gold);">${monsterData.emoji}</div>`, 
+                    iconSize: [60, 60], 
+                    iconAnchor: [30, 30] 
                 });
                 const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(map);
                 
-                marker.on('click', () => {
-                    if (catchStamina <= 0) {
-                        alert('⚡ Bạn đã hết Năng Lượng Bắt Thú (0/15)! Hãy chờ 10 phút để tự hồi 1 điểm hoặc nạp ở Chợ.');
-                        return;
-                    }
-                    currentWildMonster = monsterData; 
-                    currentSelectedMarker = marker;
-                    enterARScreen();
+                // Bắt cả sự kiện click và touchstart của Leaflet
+                marker.on('click', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    triggerSelectMonster(i);
                 });
+                marker.on('touchstart', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    triggerSelectMonster(i);
+                });
+
                 activeMarkers.push(marker);
             }
+        }
+
+        // ==========================================
+        // MINIGAME AR ACTION CÓ TAY QUAY DÂY THỪNG CAO BỒI
+        // ==========================================
+        let currentSelectedMarker = null;
+        let canvas, ctx, isARActive = false;
+        let rope = { x: 0, y: 0, vx: 0, vy: 0, flying: false, flightTime: 0 };
+        let monsterPos = { x: 0, y: 0, vx: 2.2, vy: 0, targetY: 0, jumpTimer: 0 };
+        let isTugOfWarActive = false, tugProgress = 50, tugTimerInterval = null;
+        let ropeShakeTimer = 0;
+
+        let targetRingRadius = 90;
+        let targetRingShrinking = true;
+        let beastPullDirection = 'left';
+        let swipeTimer = 0;
+        let touchStartX = 0, touchStartY = 0;
+        let perfectHitBonus = false;
+
+        // Góc xoay tay quay dây thừng trước khi quăng
+        let lassoSpinAngle = 0;
+
+        function enterARScreen() {
+            document.getElementById('map-screen').classList.add('hidden');
+            document.getElementById('ar-screen').classList.remove('hidden');
+            isARActive = true; 
+            isTugOfWarActive = false;
+            perfectHitBonus = false;
+            document.getElementById('tug-of-war-ui').classList.add('hidden');
+            document.getElementById('ar-mon-info').innerHTML = `${currentWildMonster.emoji} ${currentWildMonster.name} <span class="${currentWildMonster.rarity.color}">${currentWildMonster.rarity.badge}</span> [${elementNames[currentWildMonster.element]?.label}]`;
+            
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
+                document.getElementById('camera-feed').srcObject = stream;
+            }).catch(e => {});
+            initCanvasGame();
+        }
+
+        function exitARScreen() {
+            isARActive = false; isTugOfWarActive = false;
+            if (tugTimerInterval) clearInterval(tugTimerInterval);
+            const videoEl = document.getElementById('camera-feed');
+            if (videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
+            document.getElementById('ar-screen').classList.add('hidden');
+            document.getElementById('map-screen').classList.remove('hidden');
+            if(map) map.invalidateSize();
+        }
+
+        function initCanvasGame() {
+            canvas = document.getElementById('gameCanvas');
+            if (!canvas) return;
+            ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            monsterPos.x = canvas.width / 2; 
+            monsterPos.y = canvas.height * 0.35;
+            monsterPos.targetY = canvas.height * 0.35;
+            monsterPos.vx = 2.2;
+            resetRope();
+
+            canvas.ontouchstart = (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            };
+
+            canvas.ontouchend = (e) => {
+                let endX = e.changedTouches[0].clientX;
+                let endY = e.changedTouches[0].clientY;
+                let diffX = endX - touchStartX;
+                let diffY = endY - touchStartY;
+
+                if (isTugOfWarActive) {
+                    if (Math.abs(diffX) > 28) {
+                        if (beastPullDirection === 'left' && diffX > 28) {
+                            tugProgress = Math.min(100, tugProgress + 14);
+                            showFloatingText('GHÌM CHẶT! +14%', canvas.width/2, canvas.height*0.5, '#38bdf8');
+                        } else if (beastPullDirection === 'right' && diffX < -28) {
+                            tugProgress = Math.min(100, tugProgress + 14);
+                            showFloatingText('GHÌM CHẶT! +14%', canvas.width/2, canvas.height*0.5, '#38bdf8');
+                        } else {
+                            tugProgress = Math.max(0, tugProgress - 8);
+                            showFloatingText('SAI HƯỚNG! -8%', canvas.width/2, canvas.height*0.5, '#ef4444');
+                        }
+                    } else if (diffY > 35) {
+                        tugProgress = Math.min(100, tugProgress + 10);
+                        showFloatingText('KÉO LÙI! +10%', canvas.width/2, canvas.height*0.5, '#facc15');
+                    }
+                    document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
+                    if (tugProgress >= 100) triggerTugWin();
+                    return;
+                }
+
+                if (rope.flying) return;
+                if (catchStamina > 0) { 
+                    catchStamina--; 
+                    saveGameData(); 
+                }
+                rope.vx = (endX - rope.x) * 0.13; 
+                rope.vy = (endY - rope.y) * 0.13;
+                rope.flying = true; 
+                rope.flightTime = 0;
+            };
+
+            requestAnimationFrame(updateCanvasGame);
+        }
+
+        function resetRope() { 
+            rope.x = canvas.width / 2; 
+            rope.y = canvas.height * 0.85; 
+            rope.flying = false; 
+            rope.flightTime = 0; 
+        }
+
+        let floatingTexts = [];
+        function showFloatingText(text, x, y, color = '#facc15') {
+            floatingTexts.push({ text, x, y, color, life: 30 });
+        }
+
+        function updateCanvasGame() {
+            if (!isARActive || !ctx || !canvas) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ropeShakeTimer += 0.2;
+            lassoSpinAngle += 0.18; // Tốc độ xoay vòng dây thừng cao bồi
+
+            if (targetRingShrinking) {
+                targetRingRadius -= 1.4;
+                if (targetRingRadius <= 30) targetRingShrinking = false;
+            } else {
+                targetRingRadius += 1.4;
+                if (targetRingRadius >= 85) targetRingShrinking = true;
+            }
+
+            if (!isTugOfWarActive) {
+                monsterPos.jumpTimer++;
+                if (monsterPos.jumpTimer > 90) {
+                    monsterPos.targetY = canvas.height * (0.2 + Math.random() * 0.2);
+                    monsterPos.vx = (Math.random() > 0.5 ? 1 : -1) * (2.5 + Math.random() * 2);
+                    monsterPos.jumpTimer = 0;
+                }
+                monsterPos.y += (monsterPos.targetY - monsterPos.y) * 0.08;
+
+                monsterPos.x += monsterPos.vx;
+                if (monsterPos.x < 55) { monsterPos.x = 55; monsterPos.vx *= -1; }
+                if (monsterPos.x > canvas.width - 55) { monsterPos.x = canvas.width - 55; monsterPos.vx *= -1; }
+            }
+
+            let shakeOffset = isTugOfWarActive ? Math.sin(ropeShakeTimer * 3) * 15 : 0;
+
+            // VẼ VÒNG TRÒN ĐỊNH TÂM THU NHỎ
+            if (!isTugOfWarActive) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(monsterPos.x, monsterPos.y, targetRingRadius, 0, Math.PI * 2);
+                let ringColor = targetRingRadius < 42 ? '#22c55e' : targetRingRadius < 62 ? '#eab308' : '#ef4444';
+                ctx.strokeStyle = ringColor;
+                ctx.lineWidth = targetRingRadius < 42 ? 4.5 : 3;
+                ctx.setLineDash([8, 6]);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // VẼ LINH THÚ
+            ctx.font = "78px sans-serif"; 
+            ctx.textAlign = "center"; 
+            ctx.textBaseline = "middle";
+            ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y + shakeOffset);
+
+            // HIỆU ỨNG TAY CẦM DÂY THỪNG CAO BỒI QUAY TRÒN (ARCADE COWBOY LASSO SPIN)
+            if (!isTugOfWarActive && !rope.flying) {
+                ctx.save();
+                let handX = canvas.width / 2;
+                let handY = canvas.height * 0.88;
+
+                // Vẽ vòng dây thừng quay elip trên đỉnh đầu tay
+                let loopRadiusX = 45;
+                let loopRadiusY = 18;
+                let loopCenterX = handX + Math.cos(lassoSpinAngle) * 22;
+                let loopCenterY = handY - 45 + Math.sin(lassoSpinAngle) * 8;
+
+                ctx.beginPath();
+                ctx.ellipse(loopCenterX, loopCenterY, loopRadiusX, loopRadiusY, lassoSpinAngle * 0.5, 0, Math.PI * 2);
+                ctx.strokeStyle = "#eab308";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Vệt gió quay cuộn dây thừng
+                ctx.beginPath();
+                ctx.ellipse(loopCenterX, loopCenterY, loopRadiusX + 8, loopRadiusY + 4, lassoSpinAngle * 0.5, 0, Math.PI);
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Dây nối từ tay lên vòng xoay
+                ctx.beginPath();
+                ctx.moveTo(handX, handY);
+                ctx.lineTo(loopCenterX, loopCenterY);
+                ctx.strokeStyle = "#d4a373";
+                ctx.lineWidth = 3.5;
+                ctx.stroke();
+
+                // Bàn tay cao bồi vung dây
+                ctx.font = "42px sans-serif";
+                ctx.fillText("✊", handX, handY);
+                ctx.restore();
+            }
+
+            // GIẰNG CO KÉO THÚ
+            if (isTugOfWarActive) {
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 2, canvas.height * 0.85);
+                ctx.lineTo(monsterPos.x, monsterPos.y + shakeOffset);
+                ctx.strokeStyle = "#f59e0b";
+                ctx.lineWidth = 6 + Math.sin(ropeShakeTimer * 5) * 2;
+                ctx.stroke();
+
+                ctx.font = "40px sans-serif";
+                ctx.fillText("🪢", rope.x, rope.y + shakeOffset);
+
+                ctx.beginPath();
+                ctx.arc(monsterPos.x, monsterPos.y + shakeOffset, 55, 0, Math.PI * 2);
+                ctx.strokeStyle = "#38bdf8";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            }
+
+            // QUĂNG VÒNG DÂY BAY RA
+            if (rope.flying) {
+                rope.x += rope.vx; 
+                rope.y += rope.vy;
+                rope.flightTime++;
+
+                ctx.beginPath(); 
+                ctx.moveTo(canvas.width / 2, canvas.height * 0.85); 
+                ctx.lineTo(rope.x, rope.y);
+                ctx.strokeStyle = "#d4a373"; 
+                ctx.lineWidth = 4; 
+                ctx.stroke();
+
+                // Vòng xoay đầu dây đang bay
+                ctx.beginPath();
+                ctx.arc(rope.x, rope.y, 24, 0, Math.PI * 2);
+                ctx.strokeStyle = "#eab308";
+                ctx.lineWidth = 3.5;
+                ctx.stroke();
+
+                if (Math.hypot(rope.x - monsterPos.x, rope.y - monsterPos.y) < 65) {
+                    rope.flying = false;
+                    if (targetRingRadius < 42) {
+                        perfectHitBonus = true;
+                        showFloatingText('PERFECT SHOT! 🎯 (+30%)', canvas.width/2, canvas.height*0.4, '#22c55e');
+                    } else if (targetRingRadius < 62) {
+                        showFloatingText('GREAT! 👍 (+15%)', canvas.width/2, canvas.height*0.4, '#eab308');
+                    } else {
+                        showFloatingText('NICE HIT! 🪢', canvas.width/2, canvas.height*0.4, '#94a3b8');
+                    }
+                    startTugOfWarSession();
+                } else if (rope.flightTime > 40 || rope.x < 0 || rope.x > canvas.width || rope.y < 0) {
+                    resetRope();
+                }
+            }
+
+            floatingTexts.forEach((ft, i) => {
+                ft.y -= 1.2;
+                ft.life--;
+                ctx.save();
+                ctx.font = "bold 18px sans-serif";
+                ctx.fillStyle = ft.color;
+                ctx.textAlign = "center";
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+                if (ft.life <= 0) floatingTexts.splice(i, 1);
+            });
+
+            requestAnimationFrame(updateCanvasGame);
+        }
+
+        function startTugOfWarSession() {
+            isTugOfWarActive = true; 
+            tugProgress = perfectHitBonus ? 68 : 50;
+            document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
+            document.getElementById('tug-of-war-ui').classList.remove('hidden');
+
+            swipeTimer = 0;
+            beastPullDirection = Math.random() > 0.5 ? 'left' : 'right';
+            updateSwipeArrowUI();
+
+            if (tugTimerInterval) clearInterval(tugTimerInterval);
+            tugTimerInterval = setInterval(() => {
+                if (!isARActive || !isTugOfWarActive) { clearInterval(tugTimerInterval); return; }
+
+                tugProgress -= 1.6;
+                document.getElementById('tug-progress-bar').style.width = Math.max(0, tugProgress) + '%';
+
+                swipeTimer++;
+                if (swipeTimer > 25) {
+                    beastPullDirection = beastPullDirection === 'left' ? 'right' : 'left';
+                    updateSwipeArrowUI();
+                    swipeTimer = 0;
+                }
+
+                if (tugProgress >= 100) triggerTugWin();
+                else if (tugProgress <= 0) {
+                    clearInterval(tugTimerInterval); 
+                    isTugOfWarActive = false;
+                    document.getElementById('tug-of-war-ui').classList.add('hidden');
+                    alert('💨 Dây thừng bị đứt! Linh thú đã nhanh chân giãy thoát.');
+                    exitARScreen();
+                }
+            }, 60);
+        }
+
+        function updateSwipeArrowUI() {
+            let arrowIcon = document.getElementById('swipe-arrow-icon');
+            let textPrompt = document.getElementById('swipe-instruction-text');
+            if (beastPullDirection === 'left') {
+                if (arrowIcon) arrowIcon.innerText = '➡️ VUỐT SANG PHẢI! ➡️';
+                if (textPrompt) textPrompt.innerText = 'THÚ KÉO TRÁI! VUỐT PHẢI ĐỂ GHÌM!';
+            } else {
+                if (arrowIcon) arrowIcon.innerText = '⬅️ VUỐT SANG TRÁI! ⬅️';
+                if (textPrompt) textPrompt.innerText = 'THÚ KÉO PHẢI! VUỐT TRÁI ĐỂ GHÌM!';
+            }
+        }
+
+        function triggerTugWin() {
+            if (!isTugOfWarActive) return;
+            isTugOfWarActive = false; 
+            clearInterval(tugTimerInterval);
+            document.getElementById('tug-of-war-ui').classList.add('hidden');
+            exitARScreen();
+
+            if (currentSelectedMarker && map) {
+                map.removeLayer(currentSelectedMarker);
+                let idx = activeMarkers.indexOf(currentSelectedMarker);
+                if (idx !== -1) {
+                    activeMarkers.splice(idx, 1);
+                    mapMonstersData.splice(idx, 1);
+                }
+            }
+
+            let multi = currentWildMonster.rarity.statMultiplier || 1.0;
+            let newPet = {
+                ...currentWildMonster, level: 1, hearts: 3, gender: Math.random() < 0.5 ? 'Đực' : 'Cái',
+                critRate: Math.floor(15 + Math.random() * 20 * multi), dodgeRate: Math.floor(10 + Math.random() * 15 * multi),
+                accuracy: Math.floor(85 + Math.random() * 10), blockRate: Math.floor(10 + Math.random() * 20 * multi),
+                slowResist: Math.floor(10 + Math.random() * 15), speed: Math.floor(40 + Math.random() * 30 * multi),
+                trait: possibleTraits[Math.floor(Math.random() * possibleTraits.length)], hunger: 100, happiness: 100
+            };
+            if (team.length < 3) { team.push(newPet); saveGameData(); alert(`🎉 Bắt thành công ${newPet.name}! Đã đưa vào Đội.`); }
+            else { farm.push(newPet); saveGameData(); alert(`🎉 Đội đầy, đã chuyển ${newPet.name} vào Trại!`); }
+            addQuestProgress(1, 1); 
+            updateTeamCount();
         }
 
         // --- ĐẤU TRƯỜNG ATB TỐC ĐỘ ---
