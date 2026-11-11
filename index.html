@@ -3,40 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Home Hub Interactive Fixed v10.7</title>
+    <title>Batthu - Panorama Home & Click Fixed v10.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; height: 100dvh; width: 100%; overflow: hidden; background: #09090b; font-family: system-ui, -apple-system, sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; height: 100%; height: 100dvh; width: 100%; overflow: hidden; background: #09090b; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
         #map-screen { display: flex; flex-direction: column; height: 100vh; height: 100dvh; width: 100vw; position: absolute; inset: 0; background: #09090b; overflow: hidden; }
-        #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 150px; overflow: hidden; }
+        #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 150px; overflow: hidden; z-index: 10; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; background: #18181b; }
         
-        .hotspot { position: absolute; cursor: pointer; border: none; background: transparent; z-index: 20; transition: transform 0.15s; touch-action: manipulation; }
+        /* KHUNG VUỐT NGANG TOÀN CẢNH CHO SẢNH CHÍNH */
+        #home-panorama-scroll {
+            width: 100vw;
+            height: 100dvh;
+            overflow-x: auto;
+            overflow-y: hidden;
+            position: relative;
+            -webkit-overflow-scrolling: touch;
+        }
+        #home-panorama-canvas {
+            position: relative;
+            height: 100%;
+            /* Độ rộng tự động lớn hơn màn hình dọc để vuốt qua lại xem trọn vẹn 2 bên phòng */
+            width: max(100vw, 135dvh);
+        }
+
+        .hotspot { 
+            position: absolute; 
+            cursor: pointer; 
+            border: none; 
+            background: transparent; 
+            z-index: 30; 
+            pointer-events: auto !important;
+            touch-action: manipulation;
+            transition: transform 0.15s; 
+        }
         .hotspot:active { transform: scale(0.95); }
 
-        .home-btn {
-            position: absolute;
-            z-index: 40;
-            pointer-events: auto !important;
-            touch-action: manipulation !important;
-            cursor: pointer;
+        .home-label {
             background: rgba(15, 23, 42, 0.88);
             backdrop-filter: blur(4px);
             border: 1.5px solid rgba(251, 191, 36, 0.9);
             color: #fef08a;
             font-weight: 800;
-            font-size: 11px;
-            padding: 6px 12px;
+            font-size: 12px;
+            padding: 5px 12px;
             border-radius: 9999px;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.85);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
             white-space: nowrap;
             text-shadow: 0 1px 2px #000;
-            transition: transform 0.12s ease, background 0.15s ease;
-        }
-        .home-btn:active {
-            transform: scale(0.92);
-            background: rgba(30, 41, 59, 0.98);
+            pointer-events: auto;
         }
 
         .leaflet-control-attribution { display: none !important; }
@@ -57,6 +73,7 @@
             pointer-events: auto !important;
             touch-action: manipulation !important;
             cursor: pointer !important;
+            -webkit-tap-highlight-color: transparent;
         }
         .pet-hitbox {
             width: 60px;
@@ -140,55 +157,56 @@
     </div>
 
     <!-- ==========================================
-         1. MÀN HÌNH SẢNH CHÍNH ĐẦU GAME (background.png)
+         1. MÀN HÌNH SẢNH CHÍNH VUỐT NGANG TOÀN CẢNH (background.png)
          ========================================== -->
-    <div id="home-screen" class="absolute inset-0 z-30 bg-zinc-950 flex flex-col justify-between overflow-hidden">
-        <img src="./background.png" alt="Sảnh Chính" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
-
-        <!-- Thanh công cụ trên cùng -->
-        <div class="relative z-40 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/80 to-transparent">
-            <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold">
+    <div id="home-screen" class="absolute inset-0 z-30 bg-zinc-950 overflow-hidden">
+        
+        <!-- Thanh thông tin & nút chuyển tab cố định trên cùng (z-40 đảm bảo click 100%) -->
+        <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/85 via-black/40 to-transparent pointer-events-none">
+            <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/50 text-xs font-bold pointer-events-auto shadow-lg">
                 <span>🏠 Nhà Chính</span>
                 <span class="text-yellow-400 ml-1">💰 <span id="home-coin-count">1500</span>🪙</span>
             </div>
-            <div class="flex items-center gap-1.5">
-                <button type="button" onclick="openTeamMenu()" class="bg-black/85 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer active:scale-95">🎒(<span id="home-team-count">0</span>/3)</button>
-                <button type="button" onclick="openMarketMenu()" class="bg-amber-600/95 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold cursor-pointer active:scale-95">🛒 Chợ</button>
-                <button type="button" onclick="openQuestMenu()" class="bg-yellow-600/95 px-2.5 py-1.5 rounded-full border border-yellow-300 text-xs font-bold cursor-pointer active:scale-95">📜 NV</button>
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+                <button type="button" onclick="openTeamMenu()" class="bg-black/85 active:scale-95 px-2.5 py-1.5 rounded-full border border-white/30 text-xs font-bold cursor-pointer shadow-lg">🎒(<span id="home-team-count">0</span>/3)</button>
+                <button type="button" onclick="openMarketMenu()" class="bg-amber-600/95 active:scale-95 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold cursor-pointer shadow-lg">🛒 Chợ</button>
+                <button type="button" onclick="openQuestMenu()" class="bg-yellow-600/95 active:scale-95 px-2.5 py-1.5 rounded-full border border-yellow-300 text-xs font-bold cursor-pointer shadow-lg">📜 NV</button>
             </div>
         </div>
 
-        <!-- CÁC NÚT TƯƠNG TÁC TRỰC TIẾP TRÊN SẢNH CHÍNH (Z-INDEX 40, BẮT CHẠM TỨC THÌ) -->
-        <div class="relative flex-1 w-full h-full z-30">
-            <!-- Giường ngủ bên trái -->
-            <button type="button" onclick="startSleeping()" class="home-btn" style="top: 47%; left: 5%; border-color: #60a5fa; color: #bfdbfe;">
-                🛏️ Giường ngủ
-            </button>
+        <!-- Khung vuốt ngang qua lại để xem toàn bộ ảnh nền -->
+        <div id="home-panorama-scroll" class="no-scrollbar">
+            <div id="home-panorama-canvas">
+                <img src="./background.png" alt="Sảnh Chính" class="w-full h-full object-fill select-none pointer-events-none">
 
-            <!-- Ổ thú cưng bên trái -->
-            <button type="button" onclick="openTeamMenu()" class="home-btn" style="top: 63%; left: 4%; border-color: #fbbf24; color: #fef08a;">
-                🐱 Thú cưng
-            </button>
+                <!-- 2. CỬA CHÍNH Ở GIỮA: "Đi săn thú" -> Ra Map bắt thú -->
+                <button type="button" onclick="goFromHomeToMap()" class="hotspot flex flex-col items-center justify-center" style="top: 25%; left: 37%; width: 25%; height: 23%;">
+                    <div class="home-label animate-bounce">🚪 Đi săn thú</div>
+                </button>
 
-            <!-- Cửa chính ở giữa: Đi săn thú -->
-            <button type="button" onclick="goFromHomeToMap()" class="home-btn animate-bounce" style="top: 52%; left: 50%; transform: translateX(-50%);">
-                🚪 Đi săn thú
-            </button>
+                <!-- 3. CÁNH CỬA BÊN PHẢI: "Đi Trang trại" -> Qua mục Trang trại -->
+                <button type="button" onclick="openFarmMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 25%; left: 77%; width: 21%; height: 24%;">
+                    <div class="home-label" style="border-color: #34d399; color: #a7f3d0;">🏡 Đi Trang trại</div>
+                </button>
 
-            <!-- Cánh cửa / TV bên phải: Đi Trang trại -->
-            <button type="button" onclick="openFarmMenu()" class="home-btn" style="top: 52%; right: 4%; border-color: #34d399; color: #a7f3d0;">
-                🏡 Đi Trang trại
-            </button>
+                <!-- 5. GIƯỜNG NGỦ BÊN TRÁI: "Giường ngủ" -> Tối màn hình hồi năng lượng -->
+                <button type="button" onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 32%; left: 3%; width: 31%; height: 21%;">
+                    <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ</div>
+                </button>
 
-            <!-- Điện thoại bàn bên phải: Gọi bệnh viện -->
-            <button type="button" onclick="openHospitalMenu()" class="home-btn" style="top: 63%; right: 4%; border-color: #f472b6; color: #fbcfe8;">
-                ☎️ Gọi bệnh viện
-            </button>
+                <!-- 4. ĐIỆN THOẠI ĐỂ BÀN GÓC DƯỚI PHẢI: "Gọi điện bệnh viện" -> Qua Bệnh viện -->
+                <button type="button" onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 63%; left: 74%; width: 24%; height: 18%;">
+                    <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi điện bệnh viện</div>
+                </button>
+            </div>
         </div>
 
-        <!-- Thanh năng lượng dưới đáy màn hình nhà -->
-        <div class="relative z-40 p-2.5 bg-gradient-to-t from-black/90 to-transparent">
-            <div class="flex items-center justify-between text-[11px] font-bold text-zinc-200 bg-black/85 px-3.5 py-2 rounded-xl border border-white/15 shadow-lg">
+        <!-- Thanh năng lượng & gợi ý vuốt ngang dưới đáy -->
+        <div class="fixed bottom-0 left-0 right-0 z-40 p-2.5 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none flex flex-col items-center gap-1">
+            <div class="text-[10px] text-amber-200/90 bg-black/70 px-3 py-0.5 rounded-full border border-white/10">
+                ↔️ Vuốt ngang để xem toàn bộ căn phòng
+            </div>
+            <div class="w-full flex items-center justify-between text-[11px] font-bold text-zinc-200 bg-black/90 px-3.5 py-2 rounded-xl border border-white/15 shadow-lg pointer-events-auto">
                 <span class="text-amber-300">⚡ Bắt: <span id="home-catch-count">15</span>/15 (<span id="home-catch-timer">10:00</span>)</span>
                 <span class="text-cyan-300">📡 Quét: <span id="home-scan-count">5</span>/5 (<span id="home-scan-timer">10:00</span>)</span>
             </div>
@@ -227,21 +245,21 @@
     </div>
 
     <!-- ==========================================
-         MÀN HÌNH BẢN ĐỒ GPS
+         MÀN HÌNH BẢN ĐỒ GPS (THANH TAB Z-50 CLICK NHẠY)
          ========================================== -->
     <div id="map-screen" class="hidden absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2 pb-2">
-        <div class="z-50 pt-1 pb-1 shrink-0 w-full">
+        <div class="relative z-50 pt-1 pb-1 shrink-0 w-full pointer-events-auto">
             <div class="flex gap-1.5 overflow-x-auto py-1 w-full no-scrollbar items-center px-0.5">
-                <button type="button" onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0 text-amber-200">🏠 Nhà</button>
-                <button type="button" onclick="openWorldBossMenu()" class="bg-amber-700/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
-                <button type="button" onclick="openHospitalMenu()" class="bg-cyan-700/90 px-3 py-1.5 rounded-full border border-cyan-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏥 Bệnh Viện</button>
-                <button type="button" onclick="openEggIncubatorMenu()" class="bg-emerald-700/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
-                <button type="button" onclick="openQuestMenu()" class="bg-yellow-600/90 px-3 py-1.5 rounded-full border border-yellow-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">📜 NV</button>
-                <button type="button" onclick="openTowerMenu()" class="bg-purple-600/90 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🗼 Tháp</button>
-                <button type="button" onclick="openMarketMenu()" class="bg-amber-600/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🛒 Chợ</button>
-                <button type="button" onclick="openArenaMenu()" class="bg-red-600/90 px-3 py-1.5 rounded-full border border-red-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">⚔️ PvP</button>
-                <button type="button" onclick="openFarmMenu()" class="bg-emerald-600/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏡 Trại</button>
-                <button type="button" onclick="openTeamMenu()" class="bg-black/85 px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">🎒(<span id="team-count">0</span>/3)</button>
+                <button type="button" onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 active:scale-95 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0 text-amber-200">🏠 Nhà</button>
+                <button type="button" onclick="openWorldBossMenu()" class="bg-amber-700/90 active:scale-95 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
+                <button type="button" onclick="openHospitalMenu()" class="bg-cyan-700/90 active:scale-95 px-3 py-1.5 rounded-full border border-cyan-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏥 Bệnh Viện</button>
+                <button type="button" onclick="openEggIncubatorMenu()" class="bg-emerald-700/90 active:scale-95 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
+                <button type="button" onclick="openQuestMenu()" class="bg-yellow-600/90 active:scale-95 px-3 py-1.5 rounded-full border border-yellow-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">📜 NV</button>
+                <button type="button" onclick="openTowerMenu()" class="bg-purple-600/90 active:scale-95 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🗼 Tháp</button>
+                <button type="button" onclick="openMarketMenu()" class="bg-amber-600/90 active:scale-95 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🛒 Chợ</button>
+                <button type="button" onclick="openArenaMenu()" class="bg-red-600/90 active:scale-95 px-3 py-1.5 rounded-full border border-red-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">⚔️ PvP</button>
+                <button type="button" onclick="openFarmMenu()" class="bg-emerald-600/90 active:scale-95 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏡 Trại</button>
+                <button type="button" onclick="openTeamMenu()" class="bg-black/85 active:scale-95 px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">🎒(<span id="team-count">0</span>/3)</button>
             </div>
         </div>
 
@@ -253,7 +271,7 @@
                 <span id="weather-status" class="text-[10px] font-medium text-zinc-200">Trời quang</span>
             </div>
 
-            <div class="absolute bottom-3 right-3 z-30 flex items-center gap-2">
+            <div class="absolute bottom-3 right-3 z-30 flex items-center gap-2 pointer-events-auto">
                 <button type="button" onclick="manualTriggerScan()" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white p-3 rounded-full shadow-2xl border border-emerald-400 flex items-center justify-center text-lg cursor-pointer transition-transform" title="Quét lại khu vực">
                     🔄
                 </button>
@@ -263,7 +281,7 @@
             </div>
         </div>
 
-        <div class="flex items-center justify-between text-[11px] font-bold text-zinc-200 bg-black/90 px-3.5 py-2 rounded-xl border border-white/15 shadow-lg w-full shrink-0">
+        <div class="relative z-40 flex items-center justify-between text-[11px] font-bold text-zinc-200 bg-black/90 px-3.5 py-2 rounded-xl border border-white/15 shadow-lg w-full shrink-0">
             <span class="text-amber-300">⚡ Bắt: <span id="catch-stamina-count">15</span>/15 (<span id="catch-stamina-timer">10:00</span>)</span>
             <span class="text-cyan-300">📡 Quét: <span id="scan-stamina-count">5</span>/5 (<span id="scan-stamina-timer">10:00</span>)</span>
             <span class="text-yellow-400">💰 <span id="coin-count">1500</span>🪙</span>
@@ -274,7 +292,7 @@
     <div id="fullscreen-farm-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
         <button type="button" onclick="closeFullscreenFarm()" class="absolute top-3 right-3 z-30 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
         <div class="relative w-full h-full overflow-hidden">
-            <img src="./farm-bg.png" alt="Trang Trai" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
+            <img src="./farm-bg.png" alt="Trang Trai" class="absolute inset-0 w-full h-full object-cover z-0">
             
             <div id="farm-visual-pets" class="absolute inset-0 pointer-events-none z-10"></div>
 
@@ -288,7 +306,7 @@
     <div id="hospital-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
         <button type="button" onclick="closeHospitalMenu()" class="absolute top-3 right-3 z-30 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Đóng</button>
         <div class="relative w-full h-full overflow-hidden">
-            <img src="./hospital-bg.png" alt="Bệnh Viện" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
+            <img src="./hospital-bg.png" alt="Bệnh Viện" class="absolute inset-0 w-full h-full object-cover z-0">
             <div onclick="openHospitalActionModal('heal')" class="hotspot" style="top: 23%; left: 5%; width: 45%; height: 35%;" title="Hồi Sức Tim"></div>
             <div onclick="openHospitalActionModal('evolve')" class="hotspot" style="top: 23%; left: 52%; width: 43%; height: 35%;" title="Tiến Hóa Đá"></div>
             <div onclick="openHospitalActionModal('breed')" class="hotspot" style="top: 61%; left: 10%; width: 80%; height: 35%;" title="Lai Giống F1"></div>
@@ -299,7 +317,7 @@
     <div id="tower-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
         <button type="button" onclick="closeTowerScreen()" class="absolute top-3 right-3 z-30 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
         <div class="relative w-full h-full overflow-hidden flex flex-col items-center justify-end pb-12">
-            <img src="./tower-bg.png" alt="Tháp Vô Tận" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
+            <img src="./tower-bg.png" alt="Tháp Vô Tận" class="absolute inset-0 w-full h-full object-cover z-0">
             <div onclick="startBattle('tower')" class="hotspot flex flex-col items-center justify-center animate-pulse" style="top: 60%; left: 35%; width: 30%; height: 20%;" title="Khiêu chiến Tháp">
                 <div class="bg-purple-900/90 text-yellow-300 font-extrabold px-3 py-1.5 rounded-full border-2 border-yellow-400 text-xs shadow-2xl tracking-wider text-center">
                     🗼 TẦNG <span id="tower-gate-floor">1</span><br><span class="text-[9px] text-white">CHẠM ĐỂ ĐẤU</span>
@@ -361,7 +379,7 @@
         </div>
 
         <div class="relative w-full h-full overflow-hidden flex flex-col items-center justify-center">
-            <img src="./battle-bg.png" alt="Dau Truong" class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
+            <img src="./battle-bg.png" alt="Dau Truong" class="absolute inset-0 w-full h-full object-cover z-0">
             <canvas id="battleCanvas" class="absolute inset-0 w-full h-full z-10"></canvas>
             <div id="damage-popup-container" class="absolute inset-0 pointer-events-none overflow-hidden z-20"></div>
             <div id="battle-log" class="absolute bottom-6 z-20 bg-black/85 px-4 py-2 rounded-xl text-xs text-yellow-300 font-bold border border-yellow-500/50 text-center max-w-sm shadow-xl">
@@ -370,7 +388,7 @@
         </div>
     </div>
 
-    <!-- MODAL OVERLAY CHUNG -->
+    <!-- MODAL OVERLAY CHUNG (Z-50 ĐỂ NỔI TRÊN MỌI MÀN HÌNH) -->
     <div id="modal-container" class="hidden absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div id="modal-content" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto relative"></div>
     </div>
@@ -378,7 +396,6 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // HỦY BỎ SERVICE WORKER CŨ ĐỂ TRÁNH KẸT CACHE
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(registrations => {
                 for (let reg of registrations) {
@@ -577,6 +594,15 @@
             });
         }
 
+        // CĂN GIỮA KHUNG VUỐT SẢNH CHÍNH KHI MỞ WEB
+        function centerHomePanorama() {
+            let scroller = document.getElementById('home-panorama-scroll');
+            let canvas = document.getElementById('home-panorama-canvas');
+            if (scroller && canvas) {
+                scroller.scrollLeft = (canvas.offsetWidth - scroller.offsetWidth) / 2;
+            }
+        }
+
         // ==========================================
         // ĐIỀU HƯỚNG SẢNH CHÍNH <-> BẢN ĐỒ
         // ==========================================
@@ -599,6 +625,7 @@
             document.getElementById('home-screen').classList.remove('hidden');
             updateTeamCount();
             saveGameData();
+            centerHomePanorama();
         }
 
         function startSleeping() {
@@ -1088,7 +1115,7 @@
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
             let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Đội Hình (${team.length}/3)</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div>`;
-            if (team.length === 0) html += `<p class="text-zinc-400 text-sm text-center py-6">Đội hình trống! Hãy ra cửa chính Đi săn thú hoặc nhận thú từ Trại nhé.</p>`;
+            if (team.length === 0) html += `<p class="text-zinc-400 text-sm text-center py-6">Đội hình trống!</p>`;
             else {
                 html += `<div class="space-y-3">`;
                 team.forEach((pet, idx) => {
@@ -1716,4 +1743,52 @@
             if (!isTugOfWarActive) return;
             isTugOfWarActive = false; 
             clearInterval(tugTimerInterval);
-            document.getElementById('tug-of-war-ui').classList
+            document.getElementById('tug-of-war-ui').classList.add('hidden');
+            exitARScreen();
+
+            if (currentSelectedMarker && map) {
+                map.removeLayer(currentSelectedMarker);
+                let idx = activeMarkers.indexOf(currentSelectedMarker);
+                if (idx !== -1) {
+                    activeMarkers.splice(idx, 1);
+                    mapMonstersData.splice(idx, 1);
+                }
+            }
+
+            let multi = currentWildMonster.rarity.statMultiplier || 1.0;
+            let newPet = {
+                ...currentWildMonster, level: 1, hearts: 3, gender: Math.random() < 0.5 ? 'Đực' : 'Cái',
+                critRate: Math.floor(15 + Math.random() * 20 * multi), dodgeRate: Math.floor(10 + Math.random() * 15 * multi),
+                accuracy: Math.floor(85 + Math.random() * 10), blockRate: Math.floor(10 + Math.random() * 20 * multi),
+                slowResist: Math.floor(10 + Math.random() * 15), speed: Math.floor(40 + Math.random() * 30 * multi),
+                trait: possibleTraits[Math.floor(Math.random() * possibleTraits.length)], hunger: 100, happiness: 100
+            };
+            if (team.length < 3) { team.push(newPet); saveGameData(); alert(`🎉 Bắt thành công ${newPet.name} (${newPet.rarity.badge})! Đã đưa vào Đội.`); }
+            else { farm.push(newPet); saveGameData(); alert(`🎉 Đội đầy, đã chuyển ${newPet.name} vào Trại!`); }
+            addQuestProgress(1, 1); 
+            updateTeamCount();
+        }
+
+        // ==========================================
+        // ĐẤU TRƯỜNG ATB V10.7
+        // ==========================================
+        let battleCanvas, battleCtx, battleInterval;
+        function startBattle(mode) {
+            checkPetSurvival();
+            if (team.length === 0) { alert('Đội hình trống!'); return; }
+            if (mode === 'boss' && team.length < 3) { alert('⚠️ Boss yêu cầu đủ 3 linh thú!'); return; }
+            closeModal();
+            closeTowerScreen();
+            document.getElementById('map-screen').classList.add('hidden');
+            document.getElementById('battle-screen').classList.remove('hidden');
+            switchGameMusic('battle');
+
+            let activeTeam = mode === 'boss' ? [...team] : [team[0]];
+            let teamHpList = activeTeam.map(p => p.hp);
+            let teamMaxHpTotal = activeTeam.reduce((sum, p) => sum + p.maxHp, 0);
+
+            let teamSpeedGauges = activeTeam.map(() => Math.floor(Math.random() * 150));
+            let enemySpeedGauge = Math.floor(Math.random() * 150);
+
+            let enemy = mode === 'boss' ? { name: `Hắc Long Vương (Lv.${bossLevel})`, element: 'Hoa', emoji: '🐉', hp: 300 + (bossLevel * 100), maxHp: 300 + (bossLevel * 100), atk: 30 + (bossLevel * 8), speed: 45 + bossLevel * 3 } :
+                        mode === 'tower' ? { name: `Thủ Vệ Tầng ${towerFloor}`, element: elementList[towerFloor % elementList.length], emoji: '👹', hp: 120 + (towerFloor * 25), maxHp
