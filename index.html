@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Batthu - Mobile Perfect Layout v9.4</title>
+    <title>Batthu - Master UI v9.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -41,23 +41,23 @@
     </div>
 
     <!-- MÀN HÌNH BẢN ĐỒ GPS & TIỆN ÍCH -->
-    <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2 pb-3">
-        <!-- THANH MENU TỐI ƯU ÔM SÁT MÀN HÌNH ĐIỆN THOẠI -->
-        <div class="z-30 pt-0.5 pb-1 shrink-0 w-full">
-            <div class="flex gap-1 overflow-x-auto py-0.5 w-full no-scrollbar items-center">
-                <button onclick="openWorldBossMenu()" class="bg-amber-700/90 px-2.5 py-1.5 rounded-full border border-amber-400 text-[11px] font-bold shadow cursor-pointer animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
-                <button onclick="openHospitalMenu()" class="bg-cyan-700/90 px-2.5 py-1.5 rounded-full border border-cyan-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏥 Bệnh Viện</button>
-                <button onclick="openEggIncubatorMenu()" class="bg-emerald-700/90 px-2.5 py-1.5 rounded-full border border-emerald-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
-                <button onclick="openQuestMenu()" class="bg-yellow-600/90 px-2.5 py-1.5 rounded-full border border-yellow-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">📜 NV</button>
-                <button onclick="openTowerMenu()" class="bg-purple-600/90 px-2.5 py-1.5 rounded-full border border-purple-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🗼 Tháp</button>
-                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-2.5 py-1.5 rounded-full border border-amber-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🛒 Chợ</button>
-                <button onclick="openArenaMenu()" class="bg-red-600/90 px-2.5 py-1.5 rounded-full border border-red-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">⚔️ PvP</button>
-                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-2.5 py-1.5 rounded-full border border-emerald-400 text-[11px] font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏡 Trại</button>
-                <button onclick="openTeamMenu()" class="bg-black/80 px-2.5 py-1.5 rounded-full border border-white/20 text-[11px] font-bold cursor-pointer whitespace-nowrap shrink-0">🎒(<span id="team-count">0</span>/3)</button>
+    <div id="map-screen" class="absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2 pb-2">
+        <!-- 1. KHÔI PHỤC THANH CÔNG CỤ TRÊN CÙNG RÕ RÀNG, KHÔNG BỊ TRÀN HAY MẤT -->
+        <div class="z-50 pt-1 pb-1 shrink-0 w-full">
+            <div class="flex gap-1.5 overflow-x-auto py-1 w-full no-scrollbar items-center px-0.5">
+                <button onclick="openWorldBossMenu()" class="bg-amber-700/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
+                <button onclick="openHospitalMenu()" class="bg-cyan-700/90 px-3 py-1.5 rounded-full border border-cyan-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏥 Bệnh Viện</button>
+                <button onclick="openEggIncubatorMenu()" class="bg-emerald-700/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
+                <button onclick="openQuestMenu()" class="bg-yellow-600/90 px-3 py-1.5 rounded-full border border-yellow-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">📜 NV</button>
+                <button onclick="openTowerMenu()" class="bg-purple-600/90 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🗼 Tháp</button>
+                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🛒 Chợ</button>
+                <button onclick="openArenaMenu()" class="bg-red-600/90 px-3 py-1.5 rounded-full border border-red-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">⚔️ PvP</button>
+                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏡 Trại</button>
+                <button onclick="openTeamMenu()" class="bg-black/85 px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">🎒(<span id="team-count">0</span>/3)</button>
             </div>
         </div>
 
-        <!-- KHUNG BẢN ĐỒ CO DÃN VỪA KHÍT (FLEX: 1; MIN-H: 0) -->
+        <!-- KHUNG BẢN ĐỒ -->
         <div id="map-container-wrap" class="my-1 rounded-xl overflow-hidden border border-zinc-800 relative grow">
             <div id="map"></div>
 
@@ -67,22 +67,24 @@
                 <span id="weather-status" class="text-[10px] font-medium text-zinc-200">Trời quang</span>
             </div>
 
-            <!-- NÚT ĐỊNH VỊ GPS NẰM GÓC DƯỚI BẢN ĐỒ -->
-            <button onclick="recenterMap()" class="absolute bottom-3 right-3 z-30 bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-full shadow-2xl border border-blue-400 active:scale-95 transition-transform flex items-center justify-center text-lg cursor-pointer" title="Về vị trí của tôi">
-                📍
-            </button>
+            <!-- 2. CỤM NÚT TRÒN: NÚT QUÉT BẢN ĐỒ NHỎ ĐẶT KẾ BÊN NÚT ĐỊNH VỊ -->
+            <div class="absolute bottom-3 right-3 z-30 flex items-center gap-2">
+                <!-- Nút quét bản đồ nhỏ tròn -->
+                <button onclick="manualTriggerScan()" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white p-3 rounded-full shadow-2xl border border-emerald-400 flex items-center justify-center text-lg cursor-pointer transition-transform" title="Quét lại khu vực (-1 Quét)">
+                    🔄
+                </button>
+                <!-- Nút định vị GPS tròn -->
+                <button onclick="recenterMap()" class="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white p-3 rounded-full shadow-2xl border border-blue-400 flex items-center justify-center text-lg cursor-pointer transition-transform" title="Về vị trí của tôi">
+                    📍
+                </button>
+            </div>
         </div>
 
-        <!-- CỤM NĂNG LƯỢNG VÀ NÚT QUÉT NẰM GỌN GÀNG Ở ĐÁY MÀN HÌNH -->
-        <div class="flex flex-col items-center z-30 pt-1 shrink-0 gap-1.5 w-full">
-            <div class="w-full flex items-center justify-between text-[10px] font-bold text-zinc-200 bg-black/90 px-3 py-1.5 rounded-xl border border-white/15 shadow-lg">
-                <span class="text-amber-300">⚡ Bắt: <span id="catch-stamina-count">15</span>/15 (<span id="catch-stamina-timer">10:00</span>)</span>
-                <span class="text-cyan-300">📡 Quét: <span id="scan-stamina-count">5</span>/5 (<span id="scan-stamina-timer">10:00</span>)</span>
-                <span class="text-yellow-400">💰 <span id="coin-count">1500</span>🪙</span>
-            </div>
-            <button onclick="manualTriggerScan()" class="w-full bg-zinc-800 hover:bg-zinc-700 active:scale-[0.98] text-white font-bold py-2 rounded-xl border border-zinc-700 shadow-xl transition-all text-xs cursor-pointer text-center">
-                🔄 Quét lại khu vực (-1 Năng lượng quét)
-            </button>
+        <!-- CỤM THÔNG TIN NĂNG LƯỢNG GỌN GÀNG DƯỚI ĐÁY -->
+        <div class="flex items-center justify-between text-[11px] font-bold text-zinc-200 bg-black/90 px-3.5 py-2 rounded-xl border border-white/15 shadow-lg w-full shrink-0">
+            <span class="text-amber-300">⚡ Bắt: <span id="catch-stamina-count">15</span>/15 (<span id="catch-stamina-timer">10:00</span>)</span>
+            <span class="text-cyan-300">📡 Quét: <span id="scan-stamina-count">5</span>/5 (<span id="scan-stamina-timer">10:00</span>)</span>
+            <span class="text-yellow-400">💰 <span id="coin-count">1500</span>🪙</span>
         </div>
     </div>
 
