@@ -84,9 +84,9 @@
         }
 
         @keyframes trainStrikeDynamic {
-            0%, 100% { transform: translateX(0) rotate(0deg) scale(1); }
-            35% { transform: translateX(-12px) rotate(-14deg) scale(0.92); }
-            65% { transform: translateX(16px) rotate(18deg) scale(1.15); }
+            0%, 100% { transform: scaleX(-1) translateX(0) rotate(0deg) scaleY(1); }
+            35% { transform: scaleX(-1) translateX(12px) rotate(-14deg) scaleY(0.92); }
+            65% { transform: scaleX(-1) translateX(-16px) rotate(18deg) scaleY(1.15); }
         }
         .pet-train-active {
             display: inline-block;
@@ -884,9 +884,7 @@
                             ${pet.name} <span class="text-white">Lv.${Math.floor(pet.level)}</span>
                         </div>
                         <div class="relative flex items-center gap-1">
-                            <span style="display: inline-block; transform: scaleX(-1);">
                             <span class="text-5xl pet-train-active" style="filter: drop-shadow(0 5px 8px rgba(0,0,0,0.9));">${pet.emoji}</span>
-                            </span>
                             <span class="text-3xl" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));">🪵</span>
                             <span class="absolute -top-3 right-3 text-sm animate-ping">💥</span>
                         </div>
