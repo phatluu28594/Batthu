@@ -1172,6 +1172,10 @@
                 content.innerHTML = html;
             } else if (actionType === 'breed') {
                 content.innerHTML = `
+                <div class="bg-rose-950/80 border border-rose-500/70 rounded-xl p-2.5 mb-3 text-center shadow-inner">
+                <div class="text-xs font-extrabold text-rose-300">⚠️ TỶ LỆ LAI GIỐNG THÀNH CÔNG: <span class="text-yellow-300 text-sm">25%</span></div>
+                <div class="text-[11px] text-rose-200/90 mt-0.5">Nếu thất bại, <span class="font-bold text-red-400 underline">Thú Mẹ sẽ kiệt sức và biến mất</span>, không tạo ra trứng!</div>
+                    </div>
                 <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-pink-400">🧬 Sinh Sản Tạo Trứng F1 (300🪙)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
                 <div class="text-xs text-zinc-300 mb-3 text-center">Yêu cầu: 2 thú cùng loài, khác giới tính. Sẽ tạo thành quả trứng cần đi bộ để ấp nở!</div>
                 <div class="grid grid-cols-2 gap-2 mb-3">
@@ -1388,33 +1392,66 @@
             content.innerHTML = html;
         }
 
+        let hospitalParent1 = null;
+        let hospitalParent2 = null;
+
         function selectHospitalParentSlot(slotNum, idx) {
-            let allPetsPool = [...team, ...farm];
-            let pet = allPetsPool[idx];
-            if (slotNum === 1) hospitalBreedingSlots.parent1 = pet;
-            else {
-                if (!hospitalBreedingSlots.parent1) { alert('Chọn thú 1 trước!'); return; }
-                if (hospitalBreedingSlots.parent1.emoji !== pet.emoji) { alert('Phải cùng loài!'); return; }
-                if (hospitalBreedingSlots.parent1.gender === pet.gender) { alert('Phải khác giới tính!'); return; }
-                hospitalBreedingSlots.parent2 = pet;
+            const selectedPet = myPets[idx];
+            if (!selectedPet) return;
 
-                if (playerCoins < 300) { alert('Không đủ 300 Vàng!'); return; }
-                playerCoins -= 300;
-                let template = hospitalBreedingSlots.parent1;
-                let randomTrait = possibleTraits[Math.floor(Math.random() * possibleTraits.length)];
-                let newRarity = getRandomRarity();
-                let multi = newRarity.statMultiplier;
+            if (slotNum === 1) {
+                if (hospitalParent2 === selectedPet) {
+                    alert("⚠️ Linh thú này đang được chọn làm Thú Mẹ!");
+                    return;
+                }
+                hospitalParent1 = selectedPet;
+            } else if (slotNum === 2) {
+                if (hospitalParent1 === selectedPet) {
+                    alert("⚠️ Linh thú này đang được chọn làm Thú Bố!");
+                    return;
+                }
+                hospitalParent2 = selectedPet;
+            }
 
-                let childPet = {
-                    ...template, name: `F1_${template.name}`, level: 1, hearts: 3,
-                    element: Math.random() < 0.5 ? hospitalBreedingSlots.parent1.element : hospitalBreedingSlots.parent2.element,
-                    gender: Math.random() < 0.5 ? 'Đực' : 'Cái', rarity: newRarity, trait: randomTrait,
-                    hp: Math.floor((template.maxHp + 40) * multi), maxHp: Math.floor((template.maxHp + 40) * multi),
-                    atk: Math.floor((template.atk + 20) * multi),
-                    critRate: Math.floor(18 + Math.random() * 20 * multi), dodgeRate: Math.floor(12 + Math.random() * 15 * multi),
-                    accuracy: Math.floor(85 + Math.random() * 10), blockRate: Math.floor(12 + Math.random() * 20 * multi),
-                    slowResist: Math.floor(15 + Math.random() * 15), speed: Math.floor(45 + Math.random() * 30 * multi),
-                    hunger: 100, happiness: 100
+            // Cập nhật lại giao diện bảng chọn Bố/Mẹ trong Bệnh Viện
+            if (typeof openHospitalActionModal === 'function') {
+                openHospitalActionModal('breed');
+            }
+        }
+
+        function confirmHospitalBreed() {
+            if (!hospitalParent1 || !hospitalParent2) {
+                alert("⚠️ Vui lòng chọn đủ cả Thú Bố và Thú Mẹ trước khi lai giống!");
+                return;
+            }
+
+            const dad = hospitalParent1;
+            const mom = hospitalParent2;
+
+            // Cảnh báo xác nhận rủi ro trước khi tiến hành
+            const isConfirmed = confirm(
+                `⚠️ CẢNH BÁO RỦI RO LAI GIỐNG:\n` +
+                `• Tỷ lệ thành công: 25% (Nhận Trứng F1_${dad.name})\n` +
+                `• Tỷ lệ thất bại: 75% (Thú Mẹ [${mom.name}] sẽ kiệt sức, biến mất vĩnh viễn và không tạo ra trứng)\n\n` +
+                `Bạn có chắc chắn muốn tiến hành lai giống không?`
+            );
+            if (!isConfirmed) return;
+
+            // Quay tỷ lệ ngẫu nhiên: 25% thành công
+            if (Math.random() < 0.25) {
+                const baseName = dad.name.replace('F1_', '');
+                const template = (typeof allMonsters !== 'undefined' && allMonsters.find(m => m.name === baseName)) || dad;
+                
+                const childPet = {
+                    ...dad,
+                    id: Date.now(),
+                    name: `F1_${template.name}`,
+                    level: 1,
+                    exp: 0,
+                    hp: Math.floor((dad.maxHp + mom.maxHp) * 0.6),
+                    maxHp: Math.floor((dad.maxHp + mom.maxHp) * 0.6),
+                    atk: Math.floor((dad.atk + mom.atk) * 0.6),
+                    speed: Math.floor((dad.speed + mom.speed) * 0.6)
                 };
 
                 eggs.push({
@@ -1424,13 +1461,42 @@
                     requiredSteps: 80,
                     petData: childPet
                 });
-                hospitalBreedingSlots = { parent1: null, parent2: null };
-                saveGameData();
-                alert('🧬 Lai giống thành công! Đã tạo ra 1 Quả Trứng F1. Hãy mở menu Ấp Trứng và đi bộ để nở nhé!');
-                closeModal();
-                return;
+
+                // Reset ô chọn sau khi lai xong
+                hospitalParent1 = null;
+                hospitalParent2 = null;
+
+                if (typeof updateEggBadge === 'function') updateEggBadge();
+                if (typeof saveGameData === 'function') saveGameData();
+                if (typeof closeHospitalActionModal === 'function') closeHospitalActionModal();
+
+                alert(`🎉 LAI GIỐNG THÀNH CÔNG (25%)!\n✨ Chúc mừng! Cặp đôi [${dad.name}] & [${mom.name}] đã tạo ra 1 quả [Trứng F1_${template.name}]!\n🥚 Hãy vào Khu Ấp Trứng để ấp nở nhé!`);
+            } else {
+                // THẤT BẠI (75%): Xóa Thú Mẹ khỏi kho và mọi đội hình, không sinh trứng
+                const momName = mom.name;
+                const momIndex = myPets.indexOf(mom);
+                if (momIndex !== -1) {
+                    myPets.splice(momIndex, 1);
+                }
+
+                if (typeof activeTeam !== 'undefined') {
+                    activeTeam = activeTeam.filter(p => p !== mom);
+                }
+                if (typeof trainingSlots !== 'undefined') {
+                    trainingSlots = trainingSlots.map(p => (p === mom ? null : p));
+                }
+                if (typeof restingPets !== 'undefined') {
+                    restingPets = restingPets.filter(p => p !== mom);
+                }
+
+                // Xóa Thú Mẹ khỏi ô chọn
+                hospitalParent2 = null;
+
+                if (typeof saveGameData === 'function') saveGameData();
+                if (typeof openHospitalActionModal === 'function') openHospitalActionModal('breed');
+
+                alert(`💔 LAI GIỐNG THẤT BẠI (75%)...\n😢 Dung hợp năng lượng thất bại! Thú Mẹ [${momName}] đã kiệt sức và biến mất vĩnh viễn, không sinh ra trứng.`);
             }
-            openHospitalActionModal('breed');
         }
 
         function evolvePetWithStone(idx) {
