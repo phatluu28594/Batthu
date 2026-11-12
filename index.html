@@ -1152,8 +1152,9 @@
         }
 
         function openHospitalActionModal(actionType) {
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
+            const modal = document.getElementById('hospital-action-modal');
+            const titleEl = document.getElementById('hospital-modal-title');
+            const bodyEl = document.getElementById('hospital-modal-body');
             modal.classList.remove('hidden');
 
             if (actionType === 'heal') {
@@ -1170,18 +1171,52 @@
                 }
                 html += `</div>`;
                 content.innerHTML = html;
-            } else if (actionType === 'breed') {
-                content.innerHTML = `
-                <div class="bg-rose-950/80 border border-rose-500/70 rounded-xl p-2.5 mb-3 text-center shadow-inner">
-                <div class="text-xs font-extrabold text-rose-300">⚠️ TỶ LỆ LAI GIỐNG THÀNH CÔNG: <span class="text-yellow-300 text-sm">25%</span></div>
-                <div class="text-[11px] text-rose-200/90 mt-0.5">Nếu thất bại, <span class="font-bold text-red-400 underline">Thú Mẹ sẽ kiệt sức và biến mất</span>, không tạo ra trứng!</div>
+            if (actionType === 'breed') {
+                if (titleEl) titleEl.innerHTML = '🧬 Khu Sinh Sản & Lai Giống F1';
+
+                let dadHtml = hospitalParent1
+                    ? `<div class="flex flex-col items-center">
+                           ${getPetSpriteHtml(hospitalParent1, 'idle', 52)}
+                           <span class="text-xs font-bold text-blue-300 mt-1">${hospitalParent1.name}</span>
+                           <span class="text-[10px] text-zinc-400">Lv.${Math.floor(hospitalParent1.level)} • ${hospitalParent1.element}</span>
+                       </div>`
+                    : `<div class="text-2xl opacity-50">➕</div><div class="text-[11px] text-blue-300 font-bold mt-1">Chọn Thú Đực (♂️)</div>`;
+
+                let momHtml = hospitalParent2
+                    ? `<div class="flex flex-col items-center">
+                           ${getPetSpriteHtml(hospitalParent2, 'idle', 52)}
+                           <span class="text-xs font-bold text-pink-300 mt-1">${hospitalParent2.name}</span>
+                           <span class="text-[10px] text-zinc-400">Lv.${Math.floor(hospitalParent2.level)} • ${hospitalParent2.element}</span>
+                       </div>`
+                    : `<div class="text-2xl opacity-50">➕</div><div class="text-[11px] text-pink-300 font-bold mt-1">Chọn Thú Cái (♀️)</div>`;
+
+                const canBreed = hospitalParent1 && hospitalParent2;
+
+                bodyEl.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div onclick="openSelectHospitalParentSlot(1)" class="bg-blue-950/60 hover:bg-blue-900/70 border-2 border-dashed border-blue-400/70 rounded-xl p-3 flex flex-col items-center justify-center min-h-[115px] cursor-pointer transition">
+                            <span class="text-[10px] font-extrabold text-blue-400 uppercase mb-1">♂️ Thú Đực (Bố)</span>
+                            ${dadHtml}
+                        </div>
+                        <div onclick="openSelectHospitalParentSlot(2)" class="bg-pink-950/60 hover:bg-pink-900/70 border-2 border-dashed border-pink-400/70 rounded-xl p-3 flex flex-col items-center justify-center min-h-[115px] cursor-pointer transition">
+                            <span class="text-[10px] font-extrabold text-pink-400 uppercase mb-1">♀️ Thú Cái (Mẹ)</span>
+                            ${momHtml}
+                        </div>
                     </div>
-                <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-pink-400">🧬 Sinh Sản Tạo Trứng F1 (300🪙)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div>
-                <div class="text-xs text-zinc-300 mb-3 text-center">Yêu cầu: 2 thú cùng loài, khác giới tính. Sẽ tạo thành quả trứng cần đi bộ để ấp nở!</div>
-                <div class="grid grid-cols-2 gap-2 mb-3">
-                    <button onclick="openSelectHospitalParentSlot(1)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 text-xs font-bold text-pink-300">Chọn Thú 1</button>
-                    <button onclick="openSelectHospitalParentSlot(2)" class="bg-zinc-800 p-3 rounded-xl border border-pink-500/50 text-xs font-bold text-pink-300">Chọn Thú 2</button>
-                </div>`;
+
+                    <div id="hospital-parent-picker" class="hidden mb-3 bg-zinc-900/95 border border-zinc-700 rounded-xl p-2 max-h-48 overflow-y-auto"></div>
+
+                    <div class="bg-rose-950/85 border border-rose-500/70 rounded-xl p-2.5 mb-3 text-center">
+                        <div class="text-xs font-extrabold text-rose-300">⚠️ TỶ LỆ LAI GIỐNG THÀNH CÔNG: <span class="text-yellow-300 text-sm">25%</span></div>
+                        <div class="text-[11px] text-rose-200/90 mt-0.5">Nếu thất bại (75%), <span class="font-bold text-red-400 underline">Thú Cái (Mẹ) sẽ kiệt sức và biến mất</span>, không sinh ra trứng!</div>
+                    </div>
+
+                    <button onclick="confirmHospitalBreed()" ${canBreed ? '' : 'disabled'} class="w-full py-3 rounded-xl font-extrabold text-sm shadow-lg transition cursor-pointer ${canBreed ? 'bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}">
+                        ${canBreed ? '💕 Xác Nhận Lai Giống (Tỷ lệ 25%)' : 'Vui lòng chọn đủ Thú Đực & Thú Cái'}
+                    </button>
+                `;
+                modal.classList.remove('hidden');
+                return;
             } else if (actionType === 'evolve') {
                 let allPetsPool = [...team, ...farm];
                 let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">💎 Tiến Hóa Đá Ngũ Hành</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="text-[10px] text-yellow-300 mb-2">Kho đá: Kim:${inventory.stoneKim} | Mộc:${inventory.stoneMoc} | Thủy:${inventory.stoneThuy} | Hỏa:${inventory.stoneHoa} | Thổ:${inventory.stoneTho}</div><div class="space-y-2 max-h-60 overflow-y-auto">`;
@@ -1381,15 +1416,43 @@
 
         let hospitalBreedingSlots = { parent1: null, parent2: null };
         function openSelectHospitalParentSlot(slotNum) {
-            let allPetsPool = [...team, ...farm];
-            if (allPetsPool.length === 0) { alert('Không có linh thú!'); return; }
-            const content = document.getElementById('modal-content');
-            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-pink-400">Chọn Thú Bố/Mẹ (${slotNum})</h3><button onclick="openHospitalActionModal('breed')" class="text-zinc-400 font-bold">‹ Quay lại</button></div><div class="space-y-2 max-h-60 overflow-y-auto">`;
-            allPetsPool.forEach((pet, idx) => {
-                html += `<div onclick="selectHospitalParentSlot(${slotNum}, ${idx})" class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between cursor-pointer border border-zinc-700 hover:border-pink-500"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (${pet.gender})</div></div><span class="text-xs text-pink-400 font-bold">Chọn ›</span></div>`;
+            // Đảm bảo modal đang mở nếu người dùng bấm trực tiếp từ ngoài ảnh nền breed-bg.png
+            const modal = document.getElementById('hospital-action-modal');
+            if (modal && modal.classList.contains('hidden')) {
+                openHospitalActionModal('breed');
+            }
+
+            const picker = document.getElementById('hospital-parent-picker');
+            if (!picker) return;
+
+            const roleLabel = slotNum === 1 ? '♂️ Chọn Thú Đực (Bố)' : '♀️ Chọn Thú Cái (Mẹ)';
+            if (!myPets || myPets.length === 0) {
+                picker.innerHTML = `<div class="text-xs text-zinc-400 text-center py-3">Bạn chưa có linh thú nào trong kho!</div>`;
+                picker.classList.remove('hidden');
+                return;
+            }
+
+            let listHtml = `<div class="text-[11px] font-bold text-yellow-300 mb-1.5 px-1">${roleLabel}:</div><div class="space-y-1.5">`;
+            myPets.forEach((pet, idx) => {
+                const isUsedOtherSlot = (slotNum === 1 && hospitalParent2 === pet) || (slotNum === 2 && hospitalParent1 === pet);
+                listHtml += `
+                <div onclick="${isUsedOtherSlot ? '' : `selectHospitalParentSlot(${slotNum}, ${idx})`}" class="flex items-center justify-between p-2 rounded-lg border ${isUsedOtherSlot ? 'bg-zinc-950/50 border-zinc-800 opacity-40 cursor-not-allowed' : 'bg-zinc-800/90 hover:bg-zinc-700 border-zinc-600 cursor-pointer'}">
+                    <div class="flex items-center gap-2">
+                        ${getPetSpriteHtml(pet, 'idle', 36)}
+                        <div>
+                            <div class="text-xs font-bold text-white">${pet.name} <span class="text-amber-400">Lv.${Math.floor(pet.level)}</span></div>
+                            <div class="text-[10px] text-zinc-400">Hệ ${pet.element} • HP ${pet.maxHp} • ATK ${pet.atk}</div>
+                        </div>
+                    </div>
+                    <span class="text-[11px] font-bold px-2 py-1 rounded ${isUsedOtherSlot ? 'text-zinc-500' : 'bg-pink-600/80 text-white'}">
+                        ${isUsedOtherSlot ? 'Đã chọn' : 'Chọn'}
+                    </span>
+                </div>`;
             });
-            html += `</div>`;
-            content.innerHTML = html;
+            listHtml += `</div>`;
+
+            picker.innerHTML = listHtml;
+            picker.classList.remove('hidden');
         }
 
         let hospitalParent1 = null;
