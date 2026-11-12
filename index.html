@@ -1532,6 +1532,22 @@
                 mapMonstersData.push(monsterData);
 
                 let flipStyle = initVy > 0 ? 'scaleX(-1)' : 'scaleX(1)';
+                let spriteCfg = spriteConfigs[monsterData.name];
+
+                let visualHtml = spriteCfg
+                    ? `<div style="width:48px; height:48px; background-image:url('${spriteCfg.walk || spriteCfg.idle || spriteCfg.attack}'); background-size:${spriteCfg.cols * 100}% ${spriteCfg.rows * 100}%; background-position:0% 0%; background-repeat:no-repeat;"></div>`
+                    : `<span class="pet-walk-anim" style="animation-delay: ${i * 0.15}s;">${monsterData.emoji}</span>`;
+
+                const monsterIcon = L.divIcon({ 
+                    className: 'leaflet-div-icon', 
+                    html: `<div class="roaming-pet-marker pet-hitbox" onclick="triggerSelectMonster(${i})" style="font-size: 38px; filter: drop-shadow(0 0 8px gold);">
+                        <span class="pet-dir-wrap" style="display:inline-block; transform:${flipStyle}; transition: transform 0.3s;">
+                            ${visualHtml}
+                        </span>
+                    </div>`, 
+                    iconSize: [60, 60], 
+                    iconAnchor: [30, 30] 
+                });
                 const monsterIcon = L.divIcon({ 
                     className: 'leaflet-div-icon', 
                     html: `<div class="roaming-pet-marker pet-hitbox" onclick="triggerSelectMonster(${i})" style="font-size: 38px; filter: drop-shadow(0 0 8px gold);">
