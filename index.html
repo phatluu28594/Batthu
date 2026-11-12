@@ -627,7 +627,7 @@
                 attack: 'assets/dragon_attack.png',
                 hit: 'assets/dragon_hit.png',
                 death: 'assets/dragon_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 1.8
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
             }
         };
 
@@ -1535,7 +1535,7 @@
                 let spriteCfg = spriteConfigs[monsterData.name];
 
                 let visualHtml = spriteCfg
-                    ? `<div style="width:48px; height:48px; background-image:url('${spriteCfg.walk || spriteCfg.idle || spriteCfg.attack}'); background-size:${spriteCfg.cols * 100}% ${spriteCfg.rows * 100}%; background-position:0% 0%; background-repeat:no-repeat;"></div>`
+                    ? `<div style="width:75px; height:75px; background-image:url('${spriteCfg.walk || spriteCfg.idle || spriteCfg.attack}'); background-size:${spriteCfg.cols * 100}% ${spriteCfg.rows * 100}%; background-position:0% 0%; background-repeat:no-repeat;"></div>`
                     : `<span class="pet-walk-anim" style="animation-delay: ${i * 0.15}s;">${monsterData.emoji}</span>`;
 
                 const monsterIcon = L.divIcon({ 
@@ -1729,10 +1729,10 @@
                 ctx.restore();
             }
 
-            ctx.font = "78px sans-serif"; 
-            ctx.textAlign = "center"; 
-            ctx.textBaseline = "middle";
-            ctx.fillText(currentWildMonster.emoji, monsterPos.x, monsterPos.y + shakeOffset);
+            let arAnimState = isTugOfWarActive ? 'hit' : 'walk';
+            let arAnimFrame = Math.floor(ropeShakeTimer * 2.5);
+            let isFacingLeft = monsterPos.vx < 0;
+            drawPetEntity(ctx, currentWildMonster, arAnimState, arAnimFrame, monsterPos.x, monsterPos.y + shakeOffset, 100, isFacingLeft);
 
             if (!isTugOfWarActive && !rope.flying) {
                 ctx.save();
