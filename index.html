@@ -646,6 +646,16 @@
         }
         preloadPetSprites();
 
+        function getPetSpriteHtml(pet, state = 'idle', sizePx = 56, extraClass = '') {
+            let baseName = pet.name.replace('F1_', '');
+            let cfg = spriteConfigs[baseName];
+            if (cfg) {
+                let imgUrl = cfg[state] || cfg.idle || cfg.walk || cfg.attack;
+                return `<div class="${extraClass}" style="width:${sizePx}px; height:${sizePx}px; display:inline-block; background-image:url('${imgUrl}'); background-size:${cfg.cols * 100}% ${cfg.rows * 100}%; background-position:0% 0%; background-repeat:no-repeat; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));"></div>`;
+            }
+            return `<span class="${extraClass}" style="font-size:${Math.floor(sizePx * 0.72)}px; line-height:1;">${pet.emoji}</span>`;
+        }
+
         function drawPetEntity(ctx, pet, state, frameIndex, x, y, size = 85, flipLeft = false) {
             let baseName = pet.name.replace('F1_', '');
             let cfg = spriteConfigs[baseName];
@@ -973,7 +983,7 @@
                             ${pet.name} <span class="text-white">Lv.${Math.floor(pet.level)}</span>
                         </div>
                         <div class="relative flex items-center gap-1">
-                            <span class="text-5xl pet-train-active" style="filter: drop-shadow(0 5px 8px rgba(0,0,0,0.9));">${pet.emoji}</span>
+                            ${getPetSpriteHtml(pet, 'attack', 72, 'pet-train-active')}
                             <span class="text-3xl" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));">🪵</span>
                             <span class="absolute -top-3 right-3 text-sm animate-ping">💥</span>
                         </div>
@@ -1300,7 +1310,7 @@
                     html += `
                     <div class="bg-zinc-800 p-3 rounded-xl flex items-center justify-between border ${pet.rarity.bg}">
                         <div onclick="openPetDetail(${idx})" class="flex items-center gap-3 cursor-pointer flex-grow">
-                            <span class="text-4xl bg-zinc-900 p-2 rounded-xl">${pet.emoji}</span>
+                            <div class="bg-zinc-900 p-1.5 rounded-xl flex items-center justify-center">${getPetSpriteHtml(pet, 'idle', 44)}</div>
                             <div>
                                 <div class="font-bold text-sm text-yellow-300">${pet.name} (${pet.gender === 'Đực' ? '♂️' : '♀️'}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs ${elementNames[pet.element]?.color}">[${elementNames[pet.element]?.label}]</span></div>
                                 <div class="text-[11px] text-zinc-300">HP: ${Math.floor(pet.hp)}/${pet.maxHp} | ❤️: ${heartsStr} | ⚡Tốc: ${pet.speed}</div>
@@ -1332,7 +1342,7 @@
                 <button onclick="openTeamMenu()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">‹ Quay lại</button>
             </div>
             <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border ${pet.rarity.bg} mb-4 text-center">
-                <div class="text-6xl mb-2">${pet.emoji}</div>
+                <div class="mb-2 flex justify-center">${getPetSpriteHtml(pet, 'idle', 96)}</div>
                 <div class="text-base font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${pet.level}</span></div>
                 <div class="text-xs font-bold ${elementNames[pet.element]?.color} mt-0.5">Hệ Nguyên Tố: ${elementNames[pet.element]?.label}</div>
                 <div class="text-sm mt-1">Trái tim: ${heartsStr}</div>
