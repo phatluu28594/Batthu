@@ -1549,10 +1549,10 @@
                     iconAnchor: [30, 30] 
                 });
                 const monsterIcon = L.divIcon({ 
-                    className: 'leaflet-div-icon', 
-                    html: `<div class="roaming-pet-marker pet-hitbox" onclick="triggerSelectMonster(${i})" style="font-size: 38px; filter: drop-shadow(0 0 8px gold);">
+                    className: 'custom-monster-icon', // Tránh khung trắng mặc định của Leaflet
+                    html: `<div class="roaming-pet-marker pet-hitbox" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 38px; filter: drop-shadow(0 0 8px gold);">
                         <span class="pet-dir-wrap" style="display:inline-block; transform:${flipStyle}; transition: transform 0.3s;">
-                            <span class="pet-walk-anim" style="animation-delay: ${i * 0.15}s;">${monsterData.emoji}</span>
+                            <span class="pet-walk-anim" style="display:inline-block; animation-delay: ${i * 0.15}s;">${monsterData.emoji}</span>
                         </span>
                     </div>`, 
                     iconSize: [60, 60], 
