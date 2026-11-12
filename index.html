@@ -1155,22 +1155,73 @@
             const modal = document.getElementById('hospital-action-modal');
             const titleEl = document.getElementById('hospital-modal-title');
             const bodyEl = document.getElementById('hospital-modal-body');
-            modal.classList.remove('hidden');
+            if (!modal || !bodyEl) return;
 
+            // 1. CHỨC NĂNG HỒI PHỤC TIM (HEAL)
             if (actionType === 'heal') {
-                let allPets = [...team, ...farm, ...restingPets, ...trainingPoles.filter(p => p !== null)];
-                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-cyan-400">❤️ Phục Hồi Tim (1000🪙)</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
-                if (allPets.length === 0) html += `<div class="text-center text-xs text-zinc-400 py-6">Không có linh thú nào!</div>`;
-                else {
-                    allPets.forEach(pet => {
-                        let missingHearts = 3 - pet.hearts;
-                        let heartsStr = '❤️'.repeat(pet.hearts) + '🖤'.repeat(missingHearts);
-                        let canHeal = pet.hearts < 3;
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-cyan-500/50"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div><div class="text-xs font-bold">${pet.name}</div><div class="text-[10px]">${heartsStr}</div></div></div>${canHeal ? `<button onclick="healPetHearts('${pet.name}')" class="bg-cyan-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Chữa (1000🪙)</button>` : `<span class="text-xs text-emerald-400 font-bold">Full ❤️</span>`}</div>`;
+                if (titleEl) titleEl.innerHTML = '❤️ Phòng Hồi Phục & Hồi Sinh Linh Thú';
+                
+                if (!myPets || myPets.length === 0) {
+                    bodyEl.innerHTML = `<div class="text-xs text-zinc-400 text-center py-6">Bạn chưa có linh thú nào để chữa trị!</div>`;
+                } else {
+                    let html = `<div class="text-[11px] text-cyan-200/90 mb-2.5 text-center">Hồi đầy 100% sinh lực & hồi sinh linh thú kiệt sức ngay lập tức.</div><div class="space-y-2 max-h-72 overflow-y-auto pr-1">`;
+                    myPets.forEach((pet, idx) => {
+                        const isFull = pet.hp >= pet.maxHp;
+                        const healCost = isFull ? 0 : Math.max(10, Math.floor((pet.maxHp - pet.hp) * 0.2));
+                        html += `
+                        <div class="flex items-center justify-between bg-zinc-900/90 border border-cyan-500/30 p-2.5 rounded-xl">
+                            <div class="flex items-center gap-2.5">
+                                ${getPetSpriteHtml(pet, 'idle', 42)}
+                                <div>
+                                    <div class="text-xs font-bold text-white">${pet.name} <span class="text-amber-400">Lv.${Math.floor(pet.level)}</span></div>
+                                    <div class="text-[10px] ${isFull ? 'text-emerald-400' : 'text-rose-400'} font-bold">HP: ${Math.floor(pet.hp)} / ${pet.maxHp}</div>
+                                </div>
+                            </div>
+                            <button onclick="healSinglePetHospital(${idx}, ${healCost})" ${isFull ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${isFull ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow'}">
+                                ${isFull ? '✓ Đầy Máu' : `💊 Hồi (${healCost} 💰)`}
+                            </button>
+                        </div>`;
                     });
+                    html += `</div>`;
+                    bodyEl.innerHTML = html;
                 }
-                html += `</div>`;
-                content.innerHTML = html;
+                modal.classList.remove('hidden');
+                return;
+            }
+
+            // 2. CHỨC NĂNG TIẾN HÓA ĐÁ NGŨ HÀNH (EVOLVE)
+            if (actionType === 'evolve') {
+                if (titleEl) titleEl.innerHTML = '💎 Đài Tiến Hóa Ngũ Hành';
+                
+                if (!myPets || myPets.length === 0) {
+                    bodyEl.innerHTML = `<div class="text-xs text-zinc-400 text-center py-6">Bạn chưa có linh thú nào để tiến hóa!</div>`;
+                } else {
+                    let html = `<div class="text-[11px] text-amber-200/90 mb-2.5 text-center">Tiêu hao Đá Tiến Hóa hoặc Vàng để đột phá giới hạn chỉ số (+25% HP & ATK).</div><div class="space-y-2 max-h-72 overflow-y-auto pr-1">`;
+                    myPets.forEach((pet, idx) => {
+                        const evoCost = 200 * (pet.evoStage || 1);
+                        const canEvolve = pet.level >= 5;
+                        html += `
+                        <div class="flex items-center justify-between bg-zinc-900/90 border border-amber-500/30 p-2.5 rounded-xl">
+                            <div class="flex items-center gap-2.5">
+                                ${getPetSpriteHtml(pet, 'idle', 42)}
+                                <div>
+                                    <div class="text-xs font-bold text-white">${pet.name} <span class="text-amber-300">(Bậc ${pet.evoStage || 1})</span></div>
+                                    <div class="text-[10px] text-zinc-400">Lv.${Math.floor(pet.level)} • ATK: ${pet.atk} • HP: ${pet.maxHp}</div>
+                                </div>
+                            </div>
+                            <button onclick="evolveSinglePetHospital(${idx}, ${evoCost})" ${canEvolve ? '' : 'disabled'} class="px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${canEvolve ? 'bg-amber-600 hover:bg-amber-500 text-white shadow' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}">
+                                ${canEvolve ? `✨ Tiến Hóa (${evoCost} 💰)` : 'Cần Lv.5'}
+                            </button>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                    bodyEl.innerHTML = html;
+                }
+                modal.classList.remove('hidden');
+                return;
+            }
+
+            // 3. CHỨC NĂNG SINH SẢN & LAI GIỐNG F1 (TỶ LỆ 25% THÀNH CÔNG / 75% MẤT MẸ)
             if (actionType === 'breed') {
                 if (titleEl) titleEl.innerHTML = '🧬 Khu Sinh Sản & Lai Giống F1';
 
@@ -1216,19 +1267,45 @@
                     </button>
                 `;
                 modal.classList.remove('hidden');
-                return;
-            } else if (actionType === 'evolve') {
-                let allPetsPool = [...team, ...farm];
-                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">💎 Tiến Hóa Đá Ngũ Hành</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="text-[10px] text-yellow-300 mb-2">Kho đá: Kim:${inventory.stoneKim} | Mộc:${inventory.stoneMoc} | Thủy:${inventory.stoneThuy} | Hỏa:${inventory.stoneHoa} | Thổ:${inventory.stoneTho}</div><div class="space-y-2 max-h-60 overflow-y-auto">`;
-                if (allPetsPool.length === 0) html += `<div class="text-center text-xs text-zinc-400 py-6">Không có linh thú!</div>`;
-                else {
-                    allPetsPool.forEach((pet, idx) => {
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/50"><div class="flex items-center gap-2"><span class="text-2xl">${pet.emoji}</span><div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><button onclick="evolvePetWithStone(${idx}); closeModal(); openHospitalMenu();" class="bg-amber-600 text-xs px-2.5 py-1 rounded font-bold cursor-pointer">Tiến Hóa (1 Đá)</button></div>`;
-                    });
-                }
-                html += `</div>`;
-                content.innerHTML = html;
             }
+        }
+
+        function closeHospitalActionModal() {
+            const modal = document.getElementById('hospital-action-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function healSinglePetHospital(idx, cost) {
+            const pet = myPets[idx];
+            if (!pet) return;
+            if (typeof gold !== 'undefined' && gold < cost) {
+                alert("⚠️ Không đủ Vàng để hồi phục!");
+                return;
+            }
+            if (typeof gold !== 'undefined') gold -= cost;
+            pet.hp = pet.maxHp;
+            if (typeof updateTopBar === 'function') updateTopBar();
+            if (typeof saveGameData === 'function') saveGameData();
+            openHospitalActionModal('heal');
+            alert(`💚 Đã hồi phục 100% sinh lực cho [${pet.name}]!`);
+        }
+
+        function evolveSinglePetHospital(idx, cost) {
+            const pet = myPets[idx];
+            if (!pet) return;
+            if (typeof gold !== 'undefined' && gold < cost) {
+                alert("⚠️ Không đủ Vàng để tiến hóa!");
+                return;
+            }
+            if (typeof gold !== 'undefined') gold -= cost;
+            pet.evoStage = (pet.evoStage || 1) + 1;
+            pet.maxHp = Math.floor(pet.maxHp * 1.25);
+            pet.hp = pet.maxHp;
+            pet.atk = Math.floor(pet.atk * 1.25);
+            if (typeof updateTopBar === 'function') updateTopBar();
+            if (typeof saveGameData === 'function') saveGameData();
+            openHospitalActionModal('evolve');
+            alert(`✨ Chúc mừng! [${pet.name}] đã tiến hóa lên Bậc ${pet.evoStage} (+25% HP & ATK)!`);
         }
 
         let activeSubRoomType = null;
