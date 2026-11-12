@@ -258,7 +258,7 @@
                 <button onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0 text-amber-200">🏠 Nhà</button>
                 <button onclick="openWorldBossMenu()" class="bg-amber-700/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
                 <button onclick="openHospitalMenu()" class="bg-cyan-700/90 px-3 py-1.5 rounded-full border border-cyan-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏥 Bệnh Viện</button>
-                <button onclick="openEggIncubatorMenu()" class="bg-emerald-700/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
+                <button onclick="openSubRoom('egg')" class="bg-emerald-700/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
                 <button onclick="openQuestMenu()" class="bg-yellow-600/90 px-3 py-1.5 rounded-full border border-yellow-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">📜 NV</button>
                 <button onclick="openTowerMenu()" class="bg-purple-600/90 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🗼 Tháp</button>
                 <button onclick="openMarketMenu()" class="bg-amber-600/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🛒 Chợ</button>
@@ -311,7 +311,7 @@
                     <div class="home-label" style="border-color: #f59e0b; color: #fde68a;">🪵 Khu Luyện Tập</div>
                 </div>
 
-                <div onclick="showFarmSection('resting')" class="hotspot flex flex-col items-center justify-end pb-2" style="top: 36%; left: 52%; width: 44%; height: 30%;">
+                <div onclick="openSubRoom('rest')" class="hotspot flex flex-col items-center justify-end pb-2" style="top: 36%; left: 52%; width: 44%; height: 30%;">
                     <div class="home-label" style="border-color: #34d399; color: #a7f3d0;">🌿 Khu Hồi Sức</div>
                 </div>
 
@@ -356,6 +356,24 @@
         </div>
     </div>
 
+    <!-- MÀN HÌNH RIÊNG KHU NGHỈ NGƠI & 3 KHU BỆNH VIỆN -->
+    <div id="sub-room-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 overflow-hidden flex flex-col">
+        <button onclick="closeSubRoomScreen()" class="absolute top-3 right-3 z-50 bg-black/80 hover:bg-black text-white px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/25 shadow-xl">✕ Thoát</button>
+        <div id="sub-room-title" class="absolute top-3 left-3 z-40 bg-black/80 px-3.5 py-1.5 rounded-full border border-cyan-400/50 text-xs font-bold text-cyan-300">
+            🏥 Khu Chức Năng
+        </div>
+
+        <div class="relative w-full h-full overflow-hidden flex items-center justify-center">
+            <img id="sub-room-bg" src="" alt="Nền Khu Vực" class="absolute inset-0 w-full h-full object-cover z-0">
+            
+            <!-- Vùng hiển thị thú đang nằm nghỉ dưỡng (chỉ hiện ở Khu Nghỉ Ngơi) -->
+            <div id="sub-room-pets" class="absolute inset-0 z-10 pointer-events-none"></div>
+
+            <!-- Nút chạm giữa màn hình để mở bảng thao tác -->
+            <div id="sub-room-action-btn" class="relative z-20 mt-44 cursor-pointer animate-bounce"></div>
+        </div>
+    </div>
+    
     <!-- MÀN HÌNH BỆNH VIỆN PANORAMA -->
     <div id="hospital-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 overflow-hidden">
         <button onclick="closeHospitalMenu()" class="fixed top-3 right-3 z-50 bg-black/80 hover:bg-black text-white px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/25 shadow-xl">✕ Đóng</button>
@@ -367,15 +385,15 @@
             <div class="panorama-canvas">
                 <img src="./hospital-bg.png" alt="Bệnh Viện" class="panorama-img" onload="centerPanorama('hospital-scroller')">
 
-                <div onclick="openHospitalActionModal('heal')" class="hotspot flex flex-col items-center justify-end pb-2" style="top: 23%; left: 5%; width: 44%; height: 35%;">
+                <div onclick="openSubRoom('heal')" class="hotspot flex flex-col items-center justify-end pb-2" style="top: 23%; left: 5%; width: 44%; height: 35%;">
                     <div class="home-label" style="border-color: #22d3ee; color: #cffafe;">❤️ Hồi Sức Tim</div>
-                </div>
+                 </div>
 
-                <div onclick="openHospitalActionModal('evolve')" class="hotspot flex flex-col items-center justify-end pb-2" style="top: 23%; left: 52%; width: 43%; height: 35%;">
+                <div onclick="openSubRoom('evolve')" class="hotspot flex flex-col items-center justify-end pb-2" style="top: 23%; left: 52%; width: 43%; height: 35%;">
                     <div class="home-label" style="border-color: #fbbf24; color: #fef08a;">💎 Tiến Hóa Đá</div>
                 </div>
 
-                <div onclick="openHospitalActionModal('breed')" class="hotspot flex flex-col items-center justify-center" style="top: 61%; left: 10%; width: 80%; height: 33%;">
+                <div onclick="openSubRoom('breed')" class="hotspot flex flex-col items-center justify-center" style="top: 61%; left: 10%; width: 80%; height: 33%;">
                     <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">🧬 Lai Giống F1</div>
                 </div>
             </div>
@@ -1172,6 +1190,121 @@
                 html += `</div>`;
                 content.innerHTML = html;
             }
+        }
+
+        let activeSubRoomType = null;
+
+        function openSubRoom(roomType) {
+            activeSubRoomType = roomType;
+            const screen = document.getElementById('sub-room-screen');
+            const bgImg = document.getElementById('sub-room-bg');
+            const titleEl = document.getElementById('sub-room-title');
+            const actionBtn = document.getElementById('sub-room-action-btn');
+            const petsContainer = document.getElementById('sub-room-pets');
+
+            petsContainer.innerHTML = '';
+
+            if (roomType === 'rest') {
+                document.getElementById('fullscreen-farm-screen').classList.add('hidden');
+                bgImg.src = './rest-bg.png';
+                titleEl.innerHTML = '🌿 Khu Nghỉ Ngơi Hồi Sức';
+                titleEl.style.borderColor = '#34d399';
+                titleEl.style.color = '#6ee7b7';
+                actionBtn.innerHTML = `<button onclick="showFarmSection('resting')" class="bg-emerald-900/90 hover:bg-emerald-800 text-emerald-200 font-extrabold px-5 py-2.5 rounded-full border-2 border-emerald-400 text-xs shadow-2xl cursor-pointer">🛏️ Quản Lý Thú Nghỉ Ngơi (${restingPets.length})</button>`;
+                renderSubRoomRestingPets();
+            } else if (roomType === 'heal') {
+                document.getElementById('hospital-screen').classList.add('hidden');
+                bgImg.src = './heal-bg.png';
+                titleEl.innerHTML = '❤️ Phòng Hồi Phục Tim';
+                titleEl.style.borderColor = '#22d3ee';
+                titleEl.style.color = '#67e8f9';
+                actionBtn.innerHTML = `<button onclick="openHospitalActionModal('heal')" class="bg-cyan-900/90 hover:bg-cyan-800 text-cyan-200 font-extrabold px-5 py-2.5 rounded-full border-2 border-cyan-400 text-xs shadow-2xl cursor-pointer">🩺 Chữa Trị Linh Thú</button>`;
+            } else if (roomType === 'evolve') {
+                document.getElementById('hospital-screen').classList.add('hidden');
+                bgImg.src = './evolve-bg.png';
+                titleEl.innerHTML = '💎 Đài Tiến Hóa Ngũ Hành';
+                titleEl.style.borderColor = '#fbbf24';
+                titleEl.style.color = '#fde047';
+                actionBtn.innerHTML = `<button onclick="openHospitalActionModal('evolve')" class="bg-amber-900/90 hover:bg-amber-800 text-amber-200 font-extrabold px-5 py-2.5 rounded-full border-2 border-amber-400 text-xs shadow-2xl cursor-pointer">✨ Tiến Hóa Đá</button>`;
+            } else if (roomType === 'breed') {
+                document.getElementById('hospital-screen').classList.add('hidden');
+                bgImg.src = './breed-bg.png';
+                titleEl.innerHTML = '🧬 Phòng Lai Giống F1';
+                titleEl.style.borderColor = '#f472b6';
+                titleEl.style.color = '#f9a8d4';
+                actionBtn.innerHTML = `<button onclick="openHospitalActionModal('breed')" class="bg-pink-900/90 hover:bg-pink-800 text-pink-200 font-extrabold px-5 py-2.5 rounded-full border-2 border-pink-400 text-xs shadow-2xl cursor-pointer">🥚 Ghép Cặp Tạo Trứng</button>`;
+            
+            } else if (roomType === 'egg') {
+                document.getElementById('map-screen').classList.add('hidden');
+                bgImg.src = './egg-bg.png';
+                titleEl.innerHTML = '🥚 Lồng Ấp Trứng Linh Thú';
+                titleEl.style.borderColor = '#34d399';
+                titleEl.style.color = '#6ee7b7';
+                actionBtn.innerHTML = `<button onclick="openEggIncubatorMenu()" class="bg-emerald-900/90 hover:bg-emerald-800 text-emerald-200 font-extrabold px-5 py-2.5 rounded-full border-2 border-emerald-400 text-xs shadow-2xl cursor-pointer">🐣 Kiểm Tra Lồng Ấp (${eggs.length})</button>`;
+                renderSubRoomEggs();
+            }
+
+            screen.classList.remove('hidden');
+        }
+
+        function closeSubRoomScreen() {
+            document.getElementById('sub-room-screen').classList.add('hidden');
+            if (activeSubRoomType === 'rest') {
+                document.getElementById('fullscreen-farm-screen').classList.remove('hidden');
+                renderFarmVisualPets();
+            } else if (activeSubRoomType === 'egg') {
+                document.getElementById('map-screen').classList.remove('hidden');
+                setTimeout(() => { if (map) map.invalidateSize(); }, 100);
+            } else {
+                document.getElementById('hospital-screen').classList.remove('hidden');
+            }
+            activeSubRoomType = null;
+        }
+
+        function renderSubRoomEggs() {
+            const container = document.getElementById('sub-room-pets');
+            if (!container) return;
+            const spots = [
+                { top: '54%', left: '26%' },
+                { top: '54%', left: '74%' },
+                { top: '65%', left: '40%' },
+                { top: '65%', left: '60%' }
+            ];
+            let html = '';
+            eggs.slice(0, 4).forEach((egg, idx) => {
+                let pos = spots[idx] || { top: '58%', left: '50%' };
+                let pct = Math.min(100, Math.floor((egg.steps / egg.requiredSteps) * 100));
+                html += `
+                <div style="position: absolute; top: ${pos.top}; left: ${pos.left}; transform: translate(-50%, -50%);" class="flex flex-col items-center">
+                    <span class="text-5xl animate-bounce" style="filter: drop-shadow(0 5px 8px rgba(0,0,0,0.8));">🥚</span>
+                    <span class="bg-black/80 text-yellow-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/50 mt-1 whitespace-nowrap">${pct >= 100 ? '✨ SẴN SÀNG NỞ!' : `👟 ${pct}%`}</span>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderSubRoomRestingPets() {
+            const container = document.getElementById('sub-room-pets');
+            if (!container) return;
+            const spots = [
+                { top: '52%', left: '28%' },
+                { top: '52%', left: '72%' },
+                { top: '66%', left: '35%' },
+                { top: '66%', left: '65%' }
+            ];
+            let html = '';
+            restingPets.slice(0, 4).forEach((pet, idx) => {
+                let pos = spots[idx] || { top: '58%', left: '50%' };
+                html += `
+                <div style="position: absolute; top: ${pos.top}; left: ${pos.left}; transform: translate(-50%, -50%);" class="flex flex-col items-center">
+                    <div class="relative">
+                        ${getPetSpriteHtml(pet, 'idle', 76, 'pet-rest-anim')}
+                        <span class="sleep-bubble">💤</span>
+                    </div>
+                    <span class="bg-black/80 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/50 mt-1 whitespace-nowrap">💚 ${Math.floor((pet.hp/pet.maxHp)*100)}%</span>
+                </div>`;
+            });
+            container.innerHTML = html;
         }
 
         function healPetHearts(petName) {
