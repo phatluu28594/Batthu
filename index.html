@@ -101,6 +101,16 @@
             animation: trainStrikeDynamic 0.85s infinite ease-in-out;
         }
 
+        @keyframes trainStrikeSprite {
+            0%, 100% { transform: translateX(0) rotate(0deg) scaleY(1); }
+            35% { transform: translateX(-12px) rotate(-10deg) scaleY(0.92); }
+            65% { transform: translateX(18px) rotate(12deg) scaleY(1.12); }
+        }
+        .pet-train-sprite {
+            display: inline-block;
+            animation: trainStrikeSprite 0.85s infinite ease-in-out;
+        }
+        
         @keyframes restSleep {
             0%, 100% { transform: scale(1, 1) translateY(0); }
             50% { transform: scale(1.08, 0.92) translateY(2px); }
@@ -646,12 +656,28 @@
         }
         preloadPetSprites();
 
-        function getPetSpriteHtml(pet, state = 'idle', sizePx = 56, extraClass = '') {
+        let globalSpriteFrame = 0;
+        setInterval(() => {
+            globalSpriteFrame = (globalSpriteFrame + 1) % 16;
+            document.querySelectorAll('.animated-sprite-box').forEach(el => {
+                let cols = parseInt(el.dataset.cols) || 4;
+                let rows = parseInt(el.dataset.rows) || 4;
+                let total = parseInt(el.dataset.total) || 16;
+                let f = globalSpriteFrame % total;
+                let col = f % cols;
+                let row = Math.floor(f / cols);
+                let posX = cols > 1 ? (col / (cols - 1)) * 100 : 0;
+                let posY = rows > 1 ? (row / (rows - 1)) * 100 : 0;
+                el.style.backgroundPosition = `${posX}% ${posY}%`;
+            });
+        }, 85);
+
+        function getPetSpriteHtml(pet, state = 'walk', sizePx = 56, extraClass = '') {
             let baseName = pet.name.replace('F1_', '');
             let cfg = spriteConfigs[baseName];
             if (cfg) {
-                let imgUrl = cfg[state] || cfg.idle || cfg.walk || cfg.attack;
-                return `<div class="${extraClass}" style="width:${sizePx}px; height:${sizePx}px; display:inline-block; background-image:url('${imgUrl}'); background-size:${cfg.cols * 100}% ${cfg.rows * 100}%; background-position:0% 0%; background-repeat:no-repeat; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));"></div>`;
+                let imgUrl = cfg[state] || cfg.walk || cfg.idle || cfg.attack;
+                return `<div class="animated-sprite-box ${extraClass}" data-cols="${cfg.cols}" data-rows="${cfg.rows}" data-total="${cfg.totalFrames}" style="width:${sizePx}px; height:${sizePx}px; display:inline-block; background-image:url('${imgUrl}'); background-size:${cfg.cols * 100}% ${cfg.rows * 100}%; background-position:0% 0%; background-repeat:no-repeat; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));"></div>`;
             }
             return `<span class="${extraClass}" style="font-size:${Math.floor(sizePx * 0.72)}px; line-height:1;">${pet.emoji}</span>`;
         }
@@ -977,13 +1003,15 @@
                 let pet = trainingPoles[i];
 
                 if (pet) {
+                    let hasSprite = !!spriteConfigs[pet.name.replace('F1_', '')];
+                    let trainClass = hasSprite ? 'pet-train-sprite' : 'pet-train-active';
                     slotEl.innerHTML = `
                     <div class="flex flex-col items-center cursor-pointer" onclick="openTrainingSlotModal(${i})">
                         <div class="bg-black/80 px-2 py-0.5 rounded-full border border-amber-400 text-[10px] font-bold text-yellow-300 mb-1 shadow-lg whitespace-nowrap">
                             ${pet.name} <span class="text-white">Lv.${Math.floor(pet.level)}</span>
                         </div>
                         <div class="relative flex items-center gap-1">
-                            ${getPetSpriteHtml(pet, 'attack', 72, 'pet-train-active')}
+                            ${getPetSpriteHtml(pet, 'attack', 84, trainClass)}
                             <span class="text-3xl" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));">🪵</span>
                             <span class="absolute -top-3 right-3 text-sm animate-ping">💥</span>
                         </div>
@@ -1342,7 +1370,7 @@
                 <button onclick="openTeamMenu()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">‹ Quay lại</button>
             </div>
             <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border ${pet.rarity.bg} mb-4 text-center">
-                <div class="mb-2 flex justify-center">${getPetSpriteHtml(pet, 'idle', 96)}</div>
+                <div class="mb-2 flex justify-center">${getPetSpriteHtml(pet, 'walk', 110)}</div>
                 <div class="text-base font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${pet.level}</span></div>
                 <div class="text-xs font-bold ${elementNames[pet.element]?.color} mt-0.5">Hệ Nguyên Tố: ${elementNames[pet.element]?.label}</div>
                 <div class="text-sm mt-1">Trái tim: ${heartsStr}</div>
