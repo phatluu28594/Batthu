@@ -2111,6 +2111,7 @@
 
         function exitARScreen() {
             isARActive = false; isTugOfWarActive = false;
+            if (typeof updateSwipeArrowUI === 'function') updateSwipeArrowUI(); // <-- Tắt mũi tên ngay lập tức
             if (tugTimerInterval) clearInterval(tugTimerInterval);
             const videoEl = document.getElementById('camera-feed');
             if (videoEl && videoEl.srcObject) {
@@ -2431,22 +2432,17 @@
         }
 
         function updateSwipeArrowUI() {
-            // Tìm khung màn hình AR đang mở (lấy canvas bắt thú làm chuẩn)
-            const arCanvas = document.getElementById('ar-canvas') || document.querySelector('canvas');
-            const parentContainer = arCanvas ? arCanvas.parentElement : document.body;
-
+            const arScreen = document.getElementById('ar-screen') || document.body;
             let arrowEl = document.getElementById('tug-direction-arrow');
             if (!arrowEl) {
                 arrowEl = document.createElement('div');
                 arrowEl.id = 'tug-direction-arrow';
             }
-            if (arrowEl.parentElement !== parentContainer) {
-                parentContainer.appendChild(arrowEl);
+            if (arrowEl.parentElement !== arScreen) {
+                arScreen.appendChild(arrowEl);
             }
 
-            // Nếu hết giằng co HOẶC khung AR đã bị ẩn -> tắt mũi tên ngay lập tức
-            const isParentHidden = parentContainer && (parentContainer.style.display === 'none' || parentContainer.classList.contains('hidden') || parentContainer.offsetParent === null);
-            if (!isTugOfWarActive || isParentHidden) {
+            if (!isTugOfWarActive || !isARActive) {
                 arrowEl.style.display = 'none';
                 return;
             }
