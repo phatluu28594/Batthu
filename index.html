@@ -2104,21 +2104,20 @@
             canvas = document.getElementById('gameCanvas');
             if (!canvas) return;
             ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            monsterPos.x = canvas.width / 2; 
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            monsterPos.x = canvas.width / 2;
             monsterPos.y = canvas.height * 0.35;
             monsterPos.targetY = canvas.height * 0.35;
             monsterPos.vx = 3.2;
             resetRope();
 
-            canvas.ontouchstart = (e) => {
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-            };
+            function handleInputStart(x, y) {
+                touchStartX = x;
+                touchStartY = y;
+            }
 
-            canvas.ontouchend = (e) => {
-                let endX = e.changedTouches[0].clientX;
-                let endY = e.changedTouches[0].clientY;
+            function handleInputEnd(endX, endY) {
                 let diffX = endX - touchStartX;
                 let diffY = endY - touchStartY;
 
@@ -2137,10 +2136,10 @@
 
                         if (success) {
                             tugProgress = Math.min(100, tugProgress + 18);
-                            showFloatingText('GHÌM CHẶT! +18%', canvas.width/2, canvas.height*0.48, '#38bdf8');
+                            showFloatingText('GHÌM CHẶT! +18%', canvas.width / 2, canvas.height * 0.48, '#38bdf8');
                         } else {
                             tugProgress = Math.max(0, tugProgress - 5);
-                            showFloatingText('SAI HƯỚNG! -5%', canvas.width/2, canvas.height*0.48, '#ef4444');
+                            showFloatingText('SAI HƯỚNG! -5%', canvas.width / 2, canvas.height * 0.48, '#ef4444');
                         }
                         document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
                         if (tugProgress >= 100) triggerTugWin();
@@ -2149,15 +2148,23 @@
                 }
 
                 if (rope.flying) return;
-                if (catchStamina > 0) { 
-                    catchStamina--; 
-                    saveGameData(); 
+                if (catchStamina > 0) {
+                    catchStamina--;
+                    saveGameData();
                 }
-                rope.vx = (endX - rope.x) * 0.13; 
+                rope.vx = (endX - rope.x) * 0.13;
                 rope.vy = (endY - rope.y) * 0.13;
-                rope.flying = true; 
+                rope.flying = true;
                 rope.flightTime = 0;
-            };
+            }
+
+            // Cảm ứng điện thoại
+            canvas.ontouchstart = (e) => handleInputStart(e.touches[0].clientX, e.touches[0].clientY);
+            canvas.ontouchend = (e) => handleInputEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+
+            // Chuột máy tính
+            canvas.onmousedown = (e) => handleInputStart(e.clientX, e.clientY);
+            canvas.onmouseup = (e) => handleInputEnd(e.clientX, e.clientY);
 
             requestAnimationFrame(updateCanvasGame);
         }
