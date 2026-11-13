@@ -2458,58 +2458,69 @@
 
         function triggerTugWin() {
             isTugOfWarActive = false;
-            updateSwipeArrowUI(); // Ẩn ngay mũi tên phát sáng ở giữa màn hình
+            if (typeof updateSwipeArrowUI === 'function') updateSwipeArrowUI();
 
-            if (!currentWildMonster) return;
+            // Tự động lấy đúng biến con thú đang bắt trong code của anh
+            const target = (typeof currentWildMonster !== 'undefined' && currentWildMonster) ? currentWildMonster
+                         : (typeof currentWildBeast !== 'undefined' && currentWildBeast) ? currentWildBeast
+                         : (typeof catchingMonster !== 'undefined' && catchingMonster) ? catchingMonster
+                         : (typeof activeWildMonster !== 'undefined' && activeWildMonster) ? activeWildMonster
+                         : null;
 
-            // Tạo dữ liệu linh thú mới bắt được
-            const caughtPet = {
-                id: 'pet_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-                name: currentWildMonster.name,
-                emoji: currentWildMonster.emoji || '🐾',
-                element: currentWildMonster.element || 'Moc',
-                level: currentWildMonster.level || 1,
-                exp: 0,
-                maxExp: 100,
-                hp: currentWildMonster.hp || 100,
-                maxHp: currentWildMonster.maxHp || 100,
-                atk: currentWildMonster.atk || 20,
-                def: currentWildMonster.def || 10,
-                spd: currentWildMonster.spd || 15,
-                stamina: 100,
-                maxStamina: 100,
-                rarity: currentWildMonster.rarity || 'Thường',
-                isBred: false
-            };
+            if (target) {
+                const caughtPet = {
+                    id: 'pet_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                    name: target.name,
+                    emoji: target.emoji || '🐾',
+                    element: target.element || 'Moc',
+                    level: target.level || 1,
+                    exp: 0,
+                    maxExp: 100,
+                    hp: target.hp || target.maxHp || 100,
+                    maxHp: target.maxHp || target.hp || 100,
+                    atk: target.atk || 20,
+                    def: target.def || 10,
+                    spd: target.spd || 15,
+                    stamina: 100,
+                    maxStamina: 100,
+                    rarity: target.rarity || 'Thường',
+                    isBred: false
+                };
 
-            // Thêm vào danh sách thú sở hữu
-            if (Array.isArray(team)) {
-                team.push(caughtPet);
+                // Thêm vào túi / đội hình
+                if (typeof team !== 'undefined' && Array.isArray(team)) {
+                    team.push(caughtPet);
+                } else if (typeof myPets !== 'undefined' && Array.isArray(myPets)) {
+                    myPets.push(caughtPet);
+                }
+
+                // Xóa thú trên bản đồ GPS
+                if (target.marker && typeof map !== 'undefined') {
+                    map.removeLayer(target.marker);
+                }
+
+                showFloatingText(`THU PHỤC THÀNH CÔNG: ${caughtPet.name.toUpperCase()}!`, canvas.width / 2, canvas.height * 0.45, '#4ade80');
             }
 
-            // Xóa marker linh thú vừa bắt khỏi bản đồ GPS (nếu có)
-            if (typeof removeCaughtMarker === 'function') {
-                removeCaughtMarker(currentWildMonster.id);
-            } else if (currentWildMonster.marker && typeof map !== 'undefined') {
-                map.removeLayer(currentWildMonster.marker);
-            }
-
-            // Lưu dữ liệu và cập nhật giao diện
+            // Lưu dữ liệu & cập nhật UI
             if (typeof saveGameData === 'function') saveGameData();
             if (typeof updateUI === 'function') updateUI();
             if (typeof renderTeam === 'function') renderTeam();
 
-            // Hiển thị thông báo bắt thành công và đóng màn AR
-            showFloatingText(`THU PHỤC THÀNH CÔNG: ${caughtPet.name.toUpperCase()}!`, canvas.width / 2, canvas.height * 0.45, '#4ade80');
-
+            // Tự động đóng màn hình AR sau 0.8 giây
             setTimeout(() => {
-                if (typeof closeCatchModal === 'function') {
-                    closeCatchModal();
-                } else {
-                    const modal = document.getElementById('ar-catch-modal');
-                    if (modal) modal.style.display = 'none';
-                }
-            }, 900);
+                if (typeof closeCatchModal === 'function') closeCatchModal();
+                if (typeof stopARCamera === 'function') stopARCamera();
+
+                // Ẩn tất cả các ID modal AR phổ biến
+                ['ar-catch-modal', 'ar-catch-screen', 'catch-modal', 'ar-modal', 'ar-container'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.display = 'none';
+                        el.classList.add('hidden');
+                    }
+                });
+            }, 800);
         }
 
         // ==========================================
