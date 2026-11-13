@@ -205,7 +205,8 @@
         <div class="fixed top-0 left-0 right-0 z-30 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/85 to-transparent pointer-events-none">
             <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold pointer-events-auto">
                 <span>🏠 Nhà Chính</span>
-                <span class="text-yellow-400 ml-1">💰 <span id="home-coin-count">1500</span>🪙</span>
+                <span class="text-yellow-400 ml-1"><span id="home-coin-count">1500</span>🪙</span>
+                <span class="text-cyan-300 ml-1"><span id="home-diamond-count">50</span>💎</span>
             </div>
             <div class="flex items-center gap-1.5 pointer-events-auto">
                 <button onclick="openTeamMenu()" class="bg-black/85 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🎒(<span id="home-team-count">0</span>/3)</button>
@@ -243,9 +244,11 @@
 
         <div class="fixed bottom-0 left-0 right-0 z-30 p-2.5 bg-gradient-to-t from-black/95 to-transparent pointer-events-none">
             <div class="text-center text-[10px] text-zinc-300 mb-1 animate-pulse">↔️ Vuốt ngang màn hình để khám phá toàn bộ căn nhà</div>
-            <div class="flex items-center justify-between text-[11px] font-bold text-zinc-200 bg-black/90 px-3.5 py-2 rounded-xl border border-white/15 shadow-lg pointer-events-auto">
-                <span class="text-amber-300">⚡ Bắt: <span id="home-catch-count">15</span>/15 (<span id="home-catch-timer">10:00</span>)</span>
-                <span class="text-cyan-300">📡 Quét: <span id="home-scan-count">5</span>/5 (<span id="home-scan-timer">10:00</span>)</span>
+            <div class="flex items-center justify-between text-[11px] font-bold text-zinc-200 bg-black/90 px-3.5 py-2 rounded-xl border border-white/15 shadow-lg w-full shrink-0">
+                <span class="text-amber-300">⚡<span id="catch-stamina-count">15</span>/15 (<span id="catch-stamina-timer">10:00</span>)</span>
+                <span class="text-cyan-300">📡<span id="scan-stamina-count">5</span>/5 (<span id="scan-stamina-timer">10:00</span>)</span>
+                <span class="text-yellow-400"><span id="coin-count">1500</span>🪙</span>
+                <span class="text-sky-300"><span id="diamond-count">50</span>💎</span>
             </div>
         </div>
     </div>
@@ -535,6 +538,9 @@
         let towerFloor = parseInt(localStorage.getItem('ar_tower_floor') || '1');
         let bossLevel = parseInt(localStorage.getItem('ar_boss_level') || '1');
         let totalSteps = parseInt(localStorage.getItem('ar_steps') || '0');
+
+        let playerCoins = parseInt(localStorage.getItem('ar_coins') || '1500');
+        let playerDiamonds = parseInt(localStorage.getItem('ar_diamonds') || '50');
 
         let catchStamina = parseInt(localStorage.getItem('ar_catch_stamina') || '15');
         let lastCatchStaminaTime = parseInt(localStorage.getItem('ar_catch_stamina_time') || Date.now());
@@ -853,6 +859,7 @@
                 localStorage.setItem('ar_farm', JSON.stringify(farm));
                 localStorage.setItem('ar_eggs', JSON.stringify(eggs));
                 localStorage.setItem('ar_coins', playerCoins);
+                localStorage.setItem('ar_diamonds', playerDiamonds);
                 localStorage.setItem('ar_tower_floor', towerFloor);
                 localStorage.setItem('ar_steps', totalSteps);
                 localStorage.setItem('ar_catch_stamina', catchStamina);
@@ -866,6 +873,10 @@
             ['coin-count', 'home-coin-count'].forEach(id => {
                 let el = document.getElementById(id);
                 if (el) el.innerText = playerCoins;
+            });
+            ['diamond-count', 'home-diamond-count'].forEach(id => {
+                let el = document.getElementById(id);
+                if (el) el.innerText = playerDiamonds;
             });
             let eggBadge = document.getElementById('egg-count-badge');
             if (eggBadge) eggBadge.innerText = eggs.length;
@@ -1770,46 +1781,7 @@
             document.getElementById('tower-screen').classList.add('hidden');
         }
 
-        function openMarketMenu() {
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-            content.innerHTML = `
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-lg text-amber-300">🛒 Chợ Đen & Vật Phẩm</h3>
-                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
-            </div>
-            <div class="text-xs text-yellow-400 font-bold mb-3">💰 Vàng hiện có: ${playerCoins} 🪙</div>
-            <div class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-amber-500/40">
-                    <div class="text-xs">⚡ Năng Lượng Bắt x5 (500🪙)</div>
-                    <button onclick="buyShopItem('catchStamina', 500, 5)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-cyan-500/40">
-                    <div class="text-xs">📡 Năng Lượng Quét x2 (400🪙)</div>
-                    <button onclick="buyShopItem('scanStamina', 400, 2)" class="bg-cyan-600 hover:bg-cyan-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
-                    <div class="text-xs">🍖 Thức Ăn (50🪙) [Kho: ${inventory.food}]</div>
-                    <button onclick="buyShopItem('food', 50, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
-                    <div class="text-xs">🎾 Đồ Chơi (50🪙) [Kho: ${inventory.toy}]</div>
-                    <button onclick="buyShopItem('toy', 50, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
-                    <div class="text-xs">🏋️ Dụng Cụ Tập (100🪙) [Kho: ${inventory.trainer}]</div>
-                    <button onclick="buyShopItem('trainer', 100, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
-                </div>
-                
-                <div class="text-xs font-bold text-yellow-400 mt-2">💎 Đá Ngũ Hành Cường Hóa (150🪙 / viên)</div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">⚔️ Đá Kim [Kho: ${inventory.stoneKim}]</div><button onclick="buyShopItem('stoneKim', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🌿 Đá Mộc [Kho: ${inventory.stoneMoc}]</div><button onclick="buyShopItem('stoneMoc', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">💧 Đá Thủy [Kho: ${inventory.stoneThuy}]</div><button onclick="buyShopItem('stoneThuy', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🔥 Đá Hỏa [Kho: ${inventory.stoneHoa}]</div><button onclick="buyShopItem('stoneHoa', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🪨 Đá Thổ [Kho: ${inventory.stoneTho}]</div><button onclick="buyShopItem('stoneTho', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
-            </div>`;
-        }
+        function openMarketMenu(
 
         function buyShopItem(itemKey, price, qty) {
             if (playerCoins < price) { alert('Không đủ vàng!'); return; }
