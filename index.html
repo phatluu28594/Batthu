@@ -2431,15 +2431,22 @@
         }
 
         function updateSwipeArrowUI() {
+            // Tìm khung màn hình AR đang mở (lấy canvas bắt thú làm chuẩn)
+            const arCanvas = document.getElementById('ar-canvas') || document.querySelector('canvas');
+            const parentContainer = arCanvas ? arCanvas.parentElement : document.body;
+
             let arrowEl = document.getElementById('tug-direction-arrow');
             if (!arrowEl) {
                 arrowEl = document.createElement('div');
                 arrowEl.id = 'tug-direction-arrow';
-                document.body.appendChild(arrowEl);
+            }
+            if (arrowEl.parentElement !== parentContainer) {
+                parentContainer.appendChild(arrowEl);
             }
 
-            // Nếu đã hết giằng co thì tự động ẩn mũi tên đi
-            if (!isTugOfWarActive) {
+            // Nếu hết giằng co HOẶC khung AR đã bị ẩn -> tắt mũi tên ngay lập tức
+            const isParentHidden = parentContainer && (parentContainer.style.display === 'none' || parentContainer.classList.contains('hidden') || parentContainer.offsetParent === null);
+            if (!isTugOfWarActive || isParentHidden) {
                 arrowEl.style.display = 'none';
                 return;
             }
@@ -2448,11 +2455,11 @@
             arrowEl.style.display = 'block';
 
             if (beastPullDirection === 'left') {
-                arrowEl.innerHTML = '➡'; // Thú kéo sang trái -> vuốt sang phải
+                arrowEl.innerHTML = '➡';
             } else if (beastPullDirection === 'right') {
-                arrowEl.innerHTML = '⬅'; // Thú kéo sang phải -> vuốt sang trái
+                arrowEl.innerHTML = '⬅';
             } else {
-                arrowEl.innerHTML = '⬇'; // Thú bay lên -> vuốt ghìm xuống
+                arrowEl.innerHTML = '⬇';
             }
         }
 
