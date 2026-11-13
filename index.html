@@ -2100,6 +2100,8 @@
             // Hỗ trợ click & kéo chuột trên máy tính
             canvas.onmousedown = (e) => handleInputStart(e.clientX, e.clientY);
             canvas.onmouseup = (e) => handleInputEnd(e.clientX, e.clientY);
+        let floatingTexts = [];
+
         function initCanvasGame() {
             canvas = document.getElementById('gameCanvas');
             if (!canvas) return;
@@ -2158,15 +2160,19 @@
                 rope.flightTime = 0;
             }
 
-            // Cảm ứng điện thoại
             canvas.ontouchstart = (e) => handleInputStart(e.touches[0].clientX, e.touches[0].clientY);
             canvas.ontouchend = (e) => handleInputEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-
-            // Chuột máy tính
             canvas.onmousedown = (e) => handleInputStart(e.clientX, e.clientY);
             canvas.onmouseup = (e) => handleInputEnd(e.clientX, e.clientY);
 
             requestAnimationFrame(updateCanvasGame);
+        }
+
+        function resetRope() {
+            rope.x = canvas.width / 2;
+            rope.y = canvas.height * 0.88;
+            rope.flying = false;
+            rope.flightTime = 0;
         }
 
         function resetRope() { 
@@ -2176,10 +2182,7 @@
             rope.flightTime = 0; 
         }
 
-        let floatingTexts = [];
-        function showFloatingText(text, x, y, color = '#facc15') {
-            floatingTexts.push({ text, x, y, color, life: 30 });
-        }
+        
 
         function updateCanvasGame() {
             if (!isARActive || !ctx || !canvas) return;
