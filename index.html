@@ -726,12 +726,25 @@
             });
         }, 85);
 
+        function getSpriteGrid(cfg, state) {
+            if (cfg && cfg.grids && cfg.grids[state]) {
+                return cfg.grids[state];
+            }
+            return {
+                cols: cfg.cols || 4,
+                rows: cfg.rows || 4,
+                totalFrames: cfg.totalFrames || 16
+            };
+        }
+
         function getPetSpriteHtml(pet, state = 'walk', sizePx = 56, extraClass = '') {
             let baseName = pet.name.replace('F1_', '');
             let cfg = spriteConfigs[baseName];
             if (cfg) {
-                let imgUrl = cfg[state] || cfg.walk || cfg.idle || cfg.attack;
-                return `<div class="animated-sprite-box ${extraClass}" data-cols="${cfg.cols}" data-rows="${cfg.rows}" data-total="${cfg.totalFrames}" style="width:${sizePx}px; height:${sizePx}px; display:inline-block; background-image:url('${imgUrl}'); background-size:${cfg.cols * 100}% ${cfg.rows * 100}%; background-position:0% 0%; background-repeat:no-repeat; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));"></div>`;
+                let actualState = cfg[state] ? state : (cfg.walk ? 'walk' : (cfg.idle ? 'idle' : 'attack'));
+                let imgUrl = cfg[actualState];
+                let grid = getSpriteGrid(cfg, actualState);
+                return `<div class="animated-sprite-box ${extraClass}" data-cols="${grid.cols}" data-rows="${grid.rows}" data-total="${grid.totalFrames}" style="width:${sizePx}px; height:${sizePx}px; display:inline-block; background-image:url('${imgUrl}'); background-size:${grid.cols * 100}% ${grid.rows * 100}%; background-position:0% 0%; background-repeat:no-repeat; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));"></div>`;
             }
             return `<span class="${extraClass}" style="font-size:${Math.floor(sizePx * 0.72)}px; line-height:1;">${pet.emoji}</span>`;
         }
@@ -739,19 +752,22 @@
         function drawPetEntity(ctx, pet, state, frameIndex, x, y, size = 85, flipLeft = false) {
             let baseName = pet.name.replace('F1_', '');
             let cfg = spriteConfigs[baseName];
-            let img = petSpriteAssets[baseName] ? petSpriteAssets[baseName][state] : null;
-            // Dự phòng nếu chưa up đủ 5 tấm thì lấy tạm tấm attack hoặc idle
+            let actualState = state;
+            let img = petSpriteAssets[baseName] ? petSpriteAssets[baseName][actualState] : null;
+
             if (cfg && (!img || !img.complete || img.naturalWidth === 0)) {
-                img = petSpriteAssets[baseName]['idle'] || petSpriteAssets[baseName]['attack'];
+                actualState = cfg.idle ? 'idle' : 'attack';
+                img = petSpriteAssets[baseName] ? petSpriteAssets[baseName][actualState] : null;
             }
 
             if (cfg && img && img.complete && img.naturalWidth > 0) {
-                let safeFrame = frameIndex % cfg.totalFrames;
-                let col = safeFrame % cfg.cols;
-                let row = Math.floor(safeFrame / cfg.cols);
+                let grid = getSpriteGrid(cfg, actualState);
+                let safeFrame = frameIndex % grid.totalFrames;
+                let col = safeFrame % grid.cols;
+                let row = Math.floor(safeFrame / grid.cols);
 
-                let fw = img.naturalWidth / cfg.cols;
-                let fh = img.naturalHeight / cfg.rows;
+                let fw = img.naturalWidth / grid.cols;
+                let fh = img.naturalHeight / grid.rows;
                 let sx = col * fw;
                 let sy = row * fh;
 
@@ -1969,8 +1985,10 @@
                 let flipStyle = initVy > 0 ? 'scaleX(-1)' : 'scaleX(1)';
                 let spriteCfg = spriteConfigs[monsterData.name];
 
+                let mapState = spriteCfg ? (spriteCfg.walk ? 'walk' : (spriteCfg.idle ? 'idle' : 'attack')) : 'walk';
+                let mapGrid = spriteCfg ? getSpriteGrid(spriteCfg, mapState) : null;
                 let visualHtml = spriteCfg
-                    ? `<div style="width:100px; height:100px; background-image:url('${spriteCfg.walk || spriteCfg.idle || spriteCfg.attack}'); background-size:${spriteCfg.cols * 100}% ${spriteCfg.rows * 100}%; background-position:0% 0%; background-repeat:no-repeat;"></div>`
+                    ? `<div class="animated-sprite-box" data-cols="${mapGrid.cols}" data-rows="${mapGrid.rows}" data-total="${mapGrid.totalFrames}" style="width:100px; height:100px; background-image:url('${spriteCfg[mapState]}'); background-size:${mapGrid.cols * 100}% ${mapGrid.rows * 100}%; background-position:0% 0%; background-repeat:no-repeat;"></div>`
                     : `<span class="pet-walk-anim" style="animation-delay: ${i * 0.15}s;">${monsterData.emoji}</span>`;
 
                 const monsterIcon = L.divIcon({ 
