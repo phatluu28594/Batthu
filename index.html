@@ -2833,9 +2833,25 @@
                         if (enemyHp <= 0) {
                             let rewardGold = mode === 'boss' ? 700 + (bossLevel * 200) : mode === 'tower' ? 300 + (towerFloor * 50) : 350;
                             playerCoins += rewardGold; saveGameData(); addQuestProgress(2, 1);
-                            if (mode === 'tower') { towerFloor++; localStorage.setItem('ar_tower_floor', towerFloor); }
-                            else if (mode === 'boss') { bossLevel++; localStorage.setItem('ar_boss_level', bossLevel); }
-                            alert(`🏆 Chiến thắng vẻ vang! Nhận +${rewardGold} Vàng!`);
+
+                            if (mode === 'tower') {
+                                let clearedFloor = towerFloor;
+                                towerFloor++;
+                                localStorage.setItem('ar_tower_floor', towerFloor);
+                                saveGameData();
+
+                                const continueNext = confirm(`🏆 Chúc mừng! Bạn đã vượt qua Tầng ${clearedFloor} và nhận +${rewardGold} Vàng!\n\n🗼 Bạn có muốn tiếp tục khiêu chiến Tầng ${towerFloor} ngay bây giờ không?`);
+                                if (continueNext) {
+                                    startBattle('tower');
+                                    return;
+                                }
+                            } else if (mode === 'boss') {
+                                bossLevel++;
+                                localStorage.setItem('ar_boss_level', bossLevel);
+                                alert(`🏆 Chiến thắng vẻ vang! Nhận +${rewardGold} Vàng!`);
+                            } else {
+                                alert(`🏆 Chiến thắng vẻ vang! Nhận +${rewardGold} Vàng!`);
+                            }
                         } else {
                             let fallenList = [];
                             activeTeam.forEach(pet => {
