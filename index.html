@@ -667,7 +667,12 @@
                 attack: 'assets/fox_attack.png',
                 hit: 'assets/fox_hit.png',
                 death: 'assets/fox_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2, // thêm dấu , để sửa
+                grids: {
+                    death: { cols: 5, rows: 4, totalFrames: 20 },
+                    idle: { cols: 5, rows: 4, totalFrames: 20 }// Riêng walk chạy lưới 5x4
+                }
+                
             },
             'Rắn': {
                 idle: 'assets/snake_idle.png',
