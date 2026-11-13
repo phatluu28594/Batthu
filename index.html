@@ -2461,49 +2461,44 @@
 
         function triggerTugWin() {
             isTugOfWarActive = false;
-            if (typeof updateSwipeArrowUI === 'function') updateSwipeArrowUI();
+            updateSwipeArrowUI();
+            if (tugTimerInterval) clearInterval(tugTimerInterval);
+            document.getElementById('tug-of-war-ui').classList.add('hidden');
 
-            // Tự động lấy đúng biến con thú đang bắt trong code của anh
-            const target = (typeof currentWildMonster !== 'undefined' && currentWildMonster) ? currentWildMonster
-                         : (typeof currentWildBeast !== 'undefined' && currentWildBeast) ? currentWildBeast
-                         : (typeof catchingMonster !== 'undefined' && catchingMonster) ? catchingMonster
-                         : (typeof activeWildMonster !== 'undefined' && activeWildMonster) ? activeWildMonster
-                         : null;
-
-            if (target) {
+            if (currentWildMonster) {
                 const caughtPet = {
+                    ...currentWildMonster,
                     id: 'pet_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-                    name: target.name,
-                    emoji: target.emoji || '🐾',
-                    element: target.element || 'Moc',
-                    level: target.level || 1,
+                    level: currentWildMonster.level || 1,
                     exp: 0,
                     maxExp: 100,
-                    hp: target.hp || target.maxHp || 100,
-                    maxHp: target.maxHp || target.hp || 100,
-                    atk: target.atk || 20,
-                    def: target.def || 10,
-                    spd: target.spd || 15,
+                    hp: currentWildMonster.maxHp || currentWildMonster.hp || 100,
+                    maxHp: currentWildMonster.maxHp || currentWildMonster.hp || 100,
                     stamina: 100,
-                    maxStamina: 100,
-                    rarity: target.rarity || 'Thường',
-                    isBred: false
+                    maxStamina: 100
                 };
+                delete caughtPet.marker;
 
-                // Thêm vào túi / đội hình
                 if (typeof team !== 'undefined' && Array.isArray(team)) {
                     team.push(caughtPet);
-                } else if (typeof myPets !== 'undefined' && Array.isArray(myPets)) {
-                    myPets.push(caughtPet);
                 }
 
-                // Xóa thú trên bản đồ GPS
-                if (target.marker && typeof map !== 'undefined') {
-                    map.removeLayer(target.marker);
+                if (currentWildMonster.marker && typeof map !== 'undefined') {
+                    map.removeLayer(currentWildMonster.marker);
+                }
+                if (typeof wildMonsters !== 'undefined' && Array.isArray(wildMonsters)) {
+                    wildMonsters = wildMonsters.filter(m => m !== currentWildMonster);
                 }
 
-                showFloatingText(`THU PHỤC THÀNH CÔNG: ${caughtPet.name.toUpperCase()}!`, canvas.width / 2, canvas.height * 0.45, '#4ade80');
+                if (typeof saveGameData === 'function') saveGameData();
+                if (typeof updateUI === 'function') updateUI();
+                if (typeof renderTeam === 'function') renderTeam();
+
+                alert(`🎉 Thu phục thành công ${caughtPet.name}!`);
             }
+
+            exitARScreen();
+        }
 
             // Lưu dữ liệu & cập nhật UI
             if (typeof saveGameData === 'function') saveGameData();
