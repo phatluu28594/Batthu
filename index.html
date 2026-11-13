@@ -659,7 +659,11 @@
                 attack: 'assets/dragon_attack.png',
                 hit: 'assets/dragon_hit.png',
                 death: 'assets/dragon_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2,
+                grids: {
+                    death: { cols: 3, rows: 8, totalFrames: 20 }
+                }
+                
             },
             'Hồ Ly': {
                 idle: 'assets/fox_idle.png',
@@ -680,7 +684,11 @@
                 attack: 'assets/snake_attack.png',
                 hit: 'assets/snake_hit.png',
                 death: 'assets/snake_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2,
+                grids: {
+                    hit: { cols: 3, rows: 3, totalFrames: 20 },
+                    idle: { cols: 3, rows: 4, totalFrames: 20 }
+                }
             },
             'Chim Trĩ': {
                 idle: 'assets/pheasant_idle.png',
@@ -688,7 +696,14 @@
                 attack: 'assets/pheasant_attack.png',
                 hit: 'assets/pheasant_hit.png',
                 death: 'assets/pheasant_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2,
+                grids: {
+                    walk: { cols: 3, rows: 4, totalFrames: 20 },
+                    attack: { cols: 3, rows: 4, totalFrames: 20 },
+                    death: { cols: 4, rows: 6, totalFrames: 20 },
+                    hit: { cols: 3, rows: 3, totalFrames: 20 },
+                    idle: { cols: 3, rows: 4, totalFrames: 20 }
+                }
             },
             'Bướm Đêm': {
                 idle: 'assets/moth_idle.png',
@@ -696,7 +711,14 @@
                 attack: 'assets/moth_attack.png',
                 hit: 'assets/moth_hit.png',
                 death: 'assets/moth_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2,
+                grids: {
+                    walk: { cols: 6, rows: 4, totalFrames: 20 },
+                    attack: { cols: 5, rows: 4, totalFrames: 20 },
+                    death: { cols: 5, rows: 4, totalFrames: 20 },
+                    hit: { cols: 5, rows: 4, totalFrames: 20 },
+                    idle: { cols: 4, rows: 6, totalFrames: 20 }
+                }
             }
         };
 
