@@ -2116,6 +2116,7 @@
             requestAnimationFrame(updateCanvasGame);
         }
 
+
         function resetRope() {
             rope.x = canvas.width / 2;
             rope.y = canvas.height * 0.88;
@@ -2123,11 +2124,9 @@
             rope.flightTime = 0;
         }
 
-        function resetRope() { 
-            rope.x = canvas.width / 2; 
-            rope.y = canvas.height * 0.88; 
-            rope.flying = false; 
-            rope.flightTime = 0; 
+        let floatingTexts = [];
+        function showFloatingText(text, x, y, color = '#facc15') {
+            floatingTexts.push({ text, x, y, color, life: 30 });
         }
 
         
