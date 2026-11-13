@@ -1452,6 +1452,39 @@
             alert(`💎 Tiến hóa thành công! [${pet.name}] tăng lên Lv.${Math.floor(pet.level)} (+25 ATK, +50 HP)!`);
         }
 
+        function sendDefeatedPetsToHospital(defeatedList) {
+            if (!Array.isArray(defeatedList) || defeatedList.length === 0) return;
+
+            const recoveredNames = [];
+
+            defeatedList.forEach(pet => {
+                if (!pet) return;
+                pet.hp = 0;
+                pet.status = 'recovering';
+                pet.inHospital = true;
+                pet.recoveryStartTime = Date.now();
+                pet.recoveryEndTime = Date.now() + (5 * 60 * 1000);
+
+                if (typeof hospitalPets !== 'undefined' && Array.isArray(hospitalPets)) {
+                    const exists = hospitalPets.some(p => p.id === pet.id);
+                    if (!exists) {
+                        hospitalPets.push(pet);
+                    }
+                }
+
+                recoveredNames.push(pet.name);
+            });
+
+            if (recoveredNames.length > 0) {
+                if (typeof saveGameData === 'function') saveGameData();
+                if (typeof renderTeam === 'function') renderTeam();
+                if (typeof renderHospital === 'function') renderHospital();
+                if (typeof updateUI === 'function') updateUI();
+
+                alert(`💀 Linh thú ${recoveredNames.join(', ')} đã bị đánh bại (chết) và tự động được đưa đến khu nghỉ ngơi hồi phục tại trang trại!`);
+            }
+        }
+
         let activeSubRoomType = null;
 
         function openSubRoom(roomType) {
@@ -2819,6 +2852,11 @@
             }, 30);
         }
 
+        const fallenPets = team.filter(p => p.hp <= 0 && !p.inHospital);
+        if (fallenPets.length > 0) {
+            sendDefeatedPetsToHospital(fallenPets);
+        }
+        
         function exitBattleScreen() {
             switchGameMusic('map');
             if (battleInterval) clearInterval(battleInterval);
