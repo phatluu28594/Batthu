@@ -2047,6 +2047,59 @@
             setTimeout(() => { if(map) map.invalidateSize(); }, 100);
         }
 
+        function handleInputStart(x, y) {
+                touchStartX = x;
+                touchStartY = y;
+            }
+
+            function handleInputEnd(endX, endY) {
+                let diffX = endX - touchStartX;
+                let diffY = endY - touchStartY;
+
+                if (isTugOfWarActive) {
+                    let success = false;
+                    let isSwipeGesture = Math.abs(diffX) > 25 || Math.abs(diffY) > 25;
+
+                    if (isSwipeGesture) {
+                        if (beastPullDirection === 'left' && diffX > 25 && Math.abs(diffX) > Math.abs(diffY)) {
+                            success = true;
+                        } else if (beastPullDirection === 'right' && diffX < -25 && Math.abs(diffX) > Math.abs(diffY)) {
+                            success = true;
+                        } else if (beastPullDirection === 'down' && diffY > 25 && Math.abs(diffY) > Math.abs(diffX)) {
+                            success = true;
+                        }
+
+                        if (success) {
+                            tugProgress = Math.min(100, tugProgress + 18);
+                            showFloatingText('GHÌM CHẶT! +18%', canvas.width/2, canvas.height*0.48, '#38bdf8');
+                        } else {
+                            tugProgress = Math.max(0, tugProgress - 5);
+                            showFloatingText('SAI HƯỚNG! -5%', canvas.width/2, canvas.height*0.48, '#ef4444');
+                        }
+                        document.getElementById('tug-progress-bar').style.width = tugProgress + '%';
+                        if (tugProgress >= 100) triggerTugWin();
+                    }
+                    return;
+                }
+
+                if (rope.flying) return;
+                if (catchStamina > 0) { 
+                    catchStamina--; 
+                    saveGameData(); 
+                }
+                rope.vx = (endX - rope.x) * 0.13; 
+                rope.vy = (endY - rope.y) * 0.13;
+                rope.flying = true; 
+                rope.flightTime = 0;
+            }
+
+            // Hỗ trợ cảm ứng trên điện thoại
+            canvas.ontouchstart = (e) => handleInputStart(e.touches[0].clientX, e.touches[0].clientY);
+            canvas.ontouchend = (e) => handleInputEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+
+            // Hỗ trợ click & kéo chuột trên máy tính
+            canvas.onmousedown = (e) => handleInputStart(e.clientX, e.clientY);
+            canvas.onmouseup = (e) => handleInputEnd(e.clientX, e.clientY);
         function initCanvasGame() {
             canvas = document.getElementById('gameCanvas');
             if (!canvas) return;
