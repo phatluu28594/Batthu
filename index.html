@@ -638,7 +638,7 @@
                     ...p,
                     element: element,
                     maxHp: p.maxHp || p.hp || 150,
-                    hp: (p.hp !== undefined && p.hp > 0) ? p.hp : (p.maxHp || 150),
+                    hp: (p.hp !== undefined && p.hp >= 0) ? p.hp : (p.maxHp || 150),
                     level: p.level || 1,
                     atk: p.atk || 40,
                     hearts: p.hearts !== undefined ? p.hearts : 3,
@@ -1460,28 +1460,30 @@
             defeatedList.forEach(pet => {
                 if (!pet) return;
                 pet.hp = 0;
-                pet.status = 'recovering';
-                pet.inHospital = true;
-                pet.recoveryStartTime = Date.now();
-                pet.recoveryEndTime = Date.now() + (5 * 60 * 1000);
 
-                if (typeof hospitalPets !== 'undefined' && Array.isArray(hospitalPets)) {
-                    const exists = hospitalPets.some(p => p.id === pet.id);
-                    if (!exists) {
-                        hospitalPets.push(pet);
-                    }
+                // Xóa khỏi đội hình chiến đấu hiện tại
+                team = team.filter(p => p !== pet && p.id !== pet.id);
+
+                // Đưa thẳng vào khu nghỉ ngơi hồi sức ở trang trại (restingPets)
+                const exists = restingPets.some(p => p === pet || (pet.id && p.id === pet.id));
+                if (!exists) {
+                    restingPets.push(pet);
                 }
 
                 recoveredNames.push(pet.name);
             });
 
             if (recoveredNames.length > 0) {
-                if (typeof saveGameData === 'function') saveGameData();
-                if (typeof renderTeam === 'function') renderTeam();
-                if (typeof renderHospital === 'function') renderHospital();
-                if (typeof updateUI === 'function') updateUI();
+                saveGameData();
+                updateTeamCount();
+                if (!document.getElementById('fullscreen-farm-screen').classList.contains('hidden')) {
+                    renderFarmVisualPets();
+                }
+                if (activeSubRoomType === 'rest') {
+                    renderSubRoomRestingPets();
+                }
 
-                alert(`💀 Linh thú ${recoveredNames.join(', ')} đã bị đánh bại (chết) và tự động được đưa đến khu nghỉ ngơi hồi phục tại trang trại!`);
+                alert(`💀 Linh thú ${recoveredNames.join(', ')} đã bị đánh bại (chết) và tự động được đưa đến khu nghỉ ngơi hồi sức ở trang trại!`);
             }
         }
 
@@ -2755,7 +2757,6 @@
                     let posX = isPetDead ? defaultTeamX : (defaultTeamX + myOffsetsX[i] + knockback);
                     let hasSprite = !!spriteConfigs[pet.name.replace('F1_', '')];
 
-                    // Chọn trạng thái & số thứ tự khung hình (0 -> 15)
                     let animState = 'idle';
                     let animFrame = Math.floor(idleTick * 2.2);
                     if (isPetDead) {
@@ -2770,10 +2771,8 @@
                     }
 
                     if (hasSprite) {
-                        // Vẽ Rồng Lửa bằng Sprite 16 frame sắc nét
                         drawPetEntity(battleCtx, pet, animState, animFrame, posX, posY, 85, false);
                     } else {
-                        // Vẽ các thú Emoji khác như bình thường
                         let idleScaleY = (isPetDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + i * 1.2) * 0.04);
                         let petRot = isPetDead ? (-Math.PI / 2) : myRotations[i];
                         battleCtx.save();
@@ -2838,13 +2837,23 @@
                             else if (mode === 'boss') { bossLevel++; localStorage.setItem('ar_boss_level', bossLevel); }
                             alert(`🏆 Chiến thắng vẻ vang! Nhận +${rewardGold} Vàng!`);
                         } else {
+                            let fallenList = [];
                             activeTeam.forEach(pet => {
                                 pet.hearts--;
-                                if (pet.hearts <= 0) alert(`💀 Thú ${pet.name} đã tử trận!`);
-                                else alert(`💔 Thú ${pet.name} mất 1 ❤️! Còn ${pet.hearts} ❤️.`);
+                                if (pet.hearts <= 0) {
+                                    alert(`💀 Thú ${pet.name} đã cạn tim và tử trận vĩnh viễn!`);
+                                } else {
+                                    if (pet.hp <= 0) fallenList.push(pet);
+                                }
                             });
-                            team = team.filter(p => p.hearts > 0); saveGameData();
-                            alert('💀 Thất bại!');
+                            team = team.filter(p => p.hearts > 0);
+                            if (fallenList.length > 0) {
+                                sendDefeatedPetsToHospital(fallenList);
+                            } else {
+                                saveGameData();
+                                updateTeamCount();
+                                alert('💀 Thất bại!');
+                            }
                         }
                         exitBattleScreen();
                     }, 1100);
@@ -2852,11 +2861,6 @@
             }, 30);
         }
 
-        const fallenPets = team.filter(p => p.hp <= 0 && !p.inHospital);
-        if (fallenPets.length > 0) {
-            sendDefeatedPetsToHospital(fallenPets);
-        }
-        
         function exitBattleScreen() {
             switchGameMusic('map');
             if (battleInterval) clearInterval(battleInterval);
@@ -2864,6 +2868,12 @@
             document.getElementById('map-screen').classList.remove('hidden');
             setTimeout(() => { if (map) map.invalidateSize(); }, 100);
         }
+
+        const fallenPets = team.filter(p => p.hp <= 0 && !p.inHospital);
+        if (fallenPets.length > 0) {
+            sendDefeatedPetsToHospital(fallenPets);
+        }
+        
 
         function updateTeamCount() {
             ['team-count', 'home-team-count'].forEach(id => {
