@@ -134,6 +134,34 @@
             pointer-events: none;
         }
 
+        @keyframes pulseGlowArrow {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(0.92);
+                filter: drop-shadow(0 0 12px #38bdf8) drop-shadow(0 0 28px #0284c7);
+                opacity: 0.88;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.22);
+                filter: drop-shadow(0 0 22px #7dd3fc) drop-shadow(0 0 45px #38bdf8) drop-shadow(0 0 65px #ffffff);
+                opacity: 1;
+            }
+        }
+
+        .center-tug-arrow {
+            position: fixed;
+            top: 52%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 96px;
+            font-weight: 900;
+            color: #ffffff;
+            z-index: 9999;
+            pointer-events: none;
+            user-select: none;
+            line-height: 1;
+            animation: pulseGlowArrow 0.75s ease-in-out infinite;
+        }
+        
         @keyframes sleepPulse {
             0%, 100% { transform: scale(1); opacity: 0.85; }
             50% { transform: scale(1.08); opacity: 1; }
@@ -2403,45 +2431,85 @@
         }
 
         function updateSwipeArrowUI() {
-            let textPrompt = document.getElementById('swipe-instruction-text');
-            if (!textPrompt) return;
+            let arrowEl = document.getElementById('tug-direction-arrow');
+            if (!arrowEl) {
+                arrowEl = document.createElement('div');
+                arrowEl.id = 'tug-direction-arrow';
+                document.body.appendChild(arrowEl);
+            }
+
+            // Nếu đã hết giằng co thì tự động ẩn mũi tên đi
+            if (!isTugOfWarActive) {
+                arrowEl.style.display = 'none';
+                return;
+            }
+
+            arrowEl.className = 'center-tug-arrow';
+            arrowEl.style.display = 'block';
+
             if (beastPullDirection === 'left') {
-                textPrompt.innerText = '➡️➡️➡️➡️➡️➡️➡️';
+                arrowEl.innerHTML = '➡'; // Thú kéo sang trái -> vuốt sang phải
             } else if (beastPullDirection === 'right') {
-                textPrompt.innerText = '⬅️⬅️⬅️⬅️⬅️⬅️⬅️';
+                arrowEl.innerHTML = '⬅'; // Thú kéo sang phải -> vuốt sang trái
             } else {
-                textPrompt.innerText = '⬇️⬇️⬇️⬇️⬇️⬇️⬇️';
+                arrowEl.innerHTML = '⬇'; // Thú bay lên -> vuốt ghìm xuống
             }
         }
 
         function triggerTugWin() {
-            if (!isTugOfWarActive) return;
-            isTugOfWarActive = false; 
-            clearInterval(tugTimerInterval);
-            document.getElementById('tug-of-war-ui').classList.add('hidden');
-            exitARScreen();
+            isTugOfWarActive = false;
+            updateSwipeArrowUI(); // Ẩn ngay mũi tên phát sáng ở giữa màn hình
 
-            if (currentSelectedMarker && map) {
-                map.removeLayer(currentSelectedMarker);
-                let idx = activeMarkers.indexOf(currentSelectedMarker);
-                if (idx !== -1) {
-                    activeMarkers.splice(idx, 1);
-                    mapMonstersData.splice(idx, 1);
-                }
+            if (!currentWildMonster) return;
+
+            // Tạo dữ liệu linh thú mới bắt được
+            const caughtPet = {
+                id: 'pet_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                name: currentWildMonster.name,
+                emoji: currentWildMonster.emoji || '🐾',
+                element: currentWildMonster.element || 'Moc',
+                level: currentWildMonster.level || 1,
+                exp: 0,
+                maxExp: 100,
+                hp: currentWildMonster.hp || 100,
+                maxHp: currentWildMonster.maxHp || 100,
+                atk: currentWildMonster.atk || 20,
+                def: currentWildMonster.def || 10,
+                spd: currentWildMonster.spd || 15,
+                stamina: 100,
+                maxStamina: 100,
+                rarity: currentWildMonster.rarity || 'Thường',
+                isBred: false
+            };
+
+            // Thêm vào danh sách thú sở hữu
+            if (Array.isArray(team)) {
+                team.push(caughtPet);
             }
 
-            let multi = currentWildMonster.rarity.statMultiplier || 1.0;
-            let newPet = {
-                ...currentWildMonster, level: 1, hearts: 3, gender: Math.random() < 0.5 ? 'Đực' : 'Cái',
-                critRate: Math.floor(15 + Math.random() * 20 * multi), dodgeRate: Math.floor(10 + Math.random() * 15 * multi),
-                accuracy: Math.floor(85 + Math.random() * 10), blockRate: Math.floor(10 + Math.random() * 20 * multi),
-                slowResist: Math.floor(10 + Math.random() * 15), speed: Math.floor(40 + Math.random() * 30 * multi),
-                trait: possibleTraits[Math.floor(Math.random() * possibleTraits.length)], hunger: 100, happiness: 100
-            };
-            if (team.length < 3) { team.push(newPet); saveGameData(); alert(`🎉 Bắt thành công ${newPet.name} (${newPet.rarity.badge})! Đã đưa vào Đội.`); }
-            else { farm.push(newPet); saveGameData(); alert(`🎉 Đội đầy, đã chuyển ${newPet.name} vào Trại!`); }
-            addQuestProgress(1, 1); 
-            updateTeamCount();
+            // Xóa marker linh thú vừa bắt khỏi bản đồ GPS (nếu có)
+            if (typeof removeCaughtMarker === 'function') {
+                removeCaughtMarker(currentWildMonster.id);
+            } else if (currentWildMonster.marker && typeof map !== 'undefined') {
+                map.removeLayer(currentWildMonster.marker);
+            }
+
+            // Lưu dữ liệu và cập nhật giao diện
+            if (typeof saveGameData === 'function') saveGameData();
+            if (typeof updateUI === 'function') updateUI();
+            if (typeof renderTeam === 'function') renderTeam();
+
+            // Hiển thị thông báo bắt thành công và đóng màn AR
+            showFloatingText(`THU PHỤC THÀNH CÔNG: ${caughtPet.name.toUpperCase()}!`, canvas.width / 2, canvas.height * 0.45, '#4ade80');
+
+            setTimeout(() => {
+                if (typeof closeCatchModal === 'function') {
+                    closeCatchModal();
+                } else {
+                    const modal = document.getElementById('ar-catch-modal');
+                    if (modal) modal.style.display = 'none';
+                }
+            }, 900);
         }
 
         // ==========================================
