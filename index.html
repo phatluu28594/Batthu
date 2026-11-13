@@ -643,6 +643,10 @@
             { id: 302, name: 'Chim Lửa', emoji: '🐦', element: 'Hoa', hp: 100, maxHp: 100, atk: 55, speed: 85 },
             { id: 401, name: 'Rồng Nước', emoji: '🐉', element: 'Thuy', hp: 180, maxHp: 180, atk: 65, speed: 65 },
             { id: 402, name: 'Rồng Lửa', emoji: '🐲', element: 'Hỏa', hp: 280, maxHp: 380, atk: 85, speed: 85 }
+            { id: 403, name: 'Hồ Ly', emoji: '🦊', element: 'Hoa', hp: 220, maxHp: 220, atk: 78, speed: 95 },
+            { id: 404, name: 'Rắn', emoji: '🐍', element: 'Thuy', hp: 200, maxHp: 200, atk: 75, speed: 88 },
+            { id: 405, name: 'Chim Trĩ', emoji: '🦚', element: 'Kim', hp: 210, maxHp: 210, atk: 76, speed: 92 },
+            { id: 406, name: 'Bướm Đêm', emoji: '🦋', element: 'Moc', hp: 185, maxHp: 185, atk: 70, speed: 98 }
         ];
 
         let currentWildMonster = null;
@@ -655,6 +659,38 @@
                 attack: 'assets/dragon_attack.png',
                 hit: 'assets/dragon_hit.png',
                 death: 'assets/dragon_death.png',
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+            }
+            'Hồ Ly': {
+                idle: 'assets/fox_idle.png',
+                walk: 'assets/fox_walk.png',
+                attack: 'assets/fox_attack.png',
+                hit: 'assets/fox_hit.png',
+                death: 'assets/fox_death.png',
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+            },
+            'Rắn': {
+                idle: 'assets/snake_idle.png',
+                walk: 'assets/snake_walk.png',
+                attack: 'assets/snake_attack.png',
+                hit: 'assets/snake_hit.png',
+                death: 'assets/snake_death.png',
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+            },
+            'Chim Trĩ': {
+                idle: 'assets/pheasant_idle.png',
+                walk: 'assets/pheasant_walk.png',
+                attack: 'assets/pheasant_attack.png',
+                hit: 'assets/pheasant_hit.png',
+                death: 'assets/pheasant_death.png',
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+            },
+            'Bướm Đêm': {
+                idle: 'assets/moth_idle.png',
+                walk: 'assets/moth_walk.png',
+                attack: 'assets/moth_attack.png',
+                hit: 'assets/moth_hit.png',
+                death: 'assets/moth_death.png',
                 cols: 4, rows: 4, totalFrames: 16, scale: 3.2
             }
         };
@@ -1934,7 +1970,7 @@
                 let spriteCfg = spriteConfigs[monsterData.name];
 
                 let visualHtml = spriteCfg
-                    ? `<div style="width:75px; height:75px; background-image:url('${spriteCfg.walk || spriteCfg.idle || spriteCfg.attack}'); background-size:${spriteCfg.cols * 100}% ${spriteCfg.rows * 100}%; background-position:0% 0%; background-repeat:no-repeat;"></div>`
+                    ? `<div style="width:100px; height:100px; background-image:url('${spriteCfg.walk || spriteCfg.idle || spriteCfg.attack}'); background-size:${spriteCfg.cols * 100}% ${spriteCfg.rows * 100}%; background-position:0% 0%; background-repeat:no-repeat;"></div>`
                     : `<span class="pet-walk-anim" style="animation-delay: ${i * 0.15}s;">${monsterData.emoji}</span>`;
 
                 const monsterIcon = L.divIcon({ 
@@ -1944,8 +1980,8 @@
                             ${visualHtml}
                         </span>
                     </div>`, 
-                    iconSize: [60, 60], 
-                    iconAnchor: [30, 30] 
+                    iconSize: [100, 100], 
+                    iconAnchor: [50, 50] 
                 });
                 
                 const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(map);
