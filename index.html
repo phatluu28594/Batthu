@@ -1866,7 +1866,16 @@
 
         function openPetDetail(index) {
             let pet = team[index];
-            let heartsStr = '❤️'.repeat(pet.hearts);
+            if (!pet) return;
+            if (!pet.trait) {
+                pet.trait = possibleTraits[Math.floor(Math.random() * possibleTraits.length)];
+                saveGameData();
+            }
+            if (pet.hunger === undefined) pet.hunger = 90;
+            if (pet.happiness === undefined) pet.happiness = 90;
+            if (!pet.gender) pet.gender = Math.random() < 0.5 ? 'Đực' : 'Cái';
+
+            let heartsStr = '❤️'.repeat(pet.hearts || 3);
             const content = document.getElementById('modal-content');
             content.innerHTML = `
             <div class="flex justify-between items-center mb-4">
@@ -1875,7 +1884,7 @@
             </div>
             <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border ${pet.rarity.bg} mb-4 text-center">
                 <div class="mb-2 flex justify-center">${getPetSpriteHtml(pet, 'walk', 110)}</div>
-                <div class="text-base font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${pet.level}</span></div>
+                <div class="text-base font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${Math.floor(pet.level)}</span></div>
                 <div class="text-xs font-bold ${elementNames[pet.element]?.color} mt-0.5">Hệ Nguyên Tố: ${elementNames[pet.element]?.label}</div>
                 <div class="text-sm mt-1">Trái tim: ${heartsStr}</div>
                 <div class="text-xs text-amber-300 mt-1">Đặc kỹ: ${pet.trait.icon} ${pet.trait.name} (${pet.trait.chance}%)</div>
@@ -2501,7 +2510,7 @@
             document.getElementById('tug-of-war-ui').classList.add('hidden');
 
             if (currentWildMonster) {
-                const caughtPet = {
+                const rawPet = {
                     ...currentWildMonster,
                     id: 'pet_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
                     level: currentWildMonster.level || 1,
@@ -2512,22 +2521,28 @@
                     stamina: 100,
                     maxStamina: 100
                 };
-                delete caughtPet.marker;
+                delete rawPet.marker;
+
+                const caughtPet = sanitizePetsData([rawPet])[0];
 
                 if (typeof team !== 'undefined' && Array.isArray(team)) {
-                    team.push(caughtPet);
+                    if (team.length < 3) {
+                        team.push(caughtPet);
+                    } else {
+                        farm.push(caughtPet);
+                    }
                 }
 
-                if (currentWildMonster.marker && typeof map !== 'undefined') {
-                    map.removeLayer(currentWildMonster.marker);
+                if (currentSelectedMarker && typeof map !== 'undefined') {
+                    map.removeLayer(currentSelectedMarker);
                 }
-                if (typeof wildMonsters !== 'undefined' && Array.isArray(wildMonsters)) {
-                    wildMonsters = wildMonsters.filter(m => m !== currentWildMonster);
+                if (typeof mapMonstersData !== 'undefined' && Array.isArray(mapMonstersData)) {
+                    mapMonstersData = mapMonstersData.filter(m => m !== currentWildMonster);
                 }
 
-                if (typeof saveGameData === 'function') saveGameData();
-                if (typeof updateUI === 'function') updateUI();
-                if (typeof renderTeam === 'function') renderTeam();
+                addQuestProgress(1, 1);
+                saveGameData();
+                updateTeamCount();
 
                 alert(`🎉 Thu phục thành công ${caughtPet.name}!`);
             }
