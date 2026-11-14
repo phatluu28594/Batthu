@@ -967,9 +967,9 @@
                 sheet: 'assets_boss/boss-unicorn.png',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
-                padTop: 0.04,
-                padBottom: 0.08,
-                scale: 2.8
+                padTop: 0,
+                padBottom: 0,
+                scale: 2.2
             }
             
         };
@@ -1017,20 +1017,25 @@
                     let fw = img.naturalWidth / cols;
                     let fh = img.naturalHeight / totalRows;
 
-                    // Cắt lùi mép trên/dưới một chút để không dính chi tiết thừa từ hàng kế bên
-                    let padTop = fh * (cfg.padTop ?? 0.03);
-                    let padBottom = fh * (cfg.padBottom ?? 0.06);
-                    let padX = fw * (cfg.padX ?? 0.02);
+                    // Chỉ cắt gọt nhẹ nếu cấu hình có khai báo riêng, mặc định lấy trọn vẹn 100% ô
+                    let padTop = fh * (cfg.padTop ?? 0);
+                    let padBottom = fh * (cfg.padBottom ?? 0);
+                    let padX = fw * (cfg.padX ?? 0);
 
                     let sx = col * fw + padX;
                     let sy = row * fh + padTop;
                     let sw = fw - padX * 2;
                     let sh = fh - padTop - padBottom;
 
+                    // Giữ đúng tỷ lệ gốc của ô frame để không bao giờ bị mất đuôi hay mất tia phép
+                    let aspect = sw / sh;
+                    let finalH = size * (cfg.scale || 1);
+                    let finalW = finalH * aspect;
+
                     ctx.save();
                     ctx.translate(x, y);
                     if (needFlip) ctx.scale(-1, 1);
-                    ctx.drawImage(img, sx, sy, sw, sh, -drawW / 2, -drawH / 2, drawW, drawH);
+                    ctx.drawImage(img, sx, sy, sw, sh, -finalW / 2, -finalH / 2, finalW, finalH);
                     ctx.restore();
                     return;
                 }
