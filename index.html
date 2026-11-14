@@ -200,6 +200,25 @@
         <div id="yt-player"></div>
     </div>
 
+    <!-- BẢNG YÊU CẦU MỞ TOÀN MÀN HÌNH (FULLSCREEN / F11) -->
+    <div id="fullscreen-prompt-overlay" class="hidden absolute inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+        <div class="bg-zinc-900 border-2 border-amber-400/70 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <div class="text-5xl animate-bounce">🖥️📱</div>
+            <h2 class="text-xl font-black text-yellow-300 tracking-wide">TRẢI NGHIỆM TOÀN MÀN HÌNH</h2>
+            <p class="text-xs text-zinc-300 leading-relaxed">
+                Hãy bật chế độ <span class="text-amber-300 font-bold">Toàn màn hình (F11)</span> để có góc nhìn rộng và trải nghiệm săn bắt linh thú tốt nhất!
+            </p>
+            <div class="flex flex-col gap-2 pt-2">
+                <button onclick="enterGameFullscreen()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black py-3 rounded-xl text-sm shadow-lg cursor-pointer transition active:scale-95">
+                    ⛶ Bật Toàn Màn Hình Ngay
+                </button>
+                <button onclick="dismissFullscreenPrompt()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-bold py-2 rounded-xl text-xs cursor-pointer">
+                    Để sau
+                </button>
+            </div>
+        </div>
+    </div>
+    
     <!-- MÀN HÌNH SẢNH CHÍNH ĐẦU GAME (background.png) -->
     <div id="home-screen" class="absolute inset-0 z-30 bg-zinc-950 overflow-hidden">
         <div class="fixed top-0 left-0 right-0 z-30 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/85 to-transparent pointer-events-none">
@@ -3019,15 +3038,48 @@
             saveGameData();
         }
 
+        function enterGameFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(() => {});
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+            dismissFullscreenPrompt();
+        }
+
+        function dismissFullscreenPrompt() {
+            const overlay = document.getElementById('fullscreen-prompt-overlay');
+            if (overlay) overlay.classList.add('hidden');
+            setTimeout(() => {
+                centerPanorama('home-scroller');
+                if (typeof map !== 'undefined' && map) map.invalidateSize();
+            }, 150);
+        }
+
+        function checkFullscreenOnStart() {
+            const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || (window.innerHeight >= screen.height - 5);
+            const overlay = document.getElementById('fullscreen-prompt-overlay');
+            if (!isFullscreen && overlay) {
+                overlay.classList.remove('hidden');
+            }
+        }
+
         window.onload = () => {
             initDualStaminaSystem(); 
             updateTeamCount(); 
             updateWeatherCycle(); 
             initStepCounter();
             saveGameData();
+            checkFullscreenOnStart();
             setTimeout(() => centerPanorama('home-scroller'), 100);
         };
-        window.onresize = () => { if (map) setTimeout(() => map.invalidateSize(), 200); };
+        window.onresize = () => { 
+            if (map) setTimeout(() => map.invalidateSize(), 200);
+            setTimeout(() => centerPanorama('home-scroller'), 150);
+        };
     </script>
 </body>
 </html>
