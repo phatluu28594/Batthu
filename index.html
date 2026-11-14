@@ -533,7 +533,7 @@
 
     <!-- TRÌNH PHÁT NHẠC NỀN MP3 -->
     <audio id="bg-music-player" loop preload="auto">
-        <source id="bg-music-source" src="./assets/nhac_cho.mp3" type="audio/mpeg">
+        <source id="bg-music-source" src="./nhac_cho.mp3" type="audio/mpeg">
     </audio>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -608,8 +608,8 @@
         let currentMusicTrack = '';
 
         const gameMusicTracks = {
-            map: './assets/nhac_cho.mp3',       // Nhạc nền ở Nhà Chính & Bản đồ GPS
-            battle: './assets/nhac_cho.mp3'     // Đổi sang file nhạc chiến đấu riêng nếu có, còn không thì để giống nhac_cho.mp3
+            map: './nhac_cho.mp3',
+            battle: './nhac_cho.mp3'     // Đổi sang file nhạc chiến đấu riêng nếu có, còn không thì để giống nhac_cho.mp3
         };
 
         function switchGameMusic(scene = 'map') {
