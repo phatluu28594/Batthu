@@ -3060,7 +3060,8 @@
                     if (attacker.side === 'team') {
                         let idx = attacker.index;
                         let targetY = cy;
-                        let startY = cy + (idx - 1) * 32;
+                        let rowOffset = activeTeam.length === 1 ? 0 : (idx - 1) * 32;
+                        let startY = cy + rowOffset;
 
                         if (attacker.step <= 9) {
                             let t = attacker.step / 9;
@@ -3131,7 +3132,8 @@
                         }
                     } else if (attacker.side === 'enemy') {
                         let targetIdx = teamHpList.findIndex(h => h > 0);
-                        let targetY = targetIdx !== -1 ? cy + (targetIdx - 1) * 32 : cy;
+                        let targetRowOffset = activeTeam.length === 1 ? 0 : (targetIdx - 1) * 32;
+                        let targetY = targetIdx !== -1 ? cy + targetRowOffset : cy;
 
                         if (attacker.step <= 9) {
                             let t = attacker.step / 9;
@@ -3262,7 +3264,8 @@
                         teamHitShake[i]--;
                     }
 
-                    let posY = isPetDead ? (cy + (i - 1) * 32 + 12) : (cy + (i - 1) * 32 + myOffsetsY[i]);
+                    let rowOffset = activeTeam.length === 1 ? 0 : (i - 1) * 32;
+                    let posY = isPetDead ? (cy + rowOffset + 12) : (cy + rowOffset + myOffsetsY[i]);
                     let posX = isPetDead ? defaultTeamX : (defaultTeamX + myOffsetsX[i] + knockback);
                     let baseName = pet.name.replace('F1_', '');
                     let hasSprite = isPetSpriteReady(baseName);
