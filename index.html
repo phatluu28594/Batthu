@@ -653,6 +653,22 @@
             }
         });
 
+        const possibleTraits = [
+            { name: 'Khả năng Làm choáng', icon: '💫 Choáng', type: 'stun', chance: 20 },
+            { name: 'Đòn đánh Trúng độc', icon: '🟢 Độc', type: 'poison', chance: 25 },
+            { name: 'Thiêu đốt diện rộng', icon: '🔥 Cháy', type: 'burn', chance: 22 },
+            { name: 'Làm chậm đối thủ', icon: '❄️ Chậm', type: 'slow', chance: 25 },
+            { name: 'Hộ thân Buff Giáp', icon: '🛡️ Buff', type: 'shield', chance: 30 }
+        ];
+
+        const rarities = [
+            { name: 'Thường', color: 'text-zinc-300', bg: 'border-zinc-600', badge: '⚪ Trắng', rate: 50, statMultiplier: 1.0 },
+            { name: 'Hiếm', color: 'text-emerald-400', bg: 'border-emerald-500', badge: '🟢 Xanh', rate: 25, statMultiplier: 1.3 },
+            { name: 'Cực Hiếm', color: 'text-yellow-400', bg: 'border-yellow-500', badge: '🟡 Vàng', rate: 15, statMultiplier: 1.6 },
+            { name: 'Huyền Thoại', color: 'text-red-500', bg: 'border-red-500', badge: '🔴 Đỏ', rate: 7, statMultiplier: 2.0 },
+            { name: 'Thần Thánh', color: 'text-purple-400', bg: 'border-purple-500', badge: '🟣 Tím', rate: 3, statMultiplier: 2.5 }
+        ];
+
         function getRandomRarity() {
             let roll = Math.random() * 100;
             let cumulative = 0;
@@ -700,7 +716,7 @@
         farm = sanitizePetsData(farm);
         restingPets = sanitizePetsData(restingPets);
         trainingPoles = trainingPoles.map(p => p ? sanitizePetsData([p])[0] : null);
-
+        
         const allMonsters = [
             { id: 101, name: 'Gà Ta', emoji: '🐔', element: 'Kim', hp: 100, maxHp: 100, atk: 35, speed: 55 },
             { id: 102, name: 'Vịt Cỏ', emoji: '🦆', element: 'Thuy', hp: 90, maxHp: 90, atk: 30, speed: 50 },
