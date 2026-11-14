@@ -798,42 +798,75 @@
             'monster-goblin': {
                 displayName: 'Yêu Tinh Goblin',
                 element: 'Moc',
+                facing: 'left', // Ảnh gốc nhìn sang trái -> giữ nguyên khi đứng bên phải
                 idle: 'assets_boss/monster-goblin-idle.png',
                 walk: 'assets_boss/monster-goblin-walk.png',
                 attack: 'assets_boss/monster-goblin-attack.png',
                 hit: 'assets_boss/monster-goblin-hit.png',
                 death: 'assets_boss/monster-goblin-death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+                cols: 4, rows: 4, totalFrames: 16, scale: 4.2,
+                grids: {
+                    walk: { cols: 8, rows: 3, totalFrames: 24 },
+                    attack: { cols: 8, rows: 4, totalFrames: 32 },
+                    death: { cols: 8, rows: 3, totalFrames: 24 },
+                    hit: { cols: 8, rows: 3, totalFrames: 24 },
+                    idle: { cols: 8, rows: 3, totalFrames: 24 }
+                }
             },
             'monster-golem': {
                 displayName: 'Người Đá Golem',
                 element: 'Tho',
+                facing: 'left',
                 idle: 'assets_boss/monster-golem-idle.png',
                 walk: 'assets_boss/monster-golem-walk.png',
                 attack: 'assets_boss/monster-golem-attack.png',
                 hit: 'assets_boss/monster-golem-hit.png',
                 death: 'assets_boss/monster-golem-death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.4
+                cols: 4, rows: 4, totalFrames: 16, scale: 4.2,
+                grids: {
+                    walk: { cols: 8, rows: 3, totalFrames: 23 },
+                    attack: { cols: 8, rows: 4, totalFrames: 32 },
+                    death: { cols: 8, rows: 3, totalFrames: 24 },
+                    hit: { cols: 8, rows: 1, totalFrames: 8 },
+                    idle: { cols: 8, rows: 3, totalFrames: 23 }
+                }
+                
             },
             'monster-mushroom': {
                 displayName: 'Nấm Độc Khổng Lồ',
                 element: 'Moc',
+                facing: 'left',
                 idle: 'assets_boss/monster-mushroom-idle.png',
                 walk: 'assets_boss/monster-mushroom-walk.png',
                 attack: 'assets_boss/monster-mushroom-attack.png',
                 hit: 'assets_boss/monster-mushroom-hit.png',
                 death: 'assets_boss/monster-mushroom-death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+                cols: 4, rows: 4, totalFrames: 16, scale: 4.2,
+                grids: {
+                    walk: { cols: 8, rows: 2, totalFrames: 16 },
+                    attack: { cols: 8, rows: 3, totalFrames: 24 },
+                    death: { cols: 8, rows: 2, totalFrames: 16 },
+                    hit: { cols: 8, rows: 2, totalFrames: 16 },
+                    idle: { cols: 8, rows: 3, totalFrames: 24 }
+                }
             },
             'monster-slim': {
                 displayName: 'Quái Vật Slime',
                 element: 'Thuy',
+                facing: 'left',
                 idle: 'assets_boss/monster-slim-idle.png',
                 walk: 'assets_boss/monster-slim-walk.png',
                 attack: 'assets_boss/monster-slim-attack.png',
                 hit: 'assets_boss/monster-slim-hit.png',
                 death: 'assets_boss/monster-slim-death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+                cols: 4, rows: 4, totalFrames: 16, scale: 4.2,
+                grids: {
+                    walk: { cols: 8, rows: 2, totalFrames: 16 },
+                    attack: { cols: 8, rows: 3, totalFrames: 24 },
+                    death: { cols: 8, rows: 3, totalFrames: 24 },
+                    hit: { cols: 8, rows: 1, totalFrames: 8 },
+                    idle: { cols: 8, rows: 5, totalFrames: 40 }
+                }
             }
         };
 
