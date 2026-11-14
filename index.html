@@ -793,6 +793,106 @@
         }
         preloadPetSprites();
 
+        const bossSpriteAssets = {};
+        const bossSpriteConfigs = {
+            'monster-goblin': {
+                displayName: 'Yêu Tinh Goblin',
+                element: 'Moc',
+                idle: 'assets_boss/monster-goblin-idle.png',
+                walk: 'assets_boss/monster-goblin-walk.png',
+                attack: 'assets_boss/monster-goblin-attack.png',
+                hit: 'assets_boss/monster-goblin-hit.png',
+                death: 'assets_boss/monster-goblin-death.png',
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+            },
+            'monster-golem': {
+                displayName: 'Người Đá Golem',
+                element: 'Tho',
+                idle: 'assets_boss/monster-golem-idle.png',
+                walk: 'assets_boss/monster-golem-walk.png',
+                attack: 'assets_boss/monster-golem-attack.png',
+                hit: 'assets_boss/monster-golem-hit.png',
+                death: 'assets_boss/monster-golem-death.png',
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.4
+            },
+            'monster-mushroom': {
+                displayName: 'Nấm Độc Khổng Lồ',
+                element: 'Moc',
+                idle: 'assets_boss/monster-mushroom-idle.png',
+                walk: 'assets_boss/monster-mushroom-walk.png',
+                attack: 'assets_boss/monster-mushroom-attack.png',
+                hit: 'assets_boss/monster-mushroom-hit.png',
+                death: 'assets_boss/monster-mushroom-death.png',
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+            },
+            'monster-slim': {
+                displayName: 'Quái Vật Slime',
+                element: 'Thuy',
+                idle: 'assets_boss/monster-slim-idle.png',
+                walk: 'assets_boss/monster-slim-walk.png',
+                attack: 'assets_boss/monster-slim-attack.png',
+                hit: 'assets_boss/monster-slim-hit.png',
+                death: 'assets_boss/monster-slim-death.png',
+                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+            }
+        };
+
+        function preloadBossSprites() {
+            for (let bossKey in bossSpriteConfigs) {
+                bossSpriteAssets[bossKey] = {};
+                let cfg = bossSpriteConfigs[bossKey];
+                ['idle', 'walk', 'attack', 'hit', 'death'].forEach(state => {
+                    if (cfg[state]) {
+                        let img = new Image();
+                        img.src = cfg[state];
+                        bossSpriteAssets[bossKey][state] = img;
+                    }
+                });
+            }
+        }
+        preloadBossSprites();
+
+        function drawBossEntity(ctx, enemy, state, frameIndex, x, y, size = 90, flipLeft = true) {
+            let bossKey = enemy.spriteKey;
+            let cfg = bossKey ? bossSpriteConfigs[bossKey] : null;
+            let actualState = state;
+            let img = (bossKey && bossSpriteAssets[bossKey]) ? bossSpriteAssets[bossKey][actualState] : null;
+
+            if (cfg && (!img || !img.complete || img.naturalWidth === 0)) {
+                actualState = cfg.idle ? 'idle' : 'walk';
+                img = bossSpriteAssets[bossKey] ? bossSpriteAssets[bossKey][actualState] : null;
+            }
+
+            if (cfg && img && img.complete && img.naturalWidth > 0) {
+                let grid = getSpriteGrid(cfg, actualState);
+                let safeFrame = frameIndex % grid.totalFrames;
+                let col = safeFrame % grid.cols;
+                let row = Math.floor(safeFrame / grid.cols);
+
+                let fw = img.naturalWidth / grid.cols;
+                let fh = img.naturalHeight / grid.rows;
+                let sx = col * fw;
+                let sy = row * fh;
+
+                let drawW = size * (cfg.scale || 1);
+                let drawH = size * (cfg.scale || 1);
+
+                ctx.save();
+                ctx.translate(x, y);
+                if (flipLeft) ctx.scale(-1, 1);
+                ctx.drawImage(img, sx, sy, fw, fh, -drawW / 2, -drawH / 2, drawW, drawH);
+                ctx.restore();
+            } else {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.font = "65px sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(enemy.emoji || '👹', 0, 0);
+                ctx.restore();
+            }
+        }
+
         let globalSpriteFrame = 0;
         setInterval(() => {
             globalSpriteFrame = (globalSpriteFrame + 1) % 16;
@@ -2621,8 +2721,32 @@
             let teamHpList = activeTeam.map(p => p.hp);
             let teamMaxHpTotal = activeTeam.reduce((sum, p) => sum + p.maxHp, 0);
 
-            let enemy = mode === 'boss' ? { name: `Hắc Long Vương (Lv.${bossLevel})`, element: 'Hoa', emoji: '🐉', hp: 300 + (bossLevel * 100), maxHp: 300 + (bossLevel * 100), atk: 30 + (bossLevel * 8), speed: 45 + bossLevel * 3, accuracy: 95, dodgeRate: 15, critRate: 20, blockRate: 20, armorBreak: 20, comboRate: 25 } :
-                        mode === 'tower' ? { name: `Thủ Vệ Tầng ${towerFloor}`, element: elementList[towerFloor % elementList.length], emoji: '👹', hp: 120 + (towerFloor * 25), maxHp: 120 + (towerFloor * 25), atk: 20 + towerFloor * 4, speed: 40 + towerFloor * 2, accuracy: 88, dodgeRate: Math.min(35, 10 + towerFloor), critRate: 15, blockRate: Math.min(40, 12 + towerFloor), armorBreak: Math.min(35, 10 + towerFloor), comboRate: Math.min(50, 15 + towerFloor * 2) } :
+            const bossKeys = Object.keys(bossSpriteConfigs);
+            const randomBossKey = bossKeys[Math.floor(Math.random() * bossKeys.length)];
+            const chosenBossCfg = bossSpriteConfigs[randomBossKey];
+
+            let enemy = mode === 'boss' ? {
+                            name: `${chosenBossCfg.displayName} (Boss Lv.${bossLevel})`,
+                            spriteKey: randomBossKey,
+                            element: chosenBossCfg.element,
+                            emoji: '👹',
+                            hp: 300 + (bossLevel * 100),
+                            maxHp: 300 + (bossLevel * 100),
+                            atk: 30 + (bossLevel * 8),
+                            speed: 45 + bossLevel * 3,
+                            accuracy: 95, dodgeRate: 15, critRate: 20, blockRate: 20, armorBreak: 20, comboRate: 25
+                        } :
+                        mode === 'tower' ? {
+                            name: `${chosenBossCfg.displayName} (Tầng ${towerFloor})`,
+                            spriteKey: randomBossKey,
+                            element: chosenBossCfg.element,
+                            emoji: '👹',
+                            hp: 120 + (towerFloor * 25),
+                            maxHp: 120 + (towerFloor * 25),
+                            atk: 20 + towerFloor * 4,
+                            speed: 40 + towerFloor * 2,
+                            accuracy: 88, dodgeRate: Math.min(35, 10 + towerFloor), critRate: 15, blockRate: Math.min(40, 12 + towerFloor), armorBreak: Math.min(35, 10 + towerFloor), comboRate: Math.min(50, 15 + towerFloor * 2)
+                        } :
                         { name: 'Đối Thủ PvP', element: 'Tho', emoji: '🤖', hp: 160, maxHp: 160, atk: 25, speed: 52, accuracy: 90, dodgeRate: 18, critRate: 18, blockRate: 18, armorBreak: 16, comboRate: 22 };
             let enemyHp = enemy.hp;
             document.getElementById('battle-enemy-name').innerText = `${enemy.name} [${elementNames[enemy.element]?.label}] (⚡${enemy.speed} | 🔥${enemy.comboRate}%)`;
@@ -2858,27 +2982,45 @@
                 document.getElementById('battle-enemy-hp-text').innerText = `HP: ${Math.max(0, enemyHp)}/${enemy.maxHp}`;
                 
                 let isEnemyDead = enemyHp <= 0;
+                let isEnemyAttacking = (attacker && attacker.side === 'enemy');
+                let isEnemyHit = enemyHitShake > 0;
                 let enKnockback = 0;
-                if (enemyHitShake > 0) {
+                if (isEnemyHit) {
                     enKnockback = Math.sin(enemyHitShake * 1.8) * 10 + 6;
                     enemyHitShake--;
                 }
 
                 let finalEnX = isEnemyDead ? defaultEnemyX : (defaultEnemyX + enemyOffsetX + enKnockback);
                 let finalEnY = isEnemyDead ? (cy + 14) : (cy + enemyOffsetY);
-                let enIdleScaleY = (isEnemyDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + 1) * 0.04);
-                let finalEnRotation = isEnemyDead ? (Math.PI / 2) : enemyRotation;
 
-                battleCtx.save();
-                battleCtx.translate(finalEnX, finalEnY);
-                battleCtx.rotate(finalEnRotation);
-                battleCtx.scale(1, enIdleScaleY);
-                
-                battleCtx.font = "65px sans-serif"; 
-                battleCtx.textAlign = "center"; 
-                battleCtx.textBaseline = "middle";
-                battleCtx.fillText(enemy.emoji, 0, 0);
-                battleCtx.restore();
+                if (enemy.spriteKey && bossSpriteConfigs[enemy.spriteKey]) {
+                    let enAnimState = 'idle';
+                    let enAnimFrame = Math.floor(idleTick * 2.2);
+                    if (isEnemyDead) {
+                        enAnimState = 'death';
+                        enAnimFrame = 15;
+                    } else if (isEnemyAttacking) {
+                        enAnimState = 'attack';
+                        enAnimFrame = Math.min(15, Math.floor((attacker.step / 22) * 16));
+                    } else if (isEnemyHit) {
+                        enAnimState = 'hit';
+                        enAnimFrame = Math.floor((12 - enemyHitShake) * 1.3);
+                    }
+                    // flipLeft = true để Boss quay mặt sang trái đối diện với đội hình của bạn
+                    drawBossEntity(battleCtx, enemy, enAnimState, enAnimFrame, finalEnX, finalEnY, mode === 'boss' ? 105 : 90, true);
+                } else {
+                    let enIdleScaleY = (isEnemyDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + 1) * 0.04);
+                    let finalEnRotation = isEnemyDead ? (Math.PI / 2) : enemyRotation;
+                    battleCtx.save();
+                    battleCtx.translate(finalEnX, finalEnY);
+                    battleCtx.rotate(finalEnRotation);
+                    battleCtx.scale(1, enIdleScaleY);
+                    battleCtx.font = "65px sans-serif";
+                    battleCtx.textAlign = "center";
+                    battleCtx.textBaseline = "middle";
+                    battleCtx.fillText(enemy.emoji, 0, 0);
+                    battleCtx.restore();
+                }
 
                 activeTeam.forEach((pet, i) => {
                     let isPetDead = teamHpList[i] <= 0;
