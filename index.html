@@ -673,6 +673,7 @@
                     dodgeRate: (p.dodgeRate && p.dodgeRate > 0) ? p.dodgeRate : Math.floor(10 + Math.random() * 15 * multi),
                     accuracy: (p.accuracy && p.accuracy > 0) ? p.accuracy : Math.floor(80 + Math.random() * 15),
                     blockRate: (p.blockRate && p.blockRate > 0) ? p.blockRate : Math.floor(10 + Math.random() * 20 * multi),
+                    armorBreak: (p.armorBreak && p.armorBreak > 0) ? p.armorBreak : Math.floor(10 + Math.random() * 18 * multi),
                     slowResist: (p.slowResist && p.slowResist > 0) ? p.slowResist : Math.floor(10 + Math.random() * 15),
                     speed: (p.speed && p.speed > 0) ? p.speed : Math.floor(40 + Math.random() * 30 * multi),
                     comboRate: (p.comboRate && p.comboRate > 0) ? p.comboRate : Math.min(65, Math.floor(15 + Math.random() * 18 * multi)),
@@ -1958,10 +1959,11 @@
                     <div>⚔️ ATK: <span class="font-bold text-red-400">${Math.floor(pet.atk)}</span></div>
                     <div>💥 Chí mạng: <span class="font-bold text-blue-400">${pet.critRate ?? 20}%</span></div>
                     <div>🛡️ Đỡ đòn: <span class="font-bold text-purple-400">${pet.blockRate ?? 15}%</span></div>
+                    <div>🗡️ Phá giáp: <span class="font-bold text-rose-400">${pet.armorBreak ?? 15}%</span></div>
                     <div>🏃 Né tránh: <span class="font-bold text-emerald-400">${pet.dodgeRate ?? 15}%</span></div>
                     <div>🎯 Chính xác: <span class="font-bold text-amber-400">${pet.accuracy ?? 90}%</span></div>
                     <div>⚡ Tốc độ: <span class="font-bold text-cyan-400">${pet.speed ?? 50}</span></div>
-                    <div class="col-span-2">🔥 Liên kích: <span class="font-bold text-orange-400">${pet.comboRate ?? 20}%</span></div>
+                    <div>🔥 Liên kích: <span class="font-bold text-orange-400">${pet.comboRate ?? 20}%</span></div>
                 </div>
             </div>
             <div class="grid grid-cols-3 gap-2 text-center">
@@ -2619,9 +2621,9 @@
             let teamHpList = activeTeam.map(p => p.hp);
             let teamMaxHpTotal = activeTeam.reduce((sum, p) => sum + p.maxHp, 0);
 
-            let enemy = mode === 'boss' ? { name: `Hắc Long Vương (Lv.${bossLevel})`, element: 'Hoa', emoji: '🐉', hp: 300 + (bossLevel * 100), maxHp: 300 + (bossLevel * 100), atk: 30 + (bossLevel * 8), speed: 45 + bossLevel * 3, accuracy: 95, dodgeRate: 15, critRate: 20, blockRate: 15, comboRate: 25 } :
-                        mode === 'tower' ? { name: `Thủ Vệ Tầng ${towerFloor}`, element: elementList[towerFloor % elementList.length], emoji: '👹', hp: 120 + (towerFloor * 25), maxHp: 120 + (towerFloor * 25), atk: 20 + towerFloor * 4, speed: 40 + towerFloor * 2, accuracy: 88, dodgeRate: Math.min(35, 10 + towerFloor), critRate: 15, blockRate: 12, comboRate: Math.min(50, 15 + towerFloor * 2) } :
-                        { name: 'Đối Thủ PvP', element: 'Tho', emoji: '🤖', hp: 160, maxHp: 160, atk: 25, speed: 52, accuracy: 90, dodgeRate: 18, critRate: 18, blockRate: 15, comboRate: 22 };
+            let enemy = mode === 'boss' ? { name: `Hắc Long Vương (Lv.${bossLevel})`, element: 'Hoa', emoji: '🐉', hp: 300 + (bossLevel * 100), maxHp: 300 + (bossLevel * 100), atk: 30 + (bossLevel * 8), speed: 45 + bossLevel * 3, accuracy: 95, dodgeRate: 15, critRate: 20, blockRate: 20, armorBreak: 20, comboRate: 25 } :
+                        mode === 'tower' ? { name: `Thủ Vệ Tầng ${towerFloor}`, element: elementList[towerFloor % elementList.length], emoji: '👹', hp: 120 + (towerFloor * 25), maxHp: 120 + (towerFloor * 25), atk: 20 + towerFloor * 4, speed: 40 + towerFloor * 2, accuracy: 88, dodgeRate: Math.min(35, 10 + towerFloor), critRate: 15, blockRate: Math.min(40, 12 + towerFloor), armorBreak: Math.min(35, 10 + towerFloor), comboRate: Math.min(50, 15 + towerFloor * 2) } :
+                        { name: 'Đối Thủ PvP', element: 'Tho', emoji: '🤖', hp: 160, maxHp: 160, atk: 25, speed: 52, accuracy: 90, dodgeRate: 18, critRate: 18, blockRate: 18, armorBreak: 16, comboRate: 22 };
             let enemyHp = enemy.hp;
             document.getElementById('battle-enemy-name').innerText = `${enemy.name} [${elementNames[enemy.element]?.label}] (⚡${enemy.speed} | 🔥${enemy.comboRate}%)`;
 
@@ -2719,7 +2721,6 @@
                             if (attacker.step === 10) {
                                 let pet = activeTeam[idx];
                                 let comboTag = attacker.isComboHit ? ' 🔥LIÊN KÍCH!' : '';
-                                // Kiểm tra Chính xác vs Né tránh
                                 let hitChance = Math.max(25, Math.min(100, (pet.accuracy ?? 90) - (enemy.dodgeRate ?? 15) + 15));
                                 if (Math.random() * 100 > hitChance) {
                                     impactEffects.push({
@@ -2738,7 +2739,10 @@
                                     if (elementCounterMap[pet.element] === enemy.element) { dmg *= 1.35; isCounter = true; }
                                     let isCrit = Math.random() * 100 < (pet.critRate ?? 20);
                                     if (isCrit) dmg *= 1.5;
-                                    let isBlocked = Math.random() * 100 < (enemy.blockRate ?? 12);
+
+                                    // Phá giáp kháng lại Đỡ đòn
+                                    let effectiveBlock = Math.max(0, (enemy.blockRate ?? 12) - (pet.armorBreak ?? 15));
+                                    let isBlocked = Math.random() * 100 < effectiveBlock;
                                     if (isBlocked) dmg *= 0.6;
 
                                     let finalDmg = Math.max(1, Math.floor(dmg));
@@ -2789,7 +2793,6 @@
                             if (attacker.step === 10 && targetIdx !== -1) {
                                 let targetPet = activeTeam[targetIdx];
                                 let comboTag = attacker.isComboHit ? ' 🔥LIÊN KÍCH!' : '';
-                                // Kiểm tra Chính xác của địch vs Né tránh của thú mình
                                 let hitChance = Math.max(25, Math.min(100, (enemy.accuracy ?? 88) - (targetPet.dodgeRate ?? 15) + 15));
                                 if (Math.random() * 100 > hitChance) {
                                     impactEffects.push({
@@ -2805,7 +2808,10 @@
                                     let rawDmg = enemy.atk * (0.85 + Math.random() * 0.3);
                                     let isCrit = Math.random() * 100 < (enemy.critRate ?? 15);
                                     if (isCrit) rawDmg *= 1.5;
-                                    let isBlocked = Math.random() * 100 < (targetPet.blockRate ?? 15);
+
+                                    // Phá giáp của địch kháng lại Đỡ đòn của thú mình
+                                    let effectiveBlock = Math.max(0, (targetPet.blockRate ?? 15) - (enemy.armorBreak ?? 15));
+                                    let isBlocked = Math.random() * 100 < effectiveBlock;
                                     if (isBlocked) rawDmg *= 0.6;
 
                                     let enDmg = Math.max(1, Math.floor(rawDmg));
