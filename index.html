@@ -2904,11 +2904,16 @@
                                 localStorage.setItem('ar_tower_floor', towerFloor);
                                 saveGameData();
 
-                                const continueNext = confirm(`🏆 Chúc mừng! Bạn đã vượt qua Tầng ${clearedFloor} và nhận +${rewardGold} Vàng!\n\n🗼 Bạn có muốn tiếp tục khiêu chiến Tầng ${towerFloor} ngay bây giờ không?`);
-                                if (continueNext) {
-                                    startBattle('tower');
-                                    return;
-                                }
+                                showInGameConfirm(
+                                    `🏆 Chúc mừng! Bạn đã vượt qua Tầng ${clearedFloor} và nhận +${rewardGold} Vàng!\n\n🗼 Bạn có muốn tiếp tục khiêu chiến Tầng ${towerFloor} ngay bây giờ không?`,
+                                    () => {
+                                        startBattle('tower');
+                                    },
+                                    () => {
+                                        exitBattleScreen();
+                                    }
+                                );
+                                return;
                             } else if (mode === 'boss') {
                                 bossLevel++;
                                 localStorage.setItem('ar_boss_level', bossLevel);
@@ -3103,6 +3108,39 @@
             `;
             toastBox.classList.remove('hidden');
         };
+
+        function showInGameConfirm(msg, onConfirm, onCancel) {
+            let confirmBox = document.getElementById('in-game-confirm-overlay');
+            if (!confirmBox) {
+                confirmBox = document.createElement('div');
+                confirmBox.id = 'in-game-confirm-overlay';
+                confirmBox.className = 'fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-5';
+                document.body.appendChild(confirmBox);
+            }
+            confirmBox.innerHTML = `
+                <div class="bg-zinc-900 border-2 border-purple-400/80 rounded-2xl p-5 max-w-xs w-full text-center shadow-2xl space-y-4">
+                    <div class="text-sm font-bold text-zinc-100 whitespace-pre-line leading-relaxed">${msg}</div>
+                    <div class="grid grid-cols-2 gap-2.5 pt-1">
+                        <button id="btn-ingame-cancel" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl text-xs cursor-pointer border border-zinc-600">
+                            Thoát
+                        </button>
+                        <button id="btn-ingame-ok" class="w-full bg-gradient-to-r from-purple-600 to-amber-500 hover:from-purple-500 hover:to-amber-400 text-white font-black py-2.5 rounded-xl text-xs cursor-pointer shadow-lg">
+                            ⚔️ Tiếp tục
+                        </button>
+                    </div>
+                </div>
+            `;
+            confirmBox.classList.remove('hidden');
+
+            document.getElementById('btn-ingame-ok').onclick = () => {
+                confirmBox.classList.add('hidden');
+                if (typeof onConfirm === 'function') onConfirm();
+            };
+            document.getElementById('btn-ingame-cancel').onclick = () => {
+                confirmBox.classList.add('hidden');
+                if (typeof onCancel === 'function') onCancel();
+            };
+        }
         
         window.onload = () => {
             initDualStaminaSystem(); 
