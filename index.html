@@ -304,18 +304,42 @@
 
     <!-- MÀN HÌNH BẢN ĐỒ GPS -->
     <div id="map-screen" class="hidden absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2 pb-2">
-        <div class="z-50 pt-1 pb-1 shrink-0 w-full">
-            <div class="flex gap-1.5 overflow-x-auto py-1 w-full no-scrollbar items-center px-0.5">
-                <button onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0 text-amber-200">🏠 Nhà</button>
-                <button onclick="openWorldBossMenu()" class="bg-amber-700/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap shrink-0">👹 Boss</button>
-                <button onclick="openHospitalMenu()" class="bg-cyan-700/90 px-3 py-1.5 rounded-full border border-cyan-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏥 Bệnh Viện</button>
-                <button onclick="openSubRoom('egg')" class="bg-emerald-700/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🥚 Ấp Trứng (<span id="egg-count-badge">0</span>)</button>
-                <button onclick="openQuestMenu()" class="bg-yellow-600/90 px-3 py-1.5 rounded-full border border-yellow-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">📜 NV</button>
-                <button onclick="openTowerMenu()" class="bg-purple-600/90 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🗼 Tháp</button>
-                <button onclick="openMarketMenu()" class="bg-amber-600/90 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🛒 Chợ</button>
-                <button onclick="openArenaMenu()" class="bg-red-600/90 px-3 py-1.5 rounded-full border border-red-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">⚔️ PvP</button>
-                <button onclick="openFarmMenu()" class="bg-emerald-600/90 px-3 py-1.5 rounded-full border border-emerald-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap shrink-0">🏡 Trại</button>
-                <button onclick="openTeamMenu()" class="bg-black/85 px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">🎒(<span id="team-count">0</span>/3)</button>
+        <!-- THANH ĐIỀU HƯỚNG GÓC PHẢI BẢN ĐỒ: NHÀ, THÁP, BOSS + MŨI TÊN XỔ XUỐNG -->
+        <div id="map-top-nav" class="z-50 pt-1 pb-1 shrink-0 w-full flex flex-col items-end relative">
+            <!-- Hàng chính bên trái mũi tên: Nhà, Tháp, Boss + Nút mũi tên ▼ -->
+            <div class="flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-2 py-1 rounded-full border border-white/15 shadow-xl">
+                <button onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow cursor-pointer whitespace-nowrap text-amber-200">🏠 Nhà</button>
+                <button onclick="openTowerMenu()" class="bg-purple-600/90 hover:bg-purple-500 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap">🗼 Tháp</button>
+                <button onclick="openWorldBossMenu()" class="bg-amber-700/90 hover:bg-amber-600 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap">👹 Boss</button>
+                <button id="map-nav-toggle" onclick="toggleMapMoreTabs()" class="bg-sky-600/90 hover:bg-sky-500 w-7 h-7 rounded-full border border-sky-300 text-xs font-black text-white flex items-center justify-center shadow cursor-pointer transition-transform" title="Mở rộng menu">▼</button>
+            </div>
+
+            <!-- Menu xổ xuống khi bấm mũi tên ▼ -->
+            <div id="map-nav-dropdown" class="hidden absolute top-11 right-0 z-50 flex-col gap-1.5 min-w-[165px] bg-zinc-900/95 backdrop-blur-md p-2 rounded-2xl border border-sky-400/40 shadow-2xl">
+                <button onclick="selectMapDropdownTab(() => openTeamMenu())" class="w-full text-left bg-zinc-800 hover:bg-zinc-700 px-3 py-2 rounded-xl border border-white/15 text-xs font-bold cursor-pointer flex items-center justify-between">
+                    <span>🎒 Túi / Đội hình</span>
+                    <span class="text-amber-300">(<span id="team-count">0</span>/3)</span>
+                </button>
+                <button onclick="selectMapDropdownTab(() => openMarketMenu())" class="w-full text-left bg-amber-600/90 hover:bg-amber-500 px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold cursor-pointer">
+                    🛒 Chợ
+                </button>
+                <button onclick="selectMapDropdownTab(() => openFarmMenu())" class="w-full text-left bg-emerald-600/90 hover:bg-emerald-500 px-3 py-2 rounded-xl border border-emerald-400 text-xs font-bold cursor-pointer">
+                    🏡 Trang trại
+                </button>
+                <button onclick="selectMapDropdownTab(() => openHospitalMenu())" class="w-full text-left bg-cyan-700/90 hover:bg-cyan-600 px-3 py-2 rounded-xl border border-cyan-400 text-xs font-bold cursor-pointer">
+                    🏥 Bệnh viện
+                </button>
+                <button onclick="selectMapDropdownTab(() => openQuestMenu())" class="w-full text-left bg-yellow-600/90 hover:bg-yellow-500 px-3 py-2 rounded-xl border border-yellow-400 text-xs font-bold cursor-pointer">
+                    📜 Nhiệm vụ
+                </button>
+                <div class="border-t border-white/10 my-0.5"></div>
+                <button onclick="selectMapDropdownTab(() => openSubRoom('egg'))" class="w-full text-left bg-emerald-800/90 hover:bg-emerald-700 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                    <span>🥚 Ấp trứng</span>
+                    <span class="text-emerald-200">(<span id="egg-count-badge">0</span>)</span>
+                </button>
+                <button onclick="selectMapDropdownTab(() => openArenaMenu())" class="w-full text-left bg-red-600/90 hover:bg-red-500 px-3 py-2 rounded-xl border border-red-400 text-xs font-bold cursor-pointer">
+                    ⚔️ Đấu PvP
+                </button>
             </div>
         </div>
 
@@ -3584,6 +3608,39 @@
             if (map) setTimeout(() => map.invalidateSize(), 200);
             setTimeout(() => centerPanorama('home-scroller'), 150);
         };
+
+        function toggleMapMoreTabs(forceState) {
+            const dropdown = document.getElementById('map-nav-dropdown');
+            const toggleBtn = document.getElementById('map-nav-toggle');
+            if (!dropdown || !toggleBtn) return;
+
+            const shouldOpen = typeof forceState === 'boolean'
+                ? forceState
+                : dropdown.classList.contains('hidden');
+
+            if (shouldOpen) {
+                dropdown.classList.remove('hidden');
+                dropdown.classList.add('flex');
+                toggleBtn.innerText = '▲';
+            } else {
+                dropdown.classList.add('hidden');
+                dropdown.classList.remove('flex');
+                toggleBtn.innerText = '▼';
+            }
+        }
+
+        function selectMapDropdownTab(actionFn) {
+            toggleMapMoreTabs(false);
+            if (typeof actionFn === 'function') actionFn();
+        }
+
+        document.addEventListener('click', (e) => {
+            const navWrap = document.getElementById('map-top-nav');
+            if (navWrap && !navWrap.contains(e.target)) {
+                toggleMapMoreTabs(false);
+            }
+        });
+        
     </script>
 </body>
 </html>
