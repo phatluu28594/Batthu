@@ -196,9 +196,10 @@
 </head>
 <body class="text-white relative h-screen w-screen overflow-hidden">
 
-    <div id="youtube-audio-container" style="position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none;">
-        <div id="yt-player"></div>
-    </div>
+    <!-- TRÌNH PHÁT NHẠC NỀN MP3 -->
+    <audio id="bg-music-player" loop preload="auto">
+        <source id="bg-music-source" src="./assets/nhac_cho.mp3" type="audio/mpeg">
+    </audio>
 
     <!-- BẢNG YÊU CẦU MỞ TOÀN MÀN HÌNH (FULLSCREEN / F11) -->
     <div id="fullscreen-prompt-overlay" class="hidden absolute inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
@@ -599,47 +600,54 @@
         const LOBBY_YOUTUBE_ID = 'b-FHfiM8ILo';
         const BATTLE_YOUTUBE_ID = '9zMW4nO7CIo';
 
-        function onYouTubeIframeAPIReady() {
-            try {
-                ytPlayer = new YT.Player('yt-player', {
-                    height: '0', width: '0', videoId: LOBBY_YOUTUBE_ID,
-                    playerVars: { 'autoplay': 1, 'loop': 1, 'playlist': LOBBY_YOUTUBE_ID, 'controls': 0 },
-                    events: { 'onReady': (e) => { isMusicReady = true; e.target.setVolume(50); } }
-                });
-            } catch(e){}
-        }
+        let isMusicMuted = localStorage.getItem('ar_music_muted') === 'true';
+        let currentMusicTrack = '';
 
-        let isMusicPlaying = false;
-        document.addEventListener('click', () => {
-            if (!isMusicPlaying && isMusicReady && ytPlayer && ytPlayer.playVideo) { 
-                isMusicPlaying = true; 
-                try { ytPlayer.playVideo(); } catch(e){} 
+        const gameMusicTracks = {
+            map: './assets/nhac_cho.mp3',       // Nhạc nền ở Nhà Chính & Bản đồ GPS
+            battle: './assets/nhac_cho.mp3'     // Đổi sang file nhạc chiến đấu riêng nếu có, còn không thì để giống nhac_cho.mp3
+        };
+
+        function switchGameMusic(scene = 'map') {
+            const player = document.getElementById('bg-music-player');
+            const source = document.getElementById('bg-music-source');
+            if (!player || !source) return;
+
+            const targetSrc = gameMusicTracks[scene] || gameMusicTracks.map;
+            if (currentMusicTrack !== targetSrc) {
+                currentMusicTrack = targetSrc;
+                source.src = targetSrc;
+                player.load();
             }
-        }, { once: true });
 
-        function switchGameMusic(scene) {
-            if (!isMusicReady || !ytPlayer || !ytPlayer.loadVideoById) return;
-            try {
-                if (scene === 'battle') ytPlayer.loadVideoById(BATTLE_YOUTUBE_ID);
-                else if (scene === 'map') ytPlayer.loadVideoById(LOBBY_YOUTUBE_ID);
-            } catch(e){}
+            player.volume = 0.55;
+            if (!isMusicMuted) {
+                player.play().catch(() => {});
+            }
         }
 
-        const possibleTraits = [
-            { name: 'Khả năng Làm choáng', icon: '💫 Choáng', type: 'stun', chance: 20 },
-            { name: 'Đòn đánh Trúng độc', icon: '🟢 Độc', type: 'poison', chance: 25 },
-            { name: 'Thiêu đốt diện rộng', icon: '🔥 Cháy', type: 'burn', chance: 22 },
-            { name: 'Làm chậm đối thủ', icon: '❄️ Chậm', type: 'slow', chance: 25 },
-            { name: 'Hộ thân Buff Giáp', icon: '🛡️ Buff', type: 'shield', chance: 30 }
-        ];
+        function toggleGameMusic() {
+            const player = document.getElementById('bg-music-player');
+            isMusicMuted = !isMusicMuted;
+            localStorage.setItem('ar_music_muted', isMusicMuted);
+            if (!player) return;
 
-        const rarities = [
-            { name: 'Thường', color: 'text-zinc-300', bg: 'border-zinc-600', badge: '⚪ Trang', rate: 50, statMultiplier: 1.0 },
-            { name: 'Hiếm', color: 'text-emerald-400', bg: 'border-emerald-500', badge: '🟢 Xanh', rate: 25, statMultiplier: 1.3 },
-            { name: 'Cực Hiếm', color: 'text-yellow-400', bg: 'border-yellow-500', badge: '🟡 Vàng', rate: 15, statMultiplier: 1.6 },
-            { name: 'Huyền Thoại', color: 'text-red-500', bg: 'border-red-500', badge: '🔴 Đỏ', rate: 7, statMultiplier: 2.0 },
-            { name: 'Thần Thánh', color: 'text-purple-400', bg: 'border-purple-500', badge: '🟣 Tím', rate: 3, statMultiplier: 2.5 }
-        ];
+            if (isMusicMuted) {
+                player.pause();
+            } else {
+                player.play().catch(() => {});
+            }
+            const btn = document.getElementById('btn-toggle-music');
+            if (btn) btn.innerText = isMusicMuted ? '🔇' : '🔊';
+        }
+
+        document.addEventListener('click', () => {
+            const player = document.getElementById('bg-music-player');
+            if (player && !isMusicMuted && player.paused) {
+                if (!currentMusicTrack) switchGameMusic('map');
+                else player.play().catch(() => {});
+            }
+        });
 
         function getRandomRarity() {
             let roll = Math.random() * 100;
