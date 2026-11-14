@@ -967,6 +967,8 @@
                 sheet: 'assets_boss/boss-unicorn.png',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                padTop: 0.04,
+                padBottom: 0.08,
                 scale: 2.8
             }
             
@@ -1014,13 +1016,21 @@
 
                     let fw = img.naturalWidth / cols;
                     let fh = img.naturalHeight / totalRows;
-                    let sx = col * fw;
-                    let sy = row * fh;
+
+                    // Cắt lùi mép trên/dưới một chút để không dính chi tiết thừa từ hàng kế bên
+                    let padTop = fh * (cfg.padTop ?? 0.03);
+                    let padBottom = fh * (cfg.padBottom ?? 0.06);
+                    let padX = fw * (cfg.padX ?? 0.02);
+
+                    let sx = col * fw + padX;
+                    let sy = row * fh + padTop;
+                    let sw = fw - padX * 2;
+                    let sh = fh - padTop - padBottom;
 
                     ctx.save();
                     ctx.translate(x, y);
                     if (needFlip) ctx.scale(-1, 1);
-                    ctx.drawImage(img, sx, sy, fw, fh, -drawW / 2, -drawH / 2, drawW, drawH);
+                    ctx.drawImage(img, sx, sy, sw, sh, -drawW / 2, -drawH / 2, drawW, drawH);
                     ctx.restore();
                     return;
                 }
