@@ -737,8 +737,8 @@
         ];
 
         const rarities = [
-            { name: 'Thường', color: 'text-zinc-300', bg: 'border-zinc-600', badge: '⚪ Trắng', rate: 50, statMultiplier: 1.0 },     // 54% (44% + 10% bù tròn 100%)
-            { name: 'Hiếm', color: 'text-emerald-400', bg: 'border-emerald-500', badge: '🟢 Xanh', rate: 34, statMultiplier: 1.3 },     // 30%
+            { name: 'Thường', color: 'text-zinc-300', bg: 'border-zinc-600', badge: '⚪ Trắng', rate: 54, statMultiplier: 1.0 },     // 54% (44% + 10% bù tròn 100%)
+            { name: 'Hiếm', color: 'text-emerald-400', bg: 'border-emerald-500', badge: '🟢 Xanh', rate: 30, statMultiplier: 1.3 },     // 30%
             { name: 'Cực Hiếm', color: 'text-yellow-400', bg: 'border-yellow-500', badge: '🟡 Vàng', rate: 10, statMultiplier: 1.6 }, // 10%
             { name: 'Huyền Thoại', color: 'text-red-500', bg: 'border-red-500', badge: '🔴 Đỏ', rate: 5, statMultiplier: 2.0 },      // 5%
             { name: 'Thần Thánh', color: 'text-purple-400', bg: 'border-purple-500', badge: '🟣 Tím', rate: 1, statMultiplier: 2.5 }    // 1%
@@ -4410,16 +4410,12 @@
                 // Vẽ hiệu ứng Độc / Cháy / Choáng / Chậm lên Boss
                 if (!isEnemyDead) drawSpriteStatusFX(battleCtx, enemyStatus, finalEnX, finalEnY, idleTick, mode === 'boss' ? 140 : 120);
 
-                activeTeam.forEach((pet, i) => {
-                    let isPetDead = teamHpList[i] <= 0;
-                    let isAttacking = (attacker && attacker.side === 'team' && attacker.index === i);
-                    let isHit = teamHitShake[i] > 0;
-                    let knockback = 0;
-
-                    if (teamSynergy && activeTeam.length === 3 && teamSlots.length === 3) {
+                // Vẽ tam giác trận pháp đội hình 3 thú (nếu kích hoạt)
+                if (teamSynergy && activeTeam.length === 3 && teamSlots.length === 3) {
                     drawTeamSynergyField(battleCtx, teamSynergy, teamSlots, idleTick);
                 }
 
+                // Vẽ đội hình linh thú phe mình (1 vòng lặp duy nhất)
                 activeTeam.forEach((pet, i) => {
                     let isPetDead = teamHpList[i] <= 0;
                     let isAttacking = (attacker && attacker.side === 'team' && attacker.index === i);
