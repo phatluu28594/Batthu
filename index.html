@@ -722,6 +722,92 @@
         farm = sanitizePetsData(farm);
         restingPets = sanitizePetsData(restingPets);
         trainingPoles = trainingPoles.map(p => p ? sanitizePetsData([p])[0] : null);
+
+        // ==========================================
+        // HỆ THỐNG 3 ẤN KÝ / TRANG BỊ + ĐỘT PHÁ ĐỒNG BỘ (1 TẤM GEARS.PNG 11x3)
+        // ==========================================
+        const GEAR_SHEET_URL = 'assets_gear/gears.png';
+        const GEAR_SHEET_COLS = 3;   // Cột 0: Nanh Vuốt, Cột 1: Giáp Vảy, Cột 2: Linh Châu
+        const GEAR_SHEET_ROWS = 11;  // 11 hàng: Bậc 0 -> Bậc 10
+
+        const gearConfigs = {
+            claw: {
+                key: 'claw',
+                baseName: 'Nanh Vuốt',
+                fallbackEmoji: '🗡️',
+                tiers: [
+                    'Nanh Sắt Mòn', 'Vuốt Đồng Đen', 'Trảo Bạc Sáng', 'Liệt Hỏa Trảo', 'Huyết Lang Trảo',
+                    'Bạch Hổ Thần Trảo', 'Kim Cương Phá Giáp', 'Thiên Lôi Thần Trảo', 'Thái Cổ Long Trảo', 'Truyền Thuyết Ma Trảo', 'Vô Cực Thần Trảo'
+                ]
+            },
+            armor: {
+                key: 'armor',
+                baseName: 'Giáp Vảy',
+                fallbackEmoji: '🛡️',
+                tiers: [
+                    'Vảy Da Thô', 'Giáp Đồng Rỉ', 'Lân Giáp Bạc', 'Huyền Thiết Giáp', 'Băng Tâm Thần Giáp',
+                    'Huyền Vũ Trọng Giáp', 'Hoàng Kim Thánh Giáp', 'Phượng Hoàng Vũ Giáp', 'Thái Cổ Long Lân', 'Bất Diệt Ma Giáp', 'Vô Cực Thần Giáp'
+                ]
+            },
+            orb: {
+                key: 'orb',
+                baseName: 'Linh Châu',
+                fallbackEmoji: '🔮',
+                tiers: [
+                    'Đá Mờ Đục', 'Ngọc Lục Bảo', 'Lam Thủy Châu', 'Xích Hỏa Châu', 'Tử Lôi Linh Châu',
+                    'Nhật Nguyệt Tinh Châu', 'Thiên Hà Thần Châu', 'Hỗn Độn Linh Châu', 'Thái Cổ Long Châu', 'Vĩnh Hằng Ma Châu', 'Vô Cực Thần Châu'
+                ]
+            }
+        };
+
+        function ensurePetGears(pet) {
+            if (!pet) return;
+            if (!pet.gears) {
+                pet.gears = { claw: 0, armor: 0, orb: 0 };
+            } else {
+                pet.gears.claw = pet.gears.claw ?? 0;
+                pet.gears.armor = pet.gears.armor ?? 0;
+                pet.gears.orb = pet.gears.orb ?? 0;
+            }
+            if (pet.gearTier === undefined) {
+                let minLv = Math.min(pet.gears.claw, pet.gears.armor, pet.gears.orb);
+                pet.gearTier = Math.min(10, Math.floor(minLv / 10));
+            }
+        }
+
+        function getGearTierInfo(slotKey, tier) {
+            const cfg = gearConfigs[slotKey];
+            const safeTier = Math.max(0, Math.min(10, tier || 0));
+            const colIndex = slotKey === 'claw' ? 0 : (slotKey === 'armor' ? 1 : 2);
+
+            const posX = GEAR_SHEET_COLS > 1 ? (colIndex / (GEAR_SHEET_COLS - 1)) * 100 : 0;
+            const posY = GEAR_SHEET_ROWS > 1 ? (safeTier / (GEAR_SHEET_ROWS - 1)) * 100 : 0;
+
+            return {
+                tier: safeTier,
+                name: cfg.tiers[safeTier] || cfg.baseName,
+                bgStyle: `background-image: url('${GEAR_SHEET_URL}'); background-size: ${GEAR_SHEET_COLS * 100}% ${GEAR_SHEET_ROWS * 100}%; background-position: ${posX}% ${posY}%; background-repeat: no-repeat;`,
+                fallbackEmoji: cfg.fallbackEmoji
+            };
+        }
+
+        function getPetGearBonus(pet) {
+            ensurePetGears(pet);
+            const g = pet.gears;
+            const tier = pet.gearTier || 0;
+            return {
+                atk: g.claw * 6 + tier * 15,
+                armorBreak: Math.floor(g.claw * 0.35) + tier,
+                maxHp: g.armor * 25 + tier * 60,
+                blockRate: Math.floor(g.armor * 0.35) + tier,
+                speed: Math.floor(g.orb * 1.2) + tier * 3,
+                critRate: Math.floor(g.orb * 0.35) + tier
+            };
+        }
+
+        [team, farm, restingPets, trainingPoles].forEach(list => {
+            if (Array.isArray(list)) list.forEach(p => ensurePetGears(p));
+        });
         
         const allMonsters = [
             { id: 101, name: 'Gà Ta', emoji: '🐔', element: 'Kim', hp: 100, maxHp: 100, atk: 35, speed: 55 },
@@ -2242,6 +2328,7 @@
         function openPetDetail(index) {
             let pet = team[index];
             if (!pet) return;
+            ensurePetGears(pet);
             if (!pet.trait) {
                 pet.trait = possibleTraits[Math.floor(Math.random() * possibleTraits.length)];
                 saveGameData();
@@ -2251,42 +2338,121 @@
             if (!pet.gender) pet.gender = Math.random() < 0.5 ? 'Đực' : 'Cái';
 
             let heartsStr = '❤️'.repeat(pet.hearts || 3);
+            let bonus = getPetGearBonus(pet);
+            let currentTier = pet.gearTier || 0;
+            let tierCapLv = currentTier < 10 ? (currentTier + 1) * 10 : 100;
+
+            let allReachedCap = (pet.gears.claw >= tierCapLv) && (pet.gears.armor >= tierCapLv) && (pet.gears.orb >= tierCapLv);
+            let isMaxTier = currentTier >= 10;
+
+            let gearsHtml = ['claw', 'armor', 'orb'].map(slotKey => {
+                let lv = pet.gears[slotKey];
+                let info = getGearTierInfo(slotKey, currentTier);
+                let upgradeCost = 100 + lv * 35;
+                let reachedCurrentCap = lv >= tierCapLv;
+
+                let statDesc = slotKey === 'claw'
+                    ? `+${lv * 6 + currentTier * 15} Công`
+                    : slotKey === 'armor'
+                    ? `+${lv * 25 + currentTier * 60} Máu`
+                    : `+${Math.floor(lv * 1.2) + currentTier * 3} Tốc`;
+
+                let tierBorder = currentTier >= 8 ? 'border-purple-400 bg-purple-950/30'
+                    : currentTier >= 5 ? 'border-amber-400 bg-amber-950/30'
+                    : currentTier >= 2 ? 'border-cyan-400 bg-cyan-950/20'
+                    : 'border-zinc-600 bg-zinc-900/90';
+
+                let btnText = isMaxTier && reachedCurrentCap
+                    ? 'MAX 100'
+                    : reachedCurrentCap
+                    ? '🔒 Chờ Đột Phá'
+                    : `⬆️ +1 (${upgradeCost}🪙)`;
+
+                return `
+                <div class="flex flex-col items-center justify-between p-2 rounded-xl border ${tierBorder} text-center">
+                    <div class="text-[10px] font-extrabold ${reachedCurrentCap ? 'text-emerald-400' : 'text-amber-300'} mb-1">
+                        Cấp ${lv}/${tierCapLv}
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-black/60 border border-white/15 flex items-center justify-center overflow-hidden mb-1 relative">
+                        <div class="w-10 h-10" style="${info.bgStyle}"></div>
+                        <span class="absolute bottom-0 right-0 bg-black/80 text-[8px] font-black text-yellow-300 px-1 rounded-tl">Bậc ${currentTier}</span>
+                    </div>
+                    <div class="text-[10px] font-bold text-white leading-tight line-clamp-1">${info.name}</div>
+                    <div class="text-[9px] text-emerald-300 mt-0.5 leading-tight">${statDesc}</div>
+                    <button onclick="upgradePetGear(${index}, '${slotKey}')" ${reachedCurrentCap ? 'disabled' : ''}
+                        class="mt-1.5 w-full py-1 rounded-lg text-[10px] font-extrabold cursor-pointer transition active:scale-95 ${reachedCurrentCap ? 'bg-zinc-700 text-zinc-400 cursor-not-allowed' : 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black shadow'}">
+                        ${btnText}
+                    </button>
+                </div>`;
+            }).join('');
+
+            let breakthroughCostGold = (currentTier + 1) * 500;
+            let breakthroughCostStone = currentTier + 1;
+            let stoneKeyMap = { Kim: 'stoneKim', Moc: 'stoneMoc', Thuy: 'stoneThuy', Hoa: 'stoneHoa', Tho: 'stoneTho' };
+            let reqStoneKey = stoneKeyMap[pet.element] || 'stoneKim';
+            let ownedStone = inventory[reqStoneKey] || 0;
+
+            let breakthroughBarHtml = '';
+            if (isMaxTier && allReachedCap) {
+                breakthroughBarHtml = `
+                <div class="mt-2 w-full py-1.5 rounded-xl bg-purple-950/60 border border-purple-400/60 text-center text-[11px] font-black text-purple-200">
+                    👑 ĐÃ ĐẠT CẢNH GIỚI TỐI THƯỢNG (BẬC 10 - CẤP 100)
+                </div>`;
+            } else {
+                breakthroughBarHtml = `
+                <button onclick="breakthroughPetGears(${index})" ${allReachedCap ? '' : 'disabled'}
+                    class="mt-2 w-full py-2 rounded-xl text-xs font-black tracking-wide transition flex items-center justify-center gap-1.5 ${allReachedCap
+                        ? 'bg-gradient-to-r from-purple-600 via-pink-500 to-amber-500 hover:brightness-110 text-white shadow-lg animate-pulse cursor-pointer'
+                        : 'bg-zinc-900/90 border border-zinc-700 text-zinc-400 cursor-not-allowed'}">
+                    ${allReachedCap
+                        ? `🌟 ĐỘT PHÁ BẬC ${currentTier + 1} (${breakthroughCostGold}🪙 + ${breakthroughCostStone} Đá ${pet.element} [Có: ${ownedStone}])`
+                        : `🔒 Nâng đủ 3 món lên Cấp ${tierCapLv} để Đột Phá Bậc ${currentTier + 1}`}
+                </button>`;
+            }
+
             const content = document.getElementById('modal-content');
             content.innerHTML = `
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-lg">🐾 Trang Cá Nhân Linh Thú</h3>
-                <button onclick="openTeamMenu()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">‹ Quay lại</button>
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-base">🐾 Trang Cá Nhân Linh Thú</h3>
+                <button onclick="openTeamMenu()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-xs cursor-pointer border border-zinc-600">‹ Quay lại</button>
             </div>
-            <div class="flex flex-col items-center bg-zinc-800 p-4 rounded-2xl border ${pet.rarity.bg} mb-4 text-center">
-                <div class="mb-2 flex justify-center">${getPetSpriteHtml(pet, 'walk', 110)}</div>
-                <div class="text-base font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${Math.floor(pet.level)}</span></div>
-                <div class="text-xs font-bold ${elementNames[pet.element]?.color} mt-0.5">Hệ Nguyên Tố: ${elementNames[pet.element]?.label}</div>
-                <div class="text-sm mt-1">Trái tim: ${heartsStr}</div>
-                <div class="text-xs text-amber-300 mt-1">Đặc kỹ: ${pet.trait.icon} ${pet.trait.name} (${pet.trait.chance}%)</div>
+            <div class="flex flex-col items-center bg-zinc-800 p-3.5 rounded-2xl border ${pet.rarity.bg} mb-3 text-center">
+                <div class="mb-1 flex justify-center">${getPetSpriteHtml(pet, 'walk', 92)}</div>
+                <div class="text-sm font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${Math.floor(pet.level)}</span></div>
+                <div class="text-[11px] font-bold ${elementNames[pet.element]?.color}">Hệ: ${elementNames[pet.element]?.label} • Tim: ${heartsStr}</div>
+                <div class="text-[11px] text-amber-300 mt-0.5">Đặc kỹ: ${pet.trait.icon} ${pet.trait.name} (${pet.trait.chance}%)</div>
+
+                <!-- KHUNG 3 ẤN KÝ & ĐỘT PHÁ ĐỒNG BỘ -->
+                <div class="w-full mt-3 text-left">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-xs font-extrabold text-cyan-300">⚜️ Bảo Vật Bản Mệnh (Bậc ${currentTier}/10)</span>
+                        <span class="text-[10px] text-yellow-400 font-bold">Vàng: ${playerCoins}🪙</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        ${gearsHtml}
+                    </div>
+                    ${breakthroughBarHtml}
+                </div>
                 
-                <div class="w-full space-y-2 mt-3 text-left text-xs bg-zinc-900/80 p-3 rounded-xl border border-zinc-700">
+                <div class="w-full space-y-1.5 mt-3 text-left text-[11px] bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-700">
                     <div>
-                        <div class="flex justify-between mb-1"><span>Máu (HP):</span><span class="font-bold text-emerald-400">${Math.floor(pet.hp)} / ${pet.maxHp}</span></div>
-                        <div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div class="bg-emerald-500 h-full" style="width: ${(pet.hp/pet.maxHp)*100}%"></div></div>
+                        <div class="flex justify-between mb-0.5"><span>Máu (HP):</span><span class="font-bold text-emerald-400">${Math.floor(pet.hp)} / ${pet.maxHp + bonus.maxHp} <span class="text-[9px] text-cyan-300">(+${bonus.maxHp})</span></span></div>
+                        <div class="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden"><div class="bg-emerald-500 h-full" style="width: ${Math.min(100, (pet.hp / (pet.maxHp + bonus.maxHp)) * 100)}%"></div></div>
                     </div>
-                    <div>
-                        <div class="flex justify-between mb-1"><span>Độ no:</span><span class="font-bold text-yellow-400">${pet.hunger}%</span></div>
-                        <div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div class="bg-yellow-500 h-full" style="width: ${pet.hunger}%"></div></div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between mb-1"><span>Hạnh phúc:</span><span class="font-bold text-pink-400">${pet.happiness}%</span></div>
-                        <div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div class="bg-pink-500 h-full" style="width: ${pet.happiness}%"></div></div>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div>Độ no: <span class="font-bold text-yellow-400">${pet.hunger}%</span></div>
+                        <div>Hạnh phúc: <span class="font-bold text-pink-400">${pet.happiness}%</span></div>
                     </div>
                 </div>
 
-                <div class="w-full grid grid-cols-2 gap-2 mt-3 text-xs bg-zinc-900/80 p-3 rounded-xl border border-zinc-700 text-left">
-                    <div>⚔️ ATK: <span class="font-bold text-red-400">${Math.floor(pet.atk)}</span></div>
-                    <div>💥 Chí mạng: <span class="font-bold text-blue-400">${pet.critRate ?? 20}%</span></div>
-                    <div>🛡️ Đỡ đòn: <span class="font-bold text-purple-400">${pet.blockRate ?? 15}%</span></div>
-                    <div>🗡️ Phá giáp: <span class="font-bold text-rose-400">${pet.armorBreak ?? 15}%</span></div>
+                <div class="w-full grid grid-cols-2 gap-1.5 mt-2.5 text-[11px] bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-700 text-left">
+                    <div>⚔️ ATK: <span class="font-bold text-red-400">${Math.floor(pet.atk + bonus.atk)}</span> <span class="text-[9px] text-cyan-300">(+${bonus.atk})</span></div>
+                    <div>💥 Chí mạng: <span class="font-bold text-blue-400">${(pet.critRate ?? 20) + bonus.critRate}%</span></div>
+                    <div>🛡️ Đỡ đòn: <span class="font-bold text-purple-400">${(pet.blockRate ?? 15) + bonus.blockRate}%</span></div>
+                    <div>🗡️ Phá giáp: <span class="font-bold text-rose-400">${(pet.armorBreak ?? 15) + bonus.armorBreak}%</span></div>
                     <div>🏃 Né tránh: <span class="font-bold text-emerald-400">${pet.dodgeRate ?? 15}%</span></div>
                     <div>🎯 Chính xác: <span class="font-bold text-amber-400">${pet.accuracy ?? 90}%</span></div>
-                    <div>⚡ Tốc độ: <span class="font-bold text-cyan-400">${pet.speed ?? 50}</span></div>
+                    <div>⚡ Tốc độ: <span class="font-bold text-cyan-400">${(pet.speed ?? 50) + bonus.speed}</span> <span class="text-[9px] text-cyan-300">(+${bonus.speed})</span></div>
                     <div>🔥 Liên kích: <span class="font-bold text-orange-400">${pet.comboRate ?? 20}%</span></div>
                 </div>
             </div>
@@ -2295,6 +2461,84 @@
                 <button onclick="petAction(${index}, 'play')" class="bg-amber-600 p-2 rounded font-bold text-xs cursor-pointer">🎾 Chơi (${inventory.toy})</button>
                 <button onclick="petAction(${index}, 'train')" class="bg-indigo-600 p-2 rounded font-bold text-xs cursor-pointer">🏋️ Tập (${inventory.trainer})</button>
             </div>`;
+        }
+
+        function upgradePetGear(teamIndex, slotKey) {
+            let pet = team[teamIndex];
+            if (!pet) return;
+            ensurePetGears(pet);
+
+            let currentTier = pet.gearTier || 0;
+            let tierCapLv = currentTier < 10 ? (currentTier + 1) * 10 : 100;
+            let currentLv = pet.gears[slotKey];
+
+            if (currentLv >= tierCapLv) {
+                alert(`🔒 Món đồ này đã đạt giới hạn Cấp ${tierCapLv} của Bậc ${currentTier}!\nHãy nâng đủ cả 3 món lên Cấp ${tierCapLv} rồi bấm Đột Phá.`);
+                return;
+            }
+
+            let cost = 100 + currentLv * 35;
+            if (playerCoins < cost) {
+                alert(`⚠️ Không đủ ${cost} Vàng để nâng cấp!`);
+                return;
+            }
+
+            playerCoins -= cost;
+            pet.gears[slotKey] = currentLv + 1;
+
+            if (slotKey === 'armor') {
+                pet.hp = Math.min(pet.maxHp + getPetGearBonus(pet).maxHp, pet.hp + 25);
+            }
+
+            saveGameData();
+            openPetDetail(teamIndex);
+        }
+
+        function breakthroughPetGears(teamIndex) {
+            let pet = team[teamIndex];
+            if (!pet) return;
+            ensurePetGears(pet);
+
+            let currentTier = pet.gearTier || 0;
+            if (currentTier >= 10) return;
+
+            let tierCapLv = (currentTier + 1) * 10;
+            let allReachedCap = (pet.gears.claw >= tierCapLv) && (pet.gears.armor >= tierCapLv) && (pet.gears.orb >= tierCapLv);
+
+            if (!allReachedCap) {
+                alert(`⚠️ Cả 3 món trang bị phải cùng đạt Cấp ${tierCapLv} mới có thể tiến hành Đột Phá!`);
+                return;
+            }
+
+            let costGold = (currentTier + 1) * 500;
+            let costStone = currentTier + 1;
+            let stoneKeyMap = { Kim: 'stoneKim', Moc: 'stoneMoc', Thuy: 'stoneThuy', Hoa: 'stoneHoa', Tho: 'stoneTho' };
+            let reqStoneKey = stoneKeyMap[pet.element] || 'stoneKim';
+
+            if (playerCoins < costGold) {
+                alert(`⚠️ Không đủ ${costGold} Vàng để Đột Phá Bậc ${currentTier + 1}!`);
+                return;
+            }
+            if ((inventory[reqStoneKey] || 0) < costStone) {
+                alert(`⚠️ Cần ${costStone} viên Đá Hệ ${pet.element} để Đột Phá! (Hãy vào Chợ để mua thêm)`);
+                return;
+            }
+
+            playerCoins -= costGold;
+            inventory[reqStoneKey] -= costStone;
+            localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+
+            pet.gearTier = currentTier + 1;
+            pet.hp = pet.maxHp + getPetGearBonus(pet).maxHp;
+
+            saveGameData();
+            openPetDetail(teamIndex);
+
+            let newClaw = getGearTierInfo('claw', pet.gearTier).name;
+            let newArmor = getGearTierInfo('armor', pet.gearTier).name;
+            let newOrb = getGearTierInfo('orb', pet.gearTier).name;
+
+            alert(`🌟 ĐỘT PHÁ BẬC ${pet.gearTier} THÀNH CÔNG!\n\nHình thái 3 bảo vật tiến hóa thành:\n🗡️ ${newClaw}\n🛡️ ${newArmor}\n🔮 ${newOrb}\n\nMở khóa giới hạn nâng cấp lên Cấp ${(pet.gearTier + 1) * 10}!`);
         }
 
         function petAction(index, action) {
@@ -2947,7 +3191,20 @@
             document.getElementById('battle-screen').classList.remove('hidden');
             switchGameMusic('battle');
 
-            let activeTeam = mode === 'boss' ? [...team] : [team[0]];
+            let activeTeam = (mode === 'boss' ? [...team] : [team[0]]).map(p => {
+            let b = getPetGearBonus(p);
+            return {
+                ...p,
+                _ref: p,
+                maxHp: p.maxHp + b.maxHp,
+                atk: p.atk + b.atk,
+                speed: (p.speed || 50) + b.speed,
+                critRate: (p.critRate ?? 20) + b.critRate,
+                blockRate: (p.blockRate ?? 15) + b.blockRate,
+                armorBreak: (p.armorBreak ?? 15) + b.armorBreak
+                };
+            });
+            
             let teamHpList = activeTeam.map(p => p.hp);
             let teamMaxHpTotal = activeTeam.reduce((sum, p) => sum + p.maxHp, 0);
 
@@ -3171,6 +3428,7 @@
                                     let enDmg = Math.max(1, Math.floor(rawDmg));
                                     teamHpList[targetIdx] = Math.max(0, teamHpList[targetIdx] - enDmg);
                                     activeTeam[targetIdx].hp = teamHpList[targetIdx];
+                                    if (activeTeam[targetIdx]._ref) activeTeam[targetIdx]._ref.hp = teamHpList[targetIdx];
                                     teamHitShake[targetIdx] = 12;
 
                                     let tags = `${isCrit ? '💥' : ''}${isBlocked ? '🛡️' : ''}${attacker.isComboHit ? '🔥' : ''}`;
