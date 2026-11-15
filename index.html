@@ -864,163 +864,104 @@
         });
         
         const allMonsters = [
-            { id: 101, name: 'Gà Ta', emoji: '🐔', element: 'Kim', hp: 100, maxHp: 100, atk: 35, speed: 55 },
-            { id: 102, name: 'Vịt Cỏ', emoji: '🦆', element: 'Thuy', hp: 90, maxHp: 90, atk: 30, speed: 50 },
-            { id: 201, name: 'Chó Vàng', emoji: '🐕', element: 'Tho', hp: 120, maxHp: 120, atk: 45, speed: 60 },
-            { id: 202, name: 'Mèo Mướp', emoji: '🐈', element: 'Moc', hp: 110, maxHp: 110, atk: 42, speed: 70 },
-            { id: 203, name: 'Heo Ủn Ỉn', emoji: '🐖', element: 'Tho', hp: 140, maxHp: 140, atk: 38, speed: 40 },
-            { id: 302, name: 'Chim Lửa', emoji: '🐦', element: 'Hoa', hp: 100, maxHp: 100, atk: 55, speed: 85 },
-            { id: 401, name: 'Rồng Nước', emoji: '🐉', element: 'Thuy', hp: 180, maxHp: 180, atk: 65, speed: 65 },
-            { id: 402, name: 'Rồng Lửa', emoji: '🐲', element: 'Hoa', hp: 280, maxHp: 380, atk: 85, speed: 85 },
-            { id: 403, name: 'Hồ Ly', emoji: '🦊', element: 'Hoa', hp: 220, maxHp: 220, atk: 78, speed: 95 },
-            { id: 404, name: 'Rắn', emoji: '🐍', element: 'Thuy', hp: 200, maxHp: 200, atk: 75, speed: 88 },
-            { id: 405, name: 'Chim Trĩ', emoji: '🦚', element: 'Kim', hp: 210, maxHp: 210, atk: 76, speed: 92 },
-            { id: 406, name: 'Bướm Đêm', emoji: '🦋', element: 'Moc', hp: 185, maxHp: 185, atk: 70, speed: 98 }
+            { id: 101, name: 'Gà Lửa', emoji: '🐔', element: 'Hoa', hp: 110, maxHp: 110, atk: 42, speed: 62 },
+            { id: 102, name: 'Heo Hồng', emoji: '🐖', element: 'Tho', hp: 155, maxHp: 155, atk: 38, speed: 45 },
+            { id: 103, name: 'Chuột Xám', emoji: '🐭', element: 'Thuy', hp: 100, maxHp: 100, atk: 44, speed: 88 },
+            { id: 104, name: 'Kiến Lửa', emoji: '🐜', element: 'Hoa', hp: 105, maxHp: 105, atk: 48, speed: 76 },
+            { id: 105, name: 'Ong Vàng', emoji: '🐝', element: 'Moc', hp: 100, maxHp: 100, atk: 50, speed: 92 },
+            { id: 201, name: 'Chó Husky', emoji: '🐕', element: 'Thuy', hp: 145, maxHp: 145, atk: 56, speed: 74 },
+            { id: 202, name: 'Rùa Xanh', emoji: '🐢', element: 'Thuy', hp: 190, maxHp: 190, atk: 45, speed: 40 },
+            { id: 203, name: 'Bướm Lam', emoji: '🦋', element: 'Thuy', hp: 125, maxHp: 125, atk: 58, speed: 95 },
+            { id: 301, name: 'Đại Bàng', emoji: '🦅', element: 'Kim', hp: 175, maxHp: 175, atk: 72, speed: 90 },
+            { id: 302, name: 'Sói Tuyết', emoji: '🐺', element: 'Thuy', hp: 185, maxHp: 185, atk: 76, speed: 86 }
         ];
         
         let currentWildMonster = null;
 
         // ==========================================
-        // CẤU HÌNH PNG SPRITE CHO TOÀN BỘ 12 LINH THÚ
-        // Hỗ trợ cả 2 chuẩn:
-        // 1) 5 file tách rời (_idle, _walk, _attack, _hit, _death)
-        // 2) 1 file gộp 40 tư thế (singleSheet: true, 8 cột x 5 hàng)
+        // CẤU HÌNH 10 LINH THÚ SPRITE SHEET 5x8 (40 FRAMES)
         // ==========================================
         const petSpriteAssets = {};
         const spriteConfigs = {
-            'Gà Ta': {
+            'Gà Lửa': {
                 facing: 'right',
-                idle: 'assets/chicken_idle.png',
-                walk: 'assets/chicken_walk.png',
-                attack: 'assets/chicken_attack.png',
-                hit: 'assets/chicken_hit.png',
-                death: 'assets/chicken_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.0
+                singleSheet: true,
+                sheet: 'assets/ga.png',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.55
             },
-            'Vịt Cỏ': {
+            'Heo Hồng': {
                 facing: 'right',
-                idle: 'assets/duck_idle.png',
-                walk: 'assets/duck_walk.png',
-                attack: 'assets/duck_attack.png',
-                hit: 'assets/duck_hit.png',
-                death: 'assets/duck_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.0
+                singleSheet: true,
+                sheet: 'assets/heo.png',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.55
             },
-            'Chó Vàng': {
+            'Chuột Xám': {
                 facing: 'right',
-                idle: 'assets/dog_idle.png',
-                walk: 'assets/dog_walk.png',
-                attack: 'assets/dog_attack.png',
-                hit: 'assets/dog_hit.png',
-                death: 'assets/dog_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.1
+                singleSheet: true,
+                sheet: 'assets/chuot.png',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.5
             },
-            'Mèo Mướp': {
+            'Kiến Lửa': {
                 facing: 'right',
-                idle: 'assets/cat_idle.png',
-                walk: 'assets/cat_walk.png',
-                attack: 'assets/cat_attack.png',
-                hit: 'assets/cat_hit.png',
-                death: 'assets/cat_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.0
+                singleSheet: true,
+                sheet: 'assets/kien.png',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.5
             },
-            'Heo Ủn Ỉn': {
+            'Ong Vàng': {
                 facing: 'right',
-                idle: 'assets/pig_idle.png',
-                walk: 'assets/pig_walk.png',
-                attack: 'assets/pig_attack.png',
-                hit: 'assets/pig_hit.png',
-                death: 'assets/pig_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.1
+                singleSheet: true,
+                sheet: 'assets/ong.png',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.5
             },
-            'Chim Lửa': {
+            'Chó Husky': {
                 facing: 'right',
-                idle: 'assets/phoenix_idle.png',
-                walk: 'assets/phoenix_walk.png',
-                attack: 'assets/phoenix_attack.png',
-                hit: 'assets/phoenix_hit.png',
-                death: 'assets/phoenix_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+                singleSheet: true,
+                sheet: 'assets/cho.png',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.65
             },
-            'Rồng Nước': {
+            'Rùa Xanh': {
                 facing: 'right',
-                idle: 'assets/water_dragon_idle.png',
-                walk: 'assets/water_dragon_walk.png',
-                attack: 'assets/water_dragon_attack.png',
-                hit: 'assets/water_dragon_hit.png',
-                death: 'assets/water_dragon_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2
+                singleSheet: true,
+                sheet: 'assets/rua.png',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.55
             },
-            'Rồng Lửa': {
+            'Bướm Lam': {
                 facing: 'right',
-                idle: 'assets/dragon_idle.png',
-                walk: 'assets/dragon_walk.png',
-                attack: 'assets/dragon_attack.png',
-                hit: 'assets/dragon_hit.png',
-                death: 'assets/dragon_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2,
-                grids: {
-                    death: { cols: 3, rows: 8, totalFrames: 20 }
-                }
+                singleSheet: true,
+                sheet: 'assets/buom.png',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.6
             },
-            'Hồ Ly': {
+            'Đại Bàng': {
                 facing: 'right',
-                idle: 'assets/fox_idle.png',
-                walk: 'assets/fox_walk.png',
-                attack: 'assets/fox_attack.png',
-                hit: 'assets/fox_hit.png',
-                death: 'assets/fox_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2,
-                grids: {
-                    death: { cols: 4, rows: 5, totalFrames: 20 },
-                    idle: { cols: 4, rows: 5, totalFrames: 20 }
-                }
+                singleSheet: true,
+                sheet: 'assets/daibang.png',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.7
             },
-            'Rắn': {
+            'Sói Tuyết': {
                 facing: 'right',
-                idle: 'assets/snake_idle.png',
-                walk: 'assets/snake_walk.png',
-                attack: 'assets/snake_attack.png',
-                hit: 'assets/snake_hit.png',
-                death: 'assets/snake_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2,
-                grids: {
-                    walk: { cols: 6, rows: 4, totalFrames: 24 },
-                    hit: { cols: 3, rows: 3, totalFrames: 9 },
-                    idle: { cols: 4, rows: 3, totalFrames: 12 }
-                }
-            },
-            'Chim Trĩ': {
-                facing: 'right',
-                idle: 'assets/pheasant_idle.png',
-                walk: 'assets/pheasant_walk.png',
-                attack: 'assets/pheasant_attack.png',
-                hit: 'assets/pheasant_hit.png',
-                death: 'assets/pheasant_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2,
-                grids: {
-                    walk: { cols: 4, rows: 3, totalFrames: 12 },
-                    attack: { cols: 4, rows: 3, totalFrames: 12 },
-                    death: { cols: 6, rows: 4, totalFrames: 24 },
-                    hit: { cols: 4, rows: 3, totalFrames: 12 },
-                    idle: { cols: 4, rows: 3, totalFrames: 12 }
-                }
-            },
-            'Bướm Đêm': {
-                facing: 'right',
-                idle: 'assets/moth_idle.png',
-                walk: 'assets/moth_walk.png',
-                attack: 'assets/moth_attack.png',
-                hit: 'assets/moth_hit.png',
-                death: 'assets/moth_death.png',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3.2,
-                grids: {
-                    walk: { cols: 4, rows: 5, totalFrames: 20 },
-                    attack: { cols: 4, rows: 6, totalFrames: 24 },
-                    death: { cols: 4, rows: 5, totalFrames: 20 },
-                    hit: { cols: 4, rows: 5, totalFrames: 20 },
-                    idle: { cols: 6, rows: 4, totalFrames: 24 }
-                }
+                singleSheet: true,
+                sheet: 'assets/meo.png',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.7
             }
         };
 
@@ -1032,14 +973,6 @@
                     let img = new Image();
                     img.src = cfg.sheet;
                     petSpriteAssets[petName].sheet = img;
-                } else {
-                    ['idle', 'walk', 'attack', 'hit', 'death'].forEach(state => {
-                        if (cfg[state]) {
-                            let img = new Image();
-                            img.src = cfg[state];
-                            petSpriteAssets[petName][state] = img;
-                        }
-                    });
                 }
             }
         }
