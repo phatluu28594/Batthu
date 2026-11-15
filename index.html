@@ -4604,22 +4604,28 @@
                             }
                         } else {
                             let fallenList = [];
+                            let deadForeverNames = [];
+
                             activeTeam.forEach(pet => {
                                 let realPet = pet._ref || pet;
-                                realPet.hearts--;
+                                realPet.hearts = Math.max(0, (realPet.hearts || 1) - 1);
                                 if (realPet.hearts <= 0) {
-                                    alert(`💀 Thú ${realPet.name} đã cạn tim và tử trận vĩnh viễn!`);
-                                } else {
-                                    if (realPet.hp <= 0) fallenList.push(realPet);
+                                    deadForeverNames.push(realPet.name);
+                                } else if (realPet.hp <= 0) {
+                                    fallenList.push(realPet);
                                 }
                             });
+
                             team = team.filter(p => p.hearts > 0);
+                            saveGameData();
+                            updateTeamCount();
+
                             if (fallenList.length > 0) {
                                 sendDefeatedPetsToHospital(fallenList);
+                            } else if (deadForeverNames.length > 0) {
+                                alert(`💀 Thất bại!\nLinh thú ${deadForeverNames.join(', ')} đã cạn tim và tử trận vĩnh viễn!`);
                             } else {
-                                saveGameData();
-                                updateTeamCount();
-                                alert('💀 Thất bại!');
+                                alert('💀 Thất bại! Đội hình của bạn đã bị đánh bại.');
                             }
                         }
                         exitBattleScreen();
