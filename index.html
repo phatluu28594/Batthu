@@ -2792,7 +2792,9 @@
                 return;
             }
             try {
-                map = L.map('map', { zoomControl: false, tap: true }).setView([userLat, userLng], 17);
+                // Đặt mức zoom mặc định là 18 (zoom tối đa của bản đồ vệ tinh)
+                map = L.map('map', { zoomControl: false, tap: true }).setView([userLat, userLng], 18);
+                
                 // 1. Nền ảnh vệ tinh thực tế
                 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                     maxZoom: 18,
@@ -2809,24 +2811,23 @@
                 userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
 
                 if (navigator.geolocation) {
-                    // 1. Lấy vị trí ngay khi mở bản đồ và đưa camera về chỗ người chơi
+                    // Lấy vị trí ngay khi mở bản đồ và zoom hết cỡ (18) về chỗ người chơi
                     navigator.geolocation.getCurrentPosition(position => {
                         userLat = position.coords.latitude; 
                         userLng = position.coords.longitude;
                         if (map) { 
-                            map.setView([userLat, userLng], 17); 
+                            map.setView([userLat, userLng], 18); 
                             map.invalidateSize(); 
                         }
                         if (userMarker) userMarker.setLatLng([userLat, userLng]);
                     }, error => {}, { enableHighAccuracy: true, timeout: 5000 });
 
-                    // 2. Theo dõi liên tục theo bước chân khi di chuyển thực tế
+                    // Theo dõi liên tục theo bước chân khi di chuyển thực tế
                     navigator.geolocation.watchPosition(position => {
                         userLat = position.coords.latitude;
                         userLng = position.coords.longitude;
                         if (userMarker) userMarker.setLatLng([userLat, userLng]);
                     }, error => {}, { enableHighAccuracy: true, maximumAge: 3000 });
-                
                 }
                 
                 if (mapMonstersData.length === 0) spawnMultipleMonsters();
@@ -2843,10 +2844,10 @@
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(position => {
                     userLat = position.coords.latitude; userLng = position.coords.longitude;
-                    if (map) { map.setView([userLat, userLng], 17); map.invalidateSize(); }
+                    if (map) { map.setView([userLat, userLng], 18); map.invalidateSize(); }
                     if (userMarker) userMarker.setLatLng([userLat, userLng]);
                 });
-            } else if (map) { map.setView([userLat, userLng], 17); map.invalidateSize(); }
+            } else if (map) { map.setView([userLat, userLng], 18); map.invalidateSize(); }
         }
 
         function initRoamingBeasts() {
