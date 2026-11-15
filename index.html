@@ -191,6 +191,42 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         @keyframes floatText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-45px) scale(1.2); opacity: 0; } }
+        /* HIỆU ỨNG BACKGROUND SỐNG ĐỘNG */
+        @keyframes bgAmbientGlow {
+            0%, 100% { filter: brightness(1) contrast(1.02); }
+            50% { filter: brightness(1.08) contrast(1.06); }
+        }
+        .panorama-img, #tower-screen img, #battle-screen img, #training-screen img {
+            animation: bgAmbientGlow 6s ease-in-out infinite;
+        }
+
+        @keyframes floatParticleUp {
+            0% { transform: translateY(0) translateX(0) scale(0.6); opacity: 0; }
+            25% { opacity: 0.9; }
+            75% { opacity: 0.7; }
+            100% { transform: translateY(-110px) translateX(25px) scale(1.2); opacity: 0; }
+        }
+        @keyframes driftFog {
+            0% { transform: translateX(-10%) opacity: 0.25; }
+            50% { transform: translateX(10%) opacity: 0.45; }
+            100% { transform: translateX(-10%) opacity: 0.25; }
+        }
+        .bg-particle {
+            position: absolute;
+            border-radius: 9999px;
+            pointer-events: none;
+            z-index: 15;
+            animation: floatParticleUp linear infinite;
+        }
+        .bg-sunbeam {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 12;
+            background: radial-gradient(circle at 50% 20%, rgba(253, 224, 71, 0.14), transparent 65%);
+            animation: bgAmbientGlow 5s ease-in-out infinite;
+        }
+        
         .damage-popup { animation: floatText 0.6s ease-out forwards; }
     </style>
 </head>
@@ -4089,6 +4125,51 @@
                 toggleMapMoreTabs(false);
             }
         });
+
+        // ==========================================
+        // TỰ ĐỘNG TẠO ANIMATION HẠT SÁNG CHO TẤT CẢ BACKGROUND
+        // ==========================================
+        function initBackgroundAnimations() {
+            const scenes = [
+                { selector: '#home-screen .panorama-canvas', color: '#fef08a', glow: '#f59e0b', count: 18, sunbeam: true },   // Nhà: Bụi nắng ấm
+                { selector: '#fullscreen-farm-screen .panorama-canvas', color: '#86efac', glow: '#22c55e', count: 22 },     // Trang trại: Đom đóm xanh
+                { selector: '#training-screen .relative', color: '#fdba74', glow: '#ea580c', count: 20 },                   // Khu tập: Tàn lửa
+                { selector: '#hospital-screen .panorama-canvas', color: '#67e8f9', glow: '#06b6d4', count: 20 },            // Bệnh viện: Hạt hồi phục
+                { selector: '#sub-room-screen .panorama-canvas', color: '#a7f3d0', glow: '#10b981', count: 16 },            // Phòng chức năng
+                { selector: '#tower-screen .relative', color: '#d8b4fe', glow: '#9333ea', count: 24, sunbeam: true },       // Tháp: Linh khí tím
+                { selector: '#battle-screen .relative', color: '#fca5a5', glow: '#ef4444', count: 22 }                      // Đấu trường: Tia lửa chiến
+            ];
+
+            scenes.forEach(cfg => {
+                const container = document.querySelector(cfg.selector);
+                if (!container || container.dataset.animReady) return;
+                container.dataset.animReady = 'true';
+
+                if (cfg.sunbeam) {
+                    const beam = document.createElement('div');
+                    beam.className = 'bg-sunbeam';
+                    container.appendChild(beam);
+                }
+
+                for (let i = 0; i < cfg.count; i++) {
+                    const p = document.createElement('span');
+                    p.className = 'bg-particle';
+                    const size = 3 + Math.random() * 5;
+                    p.style.width = `${size}px`;
+                    p.style.height = `${size}px`;
+                    p.style.left = `${Math.random() * 96 + 2}%`;
+                    p.style.top = `${Math.random() * 85 + 10}%`;
+                    p.style.background = cfg.color;
+                    p.style.boxShadow = `0 0 ${size * 2.5}px ${cfg.glow}`;
+                    p.style.animationDuration = `${3.5 + Math.random() * 4.5}s`;
+                    p.style.animationDelay = `${Math.random() * 5}s`;
+                    container.appendChild(p);
+                }
+            });
+        }
+
+        // Gọi ngay khi tải trang xong
+        window.addEventListener('load', initBackgroundAnimations);
         
     </script>
 </body>
