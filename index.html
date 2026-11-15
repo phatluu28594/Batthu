@@ -1410,7 +1410,7 @@
             }
 
             // 2. Kiểm tra Ngũ Hành Tương Sinh (Kim->Thủy->Mộc->Hỏa->Thổ->Kim)
-            const genMap = { metal: 'water', water: 'wood', wood: 'fire', fire: 'earth', earth: 'metal' };
+           const genMap = { 'Kim': 'Thuy', 'Thuy': 'Moc', 'Moc': 'Hoa', 'Hoa': 'Tho', 'Tho': 'Kim' };
             let genLinks = 0;
             for (let i = 0; i < elems.length; i++) {
                 for (let j = 0; j < elems.length; j++) {
@@ -4070,7 +4070,7 @@
                                 if (teamHpList[idx] > 0 && teamHpList[idx] < pet.maxHp) {
                                     const healAmt = Math.max(1, Math.floor(pet.maxHp * 0.08));
                                     teamHpList[idx] = Math.min(pet.maxHp, teamHpList[idx] + healAmt);
-                                    const pPos = getTeamSlotPos(idx);
+                                    const pPos = { x: (battleCanvas.width / (window.devicePixelRatio || 1)) / 2 - 85, y: (battleCanvas.height / (window.devicePixelRatio || 1)) * 0.63 };
                                     impactEffects.push({ x: pPos.x, y: pPos.y - 25, radius: 10, alpha: 1, color: '#34d399', text: `+${healAmt}💚` });
                                 }
                             });
@@ -4416,11 +4416,16 @@
                     let isHit = teamHitShake[i] > 0;
                     let knockback = 0;
 
-                    if (teamSynergy && activeTeam.length === 3) {
-                        const squadPositions = [0, 1, 2].map(idx => getTeamSlotPos(idx));
-                        drawTeamSynergyField(battleCtx, teamSynergy, squadPositions, idleTick);
-                    }
-                    
+                    if (teamSynergy && activeTeam.length === 3 && teamSlots.length === 3) {
+                    drawTeamSynergyField(battleCtx, teamSynergy, teamSlots, idleTick);
+                }
+
+                activeTeam.forEach((pet, i) => {
+                    let isPetDead = teamHpList[i] <= 0;
+                    let isAttacking = (attacker && attacker.side === 'team' && attacker.index === i);
+                    let isHit = teamHitShake[i] > 0;
+                    let knockback = 0;
+
                     if (isHit) {
                         knockback = -Math.sin(teamHitShake[i] * 1.8) * 10 - 6;
                         teamHitShake[i]--;
@@ -4467,7 +4472,6 @@
                         battleCtx.fillText(pet.emoji, 0, 0);
                         battleCtx.restore();
                     }
-                    // Vẽ hiệu ứng Buff Giáp / Trạng thái lên linh thú phe mình
                     if (!isPetDead) drawSpriteStatusFX(battleCtx, teamStatus[i], posX, posY, idleTick, 105);
                 });
 
