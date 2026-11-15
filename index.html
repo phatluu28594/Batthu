@@ -1326,6 +1326,147 @@
             return `<span class="${extraClass}" style="font-size:${Math.floor(sizePx * 0.72)}px; line-height:1;">${pet.emoji}</span>`;
         }
 
+        // ==========================================
+        // FORMAT VẼ HÀO QUANG PHẨM CHẤT DƯỚI CHÂN THÚ
+        // ==========================================
+        // ==========================================
+        // NẠP & VẼ HÀO QUANG TỪ SPRITESHEET assets/auras.png (1 HÀNG x 5 CỘT)
+        // ==========================================
+        const auraSheetImg = new Image();
+        let auraSheetLoaded = false;
+        auraSheetImg.onload = () => { auraSheetLoaded = true; };
+        auraSheetImg.src = 'assets/auras.png';
+
+        // Ánh xạ tên phẩm chất sang vị trí cột (0 -> 4) trong tấm auras.png
+        const RARITY_AURA_COL = {
+            'Thường': 0,       // Cột 1: Trắng Bạc
+            'Hiếm': 1,         // Cột 2: Xanh Ngọc
+            'Cực Hiếm': 2,     // Cột 3: Vàng Kim
+            'Huyền Thoại': 3,  // Cột 4: Đỏ Huyết Long
+            'Thần Thánh': 4    // Cột 5: Tím Vô Cực
+        };
+
+        // Bảng màu dự phòng nếu ảnh assets/auras.png chưa load xong
+        const RARITY_AURA_FALLBACK = {
+            'Thường': '#e2e8f0',
+            'Hiếm': '#10b981',
+            'Cực Hiếm': '#f59e0b',
+            'Huyền Thoại': '#ef4444',
+            'Thần Thánh': '#a855f7'
+        };
+
+        function drawRarityAura(ctx, pet, x, footY, tick, radiusX = 42) {
+            if (!pet) return;
+            const rarityName = pet.rarity?.name || 'Thường';
+            const col = RARITY_AURA_COL[rarityName] ?? 0;
+            const pulse = 1 + Math.sin(tick * 2.5) * 0.06;
+
+            ctx.save();
+            // Dùng 'screen' nếu nền auras.png là đen; nếu auras.png đã tách nền trong suốt PNG thì dùng 'source-over'
+            ctx.globalCompositeOperation = 'source-over';
+
+            if (auraSheetLoaded && auraSheetImg.naturalWidth > 0) {
+                const cols = 5;
+                const frameW = auraSheetImg.naturalWidth / cols;
+                const frameH = auraSheetImg.naturalHeight;
+
+                // Tính kích thước hiển thị dưới chân thú (giữ nguyên tỷ lệ khung ảnh gốc)
+                const drawW = radiusX * 2.3 * pulse;
+                const drawH = drawW * (frameH / frameW);
+
+                ctx.drawImage(
+                    auraSheetImg,
+                    col * frameW, 0, frameW, frameH, // Cắt đúng cột phẩm chất (0..4)
+                    x - drawW / 2, footY - drawH * 0.55, drawW, drawH
+                );
+            } else {
+                // Vẽ dự phòng bằng Canvas nếu file assets/auras.png chưa load xong
+                const color = RARITY_AURA_FALLBACK[rarityName] || '#e2e8f0';
+                ctx.beginPath();
+                ctx.ellipse(x, footY, radiusX * pulse, radiusX * 0.36 * pulse, 0, 0, Math.PI * 2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ==========================================
+        // CỘNG HƯỞNG ĐỘI HÌNH 3 THÚ (TEAM SYNERGY)
+        // ==========================================
+        function getTeamSynergy(teamList) {
+            if (!teamList || teamList.length < 3) return null;
+            const elems = teamList.slice(0, 3).map(p => p.element);
+            const uniqueElems = new Set(elems);
+
+            // 1. Thuần Hệ Cuồng Nộ (3 thú cùng 1 hệ)
+            if (uniqueElems.size === 1) {
+                return {
+                    id: 'pure',
+                    name: '🔥 Thuần Hệ Cuồng Nộ',
+                    desc: '+30% Sát thương toàn đội',
+                    color: '#f97316',
+                    glow: 'rgba(249, 115, 22, 0.25)'
+                };
+            }
+
+            // 2. Kiểm tra Ngũ Hành Tương Sinh (Kim->Thủy->Mộc->Hỏa->Thổ->Kim)
+            const genMap = { metal: 'water', water: 'wood', wood: 'fire', fire: 'earth', earth: 'metal' };
+            let genLinks = 0;
+            for (let i = 0; i < elems.length; i++) {
+                for (let j = 0; j < elems.length; j++) {
+                    if (i !== j && genMap[elems[i]] === elems[j]) genLinks++;
+                }
+            }
+            if (genLinks >= 2) {
+                return {
+                    id: 'sheng',
+                    name: '♻️ Ngũ Hành Tương Sinh',
+                    desc: 'Hồi 8% HP mỗi hiệp cho cả đội',
+                    color: '#10b981',
+                    glow: 'rgba(16, 185, 129, 0.25)'
+                };
+            }
+
+            // 3. Tam Hoa Tụ Đỉnh (3 thú thuộc 3 hệ khác nhau)
+            if (uniqueElems.size === 3) {
+                return {
+                    id: 'triad',
+                    name: '🌈 Tam Hoa Tụ Đỉnh',
+                    desc: '+15% Tốc độ & +15% Chí mạng',
+                    color: '#38bdf8',
+                    glow: 'rgba(56, 189, 248, 0.25)'
+                };
+            }
+
+            return null;
+        }
+
+        function drawTeamSynergyField(ctx, synergy, positions, tick) {
+            if (!synergy || !positions || positions.length < 3) return;
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+
+            // Vẽ tia năng lượng nối liền chân 3 linh thú thành tam giác trận pháp
+            ctx.beginPath();
+            ctx.moveTo(positions[0].x, positions[0].y + 34);
+            ctx.lineTo(positions[1].x, positions[1].y + 34);
+            ctx.lineTo(positions[2].x, positions[2].y + 34);
+            ctx.closePath();
+
+            ctx.fillStyle = synergy.glow;
+            ctx.fill();
+
+            ctx.strokeStyle = synergy.color;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 6]);
+            ctx.lineDashOffset = -tick * 12;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+        
         function drawPetEntity(ctx, pet, state, frameIndex, x, y, size = 85, flipLeft = false) {
             let baseName = pet.name.replace('F1_', '');
             let cfg = spriteConfigs[baseName];
@@ -2543,12 +2684,25 @@
             alert('🛒 Mua thành công!'); openMarketMenu();
         }
 
-        function openTeamMenu() {
+       function openTeamMenu() {
             checkPetSurvival();
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
-            let html = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">🎒 Đội Hình (${team.length}/3)</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div>`;
+
+            const activeSynergy = getTeamSynergy(team);
+            const synergyBannerHtml = activeSynergy
+                ? `<div class="bg-zinc-950/90 border border-emerald-400/50 rounded-xl px-3 py-2 mb-3 flex items-center justify-between">
+                    <span class="text-xs font-extrabold" style="color:${activeSynergy.color}">${activeSynergy.name}</span>
+                    <span class="text-[11px] font-bold text-zinc-200">${activeSynergy.desc}</span>
+                   </div>`
+                : `<div class="bg-zinc-950/60 border border-zinc-800 rounded-xl px-3 py-1.5 mb-3 text-[10px] text-zinc-400 text-center">
+                    💡 Xếp đủ 3 thú cùng hệ, 3 hệ khác nhau hoặc 3 hệ tương sinh để mở khóa <span class="text-amber-300 font-bold">Trận Pháp Đội Hình</span>!
+                   </div>`;
+
+            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-lg">🎒 Đội Hình (${team.length}/3)</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div>`;
+            html += synergyBannerHtml;
+
             if (team.length === 0) html += `<p class="text-zinc-400 text-sm text-center py-6">Đội hình trống!</p>`;
             else {
                 html += `<div class="space-y-3">`;
@@ -3659,16 +3813,29 @@
             document.getElementById('battle-screen').classList.remove('hidden');
             switchGameMusic('battle');
 
-            let activeTeam = (mode === 'boss' ? [...team] : [team[0]]).map(p => {
+            const rawSquad = (mode === 'boss' || mode === 'pvp') ? [...team] : [team[0]];
+            const teamSynergy = getTeamSynergy(rawSquad);
+
+            let activeTeam = rawSquad.map(p => {
                 let b = getPetGearBonus(p);
+                let baseAtk = p.atk + b.atk;
+                let baseSpeed = (p.speed || 50) + b.speed;
+                let baseCrit = (p.critRate ?? 20) + b.critRate;
+
+                if (teamSynergy?.id === 'pure') baseAtk = Math.floor(baseAtk * 1.30);
+                if (teamSynergy?.id === 'triad') {
+                    baseSpeed = Math.floor(baseSpeed * 1.15);
+                    baseCrit = Math.min(100, baseCrit + 15);
+                }
+
                 return {
                     ...p,
                     _ref: p,
-                    hp: p.hp, // Giữ nguyên lượng máu hiện tại của thú, KHÔNG lấy maxHp!
+                    hp: p.hp,
                     maxHp: p.maxHp + b.maxHp,
-                    atk: p.atk + b.atk,
-                    speed: (p.speed || 50) + b.speed,
-                    critRate: (p.critRate ?? 20) + b.critRate,
+                    atk: baseAtk,
+                    speed: baseSpeed,
+                    critRate: baseCrit,
                     blockRate: (p.blockRate ?? 15) + b.blockRate,
                     armorBreak: (p.armorBreak ?? 15) + b.armorBreak
                 };
@@ -3737,6 +3904,16 @@
 
             function buildNextRoundQueue() {
                 roundNumber++;
+                if (teamSynergy?.id === 'sheng') {
+                            activeTeam.forEach((pet, idx) => {
+                                if (teamHpList[idx] > 0 && teamHpList[idx] < pet.maxHp) {
+                                    const healAmt = Math.max(1, Math.floor(pet.maxHp * 0.08));
+                                    teamHpList[idx] = Math.min(pet.maxHp, teamHpList[idx] + healAmt);
+                                    const pPos = getTeamSlotPos(idx);
+                                    impactEffects.push({ x: pPos.x, y: pPos.y - 25, radius: 10, alpha: 1, color: '#34d399', text: `+${healAmt}💚` });
+                                }
+                            });
+                        }
                 let fighters = [];
                 activeTeam.forEach((pet, idx) => {
                     if (teamHpList[idx] > 0) {
@@ -4078,6 +4255,11 @@
                     let isHit = teamHitShake[i] > 0;
                     let knockback = 0;
 
+                    if (teamSynergy && activeTeam.length === 3) {
+                        const squadPositions = [0, 1, 2].map(idx => getTeamSlotPos(idx));
+                        drawTeamSynergyField(battleCtx, teamSynergy, squadPositions, idleTick);
+                    }
+                    
                     if (isHit) {
                         knockback = -Math.sin(teamHitShake[i] * 1.8) * 10 - 6;
                         teamHitShake[i]--;
@@ -4106,6 +4288,8 @@
                     } else if (isHit) {
                         animFrame = Math.min(pMaxFrames - 1, Math.floor((12 - teamHitShake[i]) * (pMaxFrames / 12)));
                     }
+
+                    if (!isPetDead) drawRarityAura(battleCtx, pet, posX, posY + 34, idleTick, 36);
 
                     if (hasSprite) {
                         drawPetEntity(battleCtx, pet, animState, animFrame, posX, posY, 85, false);
