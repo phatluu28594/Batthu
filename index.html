@@ -610,6 +610,38 @@
         let eggs = safeParse('ar_eggs', []);
         let playerCoins = parseInt(localStorage.getItem('ar_coins') || '1500');
         let playerDiamonds = parseInt(localStorage.getItem('ar_diamonds') || '50');
+        let maxPetCapacity = parseInt(localStorage.getItem('ar_max_pet_capacity') || '10');
+
+        function getTotalOwnedPetCount() {
+            const activePolesCount = Array.isArray(trainingPoles) ? trainingPoles.filter(p => p !== null).length : 0;
+            return (team?.length || 0) + (farm?.length || 0) + (restingPets?.length || 0) + activePolesCount;
+        }
+
+        function getNextSlotDiamondCost() {
+            // Giá tăng nhẹ theo số ô đã mở (lần đầu 15💎, mỗi ô tiếp theo +5💎, tối đa 100💎)
+            const extraBought = Math.max(0, maxPetCapacity - 10);
+            return Math.min(100, 15 + extraBought * 5);
+        }
+
+        function buyMorePetCapacity() {
+            const cost = getNextSlotDiamondCost();
+            if (playerDiamonds < cost) {
+                alert(`⚠️ Không đủ ${cost}💎 Kim Cương để mở rộng thêm chỗ chứa!`);
+                return;
+            }
+            playerDiamonds -= cost;
+            maxPetCapacity += 1;
+            localStorage.setItem('ar_max_pet_capacity', maxPetCapacity);
+            saveGameData();
+            alert(`🎉 Mở rộng thành công!\nSức chứa linh thú tăng lên ${maxPetCapacity} chỗ (+1 chỗ)!`);
+
+            // Tự động làm mới giao diện nếu đang mở Kho Trại hoặc Chợ
+            const modalTitle = document.querySelector('#modal-content h3');
+            if (modalTitle) {
+                if (modalTitle.textContent.includes('Kho Linh Thú')) showFarmSection('storage');
+                else if (modalTitle.textContent.includes('Chợ')) openMarketMenu();
+            }
+        }
         let towerFloor = parseInt(localStorage.getItem('ar_tower_floor') || '1');
         let bossLevel = parseInt(localStorage.getItem('ar_boss_level') || '1');
         let totalSteps = parseInt(localStorage.getItem('ar_steps') || '0');
@@ -2939,6 +2971,10 @@
                 alert('⚡ Bạn đã hết Năng Lượng Bắt Thú (0/15)! Hãy vào Giường Ngủ để hồi sức nhanh gấp 5 lần.');
                 return;
             }
+            if (getTotalOwnedPetCount() >= maxPetCapacity) {
+                alert(`⚠️ Kho linh thú đã đầy (${getTotalOwnedPetCount()}/${maxPetCapacity})!\nHãy vào Kho Trại Hộ dùng Kim Cương mở rộng thêm chỗ hoặc Phóng sinh bớt thú cũ trước khi đi bắt.`);
+                return;
+            }
             let monsterData = mapMonstersData[idx];
             if (!monsterData) return;
 
@@ -3395,6 +3431,12 @@
             document.getElementById('tug-of-war-ui').classList.add('hidden');
 
             if (currentWildMonster) {
+                if (getTotalOwnedPetCount() >= maxPetCapacity) {
+                    alert(`⚠️ Kho linh thú đã đầy (${getTotalOwnedPetCount()}/${maxPetCapacity}) nên không thể thu phục thêm! Hãy mở rộng chỗ bằng Kim Cương trong Kho Trại.`);
+                    exitARScreen();
+                    return;
+                }
+
                 const rawPet = {
                     ...currentWildMonster,
                     id: 'pet_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
@@ -3443,7 +3485,6 @@
 
             exitARScreen();
         }
-
         // ==========================================
         // ĐẤU TRƯỜNG ATB V1.2
         // ==========================================
