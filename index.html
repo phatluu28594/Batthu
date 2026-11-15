@@ -874,7 +874,9 @@
             { id: 202, name: 'Rùa Xanh', emoji: '🐢', element: 'Thuy', hp: 190, maxHp: 190, atk: 45, speed: 40 },
             { id: 203, name: 'Bướm Lam', emoji: '🦋', element: 'Thuy', hp: 125, maxHp: 125, atk: 58, speed: 95 },
             { id: 301, name: 'Đại Bàng', emoji: '🦅', element: 'Kim', hp: 175, maxHp: 175, atk: 72, speed: 90 },
-            { id: 302, name: 'Sói Tuyết', emoji: '🐺', element: 'Thuy', hp: 185, maxHp: 185, atk: 76, speed: 86 }
+            { id: 302, name: 'Sói Tuyết', emoji: '🐺', element: 'Thuy', hp: 185, maxHp: 185, atk: 76, speed: 86 },
+            { id: 303, name: 'Hồ ly', emoji: '🐺', element: 'Hoa', hp: 185, maxHp: 185, atk: 76, speed: 86 }
+      
         ];
         
         let currentWildMonster = null;
@@ -952,6 +954,14 @@
                 facing: 'right',
                 singleSheet: true,
                 sheet: 'assets/daibang.png',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.7
+            },
+            'Hồ Ly': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/holy.png',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.7
