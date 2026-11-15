@@ -5045,7 +5045,7 @@
         }
     </script>
         
-        <script type="module">
+            <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { 
             getFirestore, doc, setDoc, getDoc, 
@@ -5066,60 +5066,120 @@
         const db = getFirestore(app);
     
         // ==========================================
-        // 1. ĐỒNG BỘ TÀI KHOẢN LÊN MÂY (ĐỔI ĐIỆN THOẠI)
+        // 1. MÀN HÌNH ĐĂNG KÝ / ĐĂNG NHẬP KHI VÀO GAME
         // ==========================================
-        window.openCloudAccountModal = function() {
+        let selectedGender = localStorage.getItem("ar_cloud_gender") || "Nam";
+    
+        window.selectAccountGender = function(gender) {
+            selectedGender = gender;
+            const btnMale = document.getElementById("btn-gender-male");
+            const btnFemale = document.getElementById("btn-gender-female");
+            if (btnMale && btnFemale) {
+                btnMale.className = gender === "Nam"
+                    ? "py-2 rounded-xl font-extrabold text-xs border-2 border-sky-400 bg-sky-600/40 text-white cursor-pointer"
+                    : "py-2 rounded-xl font-bold text-xs border border-zinc-700 bg-zinc-900 text-zinc-400 cursor-pointer";
+                btnFemale.className = gender === "Nữ"
+                    ? "py-2 rounded-xl font-extrabold text-xs border-2 border-pink-400 bg-pink-600/40 text-white cursor-pointer"
+                    : "py-2 rounded-xl font-bold text-xs border border-zinc-700 bg-zinc-900 text-zinc-400 cursor-pointer";
+            }
+        };
+    
+        window.switchAuthTab = function(mode) {
+            const isRegister = mode === "register";
+            document.getElementById("tab-auth-reg").className = isRegister
+                ? "py-2 rounded-lg font-extrabold text-xs bg-indigo-600 text-white cursor-pointer"
+                : "py-2 rounded-lg font-bold text-xs bg-zinc-900 text-zinc-400 cursor-pointer";
+            document.getElementById("tab-auth-login").className = !isRegister
+                ? "py-2 rounded-lg font-extrabold text-xs bg-emerald-600 text-white cursor-pointer"
+                : "py-2 rounded-lg font-bold text-xs bg-zinc-900 text-zinc-400 cursor-pointer";
+    
+            document.getElementById("auth-gender-group").style.display = isRegister ? "block" : "none";
+            document.getElementById("btn-auth-submit").innerText = isRegister ? "✨ Đăng Ký & Vào Game" : "🔓 Đăng Nhập & Tải Dữ Liệu";
+            document.getElementById("btn-auth-submit").onclick = isRegister ? registerCloudAccount : loginCloudAccount;
+        };
+    
+        window.openCloudAccountModal = function(isForceStartup = false) {
             const savedUser = localStorage.getItem("ar_cloud_user") || "";
             const savedPin = localStorage.getItem("ar_cloud_pin") || "";
+            selectedGender = localStorage.getItem("ar_cloud_gender") || "Nam";
+    
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
     
             content.innerHTML = `
             <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-base text-indigo-300">☁️ Tài Khoản Đồng Bộ Đám Mây</h3>
-                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+                <h3 class="font-bold text-base text-indigo-300">🪪 Hồ Sơ Thợ Săn Viễn Thú</h3>
+                ${isForceStartup 
+                    ? `<button onclick="closeModal()" class="text-[11px] text-zinc-400 underline cursor-pointer">Chơi thử</button>`
+                    : `<button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>`
+                }
             </div>
-            <div class="bg-indigo-950/50 border border-indigo-400/40 rounded-xl p-2.5 mb-3 text-[11px] text-indigo-200 leading-relaxed">
-                Tạo <b>Tên Tài Khoản + Mã PIN</b> để lưu toàn bộ Viễn Thú, Vàng, Kim Cương lên server. Khi đổi điện thoại chỉ cần nhập lại và bấm <b>Tải Về Máy</b>!
-            </div>
+    
+            ${savedUser ? `
+            <div class="bg-emerald-950/50 border border-emerald-500/40 rounded-xl p-2.5 mb-3 flex items-center justify-between">
+                <div class="text-xs">
+                    <div class="text-emerald-300 font-extrabold">${selectedGender === 'Nữ' ? '👧' : '👦'} ${savedUser} <span class="text-[10px] text-zinc-400">(${selectedGender})</span></div>
+                    <div class="text-[10px] text-zinc-400">Đang đồng bộ đám mây</div>
+                </div>
+                <button onclick="syncCurrentAccountToCloud()" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg text-[11px] font-extrabold text-white cursor-pointer">⬆️ Lưu Ngay</button>
+            </div>` : `
+            <div class="grid grid-cols-2 gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-800 mb-3">
+                <button id="tab-auth-reg" onclick="switchAuthTab('register')" class="py-2 rounded-lg font-extrabold text-xs bg-indigo-600 text-white cursor-pointer">Đăng Ký Mới</button>
+                <button id="tab-auth-login" onclick="switchAuthTab('login')" class="py-2 rounded-lg font-bold text-xs bg-zinc-900 text-zinc-400 cursor-pointer">Đăng Nhập</button>
+            </div>`}
+    
             <div class="space-y-2.5 mb-3">
                 <div>
-                    <label class="text-[11px] text-zinc-400 font-bold block mb-1">Tên Thợ Săn (Dùng hiển thị trên Chat):</label>
-                    <input id="cloud-username-input" type="text" maxlength="18" value="${savedUser}" placeholder="VD: PhatLuu94" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-400 outline-none">
+                    <label class="text-[11px] text-zinc-400 font-bold block mb-1">ID Game (Tên nhân vật, viết liền không dấu càng tốt):</label>
+                    <input id="cloud-username-input" type="text" maxlength="16" value="${savedUser}" placeholder="VD: PhatLuu28" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-400 outline-none">
                 </div>
                 <div>
-                    <label class="text-[11px] text-zinc-400 font-bold block mb-1">Mã PIN Bảo Mật (4-6 số):</label>
-                    <input id="cloud-pin-input" type="password" maxlength="6" value="${savedPin}" placeholder="VD: 1234" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-400 outline-none">
+                    <label class="text-[11px] text-zinc-400 font-bold block mb-1">Mã PIN Bảo Mật (Đúng 8 chữ số):</label>
+                    <input id="cloud-pin-input" type="password" inputmode="numeric" maxlength="8" value="${savedPin}" placeholder="Nhập 8 chữ số (VD: 12345678)" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white tracking-widest focus:border-indigo-400 outline-none">
+                </div>
+                <div id="auth-gender-group">
+                    <label class="text-[11px] text-zinc-400 font-bold block mb-1">Giới tính nhân vật:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" id="btn-gender-male" onclick="selectAccountGender('Nam')" class="py-2 rounded-xl font-extrabold text-xs border-2 border-sky-400 bg-sky-600/40 text-white cursor-pointer">👦 Nam</button>
+                        <button type="button" id="btn-gender-female" onclick="selectAccountGender('Nữ')" class="py-2 rounded-xl font-bold text-xs border border-zinc-700 bg-zinc-900 text-zinc-400 cursor-pointer">👧 Nữ</button>
+                    </div>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-2">
-                <button onclick="cloudSaveAccount()" class="bg-gradient-to-r from-indigo-600 to-blue-600 hover:brightness-110 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">
-                    ⬆️ Lưu Lên Mây
-                </button>
-                <button onclick="cloudLoadAccount()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">
-                    ⬇️ Tải Về Máy
-                </button>
-            </div>`;
+    
+            <button id="btn-auth-submit" onclick="${savedUser ? 'syncCurrentAccountToCloud()' : 'registerCloudAccount()'}" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:brightness-110 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">
+                ${savedUser ? '☁️ Cập Nhật Dữ Liệu Lên Mây' : '✨ Đăng Ký & Vào Game'}
+            </button>
+    
+            ${savedUser ? `
+            <button onclick="logoutCloudAccount()" class="w-full mt-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 py-2 rounded-xl font-bold text-[11px] text-red-300 cursor-pointer">
+                🚪 Đăng Xuất / Đổi Tài Khoản Khác
+            </button>` : ''}`;
+    
+            if (savedUser) selectAccountGender(selectedGender);
         };
     
-        window.cloudSaveAccount = async function() {
+        // ĐĂNG KÝ TÀI KHOẢN MỚI (ID GAME + PIN 8 SỐ + GIỚI TÍNH)
+        window.registerCloudAccount = async function() {
             const username = document.getElementById("cloud-username-input")?.value.trim();
             const pin = document.getElementById("cloud-pin-input")?.value.trim();
-            if (!username || !pin) return alert("⚠️ Vui lòng nhập đủ Tên Thợ Săn và Mã PIN!");
+    
+            if (!username || username.length < 3) return alert("⚠️ ID Game phải từ 3 đến 16 ký tự!");
+            if (!/^\d{8}$/.test(pin)) return alert("⚠️ Mã PIN bắt buộc phải gồm đúng 8 chữ số (0-9)!");
     
             const docId = username.toLowerCase();
             const userRef = doc(db, "players", docId);
     
             try {
                 const snap = await getDoc(userRef);
-                if (snap.exists() && snap.data().pin !== pin) {
-                    return alert("❌ Tên tài khoản này đã có người đăng ký hoặc bạn nhập sai Mã PIN!");
+                if (snap.exists()) {
+                    return alert("❌ ID Game này đã có người đăng ký! Vui lòng chọn ID khác hoặc chuyển sang tab Đăng Nhập.");
                 }
     
                 await setDoc(userRef, {
                     username: username,
                     pin: pin,
+                    gender: selectedGender,
                     coins: playerCoins,
                     diamonds: playerDiamonds,
                     maxPetCapacity: maxPetCapacity,
@@ -5131,29 +5191,35 @@
                     restingPets: JSON.stringify(restingPets),
                     trainingPoles: JSON.stringify(trainingPoles),
                     inventory: JSON.stringify(inventory),
+                    createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp()
                 });
     
                 localStorage.setItem("ar_cloud_user", username);
                 localStorage.setItem("ar_cloud_pin", pin);
-                alert(`☁️ Đã lưu đồng bộ tài khoản [${username}] thành công!\nBạn có thể đăng nhập trên bất kỳ điện thoại nào.`);
+                localStorage.setItem("ar_cloud_gender", selectedGender);
+                closeModal();
+                alert(`🎉 Đăng ký thành công Thợ Săn [${username}] (${selectedGender})!\nDữ liệu của bạn đã được bảo vệ bằng Mã PIN 8 số.`);
             } catch (err) {
-                alert("❌ Lỗi kết nối Firestore (Hãy kiểm tra đã bật Firestore Database chưa): " + err.message);
+                alert("❌ Lỗi đăng ký: " + err.message);
             }
         };
     
-        window.cloudLoadAccount = async function() {
+        // ĐĂNG NHẬP TÀI KHOẢN ĐÃ CÓ
+        window.loginCloudAccount = async function() {
             const username = document.getElementById("cloud-username-input")?.value.trim();
             const pin = document.getElementById("cloud-pin-input")?.value.trim();
-            if (!username || !pin) return alert("⚠️ Nhập đủ Tên Thợ Săn và Mã PIN để tải dữ liệu!");
+    
+            if (!username) return alert("⚠️ Vui lòng nhập ID Game!");
+            if (!/^\d{8}$/.test(pin)) return alert("⚠️ Mã PIN phải gồm đúng 8 chữ số!");
     
             const docId = username.toLowerCase();
             try {
                 const snap = await getDoc(doc(db, "players", docId));
-                if (!snap.exists()) return alert("❌ Không tìm thấy tài khoản này trên máy chủ!");
+                if (!snap.exists()) return alert("❌ Không tìm thấy ID Game này! Kiểm tra lại tên hoặc bấm Đăng Ký Mới.");
     
                 const data = snap.data();
-                if (data.pin !== pin) return alert("❌ Sai Mã PIN bảo mật!");
+                if (data.pin !== pin) return alert("❌ Sai Mã PIN 8 số!");
     
                 playerCoins = data.coins ?? 1500;
                 playerDiamonds = data.diamonds ?? 50;
@@ -5173,15 +5239,65 @@
                 localStorage.setItem("ar_inventory", JSON.stringify(inventory));
                 localStorage.setItem("ar_cloud_user", data.username);
                 localStorage.setItem("ar_cloud_pin", pin);
+                localStorage.setItem("ar_cloud_gender", data.gender || "Nam");
     
                 saveGameData();
                 updateTeamCount();
                 closeModal();
-                alert(`🎉 Chào mừng [${data.username}] trở lại!\nĐã khôi phục toàn bộ đội hình và tài nguyên.`);
+                alert(`🎉 Chào mừng ${data.gender === 'Nữ' ? 'Nữ' : 'Nam'} Thợ Săn [${data.username}] trở lại!`);
             } catch (err) {
-                alert("❌ Lỗi tải dữ liệu: " + err.message);
+                alert("❌ Lỗi đăng nhập: " + err.message);
             }
         };
+    
+        // LƯU ĐỒNG BỘ DỮ LIỆU HIỆN TẠI LÊN MÂY
+        window.syncCurrentAccountToCloud = async function() {
+            const username = localStorage.getItem("ar_cloud_user");
+            const pin = localStorage.getItem("ar_cloud_pin");
+            const gender = localStorage.getItem("ar_cloud_gender") || selectedGender;
+            if (!username || !pin) return openCloudAccountModal();
+    
+            try {
+                await setDoc(doc(db, "players", username.toLowerCase()), {
+                    username: username,
+                    pin: pin,
+                    gender: gender,
+                    coins: playerCoins,
+                    diamonds: playerDiamonds,
+                    maxPetCapacity: maxPetCapacity,
+                    towerFloor: towerFloor,
+                    bossLevel: bossLevel,
+                    team: JSON.stringify(team),
+                    farm: JSON.stringify(farm),
+                    eggs: JSON.stringify(eggs),
+                    restingPets: JSON.stringify(restingPets),
+                    trainingPoles: JSON.stringify(trainingPoles),
+                    inventory: JSON.stringify(inventory),
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+    
+                alert(`☁️ Đã sao lưu toàn bộ tiến trình của [${username}] lên máy chủ!`);
+            } catch (err) {
+                alert("❌ Lỗi lưu dữ liệu: " + err.message);
+            }
+        };
+    
+        window.logoutCloudAccount = function() {
+            if (!confirm("Bạn có chắc muốn đăng xuất khỏi thiết bị này? (Dữ liệu trên mây vẫn được giữ nguyên)")) return;
+            localStorage.removeItem("ar_cloud_user");
+            localStorage.removeItem("ar_cloud_pin");
+            localStorage.removeItem("ar_cloud_gender");
+            openCloudAccountModal(true);
+        };
+    
+        // Tự động mở bảng Đăng Ký / Đăng Nhập ngay khi người chơi mới vào game
+        window.addEventListener("load", () => {
+            setTimeout(() => {
+                if (!localStorage.getItem("ar_cloud_user")) {
+                    openCloudAccountModal(true);
+                }
+            }, 600);
+        });
     
         // ==========================================
         // 2. KÊNH CHAT THẾ GIỚI REAL-TIME & LOA SERVER
@@ -5195,12 +5311,14 @@
             modal.classList.remove('hidden');
     
             const currentName = localStorage.getItem("ar_cloud_user") || "Thợ Săn Ẩn Danh";
+            const currentGender = localStorage.getItem("ar_cloud_gender") || "Nam";
+            const genderIcon = currentGender === "Nữ" ? "👧" : "👦";
     
             content.innerHTML = `
             <div class="flex justify-between items-center mb-2">
                 <div>
                     <h3 class="font-bold text-base text-sky-300">💬 Kênh Chat Thế Giới</h3>
-                    <div class="text-[10px] text-zinc-400">Tên của bạn: <span class="text-amber-300 font-bold">${currentName}</span> <span onclick="openCloudAccountModal()" class="underline text-indigo-300 cursor-pointer ml-1">(Đổi tên)</span></div>
+                    <div class="text-[10px] text-zinc-400">Nhân vật: <span class="text-amber-300 font-bold">${genderIcon} ${currentName}</span> <span onclick="openCloudAccountModal()" class="underline text-indigo-300 cursor-pointer ml-1">(Hồ sơ)</span></div>
                 </div>
                 <button onclick="closeWorldChatModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
             </div>
@@ -5233,10 +5351,11 @@
                             ${m.text}
                         </div>`;
                     }
+                    const gBadge = m.gender === "Nữ" ? "👧" : "👦";
                     return `
                     <div class="bg-zinc-900/90 border border-zinc-800 rounded-lg px-2.5 py-1.5">
                         <div class="flex items-center justify-between gap-1 mb-0.5">
-                            <span class="font-extrabold text-sky-300 text-[11px]">${m.sender}</span>
+                            <span class="font-extrabold ${m.gender === 'Nữ' ? 'text-pink-300' : 'text-sky-300'} text-[11px]">${gBadge} ${m.sender}</span>
                             <span class="text-[9px] text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded">${m.petInfo || 'Tân Thủ'}</span>
                         </div>
                         <div class="text-zinc-100 break-words leading-snug">${m.text}</div>
@@ -5244,9 +5363,6 @@
                 }).join('');
     
                 box.scrollTop = box.scrollHeight;
-            }, (err) => {
-                const box = document.getElementById("world-chat-list");
-                if (box) box.innerHTML = `<div class="text-center text-red-400 py-6 text-[11px]">Lỗi tải chat: ${err.message}</div>`;
             });
         };
     
@@ -5276,9 +5392,11 @@
         window.sendWorldChat = async function(text, isSystemBroadcast = false) {
             try {
                 const senderName = localStorage.getItem("ar_cloud_user") || "Thợ Săn Ẩn Danh";
+                const senderGender = localStorage.getItem("ar_cloud_gender") || "Nam";
                 const leadPet = team[0] ? `${team[0].rarity?.badge || ''} ${team[0].name} Lv.${Math.floor(team[0].level || 1)}` : "Tân Thủ";
                 await addDoc(collection(db, "world_chat"), {
                     sender: isSystemBroadcast ? "📢 LOA THẾ GIỚI" : senderName,
+                    gender: senderGender,
                     petInfo: isSystemBroadcast ? "" : leadPet,
                     text: text,
                     isSystem: isSystemBroadcast,
