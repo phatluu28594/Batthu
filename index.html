@@ -3648,6 +3648,7 @@
         // ĐẤU TRƯỜNG ATB V1.2
         // ==========================================
         let battleCanvas, battleCtx, battleInterval;
+        let currentBattleSyncFn = null;
         function startBattle(mode) {
             checkPetSurvival();
             if (team.length === 0) { alert('Đội hình trống!'); return; }
@@ -3659,21 +3660,33 @@
             switchGameMusic('battle');
 
             let activeTeam = (mode === 'boss' ? [...team] : [team[0]]).map(p => {
-            let b = getPetGearBonus(p);
-            return {
-                ...p,
-                _ref: p,
-                maxHp: p.maxHp + b.maxHp,
-                atk: p.atk + b.atk,
-                speed: (p.speed || 50) + b.speed,
-                critRate: (p.critRate ?? 20) + b.critRate,
-                blockRate: (p.blockRate ?? 15) + b.blockRate,
-                armorBreak: (p.armorBreak ?? 15) + b.armorBreak
+                let b = getPetGearBonus(p);
+                return {
+                    ...p,
+                    _ref: p,
+                    hp: p.hp, // Giữ nguyên lượng máu hiện tại của thú, KHÔNG lấy maxHp!
+                    maxHp: p.maxHp + b.maxHp,
+                    atk: p.atk + b.atk,
+                    speed: (p.speed || 50) + b.speed,
+                    critRate: (p.critRate ?? 20) + b.critRate,
+                    blockRate: (p.blockRate ?? 15) + b.blockRate,
+                    armorBreak: (p.armorBreak ?? 15) + b.armorBreak
                 };
             });
             
             let teamHpList = activeTeam.map(p => p.hp);
             let teamMaxHpTotal = activeTeam.reduce((sum, p) => sum + p.maxHp, 0);
+
+            function syncBattleHpToTeam() {
+                
+                activeTeam.forEach((pet, idx) => {
+                    if (pet._ref) {
+                        pet._ref.hp = Math.max(0, Math.floor(teamHpList[idx]));
+                    }
+                });
+                saveGameData();
+            }
+            currentBattleSyncFn = syncBattleHpToTeam;
 
             const bossKeys = Object.keys(bossSpriteConfigs);
             const randomBossKey = bossKeys[Math.floor(Math.random() * bossKeys.length)];
@@ -4201,6 +4214,8 @@
                 if ((enemyHp <= 0 || allTeamDead) && !battleEnded) {
                     battleEnded = true;
                     attacker = null;
+                    syncBattleHpToTeam(); // Cập nhật ngay máu thực tế còn lại vào team[i].hp và lưu localStorage
+                    currentBattleSyncFn = null;
 
                     setTimeout(() => {
                         clearInterval(battleInterval);
@@ -4241,11 +4256,12 @@
                         } else {
                             let fallenList = [];
                             activeTeam.forEach(pet => {
-                                pet.hearts--;
-                                if (pet.hearts <= 0) {
-                                    alert(`💀 Thú ${pet.name} đã cạn tim và tử trận vĩnh viễn!`);
+                                let realPet = pet._ref || pet;
+                                realPet.hearts--;
+                                if (realPet.hearts <= 0) {
+                                    alert(`💀 Thú ${realPet.name} đã cạn tim và tử trận vĩnh viễn!`);
                                 } else {
-                                    if (pet.hp <= 0) fallenList.push(pet);
+                                    if (realPet.hp <= 0) fallenList.push(realPet);
                                 }
                             });
                             team = team.filter(p => p.hearts > 0);
@@ -4264,6 +4280,10 @@
         }
 
         function exitBattleScreen() {
+            if (typeof currentBattleSyncFn === 'function') {
+                currentBattleSyncFn();
+                currentBattleSyncFn = null;
+            }
             switchGameMusic('map');
             if (battleInterval) clearInterval(battleInterval);
             document.getElementById('battle-screen').classList.add('hidden');
