@@ -727,9 +727,43 @@
         // HỆ THỐNG 3 ẤN KÝ / TRANG BỊ + ĐỘT PHÁ ĐỒNG BỘ (1 TẤM GEARS.PNG 11x3)
         // ==========================================
         const GEAR_SHEET_URL = 'assets_gear/gears.png';
-        const GEAR_SHEET_COLS = 3;   // Cột 0: Nanh Vuốt, Cột 1: Giáp Vảy, Cột 2: Linh Châu
-        const GEAR_SHEET_ROWS = 11;  // 11 hàng: Bậc 0 -> Bậc 10
+        const GEAR_SHEET_COLS = 9;  // Ảnh ngang 9 cột (3 cụm x 3 món)
+        const GEAR_SHEET_ROWS = 6;  // 6 hàng
 
+        // Map chính xác tọa độ (cột, hàng) của 11 bậc (0 -> 10) trên ảnh 9x6
+        const GEAR_TIER_COORDS = [
+            { group: 0, row: 0 }, // Bậc 0: Vuốt sắt gỉ - Áo vải rách - Đá xám (Hàng 1, cụm 1)
+            { group: 0, row: 1 }, // Bậc 1: Vuốt đồng - Giáp đồng - Ngọc lục (Hàng 2, cụm 1)
+            { group: 0, row: 2 }, // Bậc 2: Vuốt bạc - Giáp rồng bạc - Thủy châu (Hàng 3, cụm 1)
+            { group: 0, row: 3 }, // Bậc 3: Vuốt lửa - Giáp dung nham - Hỏa châu (Hàng 4, cụm 1)
+            { group: 0, row: 4 }, // Bậc 4: Vuốt bạch kim - Giáp hoàng kim - Tinh vân châu (Hàng 5, cụm 1)
+            { group: 1, row: 1 }, // Bậc 5: Vuốt băng - Giáp băng - Lôi châu (Hàng 2, cụm 2)
+            { group: 1, row: 3 }, // Bậc 6: Vuốt Bạch Hổ - Giáp Huyền Vũ - Nhật Nguyệt châu (Hàng 4, cụm 2)
+            { group: 1, row: 4 }, // Bậc 7: Vuốt Thiên Lôi - Giáp Phượng Hoàng - Hỗn Độn châu (Hàng 5, cụm 2)
+            { group: 2, row: 2 }, // Bậc 8: Vuốt Hắc Long - Giáp Hắc Long - Thái Cổ Hỏa Châu (Hàng 3, cụm 3)
+            { group: 1, row: 5 }, // Bậc 9: Vuốt Ma Vương - Giáp Huyết Ma - Hắc Ám Châu (Hàng 6, cụm 2)
+            { group: 2, row: 5 }  // Bậc 10: Vuốt Thiên Thần - Giáp Vòng Hào Quang - Vô Cực Thần Châu (Hàng 6, cụm 3)
+        ];
+
+        function getGearTierInfo(slotKey, tier) {
+            const cfg = gearConfigs[slotKey];
+            const safeTier = Math.max(0, Math.min(10, tier || 0));
+            const coord = GEAR_TIER_COORDS[safeTier];
+            const slotOffset = slotKey === 'claw' ? 0 : (slotKey === 'armor' ? 1 : 2);
+
+            const colIndex = coord.group * 3 + slotOffset;
+            const rowIndex = coord.row;
+
+            const posX = GEAR_SHEET_COLS > 1 ? (colIndex / (GEAR_SHEET_COLS - 1)) * 100 : 0;
+            const posY = GEAR_SHEET_ROWS > 1 ? (rowIndex / (GEAR_SHEET_ROWS - 1)) * 100 : 0;
+
+            return {
+                tier: safeTier,
+                name: cfg.tiers[safeTier] || cfg.baseName,
+                bgStyle: `background-image: url('${GEAR_SHEET_URL}'); background-size: ${GEAR_SHEET_COLS * 100}% ${GEAR_SHEET_ROWS * 100}%; background-position: ${posX}% ${posY}%; background-repeat: no-repeat;`,
+                fallbackEmoji: cfg.fallbackEmoji
+            };
+        }
         const gearConfigs = {
             claw: {
                 key: 'claw',
