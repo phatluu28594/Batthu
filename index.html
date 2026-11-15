@@ -3079,16 +3079,52 @@
         let touchStartX = 0, touchStartY = 0;
         let perfectHitBonus = false;
         let lassoSpinAngle = 0;
+        let arMode = 'scan'; // 'scan': Dò tìm neo trong camera | 'catch': Đã khóa mục tiêu, hiện dây thừng bắt
+        let arAnchor = { yawOffset: 0, pitchOffset: 0 };
+        let deviceYaw = 0, devicePitch = 0;
+        let baseDeviceYaw = null, baseDevicePitch = null;
+        let hasGyroData = false;
 
+        window.addEventListener('deviceorientation', (e) => {
+            if (e.alpha !== null && e.beta !== null) {
+                hasGyroData = true;
+                deviceYaw = e.alpha;   // Xoay ngang trái/phải (0 - 360 độ)
+                devicePitch = e.beta;  // Nghiêng lên/xuống (-180 - 180 độ)
+                if (baseDeviceYaw === null && isARActive) {
+                    baseDeviceYaw = deviceYaw;
+                    baseDevicePitch = devicePitch;
+                }
+            }
+        });
+
+        function getShortestAngleDiff(current, target) {
+            let diff = ((current - target + 540) % 360) - 180;
+            return diff;
+        }
+        
         function enterARScreen() {
             document.getElementById('map-screen').classList.add('hidden');
             document.getElementById('ar-screen').classList.remove('hidden');
-            isARActive = true; 
+            isARActive = true;
             isTugOfWarActive = false;
             perfectHitBonus = false;
+            arMode = 'scan'; // Bắt đầu ở chế độ neo trong camera, chờ người chơi chạm vào thú
+
+            // Đặt vị trí neo ngẫu nhiên lệch trái/phải một chút để người chơi lia camera tìm (hoặc nhìn thấy ngay mép màn hình)
+            baseDeviceYaw = hasGyroData ? deviceYaw : null;
+            baseDevicePitch = hasGyroData ? devicePitch : null;
+            arAnchor.yawOffset = (Math.random() > 0.5 ? 1 : -1) * (15 + Math.random() * 25); // Lệch 15° - 40°
+            arAnchor.pitchOffset = (Math.random() - 0.5) * 14;
+
             document.getElementById('tug-of-war-ui').classList.add('hidden');
             document.getElementById('ar-mon-info').innerHTML = `${currentWildMonster.emoji} ${currentWildMonster.name} <span class="${currentWildMonster.rarity.color}">${currentWildMonster.rarity.badge}</span> [${elementNames[currentWildMonster.element]?.label}]`;
-            
+            document.getElementById('ar-instruction').innerText = '📷 Lia camera tìm linh thú và CHẠM vào nó để bắt đầu săn!';
+
+            // Xin quyền cảm biến xoay trên iOS (nếu có)
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().catch(() => {});
+            }
+
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
                     let v = document.getElementById('camera-feed');
@@ -3114,9 +3150,29 @@
         function handleInputStart(x, y) {
             touchStartX = x;
             touchStartY = y;
-        }
 
+            // Nếu đang ở chế độ neo trong camera -> Kiểm tra chạm trúng linh thú
+            if (arMode === 'scan') {
+                const dist = Math.hypot(x - monsterPos.x, y - monsterPos.y);
+                if (dist <= 85) {
+                    arMode = 'catch';
+                    monsterPos.x = canvas.width / 2;
+                    monsterPos.y = canvas.height * 0.35;
+                    monsterPos.targetY = canvas.height * 0.35;
+                    resetRope();
+                    document.getElementById('ar-instruction').innerText = '🤠 Canh vòng tròn thu nhỏ rồi quăng dây! (⚡-1)';
+                    showFloatingText('🎯 ĐÃ KHÓA MỤC TIÊU!', monsterPos.x, monsterPos.y - 55, '#38bdf8');
+                    if (navigator.vibrate) navigator.vibrate(40);
+                } else {
+                    showFloatingText('👆 Chạm trực tiếp vào linh thú!', x, y - 20, '#fde047');
+                }
+            }
+        }
+        
+
+            
         function handleInputEnd(endX, endY) {
+            if (arMode === 'scan') return;
             let diffX = endX - touchStartX;
             let diffY = endY - touchStartY;
 
@@ -3195,6 +3251,91 @@
 
             ropeShakeTimer += 0.2;
             lassoSpinAngle += 0.16;
+
+            // =========================================================
+            // CHẾ ĐỘ 1: NEO LINH THÚ TRONG KHÔNG GIAN CAMERA (SPATIAL AR)
+            // =========================================================
+            if (arMode === 'scan') {
+                let deltaYaw = 0;
+                let deltaPitch = 0;
+
+                if (hasGyroData && baseDeviceYaw !== null) {
+                    deltaYaw = getShortestAngleDiff(deviceYaw, baseDeviceYaw) - arAnchor.yawOffset;
+                    deltaPitch = (devicePitch - baseDevicePitch) - arAnchor.pitchOffset;
+                } else {
+                    // Nếu test trên PC không có cảm biến xoay -> cho thú đứng yên tại điểm neo giữa bàn
+                    deltaYaw = -arAnchor.yawOffset * 0.2;
+                    deltaPitch = 0;
+                }
+
+                // Quy đổi góc xoay thực tế sang tọa độ màn hình (xoay điện thoại -> thú đứng yên tại chỗ ngoài đời)
+                const pxPerDegX = canvas.width / 55;
+                const pxPerDegY = canvas.height / 65;
+                monsterPos.x = (canvas.width / 2) + deltaYaw * pxPerDegX;
+                monsterPos.y = (canvas.height * 0.52) + deltaPitch * pxPerDegY;
+
+                // Vẽ bóng đổ tiếp xúc mặt bàn/mặt đất dưới chân linh thú
+                ctx.save();
+                ctx.beginPath();
+                ctx.ellipse(monsterPos.x, monsterPos.y + 42, 38, 12, 0, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                ctx.fill();
+                ctx.restore();
+
+                // Vẽ vòng định vị AR nhấp nháy mời người chơi chạm vào
+                const pulse = 52 + Math.sin(ropeShakeTimer * 2.5) * 6;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(monsterPos.x, monsterPos.y, pulse, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([10, 6]);
+                ctx.stroke();
+                ctx.restore();
+
+                // Vẽ linh thú đứng/nhún tại chỗ (animation idle)
+                const scanFrame = Math.floor(ropeShakeTimer * 2);
+                drawPetEntity(ctx, currentWildMonster, 'idle', scanFrame, monsterPos.x, monsterPos.y, 105, false);
+
+                // Nhãn "CHẠM ĐỂ BẮT" phía trên đầu
+                ctx.save();
+                ctx.font = 'bold 13px sans-serif';
+                ctx.fillStyle = '#fde047';
+                ctx.textAlign = 'center';
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 3;
+                const labelY = monsterPos.y - 62 + Math.sin(ropeShakeTimer * 2) * 3;
+                ctx.strokeText('👆 CHẠM ĐỂ BẮT', monsterPos.x, labelY);
+                ctx.fillText('👆 CHẠM ĐỂ BẮT', monsterPos.x, labelY);
+                ctx.restore();
+
+                // Mũi tên chỉ hướng nếu thú đang nằm ngoài mép màn hình khi xoay camera
+                if (monsterPos.x < 30 || monsterPos.x > canvas.width - 30) {
+                    ctx.save();
+                    ctx.font = 'bold 28px sans-serif';
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.textAlign = 'center';
+                    if (monsterPos.x < 30) ctx.fillText('◀️', 28, canvas.height * 0.52);
+                    else ctx.fillText('▶️', canvas.width - 28, canvas.height * 0.52);
+                    ctx.restore();
+                }
+
+                // Vẽ hiệu ứng chữ nổi (nếu có) và tiếp tục vòng lặp
+                floatingTexts.forEach((ft, i) => {
+                    ft.y -= 1.2;
+                    ft.life--;
+                    ctx.save();
+                    ctx.font = "bold 16px sans-serif";
+                    ctx.fillStyle = ft.color;
+                    ctx.textAlign = "center";
+                    ctx.fillText(ft.text, ft.x, ft.y);
+                    ctx.restore();
+                    if (ft.life <= 0) floatingTexts.splice(i, 1);
+                });
+
+                requestAnimationFrame(updateCanvasGame);
+                return;
+            }
 
             if (targetRingShrinking) {
                 targetRingRadius -= 1.4;
