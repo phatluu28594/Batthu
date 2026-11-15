@@ -1327,26 +1327,22 @@
         }
 
         // ==========================================
-        // FORMAT VẼ HÀO QUANG PHẨM CHẤT DƯỚI CHÂN THÚ
-        // ==========================================
-        // ==========================================
-        // NẠP & VẼ HÀO QUANG TỪ SPRITESHEET assets/auras.png (1 HÀNG x 5 CỘT)
+        // NẠP & VẼ HÀO QUANG 8 FRAME TỪ assets/auras.png (5 HÀNG x 8 CỘT)
         // ==========================================
         const auraSheetImg = new Image();
         let auraSheetLoaded = false;
         auraSheetImg.onload = () => { auraSheetLoaded = true; };
         auraSheetImg.src = 'assets/auras.png';
 
-        // Ánh xạ tên phẩm chất sang vị trí cột (0 -> 4) trong tấm auras.png
-        const RARITY_AURA_COL = {
-            'Thường': 0,       // Cột 1: Trắng Bạc
-            'Hiếm': 1,         // Cột 2: Xanh Ngọc
-            'Cực Hiếm': 2,     // Cột 3: Vàng Kim
-            'Huyền Thoại': 3,  // Cột 4: Đỏ Huyết Long
-            'Thần Thánh': 4    // Cột 5: Tím Vô Cực
+        // Ánh xạ tên phẩm chất sang vị trí HÀNG (row 0 -> 4) trong tấm auras.png
+        const RARITY_AURA_ROW = {
+            'Thường': 0,       // Hàng 0: Trắng Bạc
+            'Hiếm': 1,         // Hàng 1: Xanh Ngọc
+            'Cực Hiếm': 2,     // Hàng 2: Vàng Kim
+            'Huyền Thoại': 3,  // Hàng 3: Đỏ Huyết Long
+            'Thần Thánh': 4    // Hàng 4: Tím Vô Cực
         };
 
-        // Bảng màu dự phòng nếu ảnh assets/auras.png chưa load xong
         const RARITY_AURA_FALLBACK = {
             'Thường': '#e2e8f0',
             'Hiếm': '#10b981',
@@ -1358,29 +1354,31 @@
         function drawRarityAura(ctx, pet, x, footY, tick, radiusX = 42) {
             if (!pet) return;
             const rarityName = pet.rarity?.name || 'Thường';
-            const col = RARITY_AURA_COL[rarityName] ?? 0;
-            const pulse = 1 + Math.sin(tick * 2.5) * 0.06;
+            const row = RARITY_AURA_ROW[rarityName] ?? 0;
 
             ctx.save();
-            // Dùng 'screen' nếu nền auras.png là đen; nếu auras.png đã tách nền trong suốt PNG thì dùng 'source-over'
             ctx.globalCompositeOperation = 'source-over';
 
             if (auraSheetLoaded && auraSheetImg.naturalWidth > 0) {
-                const cols = 5;
+                const rows = 5;
+                const cols = 8;
                 const frameW = auraSheetImg.naturalWidth / cols;
-                const frameH = auraSheetImg.naturalHeight;
+                const frameH = auraSheetImg.naturalHeight / rows;
 
-                // Tính kích thước hiển thị dưới chân thú (giữ nguyên tỷ lệ khung ảnh gốc)
-                const drawW = radiusX * 2.3 * pulse;
+                // Chạy tuần tự 8 frame (cột 0 -> 7) theo nhịp tick của trận đấu
+                const col = Math.floor(tick * 3.5) % cols;
+
+                const drawW = radiusX * 2.3;
                 const drawH = drawW * (frameH / frameW);
 
                 ctx.drawImage(
                     auraSheetImg,
-                    col * frameW, 0, frameW, frameH, // Cắt đúng cột phẩm chất (0..4)
+                    col * frameW, row * frameH, frameW, frameH, // Cắt đúng (hàng phẩm chất, cột frame 0..7)
                     x - drawW / 2, footY - drawH * 0.55, drawW, drawH
                 );
             } else {
-                // Vẽ dự phòng bằng Canvas nếu file assets/auras.png chưa load xong
+                // Dự phòng khi ảnh chưa load xong
+                const pulse = 1 + Math.sin(tick * 2.5) * 0.06;
                 const color = RARITY_AURA_FALLBACK[rarityName] || '#e2e8f0';
                 ctx.beginPath();
                 ctx.ellipse(x, footY, radiusX * pulse, radiusX * 0.36 * pulse, 0, 0, Math.PI * 2);
