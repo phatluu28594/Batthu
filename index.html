@@ -2411,7 +2411,12 @@
         // ==========================================
         // HỆ THỐNG HỢP THỂ 3 THÚ CÙNG PHẨM CHẤT
         // ==========================================
+        // ==========================================
+        // HỆ THỐNG HỢP THỂ 3 THÚ CÙNG PHẨM CHẤT (TỶ LỆ 75% / 50% / 25% / 10%)
+        // ==========================================
         let fusionSelectedRefs = [];
+        const FUSION_RATES = [75, 50, 25, 10]; // Thường->Hiếm: 75%, Hiếm->Cực Hiếm: 50%, Cực Hiếm->Huyền Thoại: 25%, Huyền Thoại->Thần Thánh: 10%
+        const FUSION_COSTS = [200, 500, 1200, 3000];
 
         function openFusionModal(resetSelection = true) {
             if (resetSelection) fusionSelectedRefs = [];
@@ -2423,7 +2428,8 @@
             const baseRarityName = fusionSelectedRefs.length > 0 ? fusionSelectedRefs[0].pet.rarity.name : null;
             const currentRarityIdx = baseRarityName ? rarities.findIndex(r => r.name === baseRarityName) : -1;
             const nextRarity = (currentRarityIdx >= 0 && currentRarityIdx < rarities.length - 1) ? rarities[currentRarityIdx + 1] : null;
-            const fusionGoldCost = currentRarityIdx >= 0 ? [200, 500, 1200, 3000][currentRarityIdx] || 500 : 200;
+            const fusionGoldCost = currentRarityIdx >= 0 ? (FUSION_COSTS[currentRarityIdx] || 500) : 200;
+            const successRate = currentRarityIdx >= 0 ? (FUSION_RATES[currentRarityIdx] || 10) : 75;
 
             let slotsHtml = [0, 1, 2].map(slotIdx => {
                 const item = fusionSelectedRefs[slotIdx];
@@ -2444,19 +2450,22 @@
             }).join('');
 
             let previewHtml = '';
-            if (fusionSelectedRefs.length === 3 && nextRarity) {
+            if (fusionSelectedRefs.length > 0 && nextRarity) {
                 const mainPet = fusionSelectedRefs[0].pet;
+                const rateColor = successRate >= 75 ? 'text-emerald-400' : successRate >= 50 ? 'text-amber-300' : successRate >= 25 ? 'text-orange-400' : 'text-red-400';
                 previewHtml = `
-                <div class="bg-purple-950/60 border border-purple-400/60 rounded-xl p-2.5 mb-3 text-center">
-                    <div class="text-[11px] font-bold text-purple-200">✨ Kết quả đột phá phẩm chất:</div>
-                    <div class="text-xs font-black text-yellow-300 mt-0.5">
-                        ${mainPet.name} • <span class="${nextRarity.color}">${nextRarity.badge} (${nextRarity.name})</span>
+                <div class="bg-purple-950/60 border border-purple-400/60 rounded-xl p-2.5 mb-3 text-center space-y-1">
+                    <div class="text-[11px] font-bold text-purple-200">
+                        ✨ Đột phá: <span class="text-yellow-300">${mainPet.name}</span> ➔ <span class="${nextRarity.color}">${nextRarity.badge} (${nextRarity.name})</span>
                     </div>
+                    <div class="text-xs font-black ${rateColor}">🎯 Tỷ lệ thành công: ${successRate}%</div>
+                    <div class="text-[10px] text-zinc-300">(Thất bại sẽ giữ lại Thú Chính, tiêu hao 2 Nguyên Liệu)</div>
                 </div>`;
             } else {
                 previewHtml = `
-                <div class="bg-zinc-950/70 border border-zinc-800 rounded-xl p-2 mb-3 text-center text-[11px] text-zinc-400">
-                    Chọn <span class="text-amber-300 font-bold">3 linh thú cùng phẩm chất</span> (trừ Thần Thánh) để hợp thể lên bậc cao hơn!
+                <div class="bg-zinc-950/70 border border-zinc-800 rounded-xl p-2 mb-3 text-center text-[10px] text-zinc-300 space-y-0.5">
+                    <div>Chọn <span class="text-amber-300 font-bold">3 linh thú cùng phẩm chất</span> để đột phá lên bậc cao hơn!</div>
+                    <div class="text-zinc-400">Tỷ lệ: ⚪➔🟢 <span class="text-emerald-400 font-bold">75%</span> | 🟢➔🟡 <span class="text-amber-300 font-bold">50%</span> | 🟡➔🔴 <span class="text-orange-400 font-bold">25%</span> | 🔴➔🟣 <span class="text-red-400 font-bold">10%</span></div>
                 </div>`;
             }
 
@@ -2506,7 +2515,7 @@
             ${listHtml}
             <button onclick="executePetFusion()" ${readyToFuse ? '' : 'disabled'}
                 class="w-full py-3 rounded-xl font-extrabold text-xs shadow-lg transition ${readyToFuse ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:brightness-110 text-white cursor-pointer' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}">
-                ${readyToFuse ? `⚗️ Xác Nhận Hợp Thể (${fusionGoldCost}🪙)` : `Chọn đủ 3 thú cùng phẩm chất (${fusionSelectedRefs.length}/3)`}
+                ${readyToFuse ? `⚗️ Xác Nhận Hợp Thể (${successRate}% • ${fusionGoldCost}🪙)` : `Chọn đủ 3 thú cùng phẩm chất (${fusionSelectedRefs.length}/3)`}
             </button>`;
         }
 
@@ -2530,14 +2539,33 @@
             if (currentIdx < 0 || currentIdx >= rarities.length - 1) return;
 
             const nextRarity = rarities[currentIdx + 1];
-            const cost = [200, 500, 1200, 3000][currentIdx] || 500;
+            const cost = FUSION_COSTS[currentIdx] || 500;
+            const successRate = FUSION_RATES[currentIdx] || 10;
+
             if (playerCoins < cost) {
                 alert(`⚠️ Không đủ ${cost} Vàng để tiến hành hợp thể!`);
                 return;
             }
 
             playerCoins -= cost;
+            const isSuccess = (Math.random() * 100) < successRate;
 
+            if (!isSuccess) {
+                // Thất bại: Giữ lại Thú Chính (ô 0), chỉ tiêu hao 2 thú Nguyên Liệu (ô 1 & ô 2)
+                const materialsToRemove = [fusionSelectedRefs[1].pet, fusionSelectedRefs[2].pet];
+                team = team.filter(p => !materialsToRemove.includes(p));
+                farm = farm.filter(p => !materialsToRemove.includes(p));
+
+                fusionSelectedRefs = [];
+                saveGameData();
+                updateTeamCount();
+                openFusionModal(true);
+
+                alert(`💥 HỢP THỂ THẤT BẠI! (Tỷ lệ ${successRate}%)\n😢 2 linh thú nguyên liệu đã tiêu tán, may mắn giữ lại được Thú Chính [${mainPet.name}]!`);
+                return;
+            }
+
+            // Thành công: Xóa cả 3 thú cũ và tạo thú mới phẩm chất cao hơn
             const ratio = nextRarity.statMultiplier / (mainPet.rarity.statMultiplier || 1.0);
             const highestLv = Math.max(...fusionSelectedRefs.map(s => s.pet.level || 1));
 
@@ -2565,7 +2593,7 @@
             updateTeamCount();
             closeModal();
 
-            alert(`🎉 HỢP THỂ THÀNH CÔNG!\n✨ Linh thú [${evolvedPet.name}] đã đột phá lên phẩm chất ${nextRarity.badge} (${nextRarity.name}) với hào quang mới!`);
+            alert(`🎉 HỢP THỂ THÀNH CÔNG! (Tỷ lệ ${successRate}%)\n✨ Linh thú [${evolvedPet.name}] đã đột phá lên phẩm chất ${nextRarity.badge} (${nextRarity.name}) với hào quang mới!`);
         }
 
         function closeSubRoomScreen() {
