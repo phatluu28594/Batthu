@@ -2363,12 +2363,15 @@
             } else if (roomType === 'evolve') {
                 document.getElementById('hospital-screen').classList.add('hidden');
                 bgImg.src = './evolve-bg.png';
-                titleEl.innerHTML = '💎 Khu Tiến Hóa Ngũ Hành';
+                titleEl.innerHTML = '💎 Khu Tiến Hóa & Hợp Thể';
                 titleEl.style.borderColor = '#fbbf24';
                 titleEl.style.color = '#fde047';
                 actionBtn.innerHTML = `
-                <div onclick="openHospitalActionModal('evolve')" style="position:absolute; top:52%; left:50%; transform:translate(-50%, -50%);" class="pointer-events-auto cursor-pointer animate-bounce">
+                <div onclick="openHospitalActionModal('evolve')" style="position:absolute; top:48%; left:34%; transform:translate(-50%, -50%);" class="pointer-events-auto cursor-pointer animate-bounce">
                     <div class="home-label" style="border-color:#fbbf24; color:#fef08a;">✨ Tiến Hóa Đá</div>
+                </div>
+                <div onclick="openFusionModal()" style="position:absolute; top:48%; left:66%; transform:translate(-50%, -50%);" class="pointer-events-auto cursor-pointer animate-bounce">
+                    <div class="home-label" style="border-color:#c084fc; color:#f3e8ff;">⚗️ Hợp Thể Phẩm Chất</div>
                 </div>`;
 
             } else if (roomType === 'breed') {
@@ -2403,6 +2406,166 @@
 
             screen.classList.remove('hidden');
             setTimeout(() => centerPanorama('sub-room-scroller'), 50);
+        }
+
+        // ==========================================
+        // HỆ THỐNG HỢP THỂ 3 THÚ CÙNG PHẨM CHẤT
+        // ==========================================
+        let fusionSelectedRefs = [];
+
+        function openFusionModal(resetSelection = true) {
+            if (resetSelection) fusionSelectedRefs = [];
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            const ownedList = getAllOwnedPets();
+            const baseRarityName = fusionSelectedRefs.length > 0 ? fusionSelectedRefs[0].pet.rarity.name : null;
+            const currentRarityIdx = baseRarityName ? rarities.findIndex(r => r.name === baseRarityName) : -1;
+            const nextRarity = (currentRarityIdx >= 0 && currentRarityIdx < rarities.length - 1) ? rarities[currentRarityIdx + 1] : null;
+            const fusionGoldCost = currentRarityIdx >= 0 ? [200, 500, 1200, 3000][currentRarityIdx] || 500 : 200;
+
+            let slotsHtml = [0, 1, 2].map(slotIdx => {
+                const item = fusionSelectedRefs[slotIdx];
+                if (item) {
+                    return `
+                    <div onclick="removeFusionSlot(${slotIdx})" class="bg-zinc-800 border-2 ${item.pet.rarity.bg} rounded-xl p-2 flex flex-col items-center justify-center cursor-pointer relative">
+                        <span class="absolute top-1 right-1.5 text-[10px] text-red-400 font-black">✕</span>
+                        ${getPetSpriteHtml(item.pet, 'idle', 42)}
+                        <div class="text-[10px] font-bold text-white truncate w-full text-center mt-1">${item.pet.name}</div>
+                        <div class="text-[9px] ${item.pet.rarity.color}">${item.pet.rarity.badge}</div>
+                    </div>`;
+                }
+                return `
+                <div class="bg-zinc-950/80 border-2 border-dashed border-zinc-700 rounded-xl p-2 flex flex-col items-center justify-center min-h-[86px] text-zinc-500">
+                    <span class="text-lg">➕</span>
+                    <span class="text-[9px] font-bold mt-1">${slotIdx === 0 ? 'Thú Chính' : 'Nguyên Liệu ' + slotIdx}</span>
+                </div>`;
+            }).join('');
+
+            let previewHtml = '';
+            if (fusionSelectedRefs.length === 3 && nextRarity) {
+                const mainPet = fusionSelectedRefs[0].pet;
+                previewHtml = `
+                <div class="bg-purple-950/60 border border-purple-400/60 rounded-xl p-2.5 mb-3 text-center">
+                    <div class="text-[11px] font-bold text-purple-200">✨ Kết quả đột phá phẩm chất:</div>
+                    <div class="text-xs font-black text-yellow-300 mt-0.5">
+                        ${mainPet.name} • <span class="${nextRarity.color}">${nextRarity.badge} (${nextRarity.name})</span>
+                    </div>
+                </div>`;
+            } else {
+                previewHtml = `
+                <div class="bg-zinc-950/70 border border-zinc-800 rounded-xl p-2 mb-3 text-center text-[11px] text-zinc-400">
+                    Chọn <span class="text-amber-300 font-bold">3 linh thú cùng phẩm chất</span> (trừ Thần Thánh) để hợp thể lên bậc cao hơn!
+                </div>`;
+            }
+
+            let listHtml = `<div class="space-y-1.5 max-h-52 overflow-y-auto pr-1 mb-3">`;
+            if (ownedList.length === 0) {
+                listHtml += `<div class="text-xs text-zinc-500 text-center py-4">Không có linh thú nào!</div>`;
+            } else {
+                ownedList.forEach(item => {
+                    const p = item.pet;
+                    const isMaxRarity = p.rarity.name === 'Thần Thánh';
+                    const isAlreadyPicked = fusionSelectedRefs.some(sel => sel.pet === p);
+                    const isWrongRarity = baseRarityName && p.rarity.name !== baseRarityName;
+                    const isLastTeamPet = (item.source === 'team' && team.length <= 1 && fusionSelectedRefs.filter(s => s.source === 'team').length >= team.length - 1 && !isAlreadyPicked);
+
+                    const disabled = isMaxRarity || isAlreadyPicked || isWrongRarity || isLastTeamPet;
+                    let statusTag = 'Chọn';
+                    if (isAlreadyPicked) statusTag = 'Đã chọn';
+                    else if (isMaxRarity) statusTag = 'Tối đa';
+                    else if (isWrongRarity) statusTag = 'Khác bậc';
+                    else if (isLastTeamPet) statusTag = 'Đang trực';
+
+                    listHtml += `
+                    <div onclick="${disabled ? '' : `toggleFusionPick('${item.source}', ${item.index})`}"
+                        class="flex items-center justify-between p-2 rounded-xl border ${disabled ? 'bg-zinc-950/50 border-zinc-800 opacity-40 cursor-not-allowed' : `bg-zinc-800 hover:bg-zinc-700 ${p.rarity.bg} cursor-pointer`}">
+                        <div class="flex items-center gap-2">
+                            ${getPetSpriteHtml(p, 'idle', 36)}
+                            <div>
+                                <div class="text-xs font-bold text-white">${p.name} <span class="${p.rarity.color}">${p.rarity.badge}</span> <span class="text-amber-300 text-[10px]">Lv.${Math.floor(p.level)}</span></div>
+                                <div class="text-[10px] text-zinc-400">${item.source === 'team' ? '🎒 Đội' : '🏡 Trại'} • HP ${p.maxHp} • ATK ${Math.floor(p.atk)}</div>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-1 rounded ${disabled ? 'text-zinc-500' : 'bg-purple-600 text-white'}">${statusTag}</span>
+                    </div>`;
+                });
+            }
+            listHtml += `</div>`;
+
+            const readyToFuse = fusionSelectedRefs.length === 3 && nextRarity;
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-base text-purple-300">⚗️ Hợp Thể Nâng Phẩm Chất</h3>
+                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mb-2.5">${slotsHtml}</div>
+            ${previewHtml}
+            ${listHtml}
+            <button onclick="executePetFusion()" ${readyToFuse ? '' : 'disabled'}
+                class="w-full py-3 rounded-xl font-extrabold text-xs shadow-lg transition ${readyToFuse ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:brightness-110 text-white cursor-pointer' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}">
+                ${readyToFuse ? `⚗️ Xác Nhận Hợp Thể (${fusionGoldCost}🪙)` : `Chọn đủ 3 thú cùng phẩm chất (${fusionSelectedRefs.length}/3)`}
+            </button>`;
+        }
+
+        function toggleFusionPick(source, idx) {
+            if (fusionSelectedRefs.length >= 3) return;
+            const pet = source === 'team' ? team[idx] : farm[idx];
+            if (!pet) return;
+            fusionSelectedRefs.push({ pet, source, index: idx });
+            openFusionModal(false);
+        }
+
+        function removeFusionSlot(slotIdx) {
+            fusionSelectedRefs.splice(slotIdx, 1);
+            openFusionModal(false);
+        }
+
+        function executePetFusion() {
+            if (fusionSelectedRefs.length !== 3) return;
+            const mainPet = fusionSelectedRefs[0].pet;
+            const currentIdx = rarities.findIndex(r => r.name === mainPet.rarity.name);
+            if (currentIdx < 0 || currentIdx >= rarities.length - 1) return;
+
+            const nextRarity = rarities[currentIdx + 1];
+            const cost = [200, 500, 1200, 3000][currentIdx] || 500;
+            if (playerCoins < cost) {
+                alert(`⚠️ Không đủ ${cost} Vàng để tiến hành hợp thể!`);
+                return;
+            }
+
+            playerCoins -= cost;
+
+            const ratio = nextRarity.statMultiplier / (mainPet.rarity.statMultiplier || 1.0);
+            const highestLv = Math.max(...fusionSelectedRefs.map(s => s.pet.level || 1));
+
+            const petsToRemove = fusionSelectedRefs.map(s => s.pet);
+            team = team.filter(p => !petsToRemove.includes(p));
+            farm = farm.filter(p => !petsToRemove.includes(p));
+
+            const evolvedPet = {
+                ...mainPet,
+                id: 'pet_' + Date.now(),
+                level: highestLv,
+                rarity: nextRarity,
+                hearts: 3,
+                maxHp: Math.floor(mainPet.maxHp * ratio),
+                hp: Math.floor(mainPet.maxHp * ratio),
+                atk: Math.floor(mainPet.atk * ratio),
+                speed: Math.floor((mainPet.speed || 50) * (1 + (ratio - 1) * 0.5))
+            };
+
+            if (team.length < 3) team.push(evolvedPet);
+            else farm.push(evolvedPet);
+
+            fusionSelectedRefs = [];
+            saveGameData();
+            updateTeamCount();
+            closeModal();
+
+            alert(`🎉 HỢP THỂ THÀNH CÔNG!\n✨ Linh thú [${evolvedPet.name}] đã đột phá lên phẩm chất ${nextRarity.badge} (${nextRarity.name}) với hào quang mới!`);
         }
 
         function closeSubRoomScreen() {
