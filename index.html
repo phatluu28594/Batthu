@@ -1103,6 +1103,55 @@
         }
         preloadBossSprites();
 
+        // ==========================================
+        // HỆ THỐNG HIỆU ỨNG TRẠNG THÁI (assets/magic.jpg - 5x8)
+        // ==========================================
+        const statusFxImg = new Image();
+        statusFxImg.src = 'assets/magic.jpg';
+
+        const statusFxRowMap = {
+            stun: 0,    // Hàng 1: Choáng (Sao vàng xoay)
+            poison: 1,  // Hàng 2: Trúng Độc (Bong bóng tím xanh)
+            burn: 2,    // Hàng 3: Thiêu Đốt (Lửa cháy)
+            slow: 3,    // Hàng 4: Làm Chậm (Băng tuyết)
+            shield: 4   // Hàng 5: Buff Giáp (Khiên lục giác xanh)
+        };
+
+        function drawSpriteStatusFX(ctx, st, x, y, tick, size = 110) {
+            if (!st || !statusFxImg.complete || statusFxImg.naturalWidth === 0) return;
+
+            const cols = 8;
+            const totalRows = 5;
+            const fw = statusFxImg.naturalWidth / cols;
+            const fh = statusFxImg.naturalHeight / totalRows;
+            const col = Math.floor(tick * 2.2) % cols;
+
+            ['shield', 'slow', 'burn', 'poison', 'stun'].forEach(type => {
+                if (st[type] > 0) {
+                    const row = statusFxRowMap[type];
+                    // Căn chỉnh độ cao từng loại hiệu ứng cho khớp cơ thể nhân vật
+                    let offsetY = 0;
+                    let drawSize = size;
+                    if (type === 'stun') {
+                        offsetY = -size * 0.42; // Sao choáng bay trên đỉnh đầu
+                        drawSize = size * 0.85;
+                    } else if (type === 'slow' || type === 'burn') {
+                        offsetY = size * 0.14;  // Lửa & Băng ôm từ chân lên thân
+                    }
+
+                    ctx.save();
+                    // 'screen' tự động loại bỏ nền đen của file .jpg và giữ trọn ánh sáng rực rỡ
+                    ctx.globalCompositeOperation = 'screen';
+                    ctx.drawImage(
+                        statusFxImg,
+                        col * fw, row * fh, fw, fh,
+                        x - drawSize / 2, (y + offsetY) - drawSize / 2, drawSize, drawSize
+                    );
+                    ctx.restore();
+                }
+            });
+        }
+
         function drawBossEntity(ctx, enemy, state, frameIndex, x, y, size = 90) {
             let bossKey = enemy.spriteKey;
             let cfg = bossKey ? bossSpriteConfigs[bossKey] : null;
@@ -3454,6 +3503,8 @@
                         } :
                         { name: 'Đối Thủ PvP', element: 'Tho', emoji: '🤖', hp: 160, maxHp: 160, atk: 25, speed: 52, accuracy: 90, dodgeRate: 18, critRate: 18, blockRate: 18, armorBreak: 16, comboRate: 22 };
             let enemyHp = enemy.hp;
+            let teamStatus = activeTeam.map(() => ({ stun: 0, poison: 0, burn: 0, slow: 0, shield: 0 }));
+            let enemyStatus = { stun: 0, poison: 0, burn: 0, slow: 0, shield: 0 };
             document.getElementById('battle-enemy-name').innerText = `${enemy.name} [${elementNames[enemy.element]?.label}] (⚡${enemy.speed} | 🔥${enemy.comboRate}%)`;
 
             battleCanvas = document.getElementById('battleCanvas');
@@ -3528,7 +3579,49 @@
 
                         if (turnQueue.length > 0) {
                             let nextActor = turnQueue.shift();
-                            attacker = { side: nextActor.side, index: nextActor.index, step: 0, isComboHit: false };
+                            let st = nextActor.side === 'team' ? teamStatus[nextActor.index] : enemyStatus;
+                            let actorName = nextActor.side === 'team' ? activeTeam[nextActor.index].name : enemy.name;
+                            let actorMaxHp = nextActor.side === 'team' ? activeTeam[nextActor.index].maxHp : enemy.maxHp;
+                            let fxX = nextActor.side === 'team' ? (teamSlots[nextActor.index]?.x || cx - 85) : defaultEnemyX;
+                            let fxY = nextActor.side === 'team' ? (teamSlots[nextActor.index]?.y || cy) : cy;
+
+                            let dotDmg = 0;
+                            let dotLabel = [];
+                            if (st.poison > 0) {
+                                dotDmg += Math.max(5, Math.floor(actorMaxHp * 0.06));
+                                st.poison--;
+                                dotLabel.push('🟢Độc');
+                            }
+                            if (st.burn > 0) {
+                                dotDmg += Math.max(6, Math.floor(actorMaxHp * 0.07));
+                                st.burn--;
+                                dotLabel.push('🔥Cháy');
+                            }
+                            if (dotDmg > 0) {
+                                if (nextActor.side === 'team') {
+                                    teamHpList[nextActor.index] = Math.max(0, teamHpList[nextActor.index] - dotDmg);
+                                    activeTeam[nextActor.index].hp = teamHpList[nextActor.index];
+                                } else {
+                                    enemyHp = Math.max(0, enemyHp - dotDmg);
+                                }
+                                impactEffects.push({ x: fxX, y: fxY - 10, radius: 8, alpha: 1, color: '#4ade80', text: `-${dotDmg} (${dotLabel.join('+')})` });
+                                document.getElementById('battle-log').innerText = `[Hiệp ${roundNumber}] ${actorName} chịu -${dotDmg} sát thương từ ${dotLabel.join(' & ')}!`;
+                            }
+
+                            if (st.slow > 0) st.slow--;
+                            if (st.shield > 0) st.shield--;
+
+                            let stillAlive = nextActor.side === 'team' ? (teamHpList[nextActor.index] > 0) : (enemyHp > 0);
+                            if (!stillAlive) {
+                                turnDelayFrames = 14;
+                            } else if (st.stun > 0) {
+                                st.stun--;
+                                impactEffects.push({ x: fxX, y: fxY - 20, radius: 12, alpha: 1, color: '#facc15', text: `💫 CHOÁNG! Mất lượt` });
+                                document.getElementById('battle-log').innerText = `[Hiệp ${roundNumber}] 💫 ${actorName} bị choáng, mất lượt!`;
+                                turnDelayFrames = 18;
+                            } else {
+                                attacker = { side: nextActor.side, index: nextActor.index, step: 0, isComboHit: false };
+                            }
                         }
                     }
                 }
@@ -3589,6 +3682,16 @@
                                     let finalDmg = Math.max(1, Math.floor(dmg));
                                     enemyHp = Math.max(0, enemyHp - finalDmg);
                                     enemyHitShake = 12;
+
+                                    let traitTag = '';
+                                    if (pet.trait && (Math.random() * 100 < (pet.trait.chance || 25))) {
+                                        let tType = pet.trait.type;
+                                        if (tType === 'stun') { enemyStatus.stun = 1; traitTag = ' 💫[CHOÁNG!]'; }
+                                        else if (tType === 'poison') { enemyStatus.poison = 2; traitTag = ' 🟢[TRÚNG ĐỘC!]'; }
+                                        else if (tType === 'burn') { enemyStatus.burn = 2; traitTag = ' 🔥[THIÊU ĐỐT!]'; }
+                                        else if (tType === 'slow') { enemyStatus.slow = 2; traitTag = ' ❄️[LÀM CHẬM!]'; }
+                                        else if (tType === 'shield') { teamStatus[idx].shield = 2; traitTag = ' 🛡️[BUFF GIÁP!]'; }
+                                    }
 
                                     let tags = `${isCrit ? '💥' : ''}${isBlocked ? '🛡️' : ''}${attacker.isComboHit ? '🔥' : ''}`;
                                     impactEffects.push({
@@ -3738,10 +3841,12 @@
                     battleCtx.textAlign = "center";
                     battleCtx.textBaseline = "middle";
                     battleCtx.fillText(enemy.emoji, 0, 0);
+                    if (!isEnemyDead) drawSpriteStatusFX(battleCtx, enemyStatus, finalEnX, finalEnY, idleTick, mode === 'boss' ? 140 : 120);
                     battleCtx.restore();
                 }
 
                 activeTeam.forEach((pet, i) => {
+                    if (!isPetDead) drawSpriteStatusFX(battleCtx, teamStatus[i], posX, posY, idleTick, 105);
                     let isPetDead = teamHpList[i] <= 0;
                     let isAttacking = (attacker && attacker.side === 'team' && attacker.index === i);
                     let isHit = teamHitShake[i] > 0;
