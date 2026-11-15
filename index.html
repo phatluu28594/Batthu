@@ -1149,30 +1149,28 @@
             shield: 4   // Hàng 5: Buff Giáp (Khiên lục giác xanh)
         };
 
-        function drawSpriteStatusFX(ctx, st, x, y, tick, size = 110) {
+        function drawSpriteStatusFX(ctx, st, x, y, tick, size = 140) {
             if (!st || !statusFxImg.complete || statusFxImg.naturalWidth === 0) return;
 
             const cols = 8;
             const totalRows = 5;
             const fw = statusFxImg.naturalWidth / cols;
             const fh = statusFxImg.naturalHeight / totalRows;
-            const col = Math.floor(tick * 2.2) % cols;
+            const col = Math.floor(tick * 2.5) % cols;
 
             ['shield', 'slow', 'burn', 'poison', 'stun'].forEach(type => {
                 if (st[type] > 0) {
                     const row = statusFxRowMap[type];
-                    // Căn chỉnh độ cao từng loại hiệu ứng cho khớp cơ thể nhân vật
                     let offsetY = 0;
                     let drawSize = size;
                     if (type === 'stun') {
-                        offsetY = -size * 0.42; // Sao choáng bay trên đỉnh đầu
-                        drawSize = size * 0.85;
+                        offsetY = -size * 0.18; // Hạ nhẹ xuống để vòng sao nằm vừa khít trên đỉnh đầu nhân vật
+                        drawSize = size * 0.95;
                     } else if (type === 'slow' || type === 'burn') {
-                        offsetY = size * 0.14;  // Lửa & Băng ôm từ chân lên thân
+                        offsetY = size * 0.12;
                     }
 
                     ctx.save();
-                    // 'screen' tự động loại bỏ nền đen của file .jpg và giữ trọn ánh sáng rực rỡ
                     ctx.globalCompositeOperation = 'screen';
                     ctx.drawImage(
                         statusFxImg,
@@ -2660,8 +2658,11 @@
                 <div class="mb-1 flex justify-center">${getPetSpriteHtml(pet, 'walk', 92)}</div>
                 <div class="text-sm font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${Math.floor(pet.level)}</span></div>
                 <div class="text-[11px] font-bold ${elementNames[pet.element]?.color}">Hệ: ${elementNames[pet.element]?.label} • Tim: ${heartsStr}</div>
-                <div class="text-[11px] text-amber-300 mt-0.5">Đặc kỹ: ${pet.trait.icon} ${pet.trait.name} (${pet.trait.chance}%)</div>
-
+                <div class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
+                    <span class="w-5 h-5 inline-block rounded-full bg-black" style="background-image:url('assets/magic.png'); background-size:800% 500%; background-position:0% ${(statusFxRowMap[pet.trait.type] || 0) * 25}%; mix-blend-mode:screen;"></span>
+                    <span class="text-[11px] font-extrabold text-amber-300">Đặc kỹ: ${pet.trait.name} (${Math.max(30, pet.trait.chance || 30)}%)</span>
+                </div>
+                
                 <!-- KHUNG 3 ẤN KÝ & ĐỘT PHÁ ĐỒNG BỘ -->
                 <div class="w-full mt-3 text-left">
                     <div class="flex justify-between items-center mb-1.5">
@@ -3656,10 +3657,10 @@
                             if (!stillAlive) {
                                 turnDelayFrames = 14;
                             } else if (st.stun > 0) {
-                                st.stun--;
-                                impactEffects.push({ x: fxX, y: fxY - 20, radius: 12, alpha: 1, color: '#facc15', text: `💫 CHOÁNG! Mất lượt` });
+                                st.stun = 0;
+                                impactEffects.push({ x: fxX, y: fxY - 20, radius: 14, alpha: 1, color: '#facc15', text: `💫 CHOÁNG! Mất lượt` });
                                 document.getElementById('battle-log').innerText = `[Hiệp ${roundNumber}] 💫 ${actorName} bị choáng, mất lượt!`;
-                                turnDelayFrames = 18;
+                                turnDelayFrames = 26;
                             } else {
                                 attacker = { side: nextActor.side, index: nextActor.index, step: 0, isComboHit: false };
                             }
@@ -3725,13 +3726,25 @@
                                     enemyHitShake = 12;
 
                                     let traitTag = '';
-                                    if (pet.trait && (Math.random() * 100 < (pet.trait.chance || 25))) {
+                                    let triggerChance = Math.max(30, pet.trait?.chance || 30);
+                                    if (pet.trait && (Math.random() * 100 < triggerChance)) {
                                         let tType = pet.trait.type;
-                                        if (tType === 'stun') { enemyStatus.stun = 1; traitTag = ' 💫[CHOÁNG!]'; }
-                                        else if (tType === 'poison') { enemyStatus.poison = 2; traitTag = ' 🟢[TRÚNG ĐỘC!]'; }
-                                        else if (tType === 'burn') { enemyStatus.burn = 2; traitTag = ' 🔥[THIÊU ĐỐT!]'; }
-                                        else if (tType === 'slow') { enemyStatus.slow = 2; traitTag = ' ❄️[LÀM CHẬM!]'; }
-                                        else if (tType === 'shield') { teamStatus[idx].shield = 2; traitTag = ' 🛡️[BUFF GIÁP!]'; }
+                                        if (tType === 'stun') {
+                                            enemyStatus.stun = 2;
+                                            traitTag = ' 💫[GÂY CHOÁNG!]';
+                                        } else if (tType === 'poison') {
+                                            enemyStatus.poison = 2;
+                                            traitTag = ' 🟢[TRÚNG ĐỘC!]';
+                                        } else if (tType === 'burn') {
+                                            enemyStatus.burn = 2;
+                                            traitTag = ' 🔥[THIÊU ĐỐT!]';
+                                        } else if (tType === 'slow') {
+                                            enemyStatus.slow = 2;
+                                            traitTag = ' ❄️[LÀM CHẬM!]';
+                                        } else if (tType === 'shield') {
+                                            teamStatus[idx].shield = 2;
+                                            traitTag = ' 🛡️[BUFF GIÁP!]';
+                                        }
                                     }
 
                                     let tags = `${isCrit ? '💥' : ''}${isBlocked ? '🛡️' : ''}${attacker.isComboHit ? '🔥' : ''}`;
