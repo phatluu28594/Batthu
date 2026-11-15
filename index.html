@@ -5044,8 +5044,12 @@
             }
         }
     </script>
-        
-            <script type="module">
+       
+
+
+
+    
+                <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { 
             getFirestore, doc, setDoc, getDoc, 
@@ -5066,9 +5070,45 @@
         const db = getFirestore(app);
     
         // ==========================================
-        // 1. MÀN HÌNH ĐĂNG KÝ / ĐĂNG NHẬP KHI VÀO GAME
+        // 1. QUẢN LÝ PHIÊN ĐĂNG NHẬP DUY NHẤT (1 MÁY / 1 NICK)
         // ==========================================
+        let sessionUnsubscribe = null;
         let selectedGender = localStorage.getItem("ar_cloud_gender") || "Nam";
+    
+        function generateSessionToken() {
+            return "sess_" + Date.now() + "_" + Math.random().toString(36).substring(2, 9);
+        }
+    
+        // Lắng nghe thay đổi phiên đăng nhập theo thời gian thực để đá máy cũ
+        window.startSessionGuard = function(username) {
+            if (sessionUnsubscribe) {
+                sessionUnsubscribe();
+                sessionUnsubscribe = null;
+            }
+            if (!username) return;
+    
+            const docId = username.toLowerCase();
+            sessionUnsubscribe = onSnapshot(doc(db, "players", docId), (snap) => {
+                if (!snap.exists()) return;
+                const remoteToken = snap.data().sessionToken;
+                const localToken = localStorage.getItem("ar_cloud_session");
+    
+                // Nếu trên mây có token mới khác với token của máy hiện tại -> Có máy khác vừa đăng nhập!
+                if (remoteToken && localToken && remoteToken !== localToken) {
+                    if (sessionUnsubscribe) {
+                        sessionUnsubscribe();
+                        sessionUnsubscribe = null;
+                    }
+                    localStorage.removeItem("ar_cloud_user");
+                    localStorage.removeItem("ar_cloud_pin");
+                    localStorage.removeItem("ar_cloud_gender");
+                    localStorage.removeItem("ar_cloud_session");
+    
+                    alert("⚠️ Tài khoản của bạn vừa được đăng nhập trên một thiết bị khác!\nThiết bị này sẽ tự động đăng xuất để bảo vệ dữ liệu.");
+                    openCloudAccountModal(true);
+                }
+            });
+        };
     
         window.selectAccountGender = function(gender) {
             selectedGender = gender;
@@ -5120,7 +5160,7 @@
             <div class="bg-emerald-950/50 border border-emerald-500/40 rounded-xl p-2.5 mb-3 flex items-center justify-between">
                 <div class="text-xs">
                     <div class="text-emerald-300 font-extrabold">${selectedGender === 'Nữ' ? '👧' : '👦'} ${savedUser} <span class="text-[10px] text-zinc-400">(${selectedGender})</span></div>
-                    <div class="text-[10px] text-zinc-400">Đang đồng bộ đám mây</div>
+                    <div class="text-[10px] text-zinc-400">Đang bảo vệ phiên 1 thiết bị</div>
                 </div>
                 <button onclick="syncCurrentAccountToCloud()" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg text-[11px] font-extrabold text-white cursor-pointer">⬆️ Lưu Ngay</button>
             </div>` : `
@@ -5131,8 +5171,8 @@
     
             <div class="space-y-2.5 mb-3">
                 <div>
-                    <label class="text-[11px] text-zinc-400 font-bold block mb-1">ID Game (Tên nhân vật, viết liền không dấu càng tốt):</label>
-                    <input id="cloud-username-input" type="text" maxlength="16" value="${savedUser}" placeholder="VD: PhatLuu28" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-400 outline-none">
+                    <label class="text-[11px] text-zinc-400 font-bold block mb-1">ID Game (3-16 ký tự):</label>
+                    <input id="cloud-username-input" type="text" maxlength="16" value="${savedUser}" ${savedUser ? 'readonly' : ''} placeholder="VD: PhatLuu28" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-400 outline-none">
                 </div>
                 <div>
                     <label class="text-[11px] text-zinc-400 font-bold block mb-1">Mã PIN Bảo Mật (Đúng 8 chữ số):</label>
@@ -5159,7 +5199,7 @@
             if (savedUser) selectAccountGender(selectedGender);
         };
     
-        // ĐĂNG KÝ TÀI KHOẢN MỚI (ID GAME + PIN 8 SỐ + GIỚI TÍNH)
+        // ĐĂNG KÝ TÀI KHOẢN MỚI
         window.registerCloudAccount = async function() {
             const username = document.getElementById("cloud-username-input")?.value.trim();
             const pin = document.getElementById("cloud-pin-input")?.value.trim();
@@ -5169,6 +5209,7 @@
     
             const docId = username.toLowerCase();
             const userRef = doc(db, "players", docId);
+            const newToken = generateSessionToken();
     
             try {
                 const snap = await getDoc(userRef);
@@ -5180,6 +5221,7 @@
                     username: username,
                     pin: pin,
                     gender: selectedGender,
+                    sessionToken: newToken,
                     coins: playerCoins,
                     diamonds: playerDiamonds,
                     maxPetCapacity: maxPetCapacity,
@@ -5198,14 +5240,17 @@
                 localStorage.setItem("ar_cloud_user", username);
                 localStorage.setItem("ar_cloud_pin", pin);
                 localStorage.setItem("ar_cloud_gender", selectedGender);
+                localStorage.setItem("ar_cloud_session", newToken);
+    
+                startSessionGuard(username);
                 closeModal();
-                alert(`🎉 Đăng ký thành công Thợ Săn [${username}] (${selectedGender})!\nDữ liệu của bạn đã được bảo vệ bằng Mã PIN 8 số.`);
+                alert(`🎉 Đăng ký thành công Thợ Săn [${username}] (${selectedGender})!`);
             } catch (err) {
                 alert("❌ Lỗi đăng ký: " + err.message);
             }
         };
     
-        // ĐĂNG NHẬP TÀI KHOẢN ĐÃ CÓ
+        // ĐĂNG NHẬP TÀI KHOẢN ĐÃ CÓ (TỰ ĐỘNG ĐÁ VĂNG MÁY CŨ)
         window.loginCloudAccount = async function() {
             const username = document.getElementById("cloud-username-input")?.value.trim();
             const pin = document.getElementById("cloud-pin-input")?.value.trim();
@@ -5214,12 +5259,21 @@
             if (!/^\d{8}$/.test(pin)) return alert("⚠️ Mã PIN phải gồm đúng 8 chữ số!");
     
             const docId = username.toLowerCase();
+            const userRef = doc(db, "players", docId);
+            const newToken = generateSessionToken();
+    
             try {
-                const snap = await getDoc(doc(db, "players", docId));
-                if (!snap.exists()) return alert("❌ Không tìm thấy ID Game này! Kiểm tra lại tên hoặc bấm Đăng Ký Mới.");
+                const snap = await getDoc(userRef);
+                if (!snap.exists()) return alert("❌ Không tìm thấy ID Game này!");
     
                 const data = snap.data();
                 if (data.pin !== pin) return alert("❌ Sai Mã PIN 8 số!");
+    
+                // Ghi đè sessionToken mới lên server để đá máy cũ văng ra ngay lập tức
+                await setDoc(userRef, {
+                    sessionToken: newToken,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
     
                 playerCoins = data.coins ?? 1500;
                 playerDiamonds = data.diamonds ?? 50;
@@ -5240,11 +5294,13 @@
                 localStorage.setItem("ar_cloud_user", data.username);
                 localStorage.setItem("ar_cloud_pin", pin);
                 localStorage.setItem("ar_cloud_gender", data.gender || "Nam");
+                localStorage.setItem("ar_cloud_session", newToken);
     
                 saveGameData();
                 updateTeamCount();
+                startSessionGuard(data.username);
                 closeModal();
-                alert(`🎉 Chào mừng ${data.gender === 'Nữ' ? 'Nữ' : 'Nam'} Thợ Săn [${data.username}] trở lại!`);
+                alert(`🎉 Chào mừng ${data.gender === 'Nữ' ? 'Nữ' : 'Nam'} Thợ Săn [${data.username}] trở lại!\n(Thiết bị cũ nếu đang mở sẽ tự động đăng xuất).`);
             } catch (err) {
                 alert("❌ Lỗi đăng nhập: " + err.message);
             }
@@ -5255,13 +5311,21 @@
             const username = localStorage.getItem("ar_cloud_user");
             const pin = localStorage.getItem("ar_cloud_pin");
             const gender = localStorage.getItem("ar_cloud_gender") || selectedGender;
+            const currentToken = localStorage.getItem("ar_cloud_session");
             if (!username || !pin) return openCloudAccountModal();
     
             try {
-                await setDoc(doc(db, "players", username.toLowerCase()), {
+                const userRef = doc(db, "players", username.toLowerCase());
+                const snap = await getDoc(userRef);
+                if (snap.exists() && snap.data().sessionToken && currentToken && snap.data().sessionToken !== currentToken) {
+                    return alert("⚠️ Phiên đăng nhập đã hết hạn do tài khoản vừa đăng nhập ở thiết bị khác!");
+                }
+    
+                await setDoc(userRef, {
                     username: username,
                     pin: pin,
                     gender: gender,
+                    sessionToken: currentToken || generateSessionToken(),
                     coins: playerCoins,
                     diamonds: playerDiamonds,
                     maxPetCapacity: maxPetCapacity,
@@ -5284,17 +5348,25 @@
     
         window.logoutCloudAccount = function() {
             if (!confirm("Bạn có chắc muốn đăng xuất khỏi thiết bị này? (Dữ liệu trên mây vẫn được giữ nguyên)")) return;
+            if (sessionUnsubscribe) {
+                sessionUnsubscribe();
+                sessionUnsubscribe = null;
+            }
             localStorage.removeItem("ar_cloud_user");
             localStorage.removeItem("ar_cloud_pin");
             localStorage.removeItem("ar_cloud_gender");
+            localStorage.removeItem("ar_cloud_session");
             openCloudAccountModal(true);
         };
     
-        // Tự động mở bảng Đăng Ký / Đăng Nhập ngay khi người chơi mới vào game
+        // Kiểm tra đăng nhập & kích hoạt bảo vệ phiên ngay khi tải trang
         window.addEventListener("load", () => {
             setTimeout(() => {
-                if (!localStorage.getItem("ar_cloud_user")) {
+                const existingUser = localStorage.getItem("ar_cloud_user");
+                if (!existingUser) {
                     openCloudAccountModal(true);
+                } else {
+                    startSessionGuard(existingUser);
                 }
             }, 600);
         });
@@ -5406,6 +5478,6 @@
                 console.error("Chat error:", e);
             }
         };
-    </script>
+    </script>    
 </body>
 </html>
