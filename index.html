@@ -1919,7 +1919,24 @@
                 html += `</div>`;
                 content.innerHTML = html;
             } else if (sectionType === 'storage') {
-                let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-yellow-300">🐾 Kho Linh Thú Trại Hộ (${farm.length})</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2.5 max-h-72 overflow-y-auto">`;
+                const totalNow = getTotalOwnedPetCount();
+                const nextCost = getNextSlotDiamondCost();
+                let html = `
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-sm text-yellow-300">🐾 Kho Linh Thú Trại Hộ (${farm.length})</h3>
+                    <button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button>
+                </div>
+                <div class="bg-zinc-950/90 border border-cyan-500/40 rounded-xl p-2.5 mb-3 flex items-center justify-between gap-2">
+                    <div>
+                        <div class="text-xs font-extrabold text-cyan-300">📦 Tổng sức chứa: <span class="${totalNow >= maxPetCapacity ? 'text-red-400' : 'text-emerald-400'}">${totalNow}/${maxPetCapacity}</span> thú</div>
+                        <div class="text-[10px] text-zinc-400">Hiện có: ${playerDiamonds}💎 Kim Cương</div>
+                    </div>
+                    <button onclick="buyMorePetCapacity()" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-3 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer shadow-lg shrink-0 active:scale-95">
+                        ➕ +1 Chỗ (${nextCost}💎)
+                    </button>
+                </div>
+                <div class="space-y-2.5 max-h-72 overflow-y-auto">`;
+
                 if (farm.length === 0) html += `<div class="text-center text-xs text-zinc-400 py-6">Kho trại trống!</div>`;
                 else {
                     farm.forEach((pet, idx) => {
