@@ -3758,6 +3758,7 @@
                                     let effectiveBlock = Math.max(0, (targetPet.blockRate ?? 15) - (enemy.armorBreak ?? 15));
                                     let isBlocked = Math.random() * 100 < effectiveBlock;
                                     if (isBlocked) rawDmg *= 0.6;
+                                    if (teamStatus[targetIdx].shield > 0) rawDmg *= 0.65;
 
                                     let enDmg = Math.max(1, Math.floor(rawDmg));
                                     teamHpList[targetIdx] = Math.max(0, teamHpList[targetIdx] - enDmg);
@@ -3841,12 +3842,12 @@
                     battleCtx.textAlign = "center";
                     battleCtx.textBaseline = "middle";
                     battleCtx.fillText(enemy.emoji, 0, 0);
-                    if (!isEnemyDead) drawSpriteStatusFX(battleCtx, enemyStatus, finalEnX, finalEnY, idleTick, mode === 'boss' ? 140 : 120);
                     battleCtx.restore();
                 }
+                // Vẽ hiệu ứng Độc / Cháy / Choáng / Chậm lên Boss
+                if (!isEnemyDead) drawSpriteStatusFX(battleCtx, enemyStatus, finalEnX, finalEnY, idleTick, mode === 'boss' ? 140 : 120);
 
                 activeTeam.forEach((pet, i) => {
-                    if (!isPetDead) drawSpriteStatusFX(battleCtx, teamStatus[i], posX, posY, idleTick, 105);
                     let isPetDead = teamHpList[i] <= 0;
                     let isAttacking = (attacker && attacker.side === 'team' && attacker.index === i);
                     let isHit = teamHitShake[i] > 0;
@@ -3896,6 +3897,63 @@
                         battleCtx.fillText(pet.emoji, 0, 0);
                         battleCtx.restore();
                     }
+                    // Vẽ hiệu ứng Buff Giáp / Trạng thái lên linh thú phe mình
+                    if (!isPetDead) drawSpriteStatusFX(battleCtx, teamStatus[i], posX, posY, idleTick, 105);
+                });
+
+                activeTeam.forEach((pet, i) => {
+                   
+                    let isPetDead = teamHpList[i] <= 0;
+                    let isAttacking = (attacker && attacker.side === 'team' && attacker.index === i);
+                    let isHit = teamHitShake[i] > 0;
+                    let knockback = 0;
+                   
+
+                    if (isHit) {
+                        knockback = -Math.sin(teamHitShake[i] * 1.8) * 10 - 6;
+                        teamHitShake[i]--;
+                    }
+
+                    let baseSlot = teamSlots[i] || { x: cx - 85, y: cy };
+                    let posY = isPetDead ? (baseSlot.y + 12) : (baseSlot.y + myOffsetsY[i]);
+                    let posX = isPetDead ? baseSlot.x : (baseSlot.x + myOffsetsX[i] + knockback);
+                    let baseName = pet.name.replace('F1_', '');
+                    let hasSprite = isPetSpriteReady(baseName);
+
+                    let animState = 'idle';
+                    if (isPetDead) animState = 'death';
+                    else if (isAttacking) animState = 'attack';
+                    else if (isHit) animState = 'hit';
+
+                    let petCfg = spriteConfigs[baseName];
+                    let petGrid = petCfg ? getSpriteGrid(petCfg, animState) : { totalFrames: 16 };
+                    let pMaxFrames = petGrid.totalFrames || 16;
+
+                    let animFrame = Math.floor(idleTick * 2.2) % pMaxFrames;
+                    if (isPetDead) {
+                        animFrame = pMaxFrames - 1;
+                    } else if (isAttacking) {
+                        animFrame = Math.min(pMaxFrames - 1, Math.floor((attacker.step / 22) * pMaxFrames));
+                    } else if (isHit) {
+                        animFrame = Math.min(pMaxFrames - 1, Math.floor((12 - teamHitShake[i]) * (pMaxFrames / 12)));
+                    }
+
+                    if (hasSprite) {
+                        drawPetEntity(battleCtx, pet, animState, animFrame, posX, posY, 85, false);
+                    } else {
+                        let idleScaleY = (isPetDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + i * 1.2) * 0.04);
+                        let petRot = isPetDead ? (-Math.PI / 2) : myRotations[i];
+                        battleCtx.save();
+                        battleCtx.translate(posX, posY);
+                        battleCtx.rotate(petRot);
+                        battleCtx.scale(-1, idleScaleY);
+                        battleCtx.font = "52px sans-serif";
+                        battleCtx.textAlign = "center";
+                        battleCtx.textBaseline = "middle";
+                        battleCtx.fillText(pet.emoji, 0, 0);
+                        battleCtx.restore();
+                    }
+                     if (!isPetDead) drawSpriteStatusFX(battleCtx, teamStatus[i], posX, posY, idleTick, 105);
                 });
 
                 for (let idx = impactEffects.length - 1; idx >= 0; idx--) {
