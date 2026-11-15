@@ -724,46 +724,26 @@
         trainingPoles = trainingPoles.map(p => p ? sanitizePetsData([p])[0] : null);
 
         // ==========================================
-        // HỆ THỐNG 3 ẤN KÝ / TRANG BỊ + ĐỘT PHÁ ĐỒNG BỘ (1 TẤM GEARS.PNG 11x3)
+        // HỆ THỐNG 3 ẤN KÝ / TRANG BỊ + ĐỘT PHÁ ĐỒNG BỘ (1 TẤM GEARS.PNG 9x6)
         // ==========================================
         const GEAR_SHEET_URL = 'assets_gear/gears.png';
-        const GEAR_SHEET_COLS = 9;  // Ảnh ngang 9 cột (3 cụm x 3 món)
-        const GEAR_SHEET_ROWS = 6;  // 6 hàng
+        const GEAR_SHEET_COLS = 9;
+        const GEAR_SHEET_ROWS = 6;
 
-        // Map chính xác tọa độ (cột, hàng) của 11 bậc (0 -> 10) trên ảnh 9x6
         const GEAR_TIER_COORDS = [
-            { group: 0, row: 0 }, // Bậc 0: Vuốt sắt gỉ - Áo vải rách - Đá xám (Hàng 1, cụm 1)
-            { group: 0, row: 1 }, // Bậc 1: Vuốt đồng - Giáp đồng - Ngọc lục (Hàng 2, cụm 1)
-            { group: 0, row: 2 }, // Bậc 2: Vuốt bạc - Giáp rồng bạc - Thủy châu (Hàng 3, cụm 1)
-            { group: 0, row: 3 }, // Bậc 3: Vuốt lửa - Giáp dung nham - Hỏa châu (Hàng 4, cụm 1)
-            { group: 0, row: 4 }, // Bậc 4: Vuốt bạch kim - Giáp hoàng kim - Tinh vân châu (Hàng 5, cụm 1)
-            { group: 1, row: 1 }, // Bậc 5: Vuốt băng - Giáp băng - Lôi châu (Hàng 2, cụm 2)
-            { group: 1, row: 3 }, // Bậc 6: Vuốt Bạch Hổ - Giáp Huyền Vũ - Nhật Nguyệt châu (Hàng 4, cụm 2)
-            { group: 1, row: 4 }, // Bậc 7: Vuốt Thiên Lôi - Giáp Phượng Hoàng - Hỗn Độn châu (Hàng 5, cụm 2)
-            { group: 2, row: 2 }, // Bậc 8: Vuốt Hắc Long - Giáp Hắc Long - Thái Cổ Hỏa Châu (Hàng 3, cụm 3)
-            { group: 1, row: 5 }, // Bậc 9: Vuốt Ma Vương - Giáp Huyết Ma - Hắc Ám Châu (Hàng 6, cụm 2)
-            { group: 2, row: 5 }  // Bậc 10: Vuốt Thiên Thần - Giáp Vòng Hào Quang - Vô Cực Thần Châu (Hàng 6, cụm 3)
+            { group: 0, row: 0 }, // Bậc 0
+            { group: 0, row: 1 }, // Bậc 1
+            { group: 0, row: 2 }, // Bậc 2
+            { group: 0, row: 3 }, // Bậc 3
+            { group: 0, row: 4 }, // Bậc 4
+            { group: 1, row: 1 }, // Bậc 5
+            { group: 1, row: 3 }, // Bậc 6
+            { group: 1, row: 4 }, // Bậc 7
+            { group: 2, row: 2 }, // Bậc 8
+            { group: 1, row: 5 }, // Bậc 9
+            { group: 2, row: 5 }  // Bậc 10
         ];
 
-        function getGearTierInfo(slotKey, tier) {
-            const cfg = gearConfigs[slotKey];
-            const safeTier = Math.max(0, Math.min(10, tier || 0));
-            const coord = GEAR_TIER_COORDS[safeTier];
-            const slotOffset = slotKey === 'claw' ? 0 : (slotKey === 'armor' ? 1 : 2);
-
-            const colIndex = coord.group * 3 + slotOffset;
-            const rowIndex = coord.row;
-
-            const posX = GEAR_SHEET_COLS > 1 ? (colIndex / (GEAR_SHEET_COLS - 1)) * 100 : 0;
-            const posY = GEAR_SHEET_ROWS > 1 ? (rowIndex / (GEAR_SHEET_ROWS - 1)) * 100 : 0;
-
-            return {
-                tier: safeTier,
-                name: cfg.tiers[safeTier] || cfg.baseName,
-                bgStyle: `background-image: url('${GEAR_SHEET_URL}'); background-size: ${GEAR_SHEET_COLS * 100}% ${GEAR_SHEET_ROWS * 100}%; background-position: ${posX}% ${posY}%; background-repeat: no-repeat;`,
-                fallbackEmoji: cfg.fallbackEmoji
-            };
-        }
         const gearConfigs = {
             claw: {
                 key: 'claw',
@@ -812,10 +792,14 @@
         function getGearTierInfo(slotKey, tier) {
             const cfg = gearConfigs[slotKey];
             const safeTier = Math.max(0, Math.min(10, tier || 0));
-            const colIndex = slotKey === 'claw' ? 0 : (slotKey === 'armor' ? 1 : 2);
+            const coord = GEAR_TIER_COORDS[safeTier];
+            const slotOffset = slotKey === 'claw' ? 0 : (slotKey === 'armor' ? 1 : 2);
+
+            const colIndex = coord.group * 3 + slotOffset;
+            const rowIndex = coord.row;
 
             const posX = GEAR_SHEET_COLS > 1 ? (colIndex / (GEAR_SHEET_COLS - 1)) * 100 : 0;
-            const posY = GEAR_SHEET_ROWS > 1 ? (safeTier / (GEAR_SHEET_ROWS - 1)) * 100 : 0;
+            const posY = GEAR_SHEET_ROWS > 1 ? (rowIndex / (GEAR_SHEET_ROWS - 1)) * 100 : 0;
 
             return {
                 tier: safeTier,
@@ -1551,9 +1535,7 @@
 
         setInterval(() => {
             let updated = false;
-            trainingPoles.forEach((pet) => {
-                if (pet) { pet.level += 0.05; pet.atk += 0.2; updated = true; }
-            });
+            
             restingPets.forEach(pet => {
                 if (pet && pet.hp < pet.maxHp) { pet.hp = Math.min(pet.maxHp, pet.hp + 5); updated = true; }
             });
@@ -1568,7 +1550,96 @@
             }
         }, 3000);
 
+        const TRAIN_DURATION_MS = 60 * 60 * 1000; // Đúng 1 tiếng (3,600,000 ms)
+
+        function syncFarmTimers(showPopup = false) {
+            let changed = false;
+            let finishedMessages = [];
+            const now = Date.now();
+
+            // 1. KHU PHỤC HỒI: Đầy 100% HP -> Tự động chuyển về Trại Thú Hộ (farm)
+            if (Array.isArray(restingPets) && restingPets.length > 0) {
+                for (let i = restingPets.length - 1; i >= 0; i--) {
+                    let p = restingPets[i];
+                    if (!p) continue;
+                    if (typeof ensurePetGears === 'function') ensurePetGears(p);
+                    let bonus = typeof getPetGearBonus === 'function' ? getPetGearBonus(p) : { maxHp: 0 };
+                    let fullHp = p.maxHp + bonus.maxHp;
+
+                    if (p.lastRestTick) {
+                        let elapsedSec = Math.floor((now - p.lastRestTick) / 1000);
+                        if (elapsedSec > 0) {
+                            let healAmount = Math.max(1, Math.floor(fullHp * 0.02)) * elapsedSec; // Hồi 2% HP/giây
+                             p.hp = Math.min(fullHp, p.hp + healAmount);
+                            p.lastRestTick = now;
+                            changed = true;
+                        }
+                    } else {
+                        p.lastRestTick = now;
+                    }
+
+                    if (p.hp >= fullHp) {
+                        p.hp = fullHp;
+                        delete p.lastRestTick;
+                        restingPets.splice(i, 1);
+                        farm.push(p); // Tự động đưa về Trại Thú Hộ
+                        changed = true;
+                        finishedMessages.push(`💚 [${p.name}] đã hồi đầy 100% HP và trở về Trại Thú Hộ!`);
+                    }
+                }
+            }
+
+    // 2. BÃI TẬP (1 TIẾNG / 1 VÉ): Hết 1 tiếng -> Cộng thưởng & tự động đưa về Trại Thú Hộ (farm)
+                    if (Array.isArray(trainingPoles)) {
+                        for (let i = 0; i < trainingPoles.length; i++) {
+                    let p = trainingPoles[i];
+                    if (!p) continue;
+
+                    if (!p.trainEndTime) {
+                        p.trainStartTime = now;
+                        p.trainEndTime = now + TRAIN_DURATION_MS;
+                        changed = true;
+                    }
+
+                    if (now >= p.trainEndTime) {
+                        p.level = (p.level || 1) + 1;
+                        p.atk = (p.atk || 20) + 8;
+                        p.maxHp = (p.maxHp || 100) + 25;
+                        let bonus = typeof getPetGearBonus === 'function' ? getPetGearBonus(p) : { maxHp: 0 };
+                        p.hp = p.maxHp + bonus.maxHp;
+
+                        delete p.trainStartTime;
+                          delete p.trainEndTime;
+
+                        trainingPoles[i] = null; // Trả trống cọc tập
+                        farm.push(p);            // Tự động đưa về Trại Thú Hộ
+                        changed = true;
+                        finishedMessages.push(`🏋️ [${p.name}] đã hoàn thành 1 tiếng tập luyện (+1 Cấp) và trở về Trại Thú Hộ!`);
+                    }
+                }
+            }
+
+            if (changed) {
+                saveGameData();
+                const modalTitle = document.querySelector('#modal-content h3');
+                if (modalTitle && modalTitle.textContent.includes('Trang Trại') && typeof openFarmMenu === 'function') {
+                    openFarmMenu();
+                }
+            }
+
+            if (showPopup && finishedMessages.length > 0) {
+                alert(finishedMessages.join('\n'));
+            }
+        }
+
+        // Chạy ngầm mỗi 5 giây để tự động thu hồi thú khi hết 1 tiếng hoặc đầy 100% HP
+        if (!window._farmSyncStarted) {
+              window._farmSyncStarted = true;
+            setInterval(() => syncFarmTimers(false), 5000);
+        }
+        
         function openFarmMenu() {
+            syncFarmTimers(true);
             checkPetSurvival();
             document.getElementById('fullscreen-farm-screen').classList.remove('hidden');
             setTimeout(() => centerPanorama('farm-scroller'), 50);
@@ -1605,9 +1676,19 @@
         }
 
         // ==========================================
-        // KHU LUYỆN TẬP (training-bg.png)
+        // KHU LUYỆN TẬP (training-bg.png) - VÉ TẬP 1 TIẾNG & TỰ VỀ TRẠI THÚ HỘ
         // ==========================================
+        setInterval(() => {
+            if (!document.getElementById('training-screen').classList.contains('hidden')) {
+                renderTrainingArena();
+            }
+            if (typeof activeSubRoomType !== 'undefined' && activeSubRoomType === 'rest') {
+                renderSubRoomRestingPets();
+            }
+        }, 1000);
+
         function openTrainingArenaModal() {
+            syncFarmTimers(true);
             checkPetSurvival();
             document.getElementById('fullscreen-farm-screen').classList.add('hidden');
             document.getElementById('training-screen').classList.remove('hidden');
@@ -1617,21 +1698,34 @@
         function closeTrainingScreen() {
             document.getElementById('training-screen').classList.add('hidden');
             document.getElementById('fullscreen-farm-screen').classList.remove('hidden');
+            renderFarmVisualPets();
         }
 
         function renderTrainingArena() {
+            const now = Date.now();
             for (let i = 0; i < 4; i++) {
                 let slotEl = document.getElementById(`training-slot-${i}`);
                 if (!slotEl) continue;
                 let pet = trainingPoles[i];
 
                 if (pet) {
+                    if (!pet.trainEndTime) {
+                        pet.trainStartTime = now;
+                        pet.trainEndTime = now + TRAIN_DURATION_MS;
+                    }
+                    let remainMs = Math.max(0, pet.trainEndTime - now);
+                    let mins = String(Math.floor(remainMs / 60000)).padStart(2, '0');
+                    let secs = String(Math.floor((remainMs % 60000) / 1000)).padStart(2, '0');
+
                     let hasSprite = isPetSpriteReady(pet.name);
                     let trainClass = hasSprite ? 'pet-train-sprite' : 'pet-train-active';
                     slotEl.innerHTML = `
                     <div class="flex flex-col items-center cursor-pointer" onclick="openTrainingSlotModal(${i})">
-                        <div class="bg-black/80 px-2 py-0.5 rounded-full border border-amber-400 text-[10px] font-bold text-yellow-300 mb-1 shadow-lg whitespace-nowrap">
+                        <div class="bg-black/85 px-2.5 py-0.5 rounded-full border border-amber-400 text-[10px] font-bold text-yellow-300 mb-0.5 shadow-lg whitespace-nowrap">
                             ${pet.name} <span class="text-white">Lv.${Math.floor(pet.level)}</span>
+                        </div>
+                        <div class="bg-indigo-950/90 px-2 py-0.5 rounded-full border border-cyan-400/60 text-[9px] font-extrabold text-cyan-300 mb-1 shadow whitespace-nowrap">
+                            ⏳ ${mins}:${secs}
                         </div>
                         <div class="relative flex items-center gap-1">
                             ${getPetSpriteHtml(pet, 'attack', 84, trainClass)}
@@ -1641,37 +1735,72 @@
                     </div>`;
                 } else {
                     slotEl.innerHTML = `
-                    <div onclick="openSelectPetForTraining(${i})" class="flex flex-col items-center cursor-pointer group" title="Thêm thú luyện tập">
+                    <div onclick="openSelectPetForTraining(${i})" class="flex flex-col items-center cursor-pointer group" title="Dùng 1 Vé Tập Luyện (1 tiếng)">
                         <div class="relative flex items-center justify-center">
                             <span class="text-4xl opacity-80" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));">🪵</span>
                             <div class="w-8 h-8 rounded-full bg-black/80 border-2 border-dashed border-amber-400 flex items-center justify-center shadow-xl ml-1 group-active:scale-95">
                                 <span class="text-lg font-black text-amber-300">+</span>
                             </div>
                         </div>
+                        <span class="mt-1 bg-black/75 text-amber-200 text-[9px] font-bold px-2 py-0.5 rounded-full border border-amber-400/40 whitespace-nowrap">🎟️ 1 Vé / 1h</span>
                     </div>`;
                 }
             }
         }
 
         function openSelectPetForTraining(poleIdx) {
-            if (farm.length === 0) { alert('⚠️ Trại không có linh thú nào để luyện tập! Hãy bắt thêm thú.'); return; }
+            if ((inventory.trainer || 0) <= 0) {
+                alert('⚠️ Bạn đã hết 🎟️ Vé Tập Luyện!\nHãy vào Chợ mua Vé Tập Luyện (100🪙) trước khi đưa thú vào luyện tập.');
+                return;
+            }
+            if (farm.length === 0) {
+                alert('⚠️ Kho Trại Thú Hộ không có linh thú nào! Hãy chuyển thú từ Đội hình về Trại hoặc bắt thêm thú.');
+                return;
+            }
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
 
-            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-sm text-amber-300">Chọn thú vào Cọc Gỗ #${poleIdx + 1}</h3><button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button></div><div class="space-y-2 max-h-60 overflow-y-auto">`;
+            let html = `
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold text-sm text-amber-300">🪵 Chọn thú vào Cọc Gỗ #${poleIdx + 1}</h3>
+                <button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button>
+            </div>
+            <div class="text-[11px] text-indigo-300 font-bold mb-3 bg-indigo-950/50 px-3 py-1.5 rounded-xl border border-indigo-500/40 flex justify-between">
+                <span>⏱️ Thời gian: 1 tiếng (+1 Cấp)</span>
+                <span>🎟️ Vé hiện có: ${inventory.trainer || 0}</span>
+            </div>
+            <div class="space-y-2 max-h-60 overflow-y-auto">`;
+
             farm.forEach((pet, idx) => {
-                html += `<div onclick="assignPetToTraining(${poleIdx}, ${idx})" class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between cursor-pointer border border-zinc-700 hover:border-amber-500"><div class="flex items-center gap-2">${getPetSpriteHtml(pet, 'idle', 40)}<div class="text-xs font-bold">${pet.name} (Lv.${Math.floor(pet.level)})</div></div><span class="text-xs text-amber-400 font-bold">Cho tập ›</span></div>`;
+                html += `
+                <div onclick="assignPetToTraining(${poleIdx}, ${idx})" class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between cursor-pointer border border-zinc-700 hover:border-amber-500">
+                    <div class="flex items-center gap-2">
+                        ${getPetSpriteHtml(pet, 'idle', 40)}
+                        <div class="text-xs font-bold">${pet.name} <span class="text-amber-300">(Lv.${Math.floor(pet.level)})</span></div>
+                    </div>
+                    <span class="text-xs text-amber-400 font-extrabold">Dùng 1🎟️ ›</span>
+                </div>`;
             });
             html += `</div>`;
             content.innerHTML = html;
         }
 
         function assignPetToTraining(poleIdx, farmIdx) {
+            if ((inventory.trainer || 0) <= 0) {
+                alert('⚠️ Bạn không có 🎟️ Vé Tập Luyện! Hãy vào Chợ mua vé trước khi đưa thú vào Bãi Tập.');
+                return;
+            }
+            inventory.trainer -= 1;
+            localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+
             let pet = farm.splice(farmIdx, 1)[0];
+            pet.trainStartTime = Date.now();
+            pet.trainEndTime = Date.now() + TRAIN_DURATION_MS; // Đúng 60 phút
             trainingPoles[poleIdx] = pet;
-            saveGameData(); 
-            closeModal(); 
+
+            saveGameData();
+            closeModal();
             renderTrainingArena();
         }
 
@@ -1682,19 +1811,31 @@
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
 
+            let remainMs = Math.max(0, (pet.trainEndTime || Date.now()) - Date.now());
+            let mins = String(Math.floor(remainMs / 60000)).padStart(2, '0');
+            let secs = String(Math.floor((remainMs % 60000) / 1000)).padStart(2, '0');
+
             content.innerHTML = `
             <div class="flex justify-between items-center mb-3">
                 <h3 class="font-bold text-sm text-amber-300">🪵 Cọc Gỗ #${poleIdx + 1} (${pet.name})</h3>
                 <button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button>
             </div>
             <div class="flex justify-center mb-2">${getPetSpriteHtml(pet, 'attack', 80)}</div>
-            <div class="text-xs text-zinc-300 mb-4 text-center">Đang luyện tập hăng say! Cấp độ: <span class="text-yellow-300 font-bold">Lv.${Math.floor(pet.level)}</span> | Tấn công: <span class="text-red-400 font-bold">${Math.floor(pet.atk)}</span></div>
-            <button onclick="retirePetFromTraining(${poleIdx})" class="w-full bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-xs font-bold text-white cursor-pointer shadow-lg">📥 Rút thú về Kho Trại</button>`;
+            <div class="text-xs text-zinc-300 mb-2 text-center">
+                Cấp độ: <span class="text-yellow-300 font-bold">Lv.${Math.floor(pet.level)}</span> | Tấn công: <span class="text-red-400 font-bold">${Math.floor(pet.atk)}</span>
+            </div>
+            <div class="text-xs text-cyan-300 font-extrabold mb-4 text-center bg-zinc-950/80 py-2 rounded-xl border border-cyan-500/30">
+                ⏳ Thời gian tập còn lại: ${mins}:${secs}<br>
+                <span class="text-[10px] text-zinc-400 font-normal">(Hết 1 tiếng tự động +1 Cấp & chuyển về Trại Thú Hộ)</span>
+            </div>
+            <button onclick="retirePetFromTraining(${poleIdx})" class="w-full bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-xs font-bold text-white cursor-pointer shadow-lg">📥 Dừng Tập & Rút Về Trại Thú Hộ (Không hoàn vé)</button>`;
         }
 
         function retirePetFromTraining(poleIdx) {
             let pet = trainingPoles[poleIdx];
             if (pet) {
+                delete pet.trainStartTime;
+                delete pet.trainEndTime;
                 farm.push(pet);
                 trainingPoles[poleIdx] = null;
                 saveGameData();
@@ -2281,8 +2422,11 @@
                     <button onclick="buyShopItem('toy', 50, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
                 </div>
                 <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
-                    <div class="text-xs">🏋️ Dụng Cụ Tập (100🪙) [Kho: ${inventory.trainer}]</div>
-                    <button onclick="buyShopItem('trainer', 100, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer">Mua</button>
+                    <div>
+                        <div class="text-xs font-bold text-indigo-300">🎟️ Vé Tập Luyện (100🪙) [Kho: ${inventory.trainer || 0}]</div>
+                        <div class="text-[10px] text-zinc-400">Tập luyện 1 tiếng tại Bãi Tập Trang Trại (+1 Cấp)</div>
+                    </div>
+                    <button onclick="buyShopItem('trainer', 100, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer shrink-0">Mua</button>
                 </div>
                 
                 <div class="text-xs font-bold text-yellow-400 mt-2">💎 Đá Ngũ Hành Cường Hóa (150🪙 / viên)</div>
@@ -2490,10 +2634,9 @@
                     <div>🔥 Liên kích: <span class="font-bold text-orange-400">${pet.comboRate ?? 20}%</span></div>
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-2 text-center">
-                <button onclick="petAction(${index}, 'feed')" class="bg-emerald-600 p-2 rounded font-bold text-xs cursor-pointer">🍖 Ăn (${inventory.food})</button>
-                <button onclick="petAction(${index}, 'play')" class="bg-amber-600 p-2 rounded font-bold text-xs cursor-pointer">🎾 Chơi (${inventory.toy})</button>
-                <button onclick="petAction(${index}, 'train')" class="bg-indigo-600 p-2 rounded font-bold text-xs cursor-pointer">🏋️ Tập (${inventory.trainer})</button>
+            <div class="grid grid-cols-2 gap-2 text-center">
+                <button onclick="petAction(${index}, 'feed')" class="bg-emerald-600 hover:bg-emerald-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🍖 Ăn (${inventory.food})</button>
+                <button onclick="petAction(${index}, 'play')" class="bg-amber-600 hover:bg-amber-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🎾 Chơi (${inventory.toy})</button>
             </div>`;
         }
 
@@ -2577,15 +2720,14 @@
 
         function petAction(index, action) {
             let pet = team[index];
+            ensurePetGears(pet);
+            let fullHp = pet.maxHp + getPetGearBonus(pet).maxHp;
             if (action === 'feed') {
                 if (inventory.food <= 0) { alert('Hết thức ăn!'); return; }
-                inventory.food--; pet.hunger = Math.min(100, pet.hunger + 30); pet.hp = Math.min(pet.maxHp, pet.hp + 25); addQuestProgress(3, 1);
+                inventory.food--; pet.hunger = Math.min(100, pet.hunger + 30); pet.hp = Math.min(fullHp, pet.hp + 25); addQuestProgress(3, 1);
             } else if (action === 'play') {
                 if (inventory.toy <= 0) { alert('Hết đồ chơi!'); return; }
                 inventory.toy--; pet.happiness = Math.min(100, pet.happiness + 35);
-            } else if (action === 'train') {
-                if (inventory.trainer <= 0) { alert('Hết dụng cụ!'); return; }
-                inventory.trainer--; pet.level++; pet.atk += 10; pet.maxHp += 20; pet.hp = pet.maxHp;
             }
             localStorage.setItem('ar_inventory', JSON.stringify(inventory));
             saveGameData(); openPetDetail(index);
