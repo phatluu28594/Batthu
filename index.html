@@ -3488,13 +3488,18 @@
 
                 let cx = rect.width / 2, cy = rect.height * 0.63;
                 let defaultEnemyX = cx + 95;
+                
+                // Nếu đánh Boss (3 thú) thì xếp đội hình tam giác; còn đánh Tháp / PvP (1 thú) thì đứng chính giữa sàn đấu!
+                const teamSlots = (mode === 'boss')
+                    ? [
+                        { x: cx - 105, y: cy - 78 }, // Thú 1 (Trên - Lùi sau)
+                        { x: cx - 72,  y: cy },      // Thú 2 (Giữa - Nhô lên trước)
+                        { x: cx - 105, y: cy + 78 }  // Thú 3 (Dưới - Lùi sau)
+                    ]
+                    : [
+                        { x: cx - 85,  y: cy }       // Đấu Tháp / PvP: Thú duy nhất đứng ngay chính giữa đối diện đối thủ
+                    ];
 
-                // Đội hình 3 linh thú: Thú trên & dưới giãn cách xa (±78px), Thú giữa nhô lên tiên phong
-                const teamSlots = [
-                    { x: cx - 105, y: cy - 78 }, // Thú 1 (Trên - Lùi sau)
-                    { x: cx - 72,  y: cy },      // Thú 2 (Giữa - Nhô lên trước)
-                    { x: cx - 105, y: cy + 78 }  // Thú 3 (Dưới - Lùi sau)
-                ];
 
                 if (!attacker && !battleEnded) {
                     if (turnDelayFrames > 0) {
