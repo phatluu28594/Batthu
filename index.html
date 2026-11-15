@@ -2476,6 +2476,7 @@
         }
 
         function openPetDetail(index) {
+            
             let pet = team[index];
             if (!pet) return;
             ensurePetGears(pet);
@@ -2609,7 +2610,11 @@
             <div class="grid grid-cols-2 gap-2 text-center">
                 <button onclick="petAction(${index}, 'feed')" class="bg-emerald-600 hover:bg-emerald-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🍖 Ăn (${inventory.food})</button>
                 <button onclick="petAction(${index}, 'play')" class="bg-amber-600 hover:bg-amber-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🎾 Chơi (${inventory.toy})</button>
-            </div>`;
+            </div>
+            <button onclick="confirmReleasePet(${index})" class="w-full mt-2 bg-red-950/90 hover:bg-red-800 border border-red-500/40 text-red-200 p-2 rounded-xl font-bold text-xs cursor-pointer transition flex items-center justify-center gap-1.5">
+                <span>🕊️</span>
+                <span>Phóng Sinh / Thả Thú Về Tự Nhiên</span>
+            </button>`;
         }
 
         function upgradePetGear(teamIndex, slotKey) {
@@ -4123,6 +4128,87 @@
 
         // Gọi ngay khi tải trang xong
         window.addEventListener('load', initBackgroundAnimations);
+
+        // ==========================================
+        // CHỨC NĂNG PHÓNG SINH / THẢ LINH THÚ
+        // ==========================================
+        let pendingReleaseIndex = null;
+
+        function ensureReleasePetModal() {
+            if (document.getElementById('release-pet-modal')) return;
+            const modalHtml = `
+            <div id="release-pet-modal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                <div class="bg-zinc-900 border border-red-500/50 rounded-2xl max-w-sm w-full p-5 text-center shadow-2xl">
+                    <div class="text-4xl mb-2">🕊️</div>
+                    <h3 class="text-base font-extrabold text-red-400 mb-1">Xác Nhận Phóng Sinh Linh Thú</h3>
+                    <p id="release-pet-msg" class="text-xs text-zinc-300 mb-3 leading-relaxed"></p>
+                    <div class="bg-red-950/50 border border-red-500/30 rounded-xl p-2.5 mb-4 text-[11px] text-red-300">
+                        ⚠️ Lưu ý: Linh thú sau khi thả sẽ rời khỏi đội hình vĩnh viễn và không thể khôi phục!
+                    </div>
+                    <div class="flex gap-2.5">
+                        <button onclick="closeReleasePetModal()" class="flex-1 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-xs cursor-pointer transition">
+                            Hủy Bỏ
+                        </button>
+                        <button id="btn-confirm-release-exec" class="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-lg cursor-pointer transition">
+                            Đồng Ý Thả
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function confirmReleasePet(index) {
+            let pet = team[index];
+            if (!pet) return;
+
+            if (team.length <= 1) {
+                if (typeof showToast === 'function') {
+                    showToast('⚠️ Không thể thả linh thú duy nhất còn lại trong đội!');
+                } else {
+                    alert('Không thể thả linh thú duy nhất còn lại trong đội!');
+                }
+                return;
+            }
+
+            ensureReleasePetModal();
+            pendingReleaseIndex = index;
+            const badge = pet.rarity?.badge ? `[${pet.rarity.badge}] ` : '';
+            document.getElementById('release-pet-msg').innerHTML =
+                `Bạn có chắc chắn muốn thả <span class="text-yellow-300 font-bold">${badge}${pet.name}</span> (Lv.${Math.floor(pet.level || 1)}) về lại tự nhiên không?`;
+
+            document.getElementById('btn-confirm-release-exec').onclick = executeReleasePet;
+
+            const modal = document.getElementById('release-pet-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeReleasePetModal() {
+            pendingReleaseIndex = null;
+            const modal = document.getElementById('release-pet-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function executeReleasePet() {
+            if (pendingReleaseIndex === null) return;
+            let pet = team[pendingReleaseIndex];
+            if (pet) {
+                const releasedName = pet.name;
+                team.splice(pendingReleaseIndex, 1);
+                saveGameData();
+                closeReleasePetModal();
+                openTeamMenu();
+                if (typeof showToast === 'function') {
+                    showToast(`🕊️ Đã phóng sinh ${releasedName} về tự nhiên!`);
+                }
+            } else {
+                closeReleasePetModal();
+            }
+        }
         
     </script>
 </body>
