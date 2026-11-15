@@ -2877,7 +2877,7 @@
                 let flipStyle = shouldFlip ? 'scaleX(-1)' : 'scaleX(1)';
 
                 let visualHtml = isPetSpriteReady(monsterData.name)
-                    ? getPetSpriteHtml(monsterData, 'walk', 92)
+                    ? getPetSpriteHtml(monsterData, 'walk', 50)
                     : `<span class="pet-walk-anim" style="animation-delay: ${i * 0.15}s;">${monsterData.emoji}</span>`;
 
                 const monsterIcon = L.divIcon({ 
@@ -2887,8 +2887,8 @@
                             ${visualHtml}
                         </span>
                     </div>`, 
-                    iconSize: [96, 96], 
-                    iconAnchor: [48, 48] 
+                    iconSize: [50, 50], 
+                    iconAnchor: [25, 25] 
                 });
                 
                 const marker = L.marker([monsterData.lat, monsterData.lng], { icon: monsterIcon }).addTo(map);
