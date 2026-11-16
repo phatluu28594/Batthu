@@ -5444,25 +5444,30 @@
     // Tự động lưu dữ liệu lên D1 ngay khoảnh khắc người chơi tắt tab hoặc ẩn app trên điện thoại
     window.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "hidden") {
-            // Thay 'btv_user' và 'btv_save' bằng đúng tên key localStorage anh đang dùng trong index.html
-            const userRaw = localStorage.getItem("btv_user") || localStorage.getItem("user");
-            const saveRaw = localStorage.getItem("btv_save") || localStorage.getItem("saveData");
-            
-            if (userRaw && saveRaw) {
-                try {
-                    const user = JSON.parse(userRaw);
-                    const payload = JSON.stringify({
-                        action: "sync",
-                        username: user.username,
-                        pin: user.pin,
-                        saveData: JSON.parse(saveRaw)
-                    });
-                    navigator.sendBeacon("/api/auth", new Blob([payload], { type: "application/json" }));
-                } catch (e) {}
+            const username = localStorage.getItem("ar_cloud_user");
+            const pin = localStorage.getItem("ar_cloud_pin");
+            if (!username || !pin) return;
+
+            // Gom toàn bộ dữ liệu game đang lưu trong localStorage (trừ thông tin đăng nhập)
+            const saveData = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k !== "ar_cloud_user" && k !== "ar_cloud_pin") {
+                    saveData[k] = localStorage.getItem(k);
+                }
             }
+
+            try {
+                const payload = JSON.stringify({
+                    action: "sync",
+                    username: username,
+                    pin: pin,
+                    saveData: saveData
+                });
+                navigator.sendBeacon("/api/auth", new Blob([payload], { type: "application/json" }));
+            } catch (e) {}
         }
     });
     </script>
-
 </body>
 </html>
