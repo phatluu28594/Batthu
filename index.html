@@ -5078,454 +5078,439 @@
                     </div>
                 </div>
     
-                <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { 
-            getFirestore, doc, setDoc, getDoc, 
-            collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp 
-        } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-    
-        const firebaseConfig = {
-            apiKey: "AIzaSyADpUmrvK4PtiqpC4rCkEEMMT7DxIfz2c8",
-            authDomain: "tho-san-vien-thu-67289.firebaseapp.com",
-            projectId: "tho-san-vien-thu-67289",
-            storageBucket: "tho-san-vien-thu-67289.firebasestorage.app",
-            messagingSenderId: "394458384240",
-            appId: "1:394458384240:web:cb80c4c078a1026de3f1b5",
-            measurementId: "G-346VZEZ6Y1"
-        };
-    
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-    
-        // ==========================================
-        // 1. QUẢN LÝ PHIÊN ĐĂNG NHẬP DUY NHẤT (1 MÁY / 1 NICK)
-        // ==========================================
-        let sessionUnsubscribe = null;
-        let selectedGender = localStorage.getItem("ar_cloud_gender") || "Nam";
-    
-        function generateSessionToken() {
-            return "sess_" + Date.now() + "_" + Math.random().toString(36).substring(2, 9);
-        }
-    
-        // Lắng nghe thay đổi phiên đăng nhập theo thời gian thực để đá máy cũ
-        window.startSessionGuard = function(username) {
-            if (sessionUnsubscribe) {
-                sessionUnsubscribe();
-                sessionUnsubscribe = null;
-            }
-            if (!username) return;
-    
-            const docId = username.toLowerCase();
-            sessionUnsubscribe = onSnapshot(doc(db, "players", docId), (snap) => {
-                if (!snap.exists()) return;
-                const remoteToken = snap.data().sessionToken;
-                const localToken = localStorage.getItem("ar_cloud_session");
-    
-                // Nếu trên mây có token mới khác với token của máy hiện tại -> Có máy khác vừa đăng nhập!
-                if (remoteToken && localToken && remoteToken !== localToken) {
-                    if (sessionUnsubscribe) {
-                        sessionUnsubscribe();
-                        sessionUnsubscribe = null;
+             <script>
+                // ==========================================
+                // 1. QUẢN LÝ TÀI KHOẢN & PHIÊN ĐĂNG NHẬP (CLOUDFLARE D1)
+                // ==========================================
+                let sessionCheckTimer = null;
+                let selectedGender = localStorage.getItem("ar_cloud_gender") || "Nam";
+            
+                function handleSessionExpired() {
+                    if (sessionCheckTimer) {
+                        clearInterval(sessionCheckTimer);
+                        sessionCheckTimer = null;
+                    }
+                    if (chatPollTimer) {
+                        clearInterval(chatPollTimer);
+                        chatPollTimer = null;
                     }
                     localStorage.removeItem("ar_cloud_user");
                     localStorage.removeItem("ar_cloud_pin");
                     localStorage.removeItem("ar_cloud_gender");
                     localStorage.removeItem("ar_cloud_session");
-    
+            
                     alert("⚠️ Tài khoản của bạn vừa được đăng nhập trên một thiết bị khác!\nThiết bị này sẽ tự động đăng xuất để bảo vệ dữ liệu.");
                     openCloudAccountModal(true);
                 }
-            });
-        };
-    
-        window.selectAccountGender = function(gender) {
-            selectedGender = gender;
-            const btnMale = document.getElementById("btn-gender-male");
-            const btnFemale = document.getElementById("btn-gender-female");
-            if (btnMale && btnFemale) {
-                btnMale.className = gender === "Nam"
-                    ? "py-2 rounded-xl font-extrabold text-xs border-2 border-sky-400 bg-sky-600/40 text-white cursor-pointer"
-                    : "py-2 rounded-xl font-bold text-xs border border-zinc-700 bg-zinc-900 text-zinc-400 cursor-pointer";
-                btnFemale.className = gender === "Nữ"
-                    ? "py-2 rounded-xl font-extrabold text-xs border-2 border-pink-400 bg-pink-600/40 text-white cursor-pointer"
-                    : "py-2 rounded-xl font-bold text-xs border border-zinc-700 bg-zinc-900 text-zinc-400 cursor-pointer";
-            }
-        };
-    
-        window.switchAuthTab = function(mode) {
-            const isRegister = mode === "register";
-            document.getElementById("tab-auth-reg").className = isRegister
-                ? "py-2 rounded-lg font-extrabold text-xs bg-indigo-600 text-white cursor-pointer"
-                : "py-2 rounded-lg font-bold text-xs bg-zinc-900 text-zinc-400 cursor-pointer";
-            document.getElementById("tab-auth-login").className = !isRegister
-                ? "py-2 rounded-lg font-extrabold text-xs bg-emerald-600 text-white cursor-pointer"
-                : "py-2 rounded-lg font-bold text-xs bg-zinc-900 text-zinc-400 cursor-pointer";
-    
-            document.getElementById("auth-gender-group").style.display = isRegister ? "block" : "none";
-            document.getElementById("btn-auth-submit").innerText = isRegister ? "✨ Đăng Ký & Vào Game" : "🔓 Đăng Nhập & Tải Dữ Liệu";
-            document.getElementById("btn-auth-submit").onclick = isRegister ? registerCloudAccount : loginCloudAccount;
-        };
-    
-        window.openCloudAccountModal = function(isForceStartup = false) {
-            const savedUser = localStorage.getItem("ar_cloud_user") || "";
-            const savedPin = localStorage.getItem("ar_cloud_pin") || "";
-            selectedGender = localStorage.getItem("ar_cloud_gender") || "Nam";
-    
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            modal.classList.remove('hidden');
-    
-            content.innerHTML = `
-            <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-base text-indigo-300">🪪 Hồ Sơ Thợ Săn Viễn Thú</h3>
-                ${isForceStartup 
-                    ? `<button onclick="closeModal()" class="text-[11px] text-zinc-400 underline cursor-pointer">Chơi thử</button>`
-                    : `<button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>`
-                }
-            </div>
-    
-            ${savedUser ? `
-            <div class="bg-emerald-950/50 border border-emerald-500/40 rounded-xl p-2.5 mb-3 flex items-center justify-between">
-                <div class="text-xs">
-                    <div class="text-emerald-300 font-extrabold">${selectedGender === 'Nữ' ? '👧' : '👦'} ${savedUser} <span class="text-[10px] text-zinc-400">(${selectedGender})</span></div>
-                    <div class="text-[10px] text-zinc-400">Đang bảo vệ phiên 1 thiết bị</div>
-                </div>
-                <button onclick="syncCurrentAccountToCloud()" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg text-[11px] font-extrabold text-white cursor-pointer">⬆️ Lưu Ngay</button>
-            </div>` : `
-            <div class="grid grid-cols-2 gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-800 mb-3">
-                <button id="tab-auth-reg" onclick="switchAuthTab('register')" class="py-2 rounded-lg font-extrabold text-xs bg-indigo-600 text-white cursor-pointer">Đăng Ký Mới</button>
-                <button id="tab-auth-login" onclick="switchAuthTab('login')" class="py-2 rounded-lg font-bold text-xs bg-zinc-900 text-zinc-400 cursor-pointer">Đăng Nhập</button>
-            </div>`}
-    
-            <div class="space-y-2.5 mb-3">
-                <div>
-                    <label class="text-[11px] text-zinc-400 font-bold block mb-1">ID Game (3-16 ký tự):</label>
-                    <input id="cloud-username-input" type="text" maxlength="16" value="${savedUser}" ${savedUser ? 'readonly' : ''} placeholder="VD: PhatLuu28" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-400 outline-none">
-                </div>
-                <div>
-                    <label class="text-[11px] text-zinc-400 font-bold block mb-1">Mã PIN Bảo Mật (Đúng 8 chữ số):</label>
-                    <input id="cloud-pin-input" type="password" inputmode="numeric" maxlength="8" value="${savedPin}" placeholder="Nhập 8 chữ số (VD: 12345678)" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white tracking-widest focus:border-indigo-400 outline-none">
-                </div>
-                <div id="auth-gender-group">
-                    <label class="text-[11px] text-zinc-400 font-bold block mb-1">Giới tính nhân vật:</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" id="btn-gender-male" onclick="selectAccountGender('Nam')" class="py-2 rounded-xl font-extrabold text-xs border-2 border-sky-400 bg-sky-600/40 text-white cursor-pointer">👦 Nam</button>
-                        <button type="button" id="btn-gender-female" onclick="selectAccountGender('Nữ')" class="py-2 rounded-xl font-bold text-xs border border-zinc-700 bg-zinc-900 text-zinc-400 cursor-pointer">👧 Nữ</button>
+            
+                // Kiểm tra định kỳ phiên đăng nhập để đá văng máy cũ nếu có máy mới đăng nhập
+                window.startSessionGuard = function(username) {
+                    if (sessionCheckTimer) {
+                        clearInterval(sessionCheckTimer);
+                        sessionCheckTimer = null;
+                    }
+                    if (!username) return;
+            
+                    sessionCheckTimer = setInterval(async () => {
+                        const currentUser = localStorage.getItem("ar_cloud_user");
+                        const localToken = localStorage.getItem("ar_cloud_session");
+                        if (!currentUser || !localToken) return;
+            
+                        try {
+                            const res = await fetch("/api/auth", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    action: "verify_session",
+                                    username: currentUser,
+                                    sessionToken: localToken
+                                })
+                            });
+                            const result = await res.json();
+                            if (result.code === "SESSION_EXPIRED") {
+                                handleSessionExpired();
+                            }
+                        } catch (e) {
+                            // Bỏ qua lỗi mạng tạm thời
+                        }
+                    }, 12000); // Kiểm tra mỗi 12 giây
+                };
+            
+                window.selectAccountGender = function(gender) {
+                    selectedGender = gender;
+                    const btnMale = document.getElementById("btn-gender-male");
+                    const btnFemale = document.getElementById("btn-gender-female");
+                    if (btnMale && btnFemale) {
+                        btnMale.className = gender === "Nam"
+                            ? "py-2 rounded-xl font-extrabold text-xs border-2 border-sky-400 bg-sky-600/40 text-white cursor-pointer"
+                            : "py-2 rounded-xl font-bold text-xs border border-zinc-700 bg-zinc-900 text-zinc-400 cursor-pointer";
+                        btnFemale.className = gender === "Nữ"
+                            ? "py-2 rounded-xl font-extrabold text-xs border-2 border-pink-400 bg-pink-600/40 text-white cursor-pointer"
+                            : "py-2 rounded-xl font-bold text-xs border border-zinc-700 bg-zinc-900 text-zinc-400 cursor-pointer";
+                    }
+                };
+            
+                window.switchAuthTab = function(mode) {
+                    const isRegister = mode === "register";
+                    document.getElementById("tab-auth-reg").className = isRegister
+                        ? "py-2 rounded-lg font-extrabold text-xs bg-indigo-600 text-white cursor-pointer"
+                        : "py-2 rounded-lg font-bold text-xs bg-zinc-900 text-zinc-400 cursor-pointer";
+                    document.getElementById("tab-auth-login").className = !isRegister
+                        ? "py-2 rounded-lg font-extrabold text-xs bg-emerald-600 text-white cursor-pointer"
+                        : "py-2 rounded-lg font-bold text-xs bg-zinc-900 text-zinc-400 cursor-pointer";
+            
+                    document.getElementById("auth-gender-group").style.display = isRegister ? "block" : "none";
+                    document.getElementById("btn-auth-submit").innerText = isRegister ? "✨ Đăng Ký & Vào Game" : "🔓 Đăng Nhập & Tải Dữ Liệu";
+                    document.getElementById("btn-auth-submit").onclick = isRegister ? registerCloudAccount : loginCloudAccount;
+                };
+            
+                window.openCloudAccountModal = function(isForceStartup = false) {
+                    const savedUser = localStorage.getItem("ar_cloud_user") || "";
+                    const savedPin = localStorage.getItem("ar_cloud_pin") || "";
+                    selectedGender = localStorage.getItem("ar_cloud_gender") || "Nam";
+            
+                    const modal = document.getElementById('modal-container');
+                    const content = document.getElementById('modal-content');
+                    modal.classList.remove('hidden');
+            
+                    content.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-base text-indigo-300">🪪 Hồ Sơ Bắt Thú Vương</h3>
+                        ${isForceStartup 
+                            ? `<button onclick="closeModal()" class="text-[11px] text-zinc-400 underline cursor-pointer">Chơi thử</button>`
+                            : `<button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>`
+                        }
                     </div>
-                </div>
-            </div>
-    
-            <button id="btn-auth-submit" onclick="${savedUser ? 'syncCurrentAccountToCloud()' : 'registerCloudAccount()'}" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:brightness-110 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">
-                ${savedUser ? '☁️ Cập Nhật Dữ Liệu Lên Mây' : '✨ Đăng Ký & Vào Game'}
-            </button>
-    
-            ${savedUser ? `
-            <button onclick="logoutCloudAccount()" class="w-full mt-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 py-2 rounded-xl font-bold text-[11px] text-red-300 cursor-pointer">
-                🚪 Đăng Xuất / Đổi Tài Khoản Khác
-            </button>` : ''}`;
-    
-            if (savedUser) selectAccountGender(selectedGender);
-        };
-    
-        // ĐĂNG KÝ TÀI KHOẢN MỚI
-        window.registerCloudAccount = async function() {
-            const username = document.getElementById("cloud-username-input")?.value.trim();
-            const pin = document.getElementById("cloud-pin-input")?.value.trim();
-    
-            if (!username || username.length < 3) return alert("⚠️ ID Game phải từ 3 đến 16 ký tự!");
-            if (!/^\d{8}$/.test(pin)) return alert("⚠️ Mã PIN bắt buộc phải gồm đúng 8 chữ số (0-9)!");
-    
-            const docId = username.toLowerCase();
-            const userRef = doc(db, "players", docId);
-            const newToken = generateSessionToken();
-    
-            try {
-                const snap = await getDoc(userRef);
-                if (snap.exists()) {
-                    return alert("❌ ID Game này đã có người đăng ký! Vui lòng chọn ID khác hoặc chuyển sang tab Đăng Nhập.");
+            
+                    ${savedUser ? `
+                    <div class="bg-emerald-950/50 border border-emerald-500/40 rounded-xl p-2.5 mb-3 flex items-center justify-between">
+                        <div class="text-xs">
+                            <div class="text-emerald-300 font-extrabold">${selectedGender === 'Nữ' ? '👧' : '👦'} ${savedUser} <span class="text-[10px] text-zinc-400">(${selectedGender})</span></div>
+                            <div class="text-[10px] text-zinc-400">Máy chủ Cloudflare Edge • 1 thiết bị</div>
+                        </div>
+                        <button onclick="syncCurrentAccountToCloud()" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg text-[11px] font-extrabold text-white cursor-pointer">⬆️ Lưu Ngay</button>
+                    </div>` : `
+                    <div class="grid grid-cols-2 gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-800 mb-3">
+                        <button id="tab-auth-reg" onclick="switchAuthTab('register')" class="py-2 rounded-lg font-extrabold text-xs bg-indigo-600 text-white cursor-pointer">Đăng Ký Mới</button>
+                        <button id="tab-auth-login" onclick="switchAuthTab('login')" class="py-2 rounded-lg font-bold text-xs bg-zinc-900 text-zinc-400 cursor-pointer">Đăng Nhập</button>
+                    </div>`}
+            
+                    <div class="space-y-2.5 mb-3">
+                        <div>
+                            <label class="text-[11px] text-zinc-400 font-bold block mb-1">ID Game (3-16 ký tự):</label>
+                            <input id="cloud-username-input" type="text" maxlength="16" value="${savedUser}" ${savedUser ? 'readonly' : ''} placeholder="VD: PhatLuu28" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-400 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-zinc-400 font-bold block mb-1">Mã PIN Bảo Mật (Đúng 8 chữ số):</label>
+                            <input id="cloud-pin-input" type="password" inputmode="numeric" maxlength="8" value="${savedPin}" placeholder="Nhập 8 chữ số (VD: 12345678)" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white tracking-widest focus:border-indigo-400 outline-none">
+                        </div>
+                        <div id="auth-gender-group">
+                            <label class="text-[11px] text-zinc-400 font-bold block mb-1">Giới tính nhân vật:</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" id="btn-gender-male" onclick="selectAccountGender('Nam')" class="py-2 rounded-xl font-extrabold text-xs border-2 border-sky-400 bg-sky-600/40 text-white cursor-pointer">👦 Nam</button>
+                                <button type="button" id="btn-gender-female" onclick="selectAccountGender('Nữ')" class="py-2 rounded-xl font-bold text-xs border border-zinc-700 bg-zinc-900 text-zinc-400 cursor-pointer">👧 Nữ</button>
+                            </div>
+                        </div>
+                    </div>
+            
+                    <button id="btn-auth-submit" onclick="${savedUser ? 'syncCurrentAccountToCloud()' : 'registerCloudAccount()'}" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:brightness-110 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">
+                        ${savedUser ? '☁️ Cập Nhật Dữ Liệu Lên Mây' : '✨ Đăng Ký & Vào Game'}
+                    </button>
+            
+                    ${savedUser ? `
+                    <button onclick="logoutCloudAccount()" class="w-full mt-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 py-2 rounded-xl font-bold text-[11px] text-red-300 cursor-pointer">
+                        🚪 Đăng Xuất / Đổi Tài Khoản Khác
+                    </button>` : ''}`;
+            
+                    if (savedUser) selectAccountGender(selectedGender);
+                };
+            
+                function packCurrentGameState() {
+                    return {
+                        coins: playerCoins,
+                        diamonds: playerDiamonds,
+                        maxPetCapacity: maxPetCapacity,
+                        towerFloor: towerFloor,
+                        bossLevel: bossLevel,
+                        team: team,
+                        farm: farm,
+                        eggs: eggs,
+                        restingPets: restingPets,
+                        trainingPoles: trainingPoles,
+                        inventory: inventory
+                    };
                 }
-    
-                await setDoc(userRef, {
-                    username: username,
-                    pin: pin,
-                    gender: selectedGender,
-                    sessionToken: newToken,
-                    coins: playerCoins,
-                    diamonds: playerDiamonds,
-                    maxPetCapacity: maxPetCapacity,
-                    towerFloor: towerFloor,
-                    bossLevel: bossLevel,
-                    team: JSON.stringify(team),
-                    farm: JSON.stringify(farm),
-                    eggs: JSON.stringify(eggs),
-                    restingPets: JSON.stringify(restingPets),
-                    trainingPoles: JSON.stringify(trainingPoles),
-                    inventory: JSON.stringify(inventory),
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                });
-    
-                localStorage.setItem("ar_cloud_user", username);
-                localStorage.setItem("ar_cloud_pin", pin);
-                localStorage.setItem("ar_cloud_gender", selectedGender);
-                localStorage.setItem("ar_cloud_session", newToken);
-    
-                startSessionGuard(username);
-                closeModal();
-                alert(`🎉 Đăng ký thành công Thợ Săn [${username}] (${selectedGender})!`);
-            } catch (err) {
-                alert("❌ Lỗi đăng ký: " + err.message);
-            }
-        };
-    
-        // ĐĂNG NHẬP TÀI KHOẢN ĐÃ CÓ (TỰ ĐỘNG ĐÁ VĂNG MÁY CŨ)
-        window.loginCloudAccount = async function() {
-            const username = document.getElementById("cloud-username-input")?.value.trim();
-            const pin = document.getElementById("cloud-pin-input")?.value.trim();
-    
-            if (!username) return alert("⚠️ Vui lòng nhập ID Game!");
-            if (!/^\d{8}$/.test(pin)) return alert("⚠️ Mã PIN phải gồm đúng 8 chữ số!");
-    
-            const docId = username.toLowerCase();
-            const userRef = doc(db, "players", docId);
-            const newToken = generateSessionToken();
-    
-            try {
-                const snap = await getDoc(userRef);
-                if (!snap.exists()) return alert("❌ Không tìm thấy ID Game này!");
-    
-                const data = snap.data();
-                if (data.pin !== pin) return alert("❌ Sai Mã PIN 8 số!");
-    
-                // Ghi đè sessionToken mới lên server để đá máy cũ văng ra ngay lập tức
-                await setDoc(userRef, {
-                    sessionToken: newToken,
-                    updatedAt: serverTimestamp()
-                }, { merge: true });
-    
-                playerCoins = data.coins ?? 1500;
-                playerDiamonds = data.diamonds ?? 50;
-                maxPetCapacity = data.maxPetCapacity ?? 10;
-                towerFloor = data.towerFloor ?? 1;
-                bossLevel = data.bossLevel ?? 1;
-                team = sanitizePetsData(JSON.parse(data.team || "[]"));
-                farm = sanitizePetsData(JSON.parse(data.farm || "[]"));
-                eggs = JSON.parse(data.eggs || "[]");
-                restingPets = sanitizePetsData(JSON.parse(data.restingPets || "[]"));
-                trainingPoles = JSON.parse(data.trainingPoles || "[null,null,null,null]");
-                inventory = JSON.parse(data.inventory || "{}");
-    
-                localStorage.setItem("ar_max_pet_capacity", maxPetCapacity);
-                localStorage.setItem("ar_tower_floor", towerFloor);
-                localStorage.setItem("ar_boss_level", bossLevel);
-                localStorage.setItem("ar_inventory", JSON.stringify(inventory));
-                localStorage.setItem("ar_cloud_user", data.username);
-                localStorage.setItem("ar_cloud_pin", pin);
-                localStorage.setItem("ar_cloud_gender", data.gender || "Nam");
-                localStorage.setItem("ar_cloud_session", newToken);
-    
-                saveGameData();
-                updateTeamCount();
-                startSessionGuard(data.username);
-                closeModal();
-                alert(`🎉 Chào mừng ${data.gender === 'Nữ' ? 'Nữ' : 'Nam'} Thợ Săn [${data.username}] trở lại!\n(Thiết bị cũ nếu đang mở sẽ tự động đăng xuất).`);
-            } catch (err) {
-                alert("❌ Lỗi đăng nhập: " + err.message);
-            }
-        };
-    
-        // LƯU ĐỒNG BỘ DỮ LIỆU HIỆN TẠI LÊN MÂY
-        window.syncCurrentAccountToCloud = async function() {
-            const username = localStorage.getItem("ar_cloud_user");
-            const pin = localStorage.getItem("ar_cloud_pin");
-            const gender = localStorage.getItem("ar_cloud_gender") || selectedGender;
-            const currentToken = localStorage.getItem("ar_cloud_session");
-            if (!username || !pin) return openCloudAccountModal();
-    
-            try {
-                const userRef = doc(db, "players", username.toLowerCase());
-                const snap = await getDoc(userRef);
-                if (snap.exists() && snap.data().sessionToken && currentToken && snap.data().sessionToken !== currentToken) {
-                    return alert("⚠️ Phiên đăng nhập đã hết hạn do tài khoản vừa đăng nhập ở thiết bị khác!");
+            
+                function applyCloudGameState(data) {
+                    if (!data) return;
+                    playerCoins = data.coins ?? 1500;
+                    playerDiamonds = data.diamonds ?? 50;
+                    maxPetCapacity = data.maxPetCapacity ?? 10;
+                    towerFloor = data.towerFloor ?? 1;
+                    bossLevel = data.bossLevel ?? 1;
+                    team = sanitizePetsData(data.team || []);
+                    farm = sanitizePetsData(data.farm || []);
+                    eggs = data.eggs || [];
+                    restingPets = sanitizePetsData(data.restingPets || []);
+                    trainingPoles = data.trainingPoles || [null, null, null, null];
+                    inventory = data.inventory || {};
+            
+                    localStorage.setItem("ar_max_pet_capacity", maxPetCapacity);
+                    localStorage.setItem("ar_tower_floor", towerFloor);
+                    localStorage.setItem("ar_boss_level", bossLevel);
+                    localStorage.setItem("ar_inventory", JSON.stringify(inventory));
+                    saveGameData();
+                    updateTeamCount();
                 }
-    
-                await setDoc(userRef, {
-                    username: username,
-                    pin: pin,
-                    gender: gender,
-                    sessionToken: currentToken || generateSessionToken(),
-                    coins: playerCoins,
-                    diamonds: playerDiamonds,
-                    maxPetCapacity: maxPetCapacity,
-                    towerFloor: towerFloor,
-                    bossLevel: bossLevel,
-                    team: JSON.stringify(team),
-                    farm: JSON.stringify(farm),
-                    eggs: JSON.stringify(eggs),
-                    restingPets: JSON.stringify(restingPets),
-                    trainingPoles: JSON.stringify(trainingPoles),
-                    inventory: JSON.stringify(inventory),
-                    updatedAt: serverTimestamp()
-                }, { merge: true });
-    
-                alert(`☁️ Đã sao lưu toàn bộ tiến trình của [${username}] lên máy chủ!`);
-            } catch (err) {
-                alert("❌ Lỗi lưu dữ liệu: " + err.message);
-            }
-        };
-    
-        window.logoutCloudAccount = function() {
-            if (!confirm("Bạn có chắc muốn đăng xuất khỏi thiết bị này? (Dữ liệu trên mây vẫn được giữ nguyên)")) return;
-            if (sessionUnsubscribe) {
-                sessionUnsubscribe();
-                sessionUnsubscribe = null;
-            }
-            localStorage.removeItem("ar_cloud_user");
-            localStorage.removeItem("ar_cloud_pin");
-            localStorage.removeItem("ar_cloud_gender");
-            localStorage.removeItem("ar_cloud_session");
-            openCloudAccountModal(true);
-        };
-    
-        // Kiểm tra đăng nhập & kích hoạt bảo vệ phiên ngay khi tải trang
-        window.addEventListener("load", () => {
-            setTimeout(() => {
-                const existingUser = localStorage.getItem("ar_cloud_user");
-                if (!existingUser) {
+            
+                // ĐĂNG KÝ TÀI KHOẢN MỚI
+                window.registerCloudAccount = async function() {
+                    const username = document.getElementById("cloud-username-input")?.value.trim();
+                    const pin = document.getElementById("cloud-pin-input")?.value.trim();
+            
+                    if (!username || username.length < 3) return alert("⚠️ ID Game phải từ 3 đến 16 ký tự!");
+                    if (!/^\d{8}$/.test(pin)) return alert("⚠️ Mã PIN bắt buộc phải gồm đúng 8 chữ số (0-9)!");
+            
+                    try {
+                        const res = await fetch("/api/auth", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                action: "register",
+                                username: username,
+                                pin: pin,
+                                gender: selectedGender,
+                                gameData: packCurrentGameState()
+                            })
+                        });
+                        const result = await res.json();
+                        if (!result.ok) return alert("❌ " + (result.error || "Lỗi đăng ký!"));
+            
+                        localStorage.setItem("ar_cloud_user", result.username);
+                        localStorage.setItem("ar_cloud_pin", pin);
+                        localStorage.setItem("ar_cloud_gender", result.gender);
+                        localStorage.setItem("ar_cloud_session", result.sessionToken);
+            
+                        startSessionGuard(result.username);
+                        closeModal();
+                        alert(`🎉 Đăng ký thành công Thợ Săn [${result.username}] (${result.gender})!`);
+                    } catch (err) {
+                        alert("❌ Không kết nối được máy chủ: " + err.message);
+                    }
+                };
+            
+                // ĐĂNG NHẬP TÀI KHOẢN ĐÃ CÓ (TỰ ĐỘNG ĐÁ MÁY CŨ)
+                window.loginCloudAccount = async function() {
+                    const username = document.getElementById("cloud-username-input")?.value.trim();
+                    const pin = document.getElementById("cloud-pin-input")?.value.trim();
+            
+                    if (!username) return alert("⚠️ Vui lòng nhập ID Game!");
+                    if (!/^\d{8}$/.test(pin)) return alert("⚠️ Mã PIN phải gồm đúng 8 chữ số!");
+            
+                    try {
+                        const res = await fetch("/api/auth", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                action: "login",
+                                username: username,
+                                pin: pin
+                            })
+                        });
+                        const result = await res.json();
+                        if (!result.ok) return alert("❌ " + (result.error || "Sai thông tin đăng nhập!"));
+            
+                        applyCloudGameState(result.gameData);
+            
+                        localStorage.setItem("ar_cloud_user", result.username);
+                        localStorage.setItem("ar_cloud_pin", pin);
+                        localStorage.setItem("ar_cloud_gender", result.gender || "Nam");
+                        localStorage.setItem("ar_cloud_session", result.sessionToken);
+            
+                        startSessionGuard(result.username);
+                        closeModal();
+                        alert(`🎉 Chào mừng ${result.gender === 'Nữ' ? 'Nữ' : 'Nam'} Thợ Săn [${result.username}] trở lại!`);
+                    } catch (err) {
+                        alert("❌ Lỗi đăng nhập: " + err.message);
+                    }
+                };
+            
+                // ĐỒNG BỘ DỮ LIỆU LÊN MÂY
+                window.syncCurrentAccountToCloud = async function() {
+                    const username = localStorage.getItem("ar_cloud_user");
+                    const pin = localStorage.getItem("ar_cloud_pin");
+                    const currentToken = localStorage.getItem("ar_cloud_session");
+                    if (!username || !pin) return openCloudAccountModal();
+            
+                    try {
+                        const res = await fetch("/api/auth", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                action: "sync",
+                                username: username,
+                                pin: pin,
+                                sessionToken: currentToken,
+                                gameData: packCurrentGameState()
+                            })
+                        });
+                        const result = await res.json();
+                        if (result.code === "SESSION_EXPIRED") return handleSessionExpired();
+                        if (!result.ok) return alert("❌ " + (result.error || "Lỗi đồng bộ!"));
+            
+                        alert(`☁️ Đã sao lưu toàn bộ tiến trình của [${username}] lên Cloudflare!`);
+                    } catch (err) {
+                        alert("❌ Lỗi lưu dữ liệu: " + err.message);
+                    }
+                };
+            
+                window.logoutCloudAccount = function() {
+                    if (!confirm("Bạn có chắc muốn đăng xuất khỏi thiết bị này? (Dữ liệu trên mây vẫn được giữ nguyên)")) return;
+                    if (sessionCheckTimer) {
+                        clearInterval(sessionCheckTimer);
+                        sessionCheckTimer = null;
+                    }
+                    localStorage.removeItem("ar_cloud_user");
+                    localStorage.removeItem("ar_cloud_pin");
+                    localStorage.removeItem("ar_cloud_gender");
+                    localStorage.removeItem("ar_cloud_session");
                     openCloudAccountModal(true);
-                } else {
-                    startSessionGuard(existingUser);
+                };
+            
+                // ==========================================
+                // 2. KÊNH CHAT THẾ GIỚI NỔI GÓC TRÁI (CLOUDFLARE D1)
+                // ==========================================
+                let chatPollTimer = null;
+                let lastChatSentAt = 0;
+                let lastMessageId = 0;
+                let isFloatingChatVisible = true;
+            
+                window.toggleFloatingChat = function(show) {
+                    isFloatingChatVisible = show;
+                    const box = document.getElementById("floating-chat-box");
+                    const btn = document.getElementById("btn-show-floating-chat");
+                    const badge = document.getElementById("floating-chat-badge");
+                    if (!box || !btn) return;
+            
+                    if (show) {
+                        box.classList.remove("hidden");
+                        btn.classList.add("hidden");
+                        btn.classList.remove("flex");
+                        if (badge) badge.classList.add("hidden");
+                        const msgList = document.getElementById("floating-chat-messages");
+                        if (msgList) msgList.scrollTop = msgList.scrollHeight;
+                    } else {
+                        box.classList.add("hidden");
+                        btn.classList.remove("hidden");
+                        btn.classList.add("flex");
+                    }
+                };
+            
+                async function fetchWorldChatMessages() {
+                    const box = document.getElementById("floating-chat-messages");
+                    if (!box) return;
+            
+                    try {
+                        const res = await fetch("/api/chat");
+                        const result = await res.json();
+                        if (!result.ok) return;
+            
+                        const msgs = result.messages || [];
+                        if (msgs.length === 0) {
+                            box.innerHTML = `<div class="text-zinc-400 text-[10px] italic">Chưa có tin nhắn. Hãy mở lời đầu tiên!</div>`;
+                            return;
+                        }
+            
+                        const newestId = msgs[msgs.length - 1].id || 0;
+                        const hasNewMessage = newestId > lastMessageId;
+            
+                        if (hasNewMessage || box.innerHTML.includes("Đang tải")) {
+                            const isAtBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 35;
+            
+                            box.innerHTML = msgs.map(m => {
+                                if (m.is_system) {
+                                    return `<div class="text-amber-300 font-bold bg-amber-950/50 border border-amber-500/30 rounded px-1.5 py-0.5 text-[10px]">${m.text}</div>`;
+                                }
+                                const gBadge = m.gender === "Nữ" ? "👧" : "👦";
+                                const nameColor = m.gender === "Nữ" ? "text-pink-300" : "text-sky-300";
+                                return `
+                                <div class="break-words text-white/95 drop-shadow">
+                                    <span class="font-extrabold ${nameColor}">${gBadge}${m.sender}:</span>
+                                    <span class="text-zinc-100">${m.text}</span>
+                                </div>`;
+                            }).join('');
+            
+                            if (isAtBottom || lastMessageId === 0) {
+                                box.scrollTop = box.scrollHeight;
+                            }
+            
+                            if (!isFloatingChatVisible && lastMessageId !== 0 && hasNewMessage) {
+                                document.getElementById("floating-chat-badge")?.classList.remove("hidden");
+                            }
+                            lastMessageId = newestId;
+                        }
+                    } catch (e) {
+                        // Bỏ qua nếu mất kết nối tạm thời
+                    }
                 }
-            }, 600);
-        });
-    
-       // ==========================================
-    // 2. KÊNH CHAT THẾ GIỚI NỔI GÓC TRÁI (MỌI TAB)
-    // ==========================================
-    let floatingChatUnsubscribe = null;
-    let lastChatSentAt = 0;
-    let isFloatingChatVisible = true;
-
-    window.toggleFloatingChat = function(show) {
-        isFloatingChatVisible = show;
-        const box = document.getElementById("floating-chat-box");
-        const btn = document.getElementById("btn-show-floating-chat");
-        const badge = document.getElementById("floating-chat-badge");
-        if (!box || !btn) return;
-
-        if (show) {
-            box.classList.remove("hidden");
-            btn.classList.add("hidden");
-            btn.classList.remove("flex");
-            if (badge) badge.classList.add("hidden");
-            const msgList = document.getElementById("floating-chat-messages");
-            if (msgList) msgList.scrollTop = msgList.scrollHeight;
-        } else {
-            box.classList.add("hidden");
-            btn.classList.remove("hidden");
-            btn.classList.add("flex");
-        }
-    };
-
-
-
-    window.initFloatingWorldChat = function() {
-        if (floatingChatUnsubscribe) floatingChatUnsubscribe();
-        const q = query(collection(db, "world_chat"), orderBy("createdAt", "desc"), limit(25));
-
-        floatingChatUnsubscribe = onSnapshot(q, (snapshot) => {
-            const box = document.getElementById("floating-chat-messages");
-            if (!box) return;
-
-            const msgs = [];
-            snapshot.forEach(d => msgs.push(d.data()));
-            msgs.reverse();
-
-            if (msgs.length === 0) {
-                box.innerHTML = `<div class="text-zinc-400 text-[10px] italic">Chưa có tin nhắn. Hãy mở lời đầu tiên!</div>`;
-                return;
-            }
-
-            box.innerHTML = msgs.map(m => {
-                if (m.isSystem) {
-                    return `<div class="text-amber-300 font-bold bg-amber-950/50 border border-amber-500/30 rounded px-1.5 py-0.5 text-[10px]">${m.text}</div>`;
-                }
-                const gBadge = m.gender === "Nữ" ? "👧" : "👦";
-                const nameColor = m.gender === "Nữ" ? "text-pink-300" : "text-sky-300";
-                return `
-                <div class="break-words text-white/95 drop-shadow">
-                    <span class="font-extrabold ${nameColor}">${gBadge}${m.sender}:</span>
-                    <span class="text-zinc-100">${m.text}</span>
-                </div>`;
-            }).join('');
-
-            box.scrollTop = box.scrollHeight;
-
-            if (!isFloatingChatVisible) {
-                document.getElementById("floating-chat-badge")?.classList.remove("hidden");
-            }
-        });
-    };
-
-    window.handleSendFloatingChat = async function() {
-        const input = document.getElementById("floating-chat-input");
-        if (!input) return;
-        const text = input.value.trim();
-        if (!text) return;
-
-        if (Date.now() - lastChatSentAt < 3000) {
-            return alert("⏳ Chờ 3 giây giữa mỗi lần nhắn nhé!");
-        }
-        lastChatSentAt = Date.now();
-        input.value = "";
-
-        await window.sendWorldChat(text, false);
-    };
-
-    window.sendWorldChat = async function(text, isSystemBroadcast = false) {
-        try {
-            const senderName = localStorage.getItem("ar_cloud_user") || "Thợ Săn Ẩn Danh";
-            const senderGender = localStorage.getItem("ar_cloud_gender") || "Nam";
-            const leadPet = (typeof team !== "undefined" && team[0])
-                ? `${team[0].rarity?.badge || ''} ${team[0].name} Lv.${Math.floor(team[0].level || 1)}`
-                : "Tân Thủ";
-            await addDoc(collection(db, "world_chat"), {
-                sender: isSystemBroadcast ? "📢 LOA THẾ GIỚI" : senderName,
-                gender: senderGender,
-                petInfo: isSystemBroadcast ? "" : leadPet,
-                text: text,
-                isSystem: isSystemBroadcast,
-                createdAt: serverTimestamp()
-            });
-        } catch (e) {
-            alert("❌ Lỗi gửi tin nhắn: " + e.message);
-        }
-    };
-
-   
-    
-        
-    
-        window.sendWorldChat = async function(text, isSystemBroadcast = false) {
-            try {
-                const senderName = localStorage.getItem("ar_cloud_user") || "Thợ Săn Ẩn Danh";
-                const senderGender = localStorage.getItem("ar_cloud_gender") || "Nam";
-                const leadPet = team[0] ? `${team[0].rarity?.badge || ''} ${team[0].name} Lv.${Math.floor(team[0].level || 1)}` : "Tân Thủ";
-                await addDoc(collection(db, "world_chat"), {
-                    sender: isSystemBroadcast ? "📢 LOA THẾ GIỚI" : senderName,
-                    gender: senderGender,
-                    petInfo: isSystemBroadcast ? "" : leadPet,
-                    text: text,
-                    isSystem: isSystemBroadcast,
-                    createdAt: serverTimestamp()
-                });
-            } catch (e) {
-                console.error("Chat error:", e);
-            }
-        };
-     // Chạy ngay lập tức (không phụ thuộc sự kiện load đã qua)
-    initFloatingWorldChat();
-    </script>    
+            
+                window.initFloatingWorldChat = function() {
+                    fetchWorldChatMessages();
+                    if (chatPollTimer) clearInterval(chatPollTimer);
+                    chatPollTimer = setInterval(fetchWorldChatMessages, 3500); // Cập nhật tin nhắn mỗi 3.5 giây
+                };
+            
+                window.handleSendFloatingChat = async function() {
+                    const input = document.getElementById("floating-chat-input");
+                    if (!input) return;
+                    const text = input.value.trim();
+                    if (!text) return;
+            
+                    if (Date.now() - lastChatSentAt < 3000) {
+                        return alert("⏳ Chờ 3 giây giữa mỗi lần nhắn nhé!");
+                    }
+                    lastChatSentAt = Date.now();
+                    input.value = "";
+            
+                    await window.sendWorldChat(text, false);
+                };
+            
+                window.sendWorldChat = async function(text, isSystemBroadcast = false) {
+                    try {
+                        const senderName = localStorage.getItem("ar_cloud_user") || "Thợ Săn Ẩn Danh";
+                        const senderGender = localStorage.getItem("ar_cloud_gender") || "Nam";
+                        const leadPet = (typeof team !== "undefined" && team[0])
+                            ? `${team[0].rarity?.badge || ''} ${team[0].name} Lv.${Math.floor(team[0].level || 1)}`
+                            : "Tân Thủ";
+            
+                        await fetch("/api/chat", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                sender: isSystemBroadcast ? "📢 LOA THẾ GIỚI" : senderName,
+                                gender: senderGender,
+                                petInfo: isSystemBroadcast ? "" : leadPet,
+                                text: text,
+                                isSystem: isSystemBroadcast
+                            })
+                        });
+            
+                        fetchWorldChatMessages();
+                    } catch (e) {
+                        console.error("Chat error:", e);
+                    }
+                };
+            
+                // Khởi chạy ngay khi tải game
+                (function bootCloudflareSync() {
+                    const existingUser = localStorage.getItem("ar_cloud_user");
+                    if (!existingUser) {
+                        setTimeout(() => openCloudAccountModal(true), 500);
+                    } else {
+                        startSessionGuard(existingUser);
+                    }
+                    initFloatingWorldChat();
+                })();
+        </script>    
 </body>
 </html>
