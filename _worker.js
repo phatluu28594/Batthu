@@ -144,8 +144,109 @@ export default {
         }
 
         // ==========================================
-        // 3. TRẢ VỀ GIAO DIỆN GAME & ẢNH .WEBP
+        // API 3: ĐỒNG BỘ VỊ TRÍ NGƯỜI CHƠI TRÊN BẢN ĐỒ (/api/presence)
         // ==========================================
+        if (url.pathname === "/api/presence" && request.method === "POST") {
+            try {
+                const body = await request.json();
+                const now = Date.now();
+                const username = String(body.username || "").trim();
+
+                if (username && typeof body.lat === "number" && typeof body.lng === "number") {
+                    await env.DB.prepare(`
+                        INSERT INTO player_presence (username, gender, lat, lng, dir, state, lead_pet, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(username) DO UPDATE SET
+                            gender = excluded.gender,
+                            lat = excluded.lat,
+                            lng = excluded.lng,
+                            dir = excluded.dir,
+                            state = excluded.state,
+                            lead_pet = excluded.lead_pet,
+                            updated_at = excluded.updated_at
+                    `).bind(
+                        username,
+                        body.gender === "Nữ" ? "Nữ" : "Nam",
+                        body.lat,
+                        body.lng,
+                        String(body.dir || "down"),
+                        String(body.state || "idle"),
+                        String(body.leadPet || ""),
+                        now
+                    ).run();
+                }
+
+                // Lấy tối đa 30 người chơi đang online trong 45 giây gần nhất (trừ bản thân)
+                const activeThreshold = now - 45000;
+                const { results } = await env.DB.prepare(`
+                    SELECT username, gender, lat, lng, dir, state, lead_pet, updated_at
+                    FROM player_presence
+                    WHERE updated_at >= ? AND username != ?
+                    ORDER BY updated_at DESC
+                    LIMIT 30
+                `).bind(activeThreshold, username).all();
+
+                // Dọn ngầm các bản ghi offline quá 10 phút (xác suất 10% để tiết kiệm D1 writes)
+                if (Math.random() < 0.1) {
+                    await env.DB.prepare("DELETE FROM player_presence WHERE updated_at < ?")
+                        .bind(now - 600000).run();
+                }
+
+                return Response.json({ ok: true, players: results || [] });
+            } catch (err) {
+                return Response.json({ ok: false, error: err.message }, { status: 500 });
+            }
+        }
+
+        // ==========================================
+        // API 4: NHẮN TIN RIÊNG GIỮA 2 NGƯỜI CHƠI (/api/pm)
+        // ==========================================
+        if (url.pathname === "/api/pm") {
+            try {
+                if (request.method === "GET") {
+                    const user1 = String(url.searchParams.get("u1") || "").trim();
+                    const user2 = String(url.searchParams.get("u2") || "").trim();
+                    if (!user1 || !user2) return Response.json({ ok: false, error: "Thiếu người dùng" }, { status: 400 });
+
+                    const { results } = await env.DB.prepare(`
+                        SELECT id, sender, receiver, text, created_at
+                        FROM private_messages
+                        WHERE (sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)
+                        ORDER BY id DESC
+                        LIMIT 40
+                    `).bind(user1, user2, user2, user1).all();
+
+                    return Response.json({ ok: true, messages: (results || []).reverse() });
+                }
+
+                if (request.method === "POST") {
+                    const body = await request.json();
+                    const sender = String(body.sender || "").trim();
+                    const receiver = String(body.receiver || "").trim();
+                    const text = String(body.text || "").trim().slice(0, 200);
+
+                    if (!sender || !receiver || !text) {
+                        return Response.json({ ok: false, error: "Nội dung không hợp lệ" }, { status: 400 });
+                    }
+
+                    const now = Date.now();
+                    await env.DB.prepare(`
+                        INSERT INTO private_messages (sender, receiver, text, created_at)
+                        VALUES (?, ?, ?, ?)
+                    `).bind(sender, receiver, text, now).run();
+
+                    // Dọn ngầm tin nhắn riêng cũ hơn 24 giờ (xác suất 10%)
+                    if (Math.random() < 0.1) {
+                        await env.DB.prepare("DELETE FROM private_messages WHERE created_at < ?")
+                            .bind(now - 86400000).run();
+                    }
+
+                    return Response.json({ ok: true });
+                }
+            } catch (err) {
+                return Response.json({ ok: false, error: err.message }, { status: 500 });
+            }
+        }
         return env.ASSETS.fetch(request);
     }
 };
