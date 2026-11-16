@@ -1,3 +1,6 @@
+.git
+.gitignore
 _worker.js
 wrangler.jsonc
 functions
+README.md
