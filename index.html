@@ -229,6 +229,29 @@
         }
         
         .damage-popup { animation: floatText 0.6s ease-out forwards; }
+        /* NHÂN VẬT THỢ SĂN NAM / NỮ THAY THẾ ICON GPS (LƯỚI 10 CỘT x 4 HÀNG) */
+        .gps-hunter-marker {
+            width: 56px !important;
+            height: 74px !important;
+            pointer-events: none !important;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.8));
+        }
+        .gps-hunter-sprite {
+            width: 56px;
+            height: 74px;
+            background-repeat: no-repeat;
+            background-size: 1000% 400%;
+            animation: hunterAnim10Frames 0.75s steps(9) infinite;
+            image-rendering: pixelated;
+        }
+        @keyframes hunterAnim10Frames {
+            from { background-position-x: 0%; }
+            to   { background-position-x: 100%; }
+        }
+        .hunter-dir-down  { background-position-y: 0%; }
+        .hunter-dir-left  { background-position-y: 33.3333%; }
+        .hunter-dir-right { background-position-y: 66.6667%; }
+        .hunter-dir-up    { background-position-y: 100%; }
     </style>
 </head>
 <body class="text-white relative h-screen w-screen overflow-hidden">
@@ -3188,26 +3211,80 @@
                     attribution: ''
                 }).addTo(map);
 
-                const userIcon = L.divIcon({ className: 'leaflet-div-icon', html: '<div style="font-size: 28px;">📍</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
-                userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
+                const HUNTER_GPS_SHEETS = {
+                    Nam: { idle: 'assets/char_nam_idle.webp', walk: 'assets/char_nam_walk.webp' },
+                    Nữ:  { idle: 'assets/char_nu_idle.webp',  walk: 'assets/char_nu_walk.webp' }
+                };
+                let lastHunterLatLng = null;
+                let hunterIdleTimer = null;
+                let hunterCurState = 'idle';
+                let hunterCurDir = 'down';
+
+                function getHunterSheetUrl(state) {
+                    const g = localStorage.getItem('ar_cloud_gender') === 'Nữ' ? 'Nữ' : 'Nam';
+                    return HUNTER_GPS_SHEETS[g][state] || HUNTER_GPS_SHEETS.Nam.idle;
+                }
+
+                window.updateHunterGpsAppearance = function(state = hunterCurState, dir = hunterCurDir) {
+                    hunterCurState = state;
+                    hunterCurDir = dir;
+                    const el = document.getElementById('gps-hunter-sprite');
+                    if (el) {
+                        el.style.backgroundImage = `url('${getHunterSheetUrl(state)}')`;
+                        el.className = `gps-hunter-sprite hunter-dir-${dir}`;
+                    }
+                };
+
+                const userIcon = L.divIcon({
+                    className: 'gps-hunter-marker',
+                    html: `<div id="gps-hunter-sprite" class="gps-hunter-sprite hunter-dir-down" style="background-image: url('${getHunterSheetUrl('idle')}')"></div>`,
+                    iconSize: [56, 74],
+                    iconAnchor: [28, 66]
+                });
+                userMarker = L.marker([userLat, userLng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
+                lastHunterLatLng = L.latLng(userLat, userLng);
+
+                function moveHunterOnMap(lat, lng) {
+                    if (!userMarker) return;
+                    const nextPos = L.latLng(lat, lng);
+                    if (lastHunterLatLng && map) {
+                        const dist = map.distance(lastHunterLatLng, nextPos);
+                        if (dist > 1.2) {
+                            const dLat = nextPos.lat - lastHunterLatLng.lat;
+                            const dLng = nextPos.lng - lastHunterLatLng.lng;
+                            let dir = hunterCurDir;
+                            if (Math.abs(dLng) > Math.abs(dLat)) {
+                                dir = dLng >= 0 ? 'right' : 'left';
+                            } else {
+                                dir = dLat >= 0 ? 'up' : 'down';
+                            }
+                            window.updateHunterGpsAppearance('walk', dir);
+
+                            clearTimeout(hunterIdleTimer);
+                            hunterIdleTimer = setTimeout(() => {
+                                window.updateHunterGpsAppearance('idle', dir);
+                            }, 1200);
+                        }
+                    }
+                    lastHunterLatLng = nextPos;
+                    userMarker.setLatLng(nextPos);
+                }
 
                 if (navigator.geolocation) {
-                    // Lấy vị trí ngay khi mở bản đồ và zoom hết cỡ (18) về chỗ người chơi
                     navigator.geolocation.getCurrentPosition(position => {
-                        userLat = position.coords.latitude; 
+                        userLat = position.coords.latitude;
                         userLng = position.coords.longitude;
-                        if (map) { 
-                            map.setView([userLat, userLng], 18); 
-                            map.invalidateSize(); 
+                        if (map) {
+                            map.setView([userLat, userLng], 18);
+                            map.invalidateSize();
                         }
-                        if (userMarker) userMarker.setLatLng([userLat, userLng]);
+                        moveHunterOnMap(userLat, userLng);
                     }, error => {}, { enableHighAccuracy: true, timeout: 5000 });
 
-                    // Theo dõi liên tục theo bước chân khi di chuyển thực tế
                     navigator.geolocation.watchPosition(position => {
                         userLat = position.coords.latitude;
                         userLng = position.coords.longitude;
-                        if (userMarker) userMarker.setLatLng([userLat, userLng]);
+                        moveHunterOnMap(userLat, userLng);
                     }, error => {}, { enableHighAccuracy: true, maximumAge: 3000 });
                 }
                 
@@ -5217,6 +5294,7 @@
                         localStorage.setItem("ar_cloud_user", result.username);
                         localStorage.setItem("ar_cloud_pin", pin);
                         localStorage.setItem("ar_cloud_gender", result.gender);
+                        if (window.updateHunterGpsAppearance) window.updateHunterGpsAppearance();
                         localStorage.setItem("ar_cloud_session", result.sessionToken);
             
                         startSessionGuard(result.username);
@@ -5253,6 +5331,7 @@
                         localStorage.setItem("ar_cloud_user", result.username);
                         localStorage.setItem("ar_cloud_pin", pin);
                         localStorage.setItem("ar_cloud_gender", result.gender || "Nam");
+                        if (window.updateHunterGpsAppearance) window.updateHunterGpsAppearance();
                         localStorage.setItem("ar_cloud_session", result.sessionToken);
             
                         startSessionGuard(result.username);
@@ -5441,28 +5520,20 @@
                 })();
         </script>   
         <script>
-    // Tự động lưu dữ liệu lên D1 ngay khoảnh khắc người chơi tắt tab hoặc ẩn app trên điện thoại
     window.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "hidden") {
             const username = localStorage.getItem("ar_cloud_user");
             const pin = localStorage.getItem("ar_cloud_pin");
-            if (!username || !pin) return;
-
-            // Gom toàn bộ dữ liệu game đang lưu trong localStorage (trừ thông tin đăng nhập)
-            const saveData = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                if (k && k !== "ar_cloud_user" && k !== "ar_cloud_pin") {
-                    saveData[k] = localStorage.getItem(k);
-                }
-            }
+            const sessionToken = localStorage.getItem("ar_cloud_session");
+            if (!username || !pin || typeof packCurrentGameState !== "function") return;
 
             try {
                 const payload = JSON.stringify({
                     action: "sync",
                     username: username,
                     pin: pin,
-                    saveData: saveData
+                    sessionToken: sessionToken,
+                    gameData: packCurrentGameState()
                 });
                 navigator.sendBeacon("/api/auth", new Blob([payload], { type: "application/json" }));
             } catch (e) {}
