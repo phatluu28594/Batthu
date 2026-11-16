@@ -1125,7 +1125,7 @@
         // HỆ THỐNG HIỆU ỨNG TRẠNG THÁI (assets/magic.jpg - 5x8)
         // ==========================================
         const statusFxImg = new Image();
-        statusFxImg.src = 'assets/magic.png';
+        statusFxImg.src = 'assets/magic.webp';
 
         const statusFxRowMap = {
             stun: 0,    // Hàng 1: Choáng (Sao vàng xoay)
@@ -3009,7 +3009,7 @@
                 <div class="text-sm font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${Math.floor(pet.level)}</span></div>
                 <div class="text-[11px] font-bold ${elementNames[pet.element]?.color}">Hệ: ${elementNames[pet.element]?.label} • Tim: ${heartsStr}</div>
                 <div class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
-                    <span class="w-5 h-5 inline-block rounded-full bg-black" style="background-image:url('assets/magic.png'); background-size:800% 500%; background-position:0% ${(statusFxRowMap[pet.trait.type] || 0) * 25}%; mix-blend-mode:screen;"></span>
+                    <span class="w-5 h-5 inline-block rounded-full bg-black" style="background-image:url('assets/magic.webp'); background-size:800% 500%; background-position:0% ${(statusFxRowMap[pet.trait.type] || 0) * 25}%; mix-blend-mode:screen;"></span>
                     <span class="text-[11px] font-extrabold text-amber-300">Đặc kỹ: ${pet.trait.name} (${Math.max(30, pet.trait.chance || 30)}%)</span>
                 </div>
                 
