@@ -152,6 +152,13 @@ export default {
                 const now = Date.now();
                 const username = String(body.username || "").trim();
 
+                // Nếu người chơi thoát game / tắt tab / đăng xuất -> xóa ngay khỏi bản đồ
+                if (body.action === "offline" && username) {
+                    await env.DB.prepare("DELETE FROM player_presence WHERE username = ?")
+                        .bind(username).run();
+                    return Response.json({ ok: true });
+                }
+
                 if (username && typeof body.lat === "number" && typeof body.lng === "number") {
                     await env.DB.prepare(`
                         INSERT INTO player_presence (username, gender, lat, lng, dir, state, lead_pet, updated_at)
@@ -176,8 +183,8 @@ export default {
                     ).run();
                 }
 
-                // Lấy tối đa 30 người chơi đang online trong 45 giây gần nhất (trừ bản thân)
-                const activeThreshold = now - 45000;
+                // Giảm xuống 18 giây (18000ms) để rớt mạng cũng biến mất cực nhanh
+                const activeThreshold = now - 18000;
                 const { results } = await env.DB.prepare(`
                     SELECT username, gender, lat, lng, dir, state, lead_pet, updated_at
                     FROM player_presence
@@ -186,7 +193,6 @@ export default {
                     LIMIT 30
                 `).bind(activeThreshold, username).all();
 
-                // Dọn ngầm các bản ghi offline quá 10 phút (xác suất 10% để tiết kiệm D1 writes)
                 if (Math.random() < 0.1) {
                     await env.DB.prepare("DELETE FROM player_presence WHERE updated_at < ?")
                         .bind(now - 600000).run();
