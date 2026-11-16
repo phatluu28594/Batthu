@@ -120,9 +120,12 @@ export default {
                         "INSERT INTO world_chat (sender, gender, pet_info, text, is_system, created_at) VALUES (?, ?, ?, ?, ?, ?)"
                     ).bind(sender, gender, petInfo, text, isSystem, Date.now()).run();
 
-                    await db.prepare(
-                        "DELETE FROM world_chat WHERE id NOT IN (SELECT id FROM world_chat ORDER BY id DESC LIMIT 100)"
-                    ).run();
+                    // Chỉ dọn tin cũ khoảng 10% số lần gửi để tiết kiệm 50% lượt ghi D1
+                    if (Math.random() < 0.1) {
+                        await db.prepare(
+                            "DELETE FROM world_chat WHERE id NOT IN (SELECT id FROM world_chat ORDER BY id DESC LIMIT 100)"
+                        ).run();
+                    }
 
                     return jsonResponse({ ok: true });
                 }
