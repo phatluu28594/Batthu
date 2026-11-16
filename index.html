@@ -347,7 +347,6 @@
             <!-- Hàng chính bên trái mũi tên: Nhà, Tháp, Boss + Nút mũi tên ▼ -->
             <div class="flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-2 py-1 rounded-full border border-white/15 shadow-xl">
                 <button onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow cursor-pointer whitespace-nowrap text-amber-200">🏠 Nhà</button>
-                <button onclick="openWorldChatModal()" class="bg-sky-600/90 hover:bg-sky-500 px-2.5 py-1.5 rounded-full border border-sky-300 text-xs font-bold shadow cursor-pointer whitespace-nowrap">💬</button>
                 <button onclick="openCloudAccountModal()" class="bg-indigo-600/90 hover:bg-indigo-500 px-2.5 py-1.5 rounded-full border border-indigo-300 text-xs font-bold shadow cursor-pointer whitespace-nowrap">☁️</button>
                 <button onclick="openTowerMenu()" class="bg-purple-600/90 hover:bg-purple-500 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap">🗼 Tháp</button>
                 <button onclick="openWorldBossMenu()" class="bg-amber-700/90 hover:bg-amber-600 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap">👹 Boss</button>
@@ -798,7 +797,7 @@
         // ==========================================
         // HỆ THỐNG 3 ẤN KÝ / TRANG BỊ + ĐỘT PHÁ ĐỒNG BỘ (1 TẤM GEARS.PNG 9x6)
         // ==========================================
-        const GEAR_SHEET_URL = 'assets_gear/gears.png';
+        const GEAR_SHEET_URL = 'assets_gear/gears.webp';
         const GEAR_SHEET_COLS = 9;
         const GEAR_SHEET_ROWS = 6;
 
@@ -924,7 +923,7 @@
             'Gà Lửa': {
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets/ga.png',
+                sheet: 'assets/ga.webp',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.55
@@ -932,7 +931,7 @@
             'Heo Hồng': {
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets/heo.png',
+                sheet: 'assets/heo.webp',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.55
@@ -940,7 +939,7 @@
             'Chuột Xám': {
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets/chuot.png',
+                sheet: 'assets/chuot.webp',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.5
@@ -948,7 +947,7 @@
             'Kiến Lửa': {
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets/kien.png',
+                sheet: 'assets/kien.webp',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.5
@@ -956,7 +955,7 @@
             'Ong Vàng': {
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets/ong.png',
+                sheet: 'assets/ong.webp',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.5
@@ -964,7 +963,7 @@
             'Chó Husky': {
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets/cho.png',
+                sheet: 'assets/cho.webp',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.65
@@ -972,7 +971,7 @@
             'Rùa Xanh': {
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets/rua.png',
+                sheet: 'assets/rua.webp',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.55
@@ -980,7 +979,7 @@
             'Bướm Lam': {
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets/buom.png',
+                sheet: 'assets/buom.webp',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.6
@@ -988,7 +987,7 @@
             'Đại Bàng': {
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets/daibang.png',
+                sheet: 'assets/daibang.webp',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.7
@@ -996,7 +995,7 @@
             'Hồ Ly': {
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets/holy.png',
+                sheet: 'assets/holy.webp',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.7
@@ -1004,7 +1003,7 @@
             'Sói Tuyết': {
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets/meo.png',
+                sheet: 'assets/meo.webp',
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.7
@@ -1033,11 +1032,11 @@
                 displayName: 'Yêu Tinh Goblin',
                 element: 'Moc',
                 facing: 'left',
-                idle: 'assets_boss/monster-goblin-idle.png',
-                walk: 'assets_boss/monster-goblin-walk.png',
-                attack: 'assets_boss/monster-goblin-attack.png',
-                hit: 'assets_boss/monster-goblin-hit.png',
-                death: 'assets_boss/monster-goblin-death.png',
+                idle: 'assets_boss/monster-goblin-idle.webp',
+                walk: 'assets_boss/monster-goblin-walk.webp',
+                attack: 'assets_boss/monster-goblin-attack.webp',
+                hit: 'assets_boss/monster-goblin-hit.webp',
+                death: 'assets_boss/monster-goblin-death.webp',
                 cols: 4, rows: 4, totalFrames: 16, scale: 3,
                 grids: {
                     walk: { cols: 8, rows: 3, totalFrames: 24 },
@@ -1051,11 +1050,11 @@
                 displayName: 'Người Đá Golem',
                 element: 'Tho',
                 facing: 'left',
-                idle: 'assets_boss/monster-golem-idle.png',
-                walk: 'assets_boss/monster-golem-walk.png',
-                attack: 'assets_boss/monster-golem-attack.png',
-                hit: 'assets_boss/monster-golem-hit.png',
-                death: 'assets_boss/monster-golem-death.png',
+                idle: 'assets_boss/monster-golem-idle.webp',
+                walk: 'assets_boss/monster-golem-walk.webp',
+                attack: 'assets_boss/monster-golem-attack.webp',
+                hit: 'assets_boss/monster-golem-hit.webp',
+                death: 'assets_boss/monster-golem-death.webp',
                 cols: 4, rows: 4, totalFrames: 16, scale: 3,
                 grids: {
                     walk: { cols: 8, rows: 3, totalFrames: 23 },
@@ -1069,11 +1068,11 @@
                 displayName: 'Nấm Độc Khổng Lồ',
                 element: 'Moc',
                 facing: 'left',
-                idle: 'assets_boss/monster-mushroom-idle.png',
-                walk: 'assets_boss/monster-mushroom-walk.png',
-                attack: 'assets_boss/monster-mushroom-attack.png',
-                hit: 'assets_boss/monster-mushroom-hit.png',
-                death: 'assets_boss/monster-mushroom-death.png',
+                idle: 'assets_boss/monster-mushroom-idle.webp',
+                walk: 'assets_boss/monster-mushroom-walk.webp',
+                attack: 'assets_boss/monster-mushroom-attack.webp',
+                hit: 'assets_boss/monster-mushroom-hit.webp',
+                death: 'assets_boss/monster-mushroom-death.webp',
                 cols: 4, rows: 4, totalFrames: 16, scale: 3,
                 grids: {
                     walk: { cols: 8, rows: 2, totalFrames: 16 },
@@ -1087,11 +1086,11 @@
                 displayName: 'Quái Vật Slime',
                 element: 'Thuy',
                 facing: 'left',
-                idle: 'assets_boss/monster-slime-idle.png',
-                walk: 'assets_boss/monster-slime-walk.png',
-                attack: 'assets_boss/monster-slime-attack.png',
-                hit: 'assets_boss/monster-slime-hit.png',
-                death: 'assets_boss/monster-slime-death.png',
+                idle: 'assets_boss/monster-slime-idle.webp',
+                walk: 'assets_boss/monster-slime-walk.webp',
+                attack: 'assets_boss/monster-slime-attack.webp',
+                hit: 'assets_boss/monster-slime-hit.webp',
+                death: 'assets_boss/monster-slime-death.webp',
                 cols: 4, rows: 4, totalFrames: 16, scale: 3,
                 grids: {
                     walk: { cols: 8, rows: 2, totalFrames: 16 },
@@ -1107,7 +1106,7 @@
                 element: 'Thuy',
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets_boss/boss-unicorn.png',
+                sheet: 'assets_boss/boss-unicorn.webp',
                 cols: 8, totalRows: 5, // <-- Đổi cols từ 8 thành 5 ở đây là chuẩn 5x5!
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 padTop: 0,
@@ -1330,12 +1329,12 @@
         }
 
         // ==========================================
-        // NẠP & VẼ HÀO QUANG 8 FRAME TỪ assets/auras.png (5 HÀNG x 8 CỘT)
+        // NẠP & VẼ HÀO QUANG 8 FRAME TỪ assets/auras.webp (5 HÀNG x 8 CỘT)
         // ==========================================
         const auraSheetImg = new Image();
         let auraSheetLoaded = false;
         auraSheetImg.onload = () => { auraSheetLoaded = true; };
-        auraSheetImg.src = 'assets/auras.png';
+        auraSheetImg.src = 'assets/auras.webp';
 
         // Ánh xạ tên phẩm chất sang vị trí HÀNG (row 0 -> 4) trong tấm auras.png
         const RARITY_AURA_ROW = {
@@ -4508,61 +4507,6 @@
                         battleCtx.restore();
                     }
                     if (!isPetDead) drawSpriteStatusFX(battleCtx, teamStatus[i], posX, posY, idleTick, 105);
-                });
-
-                activeTeam.forEach((pet, i) => {
-                   
-                    let isPetDead = teamHpList[i] <= 0;
-                    let isAttacking = (attacker && attacker.side === 'team' && attacker.index === i);
-                    let isHit = teamHitShake[i] > 0;
-                    let knockback = 0;
-                   
-
-                    if (isHit) {
-                        knockback = -Math.sin(teamHitShake[i] * 1.8) * 10 - 6;
-                        teamHitShake[i]--;
-                    }
-
-                    let baseSlot = teamSlots[i] || { x: cx - 85, y: cy };
-                    let posY = isPetDead ? (baseSlot.y + 12) : (baseSlot.y + myOffsetsY[i]);
-                    let posX = isPetDead ? baseSlot.x : (baseSlot.x + myOffsetsX[i] + knockback);
-                    let baseName = pet.name.replace('F1_', '');
-                    let hasSprite = isPetSpriteReady(baseName);
-
-                    let animState = 'idle';
-                    if (isPetDead) animState = 'death';
-                    else if (isAttacking) animState = 'attack';
-                    else if (isHit) animState = 'hit';
-
-                    let petCfg = spriteConfigs[baseName];
-                    let petGrid = petCfg ? getSpriteGrid(petCfg, animState) : { totalFrames: 16 };
-                    let pMaxFrames = petGrid.totalFrames || 16;
-
-                    let animFrame = Math.floor(idleTick * 2.2) % pMaxFrames;
-                    if (isPetDead) {
-                        animFrame = pMaxFrames - 1;
-                    } else if (isAttacking) {
-                        animFrame = Math.min(pMaxFrames - 1, Math.floor((attacker.step / 22) * pMaxFrames));
-                    } else if (isHit) {
-                        animFrame = Math.min(pMaxFrames - 1, Math.floor((12 - teamHitShake[i]) * (pMaxFrames / 12)));
-                    }
-
-                    if (hasSprite) {
-                        drawPetEntity(battleCtx, pet, animState, animFrame, posX, posY, 85, false);
-                    } else {
-                        let idleScaleY = (isPetDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + i * 1.2) * 0.04);
-                        let petRot = isPetDead ? (-Math.PI / 2) : myRotations[i];
-                        battleCtx.save();
-                        battleCtx.translate(posX, posY);
-                        battleCtx.rotate(petRot);
-                        battleCtx.scale(-1, idleScaleY);
-                        battleCtx.font = "52px sans-serif";
-                        battleCtx.textAlign = "center";
-                        battleCtx.textBaseline = "middle";
-                        battleCtx.fillText(pet.emoji, 0, 0);
-                        battleCtx.restore();
-                    }
-                     if (!isPetDead) drawSpriteStatusFX(battleCtx, teamStatus[i], posX, posY, idleTick, 105);
                 });
 
                 for (let idx = impactEffects.length - 1; idx >= 0; idx--) {
