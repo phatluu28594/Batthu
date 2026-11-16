@@ -74,15 +74,24 @@ export default {
                     return jsonResponse({ ok: true });
                 }
 
-                if (action === "sync") {
-                    const player = await db.prepare("SELECT pin, session_token FROM players WHERE username = ?").bind(cleanUser).first();
-                    if (!player) return jsonResponse({ ok: false, error: "Tài khoản không tồn tại!" }, 404);
-                    if (player.session_token !== sessionToken) return jsonResponse({ ok: false, code: "SESSION_EXPIRED" });
-                    if (player.pin !== pin) return jsonResponse({ ok: false, error: "Sai mã PIN!" }, 401);
-
-                    await db.prepare("UPDATE players SET game_data = ?, updated_at = ? WHERE username = ?")
-                        .bind(JSON.stringify(gameData || {}), Date.now(), cleanUser).run();
-
+               if (action === "sync") {
+                    const existing = await db.prepare(
+                        "SELECT save_data FROM players WHERE LOWER(username) = LOWER(?) AND pin = ?"
+                    ).bind(username, pin).first();
+                
+                    if (!existing) {
+                        return jsonResponse({ ok: false, error: "Sai tài khoản hoặc mã PIN!" }, 401);
+                    }
+                
+                    // Nếu dữ liệu giống hệt bản cũ thì không cần tốn 1 lượt ghi (Write) vào D1
+                    if (existing.save_data === saveDataStr) {
+                        return jsonResponse({ ok: true, skipped: true });
+                    }
+                
+                    await db.prepare(
+                        "UPDATE players SET save_data = ?, updated_at = ? WHERE LOWER(username) = LOWER(?) AND pin = ?"
+                    ).bind(saveDataStr, Date.now(), username, pin).run();
+                
                     return jsonResponse({ ok: true });
                 }
 
