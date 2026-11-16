@@ -5860,6 +5860,47 @@
             } catch (e) {}
         };
 
+        // Hàm gửi tín hiệu offline tức thì (dùng sendBeacon để không bị trình duyệt hủy khi tắt tab)
+        window.notifyPlayerOffline = function(targetUser) {
+            const u = targetUser || localStorage.getItem('ar_cloud_user');
+            if (!u) return;
+            try {
+                const payload = JSON.stringify({ action: 'offline', username: u });
+                navigator.sendBeacon('/api/presence', new Blob([payload], { type: 'application/json' }));
+            } catch (e) {}
+        };
+
+        // 1. Khi tắt tab / đóng trình duyệt / ẩn ứng dụng trên điện thoại
+        window.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                window.notifyPlayerOffline();
+            } else if (document.visibilityState === 'visible') {
+                syncMapPlayersPresence();
+            }
+        });
+        window.addEventListener('pagehide', () => window.notifyPlayerOffline());
+
+        // 2. Khi người chơi rời bản đồ để về Nhà Chính
+        const _origGoBackToHome = window.goBackToHome;
+        if (typeof _origGoBackToHome === 'function') {
+            window.goBackToHome = function() {
+                window.notifyPlayerOffline();
+                _origGoBackToHome.apply(this, arguments);
+            };
+        }
+
+        // 3. Khi người chơi bấm Đăng Xuất
+        const _origLogout = window.logoutCloudAccount;
+        if (typeof _origLogout === 'function') {
+            window.logoutCloudAccount = function() {
+                const u = localStorage.getItem('ar_cloud_user');
+                _origLogout.apply(this, arguments);
+                if (!localStorage.getItem('ar_cloud_user') && u) {
+                    window.notifyPlayerOffline(u);
+                }
+            };
+        }
+        
         // Tự động bật đồng bộ vị trí người chơi mỗi 8 giây
         presenceTimer = setInterval(syncMapPlayersPresence, 8000);
         setTimeout(syncMapPlayersPresence, 2000);
