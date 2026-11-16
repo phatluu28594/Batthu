@@ -5598,5 +5598,272 @@
         }
     });
     </script>
+
+    <script>
+    // ==========================================
+    // HIỂN THỊ NGƯỜI CHƠI KHÁC TRÊN BẢN ĐỒ & CHAT RIÊNG (PM)
+    // ==========================================
+    (function initMultiplayerMapAndPM() {
+        const otherPlayerMarkers = {};
+        let otherPlayersCache = {};
+        let presenceTimer = null;
+        let activePmTarget = null;
+        let pmPollTimer = null;
+        let lastPmSentAt = 0;
+
+        const SHEET_BY_GENDER = {
+            Nam: { idle: 'assets/char_nam_idle.webp', walk: 'assets/char_nam_walk.webp' },
+            Nữ:  { idle: 'assets/char_nu_idle.webp',  walk: 'assets/char_nu_walk.webp' }
+        };
+
+        function getOtherHunterHtml(p) {
+            const g = p.gender === 'Nữ' ? 'Nữ' : 'Nam';
+            const st = p.state === 'walk' ? 'walk' : 'idle';
+            const dir = ['down', 'left', 'right', 'up'].includes(p.dir) ? p.dir : 'down';
+            const url = SHEET_BY_GENDER[g][st];
+            const nameBadgeColor = g === 'Nữ' ? 'border-pink-400 text-pink-200' : 'border-sky-400 text-sky-200';
+
+            return `
+            <div onclick="openOtherPlayerCard('${p.username.replace(/'/g, "\\'")}')" class="relative flex flex-col items-center cursor-pointer pointer-events-auto" style="width:30px; height:50px;">
+                <div class="absolute -top-5 bg-black/85 px-1.5 py-0.5 rounded-full border ${nameBadgeColor} text-[9px] font-extrabold whitespace-nowrap shadow-md">
+                    ${g === 'Nữ' ? '👧' : '👦'} ${p.username}
+                </div>
+                <div class="gps-hunter-sprite hunter-dir-${dir}" style="background-image: url('${url}');"></div>
+            </div>`;
+        }
+
+        async function syncMapPlayersPresence() {
+            if (document.hidden || typeof map === 'undefined' || !map) return;
+            const myUser = localStorage.getItem('ar_cloud_user');
+            if (!myUser) return; // Chỉ tài khoản đã đăng ký/đăng nhập mới hiển thị & nhìn thấy người khác
+
+            const myGender = localStorage.getItem('ar_cloud_gender') === 'Nữ' ? 'Nữ' : 'Nam';
+            const leadPet = (typeof team !== 'undefined' && team[0])
+                ? `${team[0].rarity?.badge || ''} ${team[0].name} (Lv.${Math.floor(team[0].level || 1)})`
+                : 'Chưa xuất chiến thú';
+
+            // Lấy hướng & trạng thái hiện tại của nhân vật bản thân từ DOM
+            const selfSprite = document.getElementById('gps-hunter-sprite');
+            let myDir = 'down';
+            let myState = 'idle';
+            if (selfSprite) {
+                if (selfSprite.classList.contains('hunter-dir-left')) myDir = 'left';
+                else if (selfSprite.classList.contains('hunter-dir-right')) myDir = 'right';
+                else if (selfSprite.classList.contains('hunter-dir-up')) myDir = 'up';
+                if (selfSprite.style.backgroundImage.includes('_walk.webp')) myState = 'walk';
+            }
+
+            try {
+                const res = await fetch('/api/presence', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: myUser,
+                        gender: myGender,
+                        lat: userLat,
+                        lng: userLng,
+                        dir: myDir,
+                        state: myState,
+                        leadPet: leadPet
+                    })
+                });
+                const data = await res.json();
+                if (!data.ok) return;
+
+                const seenUsers = new Set();
+                (data.players || []).forEach(p => {
+                    seenUsers.add(p.username);
+                    otherPlayersCache[p.username] = p;
+
+                    if (otherPlayerMarkers[p.username]) {
+                        otherPlayerMarkers[p.username].setLatLng([p.lat, p.lng]);
+                        const el = otherPlayerMarkers[p.username].getElement();
+                        if (el) el.innerHTML = getOtherHunterHtml(p);
+                    } else {
+                        const icon = L.divIcon({
+                            className: 'leaflet-div-icon',
+                            html: getOtherHunterHtml(p),
+                            iconSize: [30, 50],
+                            iconAnchor: [15, 46]
+                        });
+                        const mk = L.marker([p.lat, p.lng], { icon: icon, zIndexOffset: 900 }).addTo(map);
+                        mk.on('click', (e) => {
+                            if (e && e.originalEvent) L.DomEvent.stopPropagation(e);
+                            openOtherPlayerCard(p.username);
+                        });
+                        otherPlayerMarkers[p.username] = mk;
+                    }
+                });
+
+                // Xóa marker của người chơi đã thoát hoặc mất tín hiệu quá 45s
+                Object.keys(otherPlayerMarkers).forEach(uname => {
+                    if (!seenUsers.has(uname)) {
+                        map.removeLayer(otherPlayerMarkers[uname]);
+                        delete otherPlayerMarkers[uname];
+                        delete otherPlayersCache[uname];
+                    }
+                });
+            } catch (e) {}
+        }
+
+        // Mở bảng tương tác khi chạm vào người chơi khác trên bản đồ
+        window.openOtherPlayerCard = function(targetUsername) {
+            const p = otherPlayersCache[targetUsername];
+            if (!p) return;
+
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            const distMeters = (typeof map !== 'undefined' && map)
+                ? Math.round(map.distance([userLat, userLng], [p.lat, p.lng]))
+                : 0;
+            const gIcon = p.gender === 'Nữ' ? '👧' : '👦';
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-base text-sky-300">${gIcon} Thợ Săn ${p.username}</h3>
+                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+            </div>
+            <div class="bg-zinc-800/90 border border-sky-500/40 rounded-2xl p-4 mb-3 space-y-2 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-zinc-400">Giới tính:</span>
+                    <span class="font-bold text-white">${p.gender}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-zinc-400">Khoảng cách:</span>
+                    <span class="font-bold text-emerald-400">📍 Cách bạn ~${distMeters}m</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-zinc-400">Linh thú dẫn đầu:</span>
+                    <span class="font-bold text-yellow-300">${p.lead_pet || 'Tân Thủ'}</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="openPrivateChatWith('${p.username.replace(/'/g, "\\'")}')" class="bg-gradient-to-r from-sky-600 to-indigo-600 hover:brightness-110 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">
+                    💬 Nhắn Tin Riêng
+                </button>
+                <button onclick="greetPlayerOnWorldChat('${p.username.replace(/'/g, "\\'")}')" class="bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">
+                    👋 Vẫy Tay Chào
+                </button>
+            </div>`;
+        };
+
+        window.greetPlayerOnWorldChat = function(targetUsername) {
+            closeModal();
+            if (window.sendWorldChat) {
+                window.sendWorldChat(`👋 Vẫy tay chào [${targetUsername}] ở gần đó!`, false);
+            }
+        };
+
+        // Mở hộp thoại Chat Riêng (PM) 1-1
+        window.openPrivateChatWith = function(targetUsername) {
+            const myUser = localStorage.getItem('ar_cloud_user');
+            if (!myUser) {
+                alert('⚠️ Bạn cần đăng nhập tài khoản Cloud (☁️ Nick) để nhắn tin riêng!');
+                return;
+            }
+            activePmTarget = targetUsername;
+
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-2.5 pb-2 border-b border-zinc-800">
+                <div class="flex items-center gap-2">
+                    <button onclick="openOtherPlayerCard('${targetUsername.replace(/'/g, "\\'")}')" class="bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer">‹</button>
+                    <h3 class="font-bold text-sm text-sky-300">💬 Chat riêng với ${targetUsername}</h3>
+                </div>
+                <button onclick="closePrivateChat()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+            </div>
+            <div id="pm-messages-list" class="h-64 overflow-y-auto bg-zinc-950/90 border border-zinc-800 rounded-xl p-2.5 space-y-2 mb-2.5 text-xs">
+                <div class="text-center text-zinc-500 text-[11px] py-6">Đang tải cuộc trò chuyện...</div>
+            </div>
+            <div class="flex gap-1.5">
+                <input id="pm-input-box" type="text" maxlength="200"
+                    onkeydown="if(event.key==='Enter'){ event.preventDefault(); sendPrivateMessage(); }"
+                    placeholder="Nhập tin nhắn riêng cho ${targetUsername}..."
+                    class="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-400 outline-none">
+                <button onclick="sendPrivateMessage()" class="bg-sky-600 hover:bg-sky-500 px-4 py-2 rounded-xl text-xs font-extrabold text-white cursor-pointer shrink-0">
+                    Gửi
+                </button>
+            </div>`;
+
+            fetchPrivateMessages();
+            if (pmPollTimer) clearInterval(pmPollTimer);
+            pmPollTimer = setInterval(fetchPrivateMessages, 3500);
+        };
+
+        window.closePrivateChat = function() {
+            activePmTarget = null;
+            if (pmPollTimer) {
+                clearInterval(pmPollTimer);
+                pmPollTimer = null;
+            }
+            closeModal();
+        };
+
+        async function fetchPrivateMessages() {
+            const myUser = localStorage.getItem('ar_cloud_user');
+            const listEl = document.getElementById('pm-messages-list');
+            if (!myUser || !activePmTarget || !listEl) return;
+
+            try {
+                const res = await fetch(`/api/pm?u1=${encodeURIComponent(myUser)}&u2=${encodeURIComponent(activePmTarget)}`);
+                const data = await res.json();
+                if (!data.ok) return;
+
+                const msgs = data.messages || [];
+                if (msgs.length === 0) {
+                    listEl.innerHTML = `<div class="text-center text-zinc-500 text-[11px] py-8">Chưa có tin nhắn nào. Hãy gửi lời chào đầu tiên! 👋</div>`;
+                    return;
+                }
+
+                const isAtBottom = (listEl.scrollHeight - listEl.scrollTop - listEl.clientHeight) < 40;
+                listEl.innerHTML = msgs.map(m => {
+                    const isMe = m.sender === myUser;
+                    return `
+                    <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                        <div class="max-w-[80%] px-3 py-1.5 rounded-2xl break-words ${isMe ? 'bg-sky-600 text-white rounded-br-sm' : 'bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-bl-sm'}">
+                            ${m.text}
+                        </div>
+                    </div>`;
+                }).join('');
+
+                if (isAtBottom) listEl.scrollTop = listEl.scrollHeight;
+            } catch (e) {}
+        }
+
+        window.sendPrivateMessage = async function() {
+            const myUser = localStorage.getItem('ar_cloud_user');
+            const input = document.getElementById('pm-input-box');
+            if (!myUser || !activePmTarget || !input) return;
+
+            const text = input.value.trim();
+            if (!text) return;
+            if (Date.now() - lastPmSentAt < 1500) return;
+            lastPmSentAt = Date.now();
+            input.value = '';
+
+            try {
+                await fetch('/api/pm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sender: myUser,
+                        receiver: activePmTarget,
+                        text: text
+                    })
+                });
+                fetchPrivateMessages();
+            } catch (e) {}
+        };
+
+        // Tự động bật đồng bộ vị trí người chơi mỗi 8 giây
+        presenceTimer = setInterval(syncMapPlayersPresence, 8000);
+        setTimeout(syncMapPlayersPresence, 2000);
+    })();
+    </script>
 </body>
 </html>
