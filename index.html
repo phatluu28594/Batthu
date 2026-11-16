@@ -1773,6 +1773,7 @@
             farm.push(newPet);
             saveGameData();
             alert(`🎉 Trứng đã nở thành công! Chúc mừng bạn nhận được linh thú F1: ${newPet.name}!`);
+            if (activeSubRoomType === 'egg') renderSubRoomEggs();
             openEggIncubatorMenu();
         }
 
@@ -3287,8 +3288,8 @@
                 const userIcon = L.divIcon({
                     className: 'gps-hunter-marker',
                     html: `<div id="gps-hunter-sprite" class="gps-hunter-sprite hunter-dir-down" style="background-image: url('${getHunterSheetUrl('idle')}')"></div>`,
-                    iconSize: [40, 52],
-                    iconAnchor: [20, 46]
+                    iconSize: [30, 50],
+                    iconAnchor: [15, 46]
                 });
                 userMarker = L.marker([userLat, userLng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
                 lastHunterLatLng = L.latLng(userLat, userLng);
@@ -5306,9 +5307,13 @@
                     farm = sanitizePetsData(data.farm || []);
                     eggs = data.eggs || [];
                     restingPets = sanitizePetsData(data.restingPets || []);
-                    trainingPoles = data.trainingPoles || [null, null, null, null];
+                    trainingPoles = (data.trainingPoles || [null, null, null, null]).map(p => p ? sanitizePetsData([p])[0] : null);
                     inventory = data.inventory || {};
-            
+
+                    [team, farm, restingPets, trainingPoles].forEach(list => {
+                        if (Array.isArray(list)) list.forEach(p => ensurePetGears(p));
+                    });
+
                     localStorage.setItem("ar_max_pet_capacity", maxPetCapacity);
                     localStorage.setItem("ar_tower_floor", towerFloor);
                     localStorage.setItem("ar_boss_level", bossLevel);
