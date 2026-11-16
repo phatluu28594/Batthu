@@ -418,7 +418,7 @@
 
         <div id="farm-scroller" class="panorama-scroller no-scrollbar">
             <div class="panorama-canvas">
-                <img src="./farm-bg.png" alt="Trang Trai" class="panorama-img" onload="centerPanorama('farm-scroller')">
+                <img src="./farm-bg.webp" alt="Trang Trai" class="panorama-img" onload="centerPanorama('farm-scroller')">
                 
                 <div id="farm-visual-pets" class="absolute inset-0 pointer-events-none z-10"></div>
 
@@ -437,7 +437,7 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH RIÊNG KHU LUYỆN TẬP (training-bg.png) -->
+    <!-- MÀN HÌNH RIÊNG KHU LUYỆN TẬP (training-bg.webp) -->
     <div id="training-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 overflow-hidden flex flex-col">
         <button onclick="closeTrainingScreen()" class="absolute top-3 right-3 z-50 bg-black/80 hover:bg-black text-white px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/25 shadow-xl">✕ Thoát</button>
         <div class="absolute top-3 left-3 z-40 bg-black/80 px-3.5 py-1.5 rounded-full border border-amber-400/50 text-xs font-bold text-amber-300">
@@ -445,7 +445,7 @@
         </div>
 
         <div class="relative w-full h-full overflow-hidden flex items-center justify-center">
-            <img src="./training-bg.png" alt="Khu Luyện Tập" class="absolute inset-0 w-full h-full object-cover z-0">
+            <img src="./training-bg.webp" alt="Khu Luyện Tập" class="absolute inset-0 w-full h-full object-cover z-0">
             
             <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
                 <div class="relative w-full max-w-md h-80">
@@ -491,7 +491,7 @@
 
         <div id="hospital-scroller" class="panorama-scroller no-scrollbar">
             <div class="panorama-canvas">
-                <img src="./hospital-bg.png" alt="Bệnh Viện" class="panorama-img" onload="centerPanorama('hospital-scroller')">
+                <img src="./hospital-bg.webp" alt="Bệnh Viện" class="panorama-img" onload="centerPanorama('hospital-scroller')">
 
                 <div onclick="openSubRoom('heal')" class="hotspot flex flex-col items-center justify-end pb-2" style="top: 23%; left: 5%; width: 44%; height: 35%;">
                     <div class="home-label" style="border-color: #22d3ee; color: #cffafe;">❤️ Hồi Sức Tim</div>
@@ -512,7 +512,7 @@
     <div id="tower-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 flex flex-col">
         <button onclick="closeTowerScreen()" class="absolute top-3 right-3 z-30 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
         <div class="relative w-full h-full overflow-hidden flex flex-col items-center justify-end pb-12">
-            <img src="./tower-bg.png" alt="Tháp Vô Tận" class="absolute inset-0 w-full h-full object-cover z-0">
+            <img src="./tower-bg.webp" alt="Tháp Vô Tận" class="absolute inset-0 w-full h-full object-cover z-0">
             <div onclick="startBattle('tower')" class="hotspot flex flex-col items-center justify-center animate-pulse" style="top: 60%; left: 35%; width: 30%; height: 20%;" title="Khiêu chiến Tháp">
                 <div class="bg-purple-900/90 text-yellow-300 font-extrabold px-3 py-1.5 rounded-full border-2 border-yellow-400 text-xs shadow-2xl tracking-wider text-center">
                     🗼 TẦNG <span id="tower-gate-floor">1</span><br><span class="text-[9px] text-white">CHẠM ĐỂ ĐẤU</span>
@@ -574,7 +574,7 @@
         </div>
 
         <div class="relative w-full h-full overflow-hidden flex flex-col items-center justify-center">
-            <img src="./battle-bg.png" alt="Dau Truong" class="absolute inset-0 w-full h-full object-cover z-0">
+            <img src="./battle-bg.webp" alt="Dau Truong" class="absolute inset-0 w-full h-full object-cover z-0">
             <canvas id="battleCanvas" class="absolute inset-0 w-full h-full z-10"></canvas>
             <div id="damage-popup-container" class="absolute inset-0 pointer-events-none overflow-hidden z-20"></div>
             <div id="battle-log" class="absolute bottom-6 z-20 bg-black/85 px-4 py-2 rounded-xl text-xs text-yellow-300 font-bold border border-yellow-500/50 text-center max-w-sm shadow-xl">
@@ -1028,92 +1028,76 @@
         // ==========================================
         const bossSpriteAssets = {};
         const bossSpriteConfigs = {
-            'monster-goblin': {
-                displayName: 'Yêu Tinh Goblin',
+            'Hydra': {
+                displayName: 'Hydra',
                 element: 'Moc',
                 facing: 'left',
-                idle: 'assets_boss/monster-goblin-idle.webp',
-                walk: 'assets_boss/monster-goblin-walk.webp',
-                attack: 'assets_boss/monster-goblin-attack.webp',
-                hit: 'assets_boss/monster-goblin-hit.webp',
-                death: 'assets_boss/monster-goblin-death.webp',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3,
-                grids: {
-                    walk: { cols: 8, rows: 3, totalFrames: 24 },
-                    attack: { cols: 8, rows: 4, totalFrames: 32 },
-                    death: { cols: 8, rows: 3, totalFrames: 24 },
-                    hit: { cols: 8, rows: 3, totalFrames: 24 },
-                    idle: { cols: 8, rows: 3, totalFrames: 24 }
-                }
+                singleSheet: true,
+                sheet: 'assets_boss/Hydra.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 2.0
             },
-            'monster-golem': {
-                displayName: 'Người Đá Golem',
+            'Cerberus': {
+                displayName: 'Cerberus',
                 element: 'Tho',
                 facing: 'left',
-                idle: 'assets_boss/monster-golem-idle.webp',
-                walk: 'assets_boss/monster-golem-walk.webp',
-                attack: 'assets_boss/monster-golem-attack.webp',
-                hit: 'assets_boss/monster-golem-hit.webp',
-                death: 'assets_boss/monster-golem-death.webp',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3,
-                grids: {
-                    walk: { cols: 8, rows: 3, totalFrames: 23 },
-                    attack: { cols: 8, rows: 4, totalFrames: 32 },
-                    death: { cols: 8, rows: 3, totalFrames: 24 },
-                    hit: { cols: 8, rows: 1, totalFrames: 8 },
-                    idle: { cols: 8, rows: 3, totalFrames: 23 }
-                }
+                singleSheet: true,
+                sheet: 'assets_boss/Cerberus.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 2.0
             },
-            'monster-mushroom': {
-                displayName: 'Nấm Độc Khổng Lồ',
+            'Chupacabra': {
+                displayName: 'Chupacabra',
                 element: 'Moc',
                 facing: 'left',
-                idle: 'assets_boss/monster-mushroom-idle.webp',
-                walk: 'assets_boss/monster-mushroom-walk.webp',
-                attack: 'assets_boss/monster-mushroom-attack.webp',
-                hit: 'assets_boss/monster-mushroom-hit.webp',
-                death: 'assets_boss/monster-mushroom-death.webp',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3,
-                grids: {
-                    walk: { cols: 8, rows: 2, totalFrames: 16 },
-                    attack: { cols: 8, rows: 3, totalFrames: 24 },
-                    death: { cols: 8, rows: 2, totalFrames: 16 },
-                    hit: { cols: 8, rows: 2, totalFrames: 16 },
-                    idle: { cols: 8, rows: 3, totalFrames: 24 }
-                }
+                singleSheet: true,
+                sheet: 'assets_boss/Chupacabra.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 2.0
             },
-            'monster-slime': {
-                displayName: 'Quái Vật Slime',
+            'Muỗi địa ngục': {
+                displayName: 'Quái Vật muỗi',
                 element: 'Thuy',
                 facing: 'left',
-                idle: 'assets_boss/monster-slime-idle.webp',
-                walk: 'assets_boss/monster-slime-walk.webp',
-                attack: 'assets_boss/monster-slime-attack.webp',
-                hit: 'assets_boss/monster-slime-hit.webp',
-                death: 'assets_boss/monster-slime-death.webp',
-                cols: 4, rows: 4, totalFrames: 16, scale: 3,
-                grids: {
-                    walk: { cols: 8, rows: 2, totalFrames: 16 },
-                    attack: { cols: 8, rows: 3, totalFrames: 24 },
-                    death: { cols: 8, rows: 3, totalFrames: 24 },
-                    hit: { cols: 8, rows: 1, totalFrames: 8 },
-                    idle: { cols: 8, rows: 5, totalFrames: 40 }
-                }
+                singleSheet: true,
+                sheet: 'assets_boss/muoidianguc.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 2.0
             },
-            //boss Vip
-            'boss-unicorn': {
-                displayName: 'Thánh Thú Kỳ Lân Băng',
+            'Golem': {
+                displayName: 'Golemi',
+                element: 'Thuy',
+                facing: 'left',
+                singleSheet: true,
+                sheet: 'assets_boss/golem.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 2.0
+            },
+            'Rồng Lửa': {
+                displayName: 'Quái Vật Rồng Lửa',
+                element: 'Thuy',
+                facing: 'left',
+                singleSheet: true,
+                sheet: 'assets_boss/ronglua.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 2.0
+            },
+            'Dingonek': {
+                displayName: 'Dingonek',
                 element: 'Thuy',
                 facing: 'right',
                 singleSheet: true,
-                sheet: 'assets_boss/boss-unicorn.webp',
-                cols: 8, totalRows: 5, // <-- Đổi cols từ 8 thành 5 ở đây là chuẩn 5x5!
+                sheet: 'assets_boss/Dingonek.webp',
+                cols: 10, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
-                padTop: 0,
-                padBottom: 0,
                 scale: 2.0
             }
-            
         };
 
         function preloadBossSprites() {
@@ -1876,7 +1860,7 @@
         }
 
         // ==========================================
-        // KHU LUYỆN TẬP (training-bg.png) - VÉ TẬP 1 TIẾNG & TỰ VỀ TRẠI THÚ HỘ
+        // KHU LUYỆN TẬP (training-bg.webp) - VÉ TẬP 1 TIẾNG & TỰ VỀ TRẠI THÚ HỘ
         // ==========================================
         setInterval(() => {
             if (!document.getElementById('training-screen').classList.contains('hidden')) {
@@ -2341,7 +2325,7 @@
 
             if (roomType === 'rest') {
                 document.getElementById('fullscreen-farm-screen').classList.add('hidden');
-                bgImg.src = './rest-bg.png';
+                bgImg.src = './rest-bg.webp';
                 titleEl.innerHTML = '🌿 Khu Nghỉ Ngơi Hồi Sức';
                 titleEl.style.borderColor = '#34d399';
                 titleEl.style.color = '#6ee7b7';
@@ -2353,7 +2337,7 @@
 
             } else if (roomType === 'heal') {
                 document.getElementById('hospital-screen').classList.add('hidden');
-                bgImg.src = './heal-bg.png';
+                bgImg.src = './heal-bg.webp';
                 titleEl.innerHTML = '❤️ Khu Hồi Phục Tim';
                 titleEl.style.borderColor = '#22d3ee';
                 titleEl.style.color = '#67e8f9';
@@ -2364,7 +2348,7 @@
 
             } else if (roomType === 'evolve') {
                 document.getElementById('hospital-screen').classList.add('hidden');
-                bgImg.src = './evolve-bg.png';
+                bgImg.src = './evolve-bg.webp';
                 titleEl.innerHTML = '💎 Khu Tiến Hóa & Hợp Thể';
                 titleEl.style.borderColor = '#fbbf24';
                 titleEl.style.color = '#fde047';
@@ -2378,7 +2362,7 @@
 
             } else if (roomType === 'breed') {
                 document.getElementById('hospital-screen').classList.add('hidden');
-                bgImg.src = './breed-bg.png';
+                bgImg.src = './breed-bg.webp';
                 titleEl.innerHTML = '🧬 Khu Sinh Sản Lai Giống';
                 titleEl.style.borderColor = '#f472b6';
                 titleEl.style.color = '#f9a8d4';
@@ -2395,7 +2379,7 @@
 
             } else if (roomType === 'egg') {
                 document.getElementById('map-screen').classList.add('hidden');
-                bgImg.src = './egg-bg.png';
+                bgImg.src = './egg-bg.webp';
                 titleEl.innerHTML = '🥚 Khu Ấp Trứng Linh Thú';
                 titleEl.style.borderColor = '#34d399';
                 titleEl.style.color = '#6ee7b7';
