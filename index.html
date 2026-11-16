@@ -231,17 +231,17 @@
         .damage-popup { animation: floatText 0.6s ease-out forwards; }
         /* NHÂN VẬT THỢ SĂN NAM / NỮ THAY THẾ ICON GPS (LƯỚI 10 CỘT x 4 HÀNG) */
         .gps-hunter-marker {
-            width: 56px !important;
-            height: 74px !important;
+            width: 30px !important;
+            height: 50px !important;
             pointer-events: none !important;
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.8));
+            filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.8));
         }
         .gps-hunter-sprite {
-            width: 56px;
-            height: 74px;
+            width: 30px;
+            height: 50px;
             background-repeat: no-repeat;
             background-size: 1000% 400%;
-            animation: hunterAnim10Frames 0.75s steps(9) infinite;
+            animation: hunterAnim10Frames 1.45s steps(9) infinite;
             image-rendering: pixelated;
         }
         @keyframes hunterAnim10Frames {
@@ -3238,8 +3238,8 @@
                 const userIcon = L.divIcon({
                     className: 'gps-hunter-marker',
                     html: `<div id="gps-hunter-sprite" class="gps-hunter-sprite hunter-dir-down" style="background-image: url('${getHunterSheetUrl('idle')}')"></div>`,
-                    iconSize: [56, 74],
-                    iconAnchor: [28, 66]
+                    iconSize: [40, 52],
+                    iconAnchor: [20, 46]
                 });
                 userMarker = L.marker([userLat, userLng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
                 lastHunterLatLng = L.latLng(userLat, userLng);
@@ -5385,12 +5385,13 @@
                 };
             
                 // ==========================================
-                // 2. KÊNH CHAT THẾ GIỚI NỔI GÓC TRÁI (CLOUDFLARE D1)
+                // 2. KÊNH CHAT THẾ GIỚI NỔI GÓC TRÁI (CHỈ NHẬN TIN MỚI KHI VÀO GAME)
                 // ==========================================
                 let chatPollTimer = null;
                 let lastChatSentAt = 0;
                 let lastMessageId = 0;
                 let isFloatingChatVisible = true;
+                const sessionChatStartTime = Date.now(); // Mốc thời gian bắt đầu vào game
             
                 window.toggleFloatingChat = function(show) {
                     isFloatingChatVisible = show;
@@ -5414,6 +5415,7 @@
                 };
             
                 async function fetchWorldChatMessages() {
+                    if (document.hidden) return; // Tiết kiệm request khi người chơi ẩn tab
                     const box = document.getElementById("floating-chat-messages");
                     if (!box) return;
             
@@ -5422,16 +5424,19 @@
                         const result = await res.json();
                         if (!result.ok) return;
             
-                        const msgs = result.messages || [];
+                        // Chỉ lọc lấy tin nhắn phát sinh từ lúc người chơi mở game trở đi
+                        const msgs = (result.messages || []).filter(m => (m.created_at || 0) >= sessionChatStartTime);
                         if (msgs.length === 0) {
-                            box.innerHTML = `<div class="text-zinc-400 text-[10px] italic">Chưa có tin nhắn. Hãy mở lời đầu tiên!</div>`;
+                            if (box.innerHTML.includes("Đang tải")) {
+                                box.innerHTML = `<div class="text-zinc-400 text-[10px] italic">Chào mừng tới kênh thế giới!</div>`;
+                            }
                             return;
                         }
             
                         const newestId = msgs[msgs.length - 1].id || 0;
                         const hasNewMessage = newestId > lastMessageId;
             
-                        if (hasNewMessage || box.innerHTML.includes("Đang tải")) {
+                        if (hasNewMessage) {
                             const isAtBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 35;
             
                             box.innerHTML = msgs.map(m => {
@@ -5451,20 +5456,19 @@
                                 box.scrollTop = box.scrollHeight;
                             }
             
-                            if (!isFloatingChatVisible && lastMessageId !== 0 && hasNewMessage) {
+                            if (!isFloatingChatVisible && hasNewMessage) {
                                 document.getElementById("floating-chat-badge")?.classList.remove("hidden");
                             }
                             lastMessageId = newestId;
                         }
-                    } catch (e) {
-                        // Bỏ qua nếu mất kết nối tạm thời
-                    }
+                    } catch (e) {}
                 }
             
                 window.initFloatingWorldChat = function() {
-                    fetchWorldChatMessages();
+                    const box = document.getElementById("floating-chat-messages");
+                    if (box) box.innerHTML = `<div class="text-zinc-400 text-[10px] italic">Chào mừng tới kênh thế giới!</div>`;
                     if (chatPollTimer) clearInterval(chatPollTimer);
-                    chatPollTimer = setInterval(fetchWorldChatMessages, 3500); // Cập nhật tin nhắn mỗi 3.5 giây
+                    chatPollTimer = setInterval(fetchWorldChatMessages, 5000); // Cập nhật mỗi 5 giây
                 };
             
                 window.handleSendFloatingChat = async function() {
