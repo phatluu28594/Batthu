@@ -1,5 +1,6 @@
 {
   "name": "batthuvuong",
+  "main": "_worker.js",
   "compatibility_date": "2026-11-16",
   "assets": {
     "directory": "./",
@@ -9,7 +10,7 @@
     {
       "binding": "DB",
       "database_name": "bat-thu-vuong-db",
-      "database_id": "DÁN_DATABASE_ID_CỦA_ANH_VÀO_ĐÂY"
+      "database_id": "GIỮ_NGUYÊN_DATABASE_ID_CỦA_ANH"
     }
   ]
 }
