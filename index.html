@@ -252,6 +252,26 @@
         .hunter-dir-left  { background-position-y: 33.3333%; }
         .hunter-dir-right { background-position-y: 66.6667%; }
         .hunter-dir-up    { background-position-y: 100%; }
+
+        /* SPRITE SHEET TRỨNG 5 PHẨM CHẤT (10 CỘT x 5 HÀNG) */
+        .egg-sprite-anim {
+            display: inline-block;
+            background-image: url('assets/eggs.webp');
+            background-repeat: no-repeat;
+            background-size: 1000% 500%;
+            animation: eggSheetWobble 1.3s steps(9) infinite;
+            filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.85));
+        }
+        @keyframes eggSheetWobble {
+            from { background-position-x: 0%; }
+            to   { background-position-x: 100%; }
+        }
+        .egg-row-0 { background-position-y: 0%; }    /* Thường (Trắng) */
+        .egg-row-1 { background-position-y: 25%; }   /* Hiếm (Xanh lá) */
+        .egg-row-2 { background-position-y: 50%; }   /* Cực Hiếm (Vàng) */
+        .egg-row-3 { background-position-y: 75%; }   /* Huyền Thoại (Đỏ) */
+        .egg-row-4 { background-position-y: 100%; }  /* Thần Thánh (Tím) */
+        
     </style>
 </head>
 <body class="text-white relative h-screen w-screen overflow-hidden">
@@ -1686,6 +1706,20 @@
             saveGameData();
         }
 
+        const EGG_RARITY_ROW = {
+            'Thường': 0,
+            'Hiếm': 1,
+            'Cực Hiếm': 2,
+            'Huyền Thoại': 3,
+            'Thần Thánh': 4
+        };
+
+        function getEggSpriteHtml(egg, sizePx = 56) {
+            const rarityName = egg?.rarity?.name || egg?.petData?.rarity?.name || 'Thường';
+            const row = EGG_RARITY_ROW[rarityName] ?? 0;
+            return `<span class="egg-sprite-anim egg-row-${row}" style="width:${sizePx}px; height:${sizePx}px; flex-shrink:0;"></span>`;
+        }
+
         function openEggIncubatorMenu() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
@@ -1694,7 +1728,7 @@
             let html = `
             <div class="flex justify-between items-center mb-3">
                 <h3 class="font-bold text-sm text-emerald-300">🥚 Khu Ấp Trứng Linh Thú (Đi bộ để nở)</h3>
-                <button onclick="closeModal()" class="text-zinc-400 font-bold">✕</button>
+                <button onclick="closeModal()" class="text-zinc-400 font-bold cursor-pointer">✕</button>
             </div>
             <div class="text-[10px] text-zinc-300 mb-2">Bước chân hiện tại: <span class="text-emerald-400 font-bold">${totalSteps}</span> bước</div>
             <div class="space-y-2.5 max-h-72 overflow-y-auto">`;
@@ -1705,15 +1739,16 @@
                 eggs.forEach((egg, idx) => {
                     let progress = Math.min(100, Math.floor((egg.steps / egg.requiredSteps) * 100));
                     let isReady = egg.steps >= egg.requiredSteps;
+                    let rarityObj = egg.rarity || egg.petData?.rarity || rarities[0];
 
                     html += `
-                    <div class="bg-zinc-800 p-3 rounded-xl border border-emerald-500/50 flex flex-col gap-2">
+                    <div class="bg-zinc-800 p-3 rounded-xl border ${rarityObj.bg || 'border-emerald-500/50'} flex flex-col gap-2">
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-3xl animate-bounce">🥚</span>
+                            <div class="flex items-center gap-2.5">
+                                ${getEggSpriteHtml(egg, 48)}
                                 <div>
-                                    <div class="text-xs font-bold text-yellow-300">${egg.name} (Hệ: ${elementNames[egg.element]?.label})</div>
-                                    <div class="text-[10px] text-zinc-300">Tiến độ: ${egg.steps}/${egg.requiredSteps} bước</div>
+                                    <div class="text-xs font-bold text-yellow-300">${egg.name} <span class="${rarityObj.color || 'text-zinc-300'}">${rarityObj.badge || ''}</span></div>
+                                    <div class="text-[10px] text-zinc-300">Hệ: ${elementNames[egg.element]?.label || egg.element} • Tiến độ: ${egg.steps}/${egg.requiredSteps} bước</div>
                                 </div>
                             </div>
                             <div>
@@ -1727,9 +1762,10 @@
                 });
             }
             html += `</div>
-            <button onclick="addPlayerSteps(20); openEggIncubatorMenu();" class="mt-3 w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] py-1.5 rounded-lg border border-zinc-600">👟 Thử nghiệm: Giả lập đi +20 bước</button>`;
+            <button onclick="addPlayerSteps(20); openEggIncubatorMenu();" class="mt-3 w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] py-1.5 rounded-lg border border-zinc-600 cursor-pointer">👟 Thử nghiệm: Giả lập đi +20 bước</button>`;
             content.innerHTML = html;
         }
+
 
         function hatchEgg(idx) {
             let egg = eggs.splice(idx, 1)[0];
@@ -2662,7 +2698,7 @@
                 let pct = Math.min(100, Math.floor((egg.steps / egg.requiredSteps) * 100));
                 html += `
                 <div onclick="openEggIncubatorMenu()" style="position: absolute; top: ${pos.top}; left: ${pos.left}; transform: translate(-50%, -50%);" class="flex flex-col items-center cursor-pointer pointer-events-auto">
-                    <span class="text-4xl animate-bounce" style="filter: drop-shadow(0 5px 8px rgba(0,0,0,0.85));">🥚</span>
+                    ${getEggSpriteHtml(egg, 60)}
                     <span class="bg-black/85 text-yellow-300 text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/60 mt-0.5 whitespace-nowrap">${pct >= 100 ? '✨ NỞ NGAY!' : `👟 ${pct}%`}</span>
                 </div>`;
             });
@@ -2749,22 +2785,35 @@
                         const baseName = dad.name.replace('F1_', '');
                         const template = allMonsters.find(m => m.name === baseName) || dad;
 
+                        // Tính phẩm chất trứng F1: lấy bậc cao hơn giữa Bố và Mẹ (có 20% cơ hội đột biến lên +1 bậc!)
+                        const dadIdx = rarities.findIndex(r => r.name === dad.rarity?.name);
+                        const momIdx = rarities.findIndex(r => r.name === mom.rarity?.name);
+                        let childRarityIdx = Math.max(0, dadIdx, momIdx);
+                        if (Math.random() < 0.20 && childRarityIdx < rarities.length - 1) {
+                            childRarityIdx++;
+                        }
+                        const childRarity = rarities[childRarityIdx] || rarities[0];
+                        const baseMult = Math.max(dad.rarity?.statMultiplier || 1, mom.rarity?.statMultiplier || 1);
+                        const multRatio = childRarity.statMultiplier / baseMult;
+
                         const childPet = {
                             ...dad,
-                            id: Date.now(),
+                            id: 'pet_' + Date.now(),
                             name: `F1_${template.name}`,
                             level: 1,
                             hearts: 3,
+                            rarity: childRarity,
                             gender: Math.random() < 0.5 ? 'Đực' : 'Cái',
-                            hp: Math.floor((dad.maxHp + mom.maxHp) * 0.6),
-                            maxHp: Math.floor((dad.maxHp + mom.maxHp) * 0.6),
-                            atk: Math.floor((dad.atk + mom.atk) * 0.6),
+                            hp: Math.floor((dad.maxHp + mom.maxHp) * 0.6 * multRatio),
+                            maxHp: Math.floor((dad.maxHp + mom.maxHp) * 0.6 * multRatio),
+                            atk: Math.floor((dad.atk + mom.atk) * 0.6 * multRatio),
                             speed: Math.floor((dad.speed + mom.speed) * 0.6)
                         };
 
                         eggs.push({
                             name: `Trứng F1_${template.name}`,
                             element: childPet.element,
+                            rarity: childRarity,
                             steps: 0,
                             requiredSteps: 80,
                             petData: childPet
@@ -2777,7 +2826,7 @@
                         if (activeSubRoomType === 'egg') renderSubRoomEggs();
                         closeModal();
 
-                        alert(`🎉 LAI GIỐNG THÀNH CÔNG (25%)!\n✨ Cặp đôi [${dad.name}] & [${mom.name}] đã tạo ra [Trứng F1_${template.name}]!\n🥚 Hãy vào Khu Ấp Trứng để ấp nở nhé!`);
+                        alert(`🎉 LAI GIỐNG THÀNH CÔNG (25%)!\n✨ Cặp đôi [${dad.name}] & [${mom.name}] đã tạo ra [Trứng F1_${template.name}] (${childRarity.badge})!\n🥚 Hãy vào Khu Ấp Trứng để ấp nở nhé!`);
                     } else {
                         const momName = mom.name;
                         team = team.filter(p => p !== mom);
