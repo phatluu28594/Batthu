@@ -1282,10 +1282,6 @@
             // Ưu tiên hướng tự động nhận diện; nếu ảnh hướng phải ('right') thì tự lật sang trái ('left') để đối mặt với đội hình
             const actualFacing = cfg.detectedFacing || cfg.facing || 'right';
             let needFlip = (actualFacing !== 'left');
-
-            // Ưu tiên hướng tự động nhận diện; nếu ảnh hướng phải ('right') thì tự lật sang trái ('left') để đối mặt với đội hình
-            const actualFacing = cfg.detectedFacing || cfg.facing || 'right';
-            let needFlip = (actualFacing !== 'left');
             let drawW = size * (cfg.scale || 1);
             let drawH = size * (cfg.scale || 1);
 
