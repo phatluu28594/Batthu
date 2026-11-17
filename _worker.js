@@ -11,11 +11,24 @@ export default {
         const db = env.DB;
 
         // ==========================================
-        // 1. API TÀI KHOẢN (/api/auth)
+        // API 1: ĐĂNG KÝ / ĐĂNG NHẬP / ĐỒNG BỘ DỮ LIỆU (/api/auth)
         // ==========================================
-        if (url.pathname === "/api/auth" && request.method === "POST") {
+        if (url.pathname === "/api/auth") {
             try {
                 if (!db) return jsonResponse({ ok: false, error: "Chưa kết nối D1 Database (DB)!" }, 500);
+
+                // Tự động khởi tạo bảng players đúng 6 cột của game nếu chưa tồn tại trong D1
+                await db.prepare(`
+                    CREATE TABLE IF NOT EXISTS players (
+                        username TEXT PRIMARY KEY,
+                        pin TEXT NOT NULL,
+                        gender TEXT DEFAULT 'Nam',
+                        session_token TEXT,
+                        game_data TEXT,
+                        updated_at INTEGER
+                    )
+                `).run();
+
                 const body = await request.json();
                 const { action, username, pin, gender, sessionToken, gameData } = body;
 
