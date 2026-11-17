@@ -277,6 +277,22 @@ export default {
         // ==========================================
         if (url.pathname === "/api/friends") {
             try {
+                // Tự động tạo bảng & index nếu D1 chưa có (tránh lỗi D1_ERROR: no such table)
+                await env.DB.batch([
+                    env.DB.prepare(`
+                        CREATE TABLE IF NOT EXISTS friendships (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            requester TEXT NOT NULL,
+                            target TEXT NOT NULL,
+                            status TEXT NOT NULL DEFAULT 'pending',
+                            created_at INTEGER NOT NULL,
+                            UNIQUE(requester, target)
+                        )
+                    `),
+                    env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_friend_req ON friendships(requester, status)`),
+                    env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_friend_tgt ON friendships(target, status)`)
+                ]);
+
                 // 1. Lấy danh sách bạn bè + lời mời chờ duyệt + trạng thái Online
                 if (request.method === "GET") {
                     const me = String(url.searchParams.get("u") || "").trim();
@@ -309,16 +325,18 @@ export default {
                     // Kiểm tra bạn nào đang Online trong vòng 25 giây gần nhất
                     let onlineMap = {};
                     if (friendNames.length > 0) {
-                        const activeThreshold = Date.now() - 25000;
-                        const { results: onlineRows } = await env.DB.prepare(`
-                            SELECT username, gender, lead_pet
-                            FROM player_presence
-                            WHERE updated_at >= ?
-                        `).bind(activeThreshold).all();
+                        try {
+                            const activeThreshold = Date.now() - 25000;
+                            const { results: onlineRows } = await env.DB.prepare(`
+                                SELECT username, gender, lead_pet
+                                FROM player_presence
+                                WHERE updated_at >= ?
+                            `).bind(activeThreshold).all();
 
-                        (onlineRows || []).forEach(p => {
-                            onlineMap[p.username] = { gender: p.gender, leadPet: p.lead_pet };
-                        });
+                            (onlineRows || []).forEach(p => {
+                                onlineMap[p.username] = { gender: p.gender, leadPet: p.lead_pet };
+                            });
+                        } catch (e) {}
                     }
 
                     const friendList = friends.map(name => ({
@@ -351,7 +369,7 @@ export default {
                     }
 
                     if (action === "request") {
-                        // Kiểm tra tài khoản đích có tồn tại không
+                        // Kiểm tra tài khoản đích có tồn tại trong bảng players không
                         const userExists = await env.DB.prepare("SELECT username FROM players WHERE username = ?")
                             .bind(target).first();
                         if (!userExists) {
