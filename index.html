@@ -2152,6 +2152,38 @@
         }
 
         function showFarmSection(sectionType) {
+            const PET_SELL_PRICE_BY_RARITY = {
+            'Thường': 50,
+            'Hiếm': 100,
+            'Cực Hiếm': 150,
+            'Huyền Thoại': 200,
+            'Thần Thánh': 250
+        };
+
+        function getPetSellPrice(pet) {
+            const rarityName = pet?.rarity?.name || 'Thường';
+            return PET_SELL_PRICE_BY_RARITY[rarityName] ?? 50;
+        }
+
+        function sellFarmPet(farmIdx) {
+            const pet = farm[farmIdx];
+            if (!pet) return;
+            const price = getPetSellPrice(pet);
+            const badge = pet.rarity?.badge || '⚪ Trắng';
+
+            showInGameConfirm(
+                `💰 Bạn muốn bán linh thú [${badge} ${pet.name}] với giá ${price}🪙 Vàng không?\n(Linh thú đã bán sẽ không thể lấy lại)`,
+                () => {
+                    const sold = farm.splice(farmIdx, 1)[0];
+                    if (sold) {
+                        playerCoins += price;
+                        saveGameData();
+                        showFarmSection('storage');
+                        alert(`💰 Đã bán [${sold.name}] thành công và nhận +${price}🪙 Vàng!`);
+                    }
+                }
+            );
+        }
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
@@ -2189,7 +2221,26 @@
                 else {
                     farm.forEach((pet, idx) => {
                         let heartsStr = '❤️'.repeat(pet.hearts);
-                        html += `<div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border ${pet.rarity.bg}"><div class="flex items-center gap-2">${getPetSpriteHtml(pet, 'idle', 44)}<div class="text-xs font-bold">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span><div class="text-[10px] text-zinc-300">HP: ${Math.floor(pet.hp)} | ${heartsStr} | ${elementNames[pet.element]?.label} | ⚡${pet.speed}</div></div></div><div class="flex gap-1"><button onclick="sendPetToRest(${idx}); closeModal(); openFarmMenu();" class="bg-emerald-600 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Nghỉ</button><button onclick="moveToTeamFromFarm(${idx}); closeModal(); openFarmMenu();" class="bg-blue-600 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Đội</button></div></div>`;
+                        let sellPrice = getPetSellPrice(pet);
+                        html += `
+                        <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border ${pet.rarity.bg}">
+                            <div class="flex items-center gap-2 min-w-0 pr-1">
+                                ${getPetSpriteHtml(pet, 'idle', 44)}
+                                <div class="text-xs font-bold truncate">
+                                    ${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span>
+                                    <div class="text-[10px] text-zinc-300">HP: ${Math.floor(pet.hp)} | ${heartsStr} | ${elementNames[pet.element]?.label}</div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-1 shrink-0">
+                                <div class="flex gap-1">
+                                    <button onclick="sendPetToRest(${idx}); showFarmSection('storage');" class="bg-emerald-600 hover:bg-emerald-500 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Nghỉ</button>
+                                    <button onclick="moveToTeamFromFarm(${idx}); showFarmSection('storage');" class="bg-blue-600 hover:bg-blue-500 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Đội</button>
+                                </div>
+                                <button onclick="sellFarmPet(${idx})" class="bg-amber-600 hover:bg-amber-500 text-[10px] px-2 py-1 rounded font-extrabold text-white cursor-pointer shadow">
+                                    💰 Bán (${sellPrice}🪙)
+                                </button>
+                            </div>
+                        </div>`;
                     });
                 }
                 html += `</div>`;
@@ -3023,18 +3074,25 @@
                 html += `<div class="space-y-3">`;
                 team.forEach((pet, idx) => {
                     let heartsStr = '❤️'.repeat(pet.hearts);
+                    let sellPrice = getPetSellPrice(pet);
                     html += `
                     <div class="bg-zinc-800 p-3 rounded-xl flex items-center justify-between border ${pet.rarity.bg}">
-                        <div onclick="openPetDetail(${idx})" class="flex items-center gap-3 cursor-pointer flex-grow">
-                            <div class="bg-zinc-900 p-1.5 rounded-xl flex items-center justify-center">${getPetSpriteHtml(pet, 'idle', 44)}</div>
-                            <div>
-                                <div class="font-bold text-sm text-yellow-300">${pet.name} (${pet.gender === 'Đực' ? '♂️' : '♀️'}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs ${elementNames[pet.element]?.color}">[${elementNames[pet.element]?.label}]</span></div>
-                                <div class="text-[11px] text-zinc-300">HP: ${Math.floor(pet.hp)}/${pet.maxHp} | ❤️: ${heartsStr} | ⚡Tốc: ${pet.speed}</div>
+                        <div onclick="openPetDetail(${idx})" class="flex items-center gap-2.5 cursor-pointer flex-grow min-w-0 pr-1">
+                            <div class="bg-zinc-900 p-1.5 rounded-xl flex items-center justify-center shrink-0">${getPetSpriteHtml(pet, 'idle', 44)}</div>
+                            <div class="min-w-0">
+                                <div class="font-bold text-xs text-yellow-300 truncate">${pet.name} (${pet.gender === 'Đực' ? '♂️' : '♀️'}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span></div>
+                                <div class="text-[10px] ${elementNames[pet.element]?.color} font-bold">[${elementNames[pet.element]?.label}] • ❤️ ${heartsStr}</div>
+                                <div class="text-[10px] text-zinc-300">HP: ${Math.floor(pet.hp)}/${pet.maxHp} • ⚡Tốc: ${pet.speed}</div>
                             </div>
                         </div>
-                        <div class="flex flex-col gap-1">
-                            <button onclick="moveTeamToFarm(${idx})" class="bg-amber-600 text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer">Về Trại</button>
-                            <button onclick="openPetDetail(${idx})" class="bg-blue-600 text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer">Xem</button>
+                        <div class="flex flex-col gap-1 shrink-0">
+                            <div class="flex gap-1">
+                                <button onclick="moveTeamToFarm(${idx})" class="bg-zinc-700 hover:bg-zinc-600 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Về Trại</button>
+                                <button onclick="openPetDetail(${idx})" class="bg-blue-600 hover:bg-blue-500 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Xem</button>
+                            </div>
+                            <button onclick="sellTeamPet(${idx})" class="bg-amber-600 hover:bg-amber-500 text-[10px] px-2 py-1 rounded font-extrabold text-white cursor-pointer shadow">
+                                💰 Bán (${sellPrice}🪙)
+                            </button>
                         </div>
                     </div>`;
                 });
@@ -3046,6 +3104,33 @@
         function moveTeamToFarm(idx) {
             farm.push(team.splice(idx, 1)[0]);
             saveGameData(); updateTeamCount(); openTeamMenu();
+        }
+
+        function sellTeamPet(teamIdx) {
+            const pet = team[teamIdx];
+            if (!pet) return;
+
+            if (team.length <= 1 && farm.length === 0) {
+                alert('⚠️ Đây là linh thú chiến đấu duy nhất bạn đang có, không thể bán hết!');
+                return;
+            }
+
+            const price = getPetSellPrice(pet);
+            const badge = pet.rarity?.badge || '⚪ Trắng';
+
+            showInGameConfirm(
+                `💰 Bạn muốn bán linh thú [${badge} ${pet.name}] trong đội hình với giá ${price}🪙 Vàng không?\n(Linh thú đã bán sẽ không thể lấy lại)`,
+                () => {
+                    const sold = team.splice(teamIdx, 1)[0];
+                    if (sold) {
+                        playerCoins += price;
+                        saveGameData();
+                        updateTeamCount();
+                        openTeamMenu();
+                        alert(`💰 Đã bán [${sold.name}] thành công và nhận +${price}🪙 Vàng!`);
+                    }
+                }
+            );
         }
 
         function openPetDetail(index) {
@@ -4150,14 +4235,6 @@
                 }
 
                 // Thưởng Vàng + Kim cương khi bắt được thú Hiếm trở lên
-                let bonusGold = 50 + (caughtPet.level * 15);
-                playerCoins += bonusGold;
-                let diamondMsg = '';
-                if (caughtPet.rarity && caughtPet.rarity.name !== 'Thường') {
-                    playerDiamonds += 5;
-                    diamondMsg = ` và +5💎`;
-                }
-
                 if (currentSelectedMarker && typeof map !== 'undefined') {
                     map.removeLayer(currentSelectedMarker);
                 }
@@ -4173,7 +4250,7 @@
                     window.sendWorldChat(`📢 Chúc mừng [${hunter}] vừa thu phục thành công Viễn Thú ${caughtPet.rarity.badge} ${caughtPet.name}!`, true);
                 }
 
-                alert(`🎉 Thu phục thành công ${caughtPet.name}!\nNhận thêm +${bonusGold}🪙${diamondMsg}!`);
+                alert(`🎉 Thu phục thành công ${caughtPet.name} (${caughtPet.rarity?.badge || '⚪ Trắng'})!`);
             }
 
             exitARScreen();
