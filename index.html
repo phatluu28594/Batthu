@@ -1156,12 +1156,54 @@
             }
         };
 
+        // Tự động phân tích khung hình đầu tiên của Boss xem mặt đang hướng trái hay phải
+        function detectBossFacingDirection(img, cfg) {
+            try {
+                const totalRows = cfg.totalRows || 5;
+                const cols = cfg.cols || (Math.round((img.naturalWidth / img.naturalHeight) * totalRows) >= 9 ? 10 : 8);
+                const fw = Math.floor(img.naturalWidth / cols);
+                const fh = Math.floor(img.naturalHeight / totalRows);
+
+                const tmpCanvas = document.createElement('canvas');
+                tmpCanvas.width = fw;
+                tmpCanvas.height = fh;
+                const tmpCtx = tmpCanvas.getContext('2d', { willReadFrequently: true });
+                tmpCtx.drawImage(img, 0, 0, fw, fh, 0, 0, fw, fh);
+
+                const data = tmpCtx.getImageData(0, 0, fw, fh).data;
+                let leftMass = 0, rightMass = 0;
+                const midX = fw / 2;
+
+                // Quét nửa trên khung hình (vùng đầu & thân trên của Boss)
+                const scanMaxY = Math.floor(fh * 0.65);
+                for (let y = 0; y < scanMaxY; y++) {
+                    for (let x = 0; x < fw; x++) {
+                        const alpha = data[(y * fw + x) * 4 + 3];
+                        if (alpha > 40) {
+                            const dist = Math.abs(x - midX);
+                            if (x < midX) leftMass += dist;
+                            else rightMass += dist;
+                        }
+                    }
+                }
+                // Phần đầu/mõm nhô ra xa tâm hơn -> Boss đang hướng về phía đó
+                return leftMass > rightMass ? 'left' : 'right';
+            } catch (e) {
+                return cfg.facing || 'right';
+            }
+        }
+
         function preloadBossSprites() {
             for (let bossKey in bossSpriteConfigs) {
                 bossSpriteAssets[bossKey] = {};
                 let cfg = bossSpriteConfigs[bossKey];
                 if (cfg.singleSheet && cfg.sheet) {
                     let img = new Image();
+                    img.onload = () => {
+                        if (!cfg.lockFacing) {
+                            cfg.detectedFacing = detectBossFacingDirection(img, cfg);
+                        }
+                    };
                     img.src = cfg.sheet;
                     bossSpriteAssets[bossKey].sheet = img;
                 } else {
@@ -1231,7 +1273,14 @@
 
             // Boss đứng bên phải sàn đấu nên luôn cần hướng mặt sang trái ('left').
             // Nếu ảnh gốc hướng 'right' thì tự lật ngang; nếu ảnh gốc 'left' thì giữ nguyên.
-            let needFlip = (cfg.facing !== 'left');
+            function drawBossEntity(ctx, enemy, state, frameIndex, x, y, size = 90) {
+            let bossKey = enemy.spriteKey;
+            let cfg = bossKey ? bossSpriteConfigs[bossKey] : null;
+            if (!cfg) return;
+
+            // Ưu tiên hướng tự động nhận diện; nếu ảnh hướng phải ('right') thì tự lật sang trái ('left') để đối mặt với đội hình
+            const actualFacing = cfg.detectedFacing || cfg.facing || 'right';
+            let needFlip = (actualFacing !== 'left');
             let drawW = size * (cfg.scale || 1);
             let drawH = size * (cfg.scale || 1);
 
