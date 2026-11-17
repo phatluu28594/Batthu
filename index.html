@@ -324,6 +324,10 @@
             <div class="flex items-center gap-1.5 pointer-events-auto">
                 <button id="btn-toggle-music" onclick="toggleGameMusic()" class="bg-black/85 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🔊</button>
                 <button onclick="openCloudAccountModal()" class="bg-indigo-600/95 px-2.5 py-1.5 rounded-full border border-indigo-300 text-xs font-bold cursor-pointer">☁️ Nick</button>
+                <button onclick="openFriendsModal()" title="Bạn bè" class="relative bg-sky-600/95 px-2.5 py-1.5 rounded-full border border-sky-300 text-xs font-bold cursor-pointer">
+                    👥
+                    <span id="home-friend-dot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping"></span>
+                </button>
                 <button onclick="openTeamMenu()" class="bg-black/85 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🎒(<span id="home-team-count">0</span>/3)</button>
                 <button onclick="openMarketMenu()" class="bg-amber-600/95 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold cursor-pointer">🛒 Chợ</button>
                 <button onclick="openQuestMenu()" class="bg-yellow-600/95 px-2.5 py-1.5 rounded-full border border-yellow-300 text-xs font-bold cursor-pointer">📜 NV</button>
@@ -434,6 +438,10 @@
                 </button>
                 <button onclick="selectMapDropdownTab(() => openArenaMenu())" class="w-full text-left bg-red-600/90 hover:bg-red-500 px-3 py-2 rounded-xl border border-red-400 text-xs font-bold cursor-pointer">
                     ⚔️ Đấu PvP
+                </button>
+                <button onclick="selectMapDropdownTab(() => openFriendsModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                    <span>👥 Bạn Bè</span>
+                    <span id="friend-req-badge" class="hidden bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black">MỚI</span>
                 </button>
             </div>
         </div>
@@ -1271,12 +1279,9 @@
             let cfg = bossKey ? bossSpriteConfigs[bossKey] : null;
             if (!cfg) return;
 
-            // Boss đứng bên phải sàn đấu nên luôn cần hướng mặt sang trái ('left').
-            // Nếu ảnh gốc hướng 'right' thì tự lật ngang; nếu ảnh gốc 'left' thì giữ nguyên.
-            function drawBossEntity(ctx, enemy, state, frameIndex, x, y, size = 90) {
-            let bossKey = enemy.spriteKey;
-            let cfg = bossKey ? bossSpriteConfigs[bossKey] : null;
-            if (!cfg) return;
+            // Ưu tiên hướng tự động nhận diện; nếu ảnh hướng phải ('right') thì tự lật sang trái ('left') để đối mặt với đội hình
+            const actualFacing = cfg.detectedFacing || cfg.facing || 'right';
+            let needFlip = (actualFacing !== 'left');
 
             // Ưu tiên hướng tự động nhận diện; nếu ảnh hướng phải ('right') thì tự lật sang trái ('left') để đối mặt với đội hình
             const actualFacing = cfg.detectedFacing || cfg.facing || 'right';
@@ -3587,7 +3592,7 @@
         // ==========================================
         // MINIGAME AR V1.2
         // ==========================================
-        let currentSelectedMarker = null;
+        
         let canvas, ctx, isARActive = false;
         let rope = { x: 0, y: 0, vx: 0, vy: 0, flying: false, flightTime: 0 };
         let monsterPos = { x: 0, y: 0, vx: 3.2, vy: 0, targetY: 0, jumpTimer: 0 };
@@ -6077,7 +6082,7 @@
             document.getElementById('pm-incoming-banner')?.remove();
             const banner = document.createElement('div');
             banner.id = 'pm-incoming-banner';
-            banner.className = 'fixed top-14 left-1/2 -translate-x-1/2 z-[95] bg-zinc-900/95 border-2 border-amber-400 rounded-2xl px-3.5 py-2 shadow-2xl flex items-center gap-2.5 max-w-xs w-11/12 cursor-pointer animate-bounce';
+            banner.className = 'fixed top-16 left-1/2 -translate-x-1/2 z-[1100] bg-zinc-900/95 border-2 border-amber-400 rounded-2xl px-3.5 py-2 shadow-2xl flex items-center gap-2.5 max-w-xs w-11/12 cursor-pointer animate-bounce';
             banner.innerHTML = `
                 <span class="text-xl">📩</span>
                 <div class="flex-1 min-w-0">
