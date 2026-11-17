@@ -4257,22 +4257,231 @@
 
             exitARScreen();
         }
+
+        // ==========================================
+        // BẢNG CHỌN LINH THÚ XUẤT CHIẾN (THÁP / PVP)
+        // ==========================================
+        window.openSelectFighterModal = function(mode) {
+            checkPetSurvival();
+            if (!team || team.length === 0) {
+                alert('⚠️ Đội hình trong túi đang trống! Hãy bắt thú hoặc đưa thú từ Trang Trại vào đội.');
+                return;
+            }
+
+            if (team.length === 1) {
+                if (team[0].hp <= 0) {
+                    alert(`⚠️ Linh thú [${team[0].name}] đã cạn HP! Hãy hồi sức trước khi chiến đấu.`);
+                    return;
+                }
+                startBattle(mode, 0);
+                return;
+            }
+
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            const titleText = mode === 'tower'
+                ? `🗼 Chọn Thú Leo Tháp (Tầng ${towerFloor})`
+                : `⚔️ Chọn Thú Xuất Chiến PvP`;
+
+            let listHtml = team.map((pet, idx) => {
+                ensurePetGears(pet);
+                const bonus = getPetGearBonus(pet);
+                const fullHp = pet.maxHp + bonus.maxHp;
+                const isFainted = pet.hp <= 0;
+                const elemInfo = elementNames[pet.element] || { label: pet.element, color: 'text-zinc-300' };
+                const hasHealTag = (pet.element === 'Moc' || pet.element === 'Thuy' || pet.hasHealSkill)
+                    ? `<span class="text-[9px] bg-emerald-950 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.2 rounded ml-1">💚 Hồi Máu x2 Dame</span>`
+                    : '';
+
+                return `
+                <div onclick="${isFainted ? '' : `closeModal(); startBattle('${mode}', ${idx});`}"
+                    class="p-3 rounded-xl border flex items-center justify-between transition ${isFainted
+                        ? 'bg-zinc-950/60 border-zinc-800 opacity-45 cursor-not-allowed'
+                        : `bg-zinc-800 hover:bg-zinc-700 ${pet.rarity.bg} cursor-pointer`}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="bg-zinc-900 p-1.5 rounded-xl shrink-0">
+                            ${getPetSpriteHtml(pet, 'idle', 46)}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="font-bold text-xs text-yellow-300 truncate">
+                                ${pet.name} <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-white">Lv.${Math.floor(pet.level)}</span>
+                            </div>
+                            <div class="text-[10px] ${elemInfo.color} font-bold mt-0.5 flex items-center flex-wrap">
+                                [${elemInfo.label}] • ❤️ ${'❤️'.repeat(pet.hearts || 3)} ${hasHealTag}
+                            </div>
+                            <div class="text-[10px] text-zinc-300 mt-0.5">
+                                HP: ${Math.floor(pet.hp)}/${fullHp} • ⚔️${Math.floor(pet.atk + bonus.atk)} • ⚡${(pet.speed || 50) + bonus.speed}
+                            </div>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1.5 rounded-lg text-[11px] font-extrabold shrink-0 ${isFainted ? 'bg-zinc-800 text-zinc-500' : 'bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow'}">
+                        ${isFainted ? 'Hết HP' : '⚔️ Chọn'}
+                    </span>
+                </div>`;
+            }).join('');
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-zinc-800">
+                <h3 class="font-bold text-sm text-amber-300">${titleText}</h3>
+                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+            </div>
+            <div class="text-[11px] text-zinc-400 mb-2.5">Chọn 1 linh thú trong đội hình để ra trận:</div>
+            <div class="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                ${listHtml}
+            </div>`;
+        };
+
+        const HEAL_SKILL_CONFIG = {
+            id: 'divine_heal',
+            name: '💚 Hồi Phục Linh Hồn',
+            type: 'heal_lowest',
+            multiplier: 2, // Hồi máu = x2 lần chỉ số tấn công (dame)
+            cooldown: 3,   // Hồi chiêu 3 lượt
+            desc: 'Hồi HP cho đồng minh có máu thấp nhất bằng 200% Sát Thương.'
+        };
+
+        function tryCastHealLowestAlly(caster, activeTeam, teamHpList, teamSlots, defaultX, defaultY, impactEffects) {
+            // 1. Tìm đồng minh còn sống (HP > 0) có lượng HP hiện tại thấp nhất (và chưa đầy máu)
+            let lowestIdx = -1;
+            let lowestHp = Infinity;
+            activeTeam.forEach((ally, idx) => {
+                const curHp = teamHpList[idx];
+                if (curHp > 0 && curHp < ally.maxHp && curHp < lowestHp) {
+                    lowestHp = curHp;
+                    lowestIdx = idx;
+                }
+            });
+
+            if (lowestIdx === -1) return false; // Cả đội đều đang đầy máu -> không buff thừa
+
+            // 2. Hồi máu = x2 lần sát thương (atk) của thú thi triển
+            const healAmount = Math.max(1, Math.floor((caster.atk || 10) * 2));
+            const targetPet = activeTeam[lowestIdx];
+            const oldHp = teamHpList[lowestIdx];
+            teamHpList[lowestIdx] = Math.min(targetPet.maxHp, oldHp + healAmount);
+            const actualHealed = Math.floor(teamHpList[lowestIdx] - oldHp);
+
+            if (actualHealed <= 0) return false;
+
+            // 3. Hiện vòng sáng hồi phục & số xanh +HP bay lên ngay trên đầu thú được hồi
+            const slotPos = teamSlots[lowestIdx] || { x: defaultX, y: defaultY };
+            if (Array.isArray(impactEffects)) {
+                impactEffects.push({
+                    x: slotPos.x,
+                    y: slotPos.y - 10,
+                    radius: 16,
+                    alpha: 1,
+                    color: '#34d399',
+                    text: `+${actualHealed}💚`
+                });
+            }
+            const logEl = document.getElementById('battle-log');
+            if (logEl) {
+                logEl.innerText = `💚 [${caster.name}] dùng Hồi Phục, chữa +${actualHealed} HP (x2 Dame) cho [${targetPet.name}]!`;
+            }
+            return true;
+        }
+
         // ==========================================
         // ĐẤU TRƯỜNG ATB V1.2
         // ==========================================
         let battleCanvas, battleCtx, battleInterval;
         let currentBattleSyncFn = null;
-        function startBattle(mode) {
+        // ==========================================
+        // BẢNG CHỌN LINH THÚ XUẤT CHIẾN 1VS1 (THÁP / PVP)
+        // ==========================================
+        window.openSelectFighterModal = function(mode) {
+            checkPetSurvival();
+            if (!team || team.length === 0) {
+                alert('⚠️ Đội hình trong túi đang trống! Hãy bắt thú hoặc đưa thú từ Trang Trại vào đội.');
+                return;
+            }
+
+            // Nếu trong túi chỉ có 1 con duy nhất và còn HP thì vào đánh 1vs1 luôn
+            if (team.length === 1) {
+                if (team[0].hp <= 0) {
+                    alert(`⚠️ Linh thú [${team[0].name}] đã cạn HP! Hãy hồi sức trước khi chiến đấu.`);
+                    return;
+                }
+                startBattle(mode, 0);
+                return;
+            }
+
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            const titleText = mode === 'tower'
+                ? `🗼 Chọn Thú Leo Tháp 1vs1 (Tầng ${towerFloor})`
+                : `⚔️ Chọn Thú Đấu PvP 1vs1`;
+
+            let listHtml = team.map((pet, idx) => {
+                ensurePetGears(pet);
+                const bonus = getPetGearBonus(pet);
+                const fullHp = pet.maxHp + bonus.maxHp;
+                const isFainted = pet.hp <= 0;
+                const elemInfo = elementNames[pet.element] || { label: pet.element, color: 'text-zinc-300' };
+                const hasHealTag = (pet.element === 'Moc' || pet.element === 'Thuy' || pet.hasHealSkill)
+                    ? `<span class="text-[9px] bg-emerald-950 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.2 rounded ml-1">💚 Hồi Máu x2 Dame</span>`
+                    : '';
+
+                return `
+                <div onclick="${isFainted ? '' : `closeModal(); startBattle('${mode}', ${idx});`}"
+                    class="p-3 rounded-xl border flex items-center justify-between transition ${isFainted
+                        ? 'bg-zinc-950/60 border-zinc-800 opacity-45 cursor-not-allowed'
+                        : `bg-zinc-800 hover:bg-zinc-700 ${pet.rarity.bg} cursor-pointer`}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="bg-zinc-900 p-1.5 rounded-xl shrink-0">
+                            ${getPetSpriteHtml(pet, 'idle', 46)}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="font-bold text-xs text-yellow-300 truncate">
+                                ${pet.name} <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-white">Lv.${Math.floor(pet.level)}</span>
+                            </div>
+                            <div class="text-[10px] ${elemInfo.color} font-bold mt-0.5 flex items-center flex-wrap">
+                                [${elemInfo.label}] • ❤️ ${'❤️'.repeat(pet.hearts || 3)} ${hasHealTag}
+                            </div>
+                            <div class="text-[10px] text-zinc-300 mt-0.5">
+                                HP: ${Math.floor(pet.hp)}/${fullHp} • ⚔️${Math.floor(pet.atk + bonus.atk)} • ⚡${(pet.speed || 50) + bonus.speed}
+                            </div>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1.5 rounded-lg text-[11px] font-extrabold shrink-0 ${isFainted ? 'bg-zinc-800 text-zinc-500' : 'bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow'}">
+                        ${isFainted ? 'Hết HP' : '⚔️ Xuất Chiến'}
+                    </span>
+                </div>`;
+            }).join('');
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-zinc-800">
+                <h3 class="font-bold text-sm text-amber-300">${titleText}</h3>
+                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+            </div>
+            <div class="text-[11px] text-zinc-400 mb-2.5">Chọn 1 linh thú trong túi để vào trận 1vs1:</div>
+            <div class="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                ${listHtml}
+            </div>`;
+        };
+        function startBattle(mode, selectedIndex = 0) {
             checkPetSurvival();
             if (team.length === 0) { alert('Đội hình trống!'); return; }
-            if (mode === 'boss' && team.length < 3) { alert('⚠️ Boss yêu cầu đủ 3 linh thú!'); return; }
+            if (mode === 'boss' && team.length < 3) { alert('⚠️ Boss Thế Giới yêu cầu đủ 3 linh thú (3vs1)!'); return; }
+
+            const chosenPet = team[selectedIndex] || team[0];
+            if (mode !== 'boss' && chosenPet.hp <= 0) {
+                alert(`⚠️ Linh thú [${chosenPet.name}] đã hết HP! Vui lòng chọn linh thú khác hoặc hồi sức.`);
+                return;
+            }
+
             closeModal();
             closeTowerScreen();
             document.getElementById('map-screen').classList.add('hidden');
             document.getElementById('battle-screen').classList.remove('hidden');
             switchGameMusic('battle');
 
-            const rawSquad = (mode === 'boss' || mode === 'pvp') ? [...team] : [team[0]];
+            const rawSquad = (mode === 'boss') ? [...team] : [chosenPet];
             const teamSynergy = getTeamSynergy(rawSquad);
 
             let activeTeam = rawSquad.map(p => {
@@ -4296,15 +4505,16 @@
                     speed: baseSpeed,
                     critRate: baseCrit,
                     blockRate: (p.blockRate ?? 15) + b.blockRate,
-                    armorBreak: (p.armorBreak ?? 15) + b.armorBreak
+                    armorBreak: (p.armorBreak ?? 15) + b.armorBreak,
+                    skill: (p.element === 'Moc' || p.element === 'Thuy' || p.hasHealSkill) ? { ...HEAL_SKILL_CONFIG } : null,
+                    skillCd: 0
                 };
             });
-            
+
             let teamHpList = activeTeam.map(p => p.hp);
             let teamMaxHpTotal = activeTeam.reduce((sum, p) => sum + p.maxHp, 0);
 
             function syncBattleHpToTeam() {
-                
                 activeTeam.forEach((pet, idx) => {
                     if (pet._ref) {
                         pet._ref.hp = Math.max(0, Math.floor(teamHpList[idx]));
@@ -4319,31 +4529,37 @@
             const chosenBossCfg = bossSpriteConfigs[randomBossKey];
 
             let enemy = mode === 'boss' ? {
-                            name: `${chosenBossCfg.displayName} (Boss Lv.${bossLevel})`,
-                            spriteKey: randomBossKey,
-                            element: chosenBossCfg.element,
-                            emoji: '👹',
-                            hp: 300 + (bossLevel * 100),
-                            maxHp: 300 + (bossLevel * 100),
-                            atk: 30 + (bossLevel * 8),
-                            speed: 45 + bossLevel * 3,
-                            accuracy: 95, dodgeRate: 15, critRate: 20, blockRate: 20, armorBreak: 20, comboRate: 25
-                        } :
-                        mode === 'tower' ? {
-                            name: `${chosenBossCfg.displayName} (Tầng ${towerFloor})`,
-                            spriteKey: randomBossKey,
-                            element: chosenBossCfg.element,
-                            emoji: '👹',
-                            hp: 120 + (towerFloor * 25),
-                            maxHp: 120 + (towerFloor * 25),
-                            atk: 20 + towerFloor * 4,
-                            speed: 40 + towerFloor * 2,
-                            accuracy: 88, dodgeRate: Math.min(35, 10 + towerFloor), critRate: 15, blockRate: Math.min(40, 12 + towerFloor), armorBreak: Math.min(35, 10 + towerFloor), comboRate: Math.min(50, 15 + towerFloor * 2)
-                        } :
-                        { name: 'Đối Thủ PvP', element: 'Tho', emoji: '🤖', hp: 160, maxHp: 160, atk: 25, speed: 52, accuracy: 90, dodgeRate: 18, critRate: 18, blockRate: 18, armorBreak: 16, comboRate: 22 };
+                name: `${chosenBossCfg.displayName} (Boss Lv.${bossLevel})`,
+                spriteKey: randomBossKey,
+                element: chosenBossCfg.element,
+                emoji: '👹',
+                hp: 300 + (bossLevel * 100),
+                maxHp: 300 + (bossLevel * 100),
+                atk: 30 + (bossLevel * 8),
+                speed: 45 + bossLevel * 3,
+                accuracy: 95, dodgeRate: 15, critRate: 20, blockRate: 20, armorBreak: 20, comboRate: 25
+            } :
+            mode === 'tower' ? {
+                name: `${chosenBossCfg.displayName} (Tầng ${towerFloor})`,
+                spriteKey: randomBossKey,
+                element: chosenBossCfg.element,
+                emoji: '👹',
+                hp: 120 + (towerFloor * 25),
+                maxHp: 120 + (towerFloor * 25),
+                atk: 20 + towerFloor * 4,
+                speed: 40 + towerFloor * 2,
+                accuracy: 88, dodgeRate: Math.min(35, 10 + towerFloor), critRate: 15, blockRate: Math.min(40, 12 + towerFloor), armorBreak: Math.min(35, 10 + towerFloor), comboRate: Math.min(50, 15 + towerFloor * 2)
+            } :
+            { name: 'Đối Thủ PvP', element: 'Tho', emoji: '🤖', hp: 160, maxHp: 160, atk: 25, speed: 52, accuracy: 90, dodgeRate: 18, critRate: 18, blockRate: 18, armorBreak: 16, comboRate: 22 };
+
             let enemyHp = enemy.hp;
             let teamStatus = activeTeam.map(() => ({ stun: 0, poison: 0, burn: 0, slow: 0, shield: 0 }));
             let enemyStatus = { stun: 0, poison: 0, burn: 0, slow: 0, shield: 0 };
+
+           const teamNamesEl = document.getElementById('battle-team-names');
+            if (teamNamesEl) {
+                teamNamesEl.innerText = activeTeam.map(p => `${p.name} Lv.${Math.floor(p.level || 1)}`).join(', ');
+            }
             document.getElementById('battle-enemy-name').innerText = `${enemy.name} [${elementNames[enemy.element]?.label}] (⚡${enemy.speed} | 🔥${enemy.comboRate}%)`;
 
             battleCanvas = document.getElementById('battleCanvas');
@@ -4355,7 +4571,7 @@
             battleCtx.scale(dpr, dpr);
             battleCtx.imageSmoothingEnabled = true;
             battleCtx.imageSmoothingQuality = 'high';
-            
+
             let attacker = null;
             let turnQueue = [];
             let roundNumber = 0;
@@ -4364,15 +4580,15 @@
             function buildNextRoundQueue() {
                 roundNumber++;
                 if (teamSynergy?.id === 'sheng') {
-                            activeTeam.forEach((pet, idx) => {
-                                if (teamHpList[idx] > 0 && teamHpList[idx] < pet.maxHp) {
-                                    const healAmt = Math.max(1, Math.floor(pet.maxHp * 0.08));
-                                    teamHpList[idx] = Math.min(pet.maxHp, teamHpList[idx] + healAmt);
-                                    const pPos = { x: (battleCanvas.width / (window.devicePixelRatio || 1)) / 2 - 85, y: (battleCanvas.height / (window.devicePixelRatio || 1)) * 0.63 };
-                                    impactEffects.push({ x: pPos.x, y: pPos.y - 25, radius: 10, alpha: 1, color: '#34d399', text: `+${healAmt}💚` });
-                                }
-                            });
+                    activeTeam.forEach((pet, idx) => {
+                        if (teamHpList[idx] > 0 && teamHpList[idx] < pet.maxHp) {
+                            const healAmt = Math.max(1, Math.floor(pet.maxHp * 0.08));
+                            teamHpList[idx] = Math.min(pet.maxHp, teamHpList[idx] + healAmt);
+                            const pPos = { x: rect.width / 2 - 85, y: rect.height * 0.63 };
+                            impactEffects.push({ x: pPos.x, y: pPos.y - 25, radius: 10, alpha: 1, color: '#34d399', text: `+${healAmt}💚` });
                         }
+                    });
+                }
                 let fighters = [];
                 activeTeam.forEach((pet, idx) => {
                     if (teamHpList[idx] > 0) {
@@ -4392,24 +4608,24 @@
             let impactEffects = [];
             let battleEnded = false;
 
+            if (battleInterval) clearInterval(battleInterval);
+
             battleInterval = setInterval(() => {
                 battleCtx.clearRect(0, 0, rect.width, rect.height);
                 idleTick += 0.14;
 
                 let cx = rect.width / 2, cy = rect.height * 0.63;
                 let defaultEnemyX = cx + 95;
-                
-                // Nếu đánh Boss (3 thú) thì xếp đội hình tam giác; còn đánh Tháp / PvP (1 thú) thì đứng chính giữa sàn đấu!
+
                 const teamSlots = (mode === 'boss')
                     ? [
-                        { x: cx - 105, y: cy - 78 }, // Thú 1 (Trên - Lùi sau)
-                        { x: cx - 72,  y: cy },      // Thú 2 (Giữa - Nhô lên trước)
-                        { x: cx - 105, y: cy + 78 }  // Thú 3 (Dưới - Lùi sau)
+                        { x: cx - 105, y: cy - 78 },
+                        { x: cx - 72,  y: cy },
+                        { x: cx - 105, y: cy + 78 }
                     ]
                     : [
-                        { x: cx - 85,  y: cy }       // Đấu Tháp / PvP: Thú duy nhất đứng ngay chính giữa đối diện đối thủ
+                        { x: cx - 85,  y: cy }
                     ];
-
 
                 if (!attacker && !battleEnded) {
                     if (turnDelayFrames > 0) {
@@ -4469,7 +4685,27 @@
                                 document.getElementById('battle-log').innerText = `[Hiệp ${roundNumber}] 💫 ${actorName} bị choáng, mất lượt!`;
                                 turnDelayFrames = 26;
                             } else {
-                                attacker = { side: nextActor.side, index: nextActor.index, step: 0, isComboHit: false };
+                                // KIỂM TRA KỸ NĂNG HỒI MÁU (x2 DAME) CHO ĐỒNG MINH THẤP MÁU NHẤT
+                                let usedHealSkill = false;
+                                if (nextActor.side === 'team') {
+                                    const caster = activeTeam[nextActor.index];
+                                    if (caster && caster.skill && caster.skill.type === 'heal_lowest') {
+                                        if ((caster.skillCd || 0) <= 0) {
+                                            usedHealSkill = tryCastHealLowestAlly(caster, activeTeam, teamHpList, teamSlots, cx - 85, cy, impactEffects);
+                                            if (usedHealSkill) {
+                                                caster.skillCd = caster.skill.cooldown || 3; // Hồi chiêu 3 lượt
+                                                syncBattleHpToTeam();
+                                                turnDelayFrames = 22;
+                                            }
+                                        } else {
+                                            caster.skillCd--;
+                                        }
+                                    }
+                                }
+
+                                if (!usedHealSkill) {
+                                    attacker = { side: nextActor.side, index: nextActor.index, step: 0, isComboHit: false };
+                                }
                             }
                         }
                     }
@@ -4532,26 +4768,14 @@
                                     enemyHp = Math.max(0, enemyHp - finalDmg);
                                     enemyHitShake = 12;
 
-                                    let traitTag = '';
                                     let triggerChance = Math.max(30, pet.trait?.chance || 30);
                                     if (pet.trait && (Math.random() * 100 < triggerChance)) {
                                         let tType = pet.trait.type;
-                                        if (tType === 'stun') {
-                                            enemyStatus.stun = 2;
-                                            traitTag = ' 💫[GÂY CHOÁNG!]';
-                                        } else if (tType === 'poison') {
-                                            enemyStatus.poison = 2;
-                                            traitTag = ' 🟢[TRÚNG ĐỘC!]';
-                                        } else if (tType === 'burn') {
-                                            enemyStatus.burn = 2;
-                                            traitTag = ' 🔥[THIÊU ĐỐT!]';
-                                        } else if (tType === 'slow') {
-                                            enemyStatus.slow = 2;
-                                            traitTag = ' ❄️[LÀM CHẬM!]';
-                                        } else if (tType === 'shield') {
-                                            teamStatus[idx].shield = 2;
-                                            traitTag = ' 🛡️[BUFF GIÁP!]';
-                                        }
+                                        if (tType === 'stun') enemyStatus.stun = 2;
+                                        else if (tType === 'poison') enemyStatus.poison = 2;
+                                        else if (tType === 'burn') enemyStatus.burn = 2;
+                                        else if (tType === 'slow') enemyStatus.slow = 2;
+                                        else if (tType === 'shield') teamStatus[idx].shield = 2;
                                     }
 
                                     let tags = `${isCrit ? '💥' : ''}${isBlocked ? '🛡️' : ''}${attacker.isComboHit ? '🔥' : ''}`;
@@ -4663,7 +4887,7 @@
                 document.getElementById('battle-team-hp-text').innerText = `HP: ${currentTeamHpTotal}/${teamMaxHpTotal}`;
                 document.getElementById('battle-enemy-hp-bar').style.width = enemyHpPercent + '%';
                 document.getElementById('battle-enemy-hp-text').innerText = `HP: ${Math.max(0, enemyHp)}/${enemy.maxHp}`;
-                
+
                 let isEnemyDead = enemyHp <= 0;
                 let isEnemyAttacking = (attacker && attacker.side === 'enemy');
                 let isEnemyHit = enemyHitShake > 0;
@@ -4705,15 +4929,13 @@
                     battleCtx.fillText(enemy.emoji, 0, 0);
                     battleCtx.restore();
                 }
-                // Vẽ hiệu ứng Độc / Cháy / Choáng / Chậm lên Boss
+
                 if (!isEnemyDead) drawSpriteStatusFX(battleCtx, enemyStatus, finalEnX, finalEnY, idleTick, mode === 'boss' ? 140 : 120);
 
-                // Vẽ tam giác trận pháp đội hình 3 thú (nếu kích hoạt)
                 if (teamSynergy && activeTeam.length === 3 && teamSlots.length === 3) {
                     drawTeamSynergyField(battleCtx, teamSynergy, teamSlots, idleTick);
                 }
 
-                // Vẽ đội hình linh thú phe mình (1 vòng lặp duy nhất)
                 activeTeam.forEach((pet, i) => {
                     let isPetDead = teamHpList[i] <= 0;
                     let isAttacking = (attacker && attacker.side === 'team' && attacker.index === i);
@@ -4749,7 +4971,8 @@
                         animFrame = Math.min(pMaxFrames - 1, Math.floor((12 - teamHitShake[i]) * (pMaxFrames / 12)));
                     }
 
-                    if (!isPetDead) drawRarityAura(battleCtx, pet, posX, posY + 38, idleTick, 60);
+                    // Vòng hào quang phẩm chất to rõ dưới chân thú
+                    if (!isPetDead) drawRarityAura(battleCtx, pet, posX, posY + 42, idleTick, 72);
 
                     if (hasSprite) {
                         drawPetEntity(battleCtx, pet, animState, animFrame, posX, posY, 85, false);
@@ -4802,7 +5025,7 @@
                 if ((enemyHp <= 0 || allTeamDead) && !battleEnded) {
                     battleEnded = true;
                     attacker = null;
-                    syncBattleHpToTeam(); // Cập nhật ngay máu thực tế còn lại vào team[i].hp và lưu localStorage
+                    syncBattleHpToTeam();
                     currentBattleSyncFn = null;
 
                     setTimeout(() => {
@@ -4826,7 +5049,7 @@
                                 showInGameConfirm(
                                     `🏆 Chúc mừng! Bạn đã vượt qua Tầng ${clearedFloor} và nhận +${rewardGold}🪙${diamondNote}!\n\n🗼 Bạn có muốn tiếp tục khiêu chiến Tầng ${towerFloor} ngay bây giờ không?`,
                                     () => {
-                                        startBattle('tower');
+                                        startBattle('tower', selectedIndex);
                                     },
                                     () => {
                                         exitBattleScreen();
