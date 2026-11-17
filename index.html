@@ -2187,7 +2187,30 @@
                 }
                 html += `</div>`;
                 content.innerHTML = html;
-            } else if (sectionType === 'storage') {
+            } farm.forEach((pet, idx) => {
+                        let heartsStr = '❤️'.repeat(pet.hearts);
+                        let sellPrice = window.getPetSellPrice ? window.getPetSellPrice(pet) : 50;
+                        html += `
+                        <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border ${pet.rarity.bg}">
+                            <div onclick="openFarmPetDetail(${idx})" class="flex items-center gap-2 min-w-0 pr-1 cursor-pointer flex-grow">
+                                ${getPetSpriteHtml(pet, 'idle', 44)}
+                                <div class="text-xs font-bold truncate">
+                                    ${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span>
+                                    <div class="text-[10px] text-zinc-300">Lv.${Math.floor(pet.level || 1)} • HP: ${Math.floor(pet.hp)} | ${heartsStr} | ${elementNames[pet.element]?.label}</div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-1 shrink-0">
+                                <div class="flex gap-1">
+                                    <button onclick="openFarmPetDetail(${idx})" class="bg-indigo-600 hover:bg-indigo-500 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Xem</button>
+                                    <button onclick="sendPetToRest(${idx}); showFarmSection('storage');" class="bg-emerald-600 hover:bg-emerald-500 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Nghỉ</button>
+                                    <button onclick="moveToTeamFromFarm(${idx}); showFarmSection('storage');" class="bg-blue-600 hover:bg-blue-500 text-[10px] px-2 py-1 rounded font-bold cursor-pointer">Đội</button>
+                                </div>
+                                <button onclick="sellFarmPet(${idx})" class="bg-amber-600 hover:bg-amber-500 text-[10px] px-2 py-1 rounded font-extrabold text-white cursor-pointer shadow">
+                                    💰 Bán (${sellPrice}🪙)
+                                </button>
+                            </div>
+                        </div>`;
+                    });
                 const totalNow = getTotalOwnedPetCount();
                 const nextCost = getNextSlotDiamondCost();
                 let html = `
@@ -2237,6 +2260,123 @@
             }
         }
 
+        window.openFarmPetDetail = function(farmIndex) {
+            let pet = farm[farmIndex];
+            if (!pet) return;
+            ensurePetGears(pet);
+            if (!pet.trait) {
+                pet.trait = possibleTraits[Math.floor(Math.random() * possibleTraits.length)];
+                saveGameData();
+            }
+            if (pet.hunger === undefined) pet.hunger = 90;
+            if (pet.happiness === undefined) pet.happiness = 90;
+            if (!pet.gender) pet.gender = Math.random() < 0.5 ? 'Đực' : 'Cái';
+
+            let heartsStr = '❤️'.repeat(pet.hearts || 3);
+            let bonus = getPetGearBonus(pet);
+            let currentTier = pet.gearTier || 0;
+            let tierCapLv = currentTier < 10 ? (currentTier + 1) * 10 : 100;
+            let sellPrice = window.getPetSellPrice ? window.getPetSellPrice(pet) : 50;
+            const hasHealTag = (pet.element === 'Moc' || pet.element === 'Thuy' || pet.hasHealSkill)
+                ? `<div class="mt-1 inline-flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-400/50 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-emerald-300">💚 Kỹ năng: Hồi Phục Linh Hồn (x2 Dame)</div>`
+                : '';
+
+            let gearsHtml = ['claw', 'armor', 'orb'].map(slotKey => {
+                let lv = pet.gears[slotKey];
+                let info = getGearTierInfo(slotKey, currentTier);
+                let statDesc = slotKey === 'claw'
+                    ? `+${lv * 6 + currentTier * 15} Công`
+                    : slotKey === 'armor'
+                    ? `+${lv * 25 + currentTier * 60} Máu`
+                    : `+${Math.floor(lv * 1.2) + currentTier * 3} Tốc`;
+
+                return `
+                <div class="flex flex-col items-center justify-between p-2 rounded-xl border border-zinc-600 bg-zinc-900/90 text-center">
+                    <div class="text-[10px] font-extrabold text-amber-300 mb-1">Cấp ${lv}/${tierCapLv}</div>
+                    <div class="w-11 h-11 rounded-xl bg-black/60 border border-white/15 flex items-center justify-center overflow-hidden mb-1 relative">
+                        <div class="w-9 h-9" style="${info.bgStyle}"></div>
+                        <span class="absolute bottom-0 right-0 bg-black/80 text-[8px] font-black text-yellow-300 px-1 rounded-tl">Bậc ${currentTier}</span>
+                    </div>
+                    <div class="text-[10px] font-bold text-white leading-tight line-clamp-1">${info.name}</div>
+                    <div class="text-[9px] text-emerald-300 mt-0.5">${statDesc}</div>
+                </div>`;
+            }).join('');
+
+            const content = document.getElementById('modal-content');
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-base text-yellow-300">🏡 Hồ Sơ Thú Trại Hộ</h3>
+                <button onclick="showFarmSection('storage')" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-xs cursor-pointer border border-zinc-600">‹ Về Kho Trại</button>
+            </div>
+            <div class="flex flex-col items-center bg-zinc-800 p-3.5 rounded-2xl border ${pet.rarity.bg} mb-3 text-center">
+                <div class="mb-1 flex justify-center">${getPetSpriteHtml(pet, 'walk', 92)}</div>
+                <div class="text-sm font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${Math.floor(pet.level)}</span></div>
+                <div class="text-[11px] font-bold ${elementNames[pet.element]?.color}">Hệ: ${elementNames[pet.element]?.label} • Tim: ${heartsStr}</div>
+                <div class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
+                    <span class="w-5 h-5 inline-block rounded-full bg-black" style="background-image:url('assets/magic.webp'); background-size:800% 500%; background-position:0% ${(statusFxRowMap[pet.trait.type] || 0) * 25}%; mix-blend-mode:screen;"></span>
+                    <span class="text-[11px] font-extrabold text-amber-300">Đặc kỹ: ${pet.trait.name} (${Math.max(30, pet.trait.chance || 30)}%)</span>
+                </div>
+                ${hasHealTag}
+
+                <div class="w-full mt-3 text-left">
+                    <div class="text-xs font-extrabold text-cyan-300 mb-1.5">⚜️ Bảo Vật Bản Mệnh (Bậc ${currentTier}/10)</div>
+                    <div class="grid grid-cols-3 gap-1.5">${gearsHtml}</div>
+                </div>
+
+                <div class="w-full space-y-1.5 mt-3 text-left text-[11px] bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-700">
+                    <div>
+                        <div class="flex justify-between mb-0.5"><span>Máu (HP):</span><span class="font-bold text-emerald-400">${Math.floor(pet.hp)} / ${pet.maxHp + bonus.maxHp} <span class="text-[9px] text-cyan-300">(+${bonus.maxHp})</span></span></div>
+                        <div class="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden"><div class="bg-emerald-500 h-full" style="width: ${Math.min(100, (pet.hp / (pet.maxHp + bonus.maxHp)) * 100)}%"></div></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div>Độ no: <span class="font-bold text-yellow-400">${pet.hunger}%</span></div>
+                        <div>Hạnh phúc: <span class="font-bold text-pink-400">${pet.happiness}%</span></div>
+                    </div>
+                </div>
+
+                <div class="w-full grid grid-cols-2 gap-1.5 mt-2.5 text-[11px] bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-700 text-left">
+                    <div>⚔️ ATK: <span class="font-bold text-red-400">${Math.floor(pet.atk + bonus.atk)}</span> <span class="text-[9px] text-cyan-300">(+${bonus.atk})</span></div>
+                    <div>💥 Chí mạng: <span class="font-bold text-blue-400">${(pet.critRate ?? 20) + bonus.critRate}%</span></div>
+                    <div>🛡️ Đỡ đòn: <span class="font-bold text-purple-400">${(pet.blockRate ?? 15) + bonus.blockRate}%</span></div>
+                    <div>🗡️ Phá giáp: <span class="font-bold text-rose-400">${(pet.armorBreak ?? 15) + bonus.armorBreak}%</span></div>
+                    <div>🏃 Né tránh: <span class="font-bold text-emerald-400">${pet.dodgeRate ?? 15}%</span></div>
+                    <div>🎯 Chính xác: <span class="font-bold text-amber-400">${pet.accuracy ?? 90}%</span></div>
+                    <div>⚡ Tốc độ: <span class="font-bold text-cyan-400">${(pet.speed ?? 50) + bonus.speed}</span> <span class="text-[9px] text-cyan-300">(+${bonus.speed})</span></div>
+                    <div>🔥 Liên kích: <span class="font-bold text-orange-400">${pet.comboRate ?? 20}%</span></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-center mb-2">
+                <button onclick="farmPetAction(${farmIndex}, 'feed')" class="bg-emerald-600 hover:bg-emerald-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🍖 Ăn (${inventory.food})</button>
+                <button onclick="farmPetAction(${farmIndex}, 'play')" class="bg-amber-600 hover:bg-amber-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🎾 Chơi (${inventory.toy})</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-center">
+                <button onclick="moveToTeamFromFarm(${farmIndex}); showFarmSection('storage');" class="bg-blue-600 hover:bg-blue-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">⚔️ Đưa Vào Đội</button>
+                <button onclick="sellFarmPet(${farmIndex})" class="bg-amber-700 hover:bg-amber-600 p-2 rounded-xl font-extrabold text-xs cursor-pointer transition">💰 Bán (${sellPrice}🪙)</button>
+            </div>`;
+        };
+
+        window.farmPetAction = function(farmIndex, action) {
+            let pet = farm[farmIndex];
+            if (!pet) return;
+            ensurePetGears(pet);
+            let fullHp = pet.maxHp + getPetGearBonus(pet).maxHp;
+            if (action === 'feed') {
+                if (inventory.food <= 0) { alert('Hết thức ăn!'); return; }
+                inventory.food--;
+                pet.hunger = Math.min(100, pet.hunger + 30);
+                pet.hp = Math.min(fullHp, pet.hp + 25);
+                addQuestProgress(3, 1);
+            } else if (action === 'play') {
+                if (inventory.toy <= 0) { alert('Hết đồ chơi!'); return; }
+                inventory.toy--;
+                pet.happiness = Math.min(100, pet.happiness + 35);
+            }
+            localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+            saveGameData();
+            openFarmPetDetail(farmIndex);
+        };
+        
         function sendPetToRest(farmIdx) {
             let pet = farm.splice(farmIdx, 1)[0];
             restingPets.push(pet); saveGameData();
