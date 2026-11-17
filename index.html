@@ -3381,6 +3381,13 @@
                     }
                     lastHunterLatLng = nextPos;
                     userMarker.setLatLng(nextPos);
+                    if (!window.playerRadarCircle && map) {
+                        window.playerRadarCircle = L.circle([lat, lng], {
+                            radius: 200, color: '#38bdf8', weight: 1, fillColor: '#38bdf8', fillOpacity: 0.05, interactive: false
+                        }).addTo(map);
+                    } else if (window.playerRadarCircle) {
+                        window.playerRadarCircle.setLatLng([lat, lng]);
+                    }
                 }
 
                 if (navigator.geolocation) {
@@ -5741,6 +5748,11 @@
 
                 const seenUsers = new Set();
                 (data.players || []).forEach(p => {
+                    const distMeters = map.distance([userLat, userLng], [p.lat, p.lng]);
+                    if (distMeters > 200) return; // Bỏ qua nếu cách xa hơn 200m
+
+                    seenUsers.add(p.username);
+                    otherPlayersCache[p.username] = p;
                     seenUsers.add(p.username);
                     otherPlayersCache[p.username] = p;
 
