@@ -3050,6 +3050,19 @@
             alert('🛒 Mua thành công!'); openMarketMenu();
         }
 
+        window.PET_SELL_PRICE_BY_RARITY = {
+            'Thường': 50,
+            'Hiếm': 100,
+            'Cực Hiếm': 150,
+            'Huyền Thoại': 200,
+            'Thần Thánh': 250
+        };
+
+        window.getPetSellPrice = function(pet) {
+            const rarityName = pet?.rarity?.name || 'Thường';
+            return window.PET_SELL_PRICE_BY_RARITY[rarityName] ?? 50;
+        };
+
        function openTeamMenu() {
             checkPetSurvival();
             const modal = document.getElementById('modal-container');
