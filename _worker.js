@@ -205,11 +205,29 @@ export default {
         }
 
         // ==========================================
-        // API 4: NHẮN TIN RIÊNG GIỮA 2 NGƯỜI CHƠI (/api/pm)
+        // API 4: NHẮN TIN RIÊNG & HỘP THƯ ĐẾN (/api/pm)
         // ==========================================
         if (url.pathname === "/api/pm") {
             try {
                 if (request.method === "GET") {
+                    const mode = url.searchParams.get("mode");
+
+                    // Lấy danh sách tin nhắn gửi tới người chơi (kiểm tra tin mới + hộp thư)
+                    if (mode === "inbox") {
+                        const me = String(url.searchParams.get("u") || "").trim();
+                        if (!me) return Response.json({ ok: false }, { status: 400 });
+
+                        const { results } = await env.DB.prepare(`
+                            SELECT id, sender, receiver, text, created_at
+                            FROM private_messages
+                            WHERE receiver = ? OR sender = ?
+                            ORDER BY id DESC
+                            LIMIT 30
+                        `).bind(me, me).all();
+
+                        return Response.json({ ok: true, messages: results || [] });
+                    }
+
                     const user1 = String(url.searchParams.get("u1") || "").trim();
                     const user2 = String(url.searchParams.get("u2") || "").trim();
                     if (!user1 || !user2) return Response.json({ ok: false, error: "Thiếu người dùng" }, { status: 400 });
@@ -241,7 +259,6 @@ export default {
                         VALUES (?, ?, ?, ?)
                     `).bind(sender, receiver, text, now).run();
 
-                    // Dọn ngầm tin nhắn riêng cũ hơn 24 giờ (xác suất 10%)
                     if (Math.random() < 0.1) {
                         await env.DB.prepare("DELETE FROM private_messages WHERE created_at < ?")
                             .bind(now - 86400000).run();
