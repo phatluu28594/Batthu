@@ -1090,7 +1090,7 @@
                 facing: 'left',
                 singleSheet: true,
                 sheet: 'assets_boss/Hydra.webp',
-                cols: 10, totalRows: 5,
+                cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 2.0
             },
@@ -1100,7 +1100,7 @@
                 facing: 'left',
                 singleSheet: true,
                 sheet: 'assets_boss/Cerberus.webp',
-                cols: 10, totalRows: 5,
+                cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 2.0
             },
@@ -1110,7 +1110,7 @@
                 facing: 'left',
                 singleSheet: true,
                 sheet: 'assets_boss/Chupacabra.webp',
-                cols: 10, totalRows: 5,
+                cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 2.0
             },
@@ -1120,12 +1120,12 @@
                 facing: 'left',
                 singleSheet: true,
                 sheet: 'assets_boss/muoidianguc.webp',
-                cols: 10, totalRows: 5,
+                cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 2.0
             },
             'Golem': {
-                displayName: 'Golemi',
+                displayName: 'Golem',
                 element: 'Thuy',
                 facing: 'left',
                 singleSheet: true,
@@ -1150,7 +1150,7 @@
                 facing: 'right',
                 singleSheet: true,
                 sheet: 'assets_boss/Dingonek.webp',
-                cols: 10, totalRows: 5,
+                cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 2.0
             }
@@ -1238,8 +1238,8 @@
             if (cfg.singleSheet) {
                 let img = bossSpriteAssets[bossKey]?.sheet;
                 if (img && img.complete && img.naturalWidth > 0) {
-                    let cols = cfg.cols || 8;
                     let totalRows = cfg.totalRows || 5;
+                    let cols = cfg.cols || (Math.round((img.naturalWidth / img.naturalHeight) * totalRows) >= 9 ? 10 : 8);
                     let row = (cfg.rowMap && cfg.rowMap[state] !== undefined) ? cfg.rowMap[state] : 0;
                     let col = frameIndex % cols;
 
