@@ -577,7 +577,7 @@
         <button onclick="closeTowerScreen()" class="absolute top-3 right-3 z-30 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
         <div class="relative w-full h-full overflow-hidden flex flex-col items-center justify-end pb-12">
             <img src="./tower-bg.webp" alt="Tháp Vô Tận" class="absolute inset-0 w-full h-full object-cover z-0">
-            <div onclick="startBattle('tower')" class="hotspot flex flex-col items-center justify-center animate-pulse" style="top: 60%; left: 35%; width: 30%; height: 20%;" title="Khiêu chiến Tháp">
+            <div onclick="openSelectFighterModal('tower')" class="hotspot flex flex-col items-center justify-center animate-pulse" style="top: 60%; left: 35%; width: 30%; height: 20%;" title="Khiêu chiến Tháp">
                 <div class="bg-purple-900/90 text-yellow-300 font-extrabold px-3 py-1.5 rounded-full border-2 border-yellow-400 text-xs shadow-2xl tracking-wider text-center">
                     🗼 TẦNG <span id="tower-gate-floor">1</span><br><span class="text-[9px] text-white">CHẠM ĐỂ ĐẤU</span>
                 </div>
@@ -3378,7 +3378,7 @@
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
-            content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Đấu Trường PvP</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><button onclick="startBattle('arena')" class="w-full bg-red-600 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Tìm Trận Đấu</button>`;
+            content.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">⚔️ Đấu Trường PvP (1vs1)</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div><button onclick="openSelectFighterModal('arena')" class="w-full bg-red-600 hover:bg-red-500 py-3 rounded-xl font-bold text-xs cursor-pointer shadow-lg">⚔️ Chọn Thú Xuất Chiến (1vs1)</button>`;
         }
 
         // ==========================================
@@ -4258,24 +4258,6 @@
             exitARScreen();
         }
 
-        // ==========================================
-        // BẢNG CHỌN LINH THÚ XUẤT CHIẾN (THÁP / PVP)
-        // ==========================================
-        window.openSelectFighterModal = function(mode) {
-            checkPetSurvival();
-            if (!team || team.length === 0) {
-                alert('⚠️ Đội hình trong túi đang trống! Hãy bắt thú hoặc đưa thú từ Trang Trại vào đội.');
-                return;
-            }
-
-            if (team.length === 1) {
-                if (team[0].hp <= 0) {
-                    alert(`⚠️ Linh thú [${team[0].name}] đã cạn HP! Hãy hồi sức trước khi chiến đấu.`);
-                    return;
-                }
-                startBattle(mode, 0);
-                return;
-            }
 
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
