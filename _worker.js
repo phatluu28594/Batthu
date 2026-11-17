@@ -183,22 +183,32 @@ export default {
                     ).run();
                 }
 
-                // Giảm xuống 18 giây (18000ms) để rớt mạng cũng biến mất cực nhanh
-                const activeThreshold = now - 18000;
-                const { results } = await env.DB.prepare(`
-                    SELECT username, gender, lat, lng, dir, state, lead_pet, updated_at
-                    FROM player_presence
-                    WHERE updated_at >= ? AND username != ?
-                    ORDER BY updated_at DESC
-                    LIMIT 30
-                `).bind(activeThreshold, username).all();
+                // Lấy danh sách người chơi khác đang hoạt động (trong 25 giây gần nhất) và nằm trong bán kính 200m
+                    const activeThreshold = now - 25000;
+                    const { results } = await env.DB.prepare(`
+                        SELECT username, gender, lat, lng, dir, state, lead_pet
+                        FROM player_presence
+                        WHERE username != ? AND updated_at >= ?
+                        LIMIT 100
+                    `).bind(username, activeThreshold).all();
 
-                if (Math.random() < 0.1) {
-                    await env.DB.prepare("DELETE FROM player_presence WHERE updated_at < ?")
-                        .bind(now - 600000).run();
-                }
+                    // Hàm tính khoảng cách thực tế (mét) giữa 2 tọa độ GPS
+                    const calcDistMeters = (lat1, lng1, lat2, lng2) => {
+                        const R = 6371000;
+                        const toRad = (deg) => deg * Math.PI / 180;
+                        const dLat = toRad(lat2 - lat1);
+                        const dLng = toRad(lng2 - lng1);
+                        const a = Math.sin(dLat / 2) ** 2 +
+                                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+                        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                    };
 
-                return Response.json({ ok: true, players: results || [] });
+                    const nearbyPlayers = (results || []).filter(p => {
+                        if (typeof p.lat !== "number" || typeof p.lng !== "number") return false;
+                        return calcDistMeters(lat, lng, p.lat, p.lng) <= 200; // Chỉ lấy người dưới 200m
+                    });
+
+                    return Response.json({ ok: true, players: nearbyPlayers });
             } catch (err) {
                 return Response.json({ ok: false, error: err.message }, { status: 500 });
             }
