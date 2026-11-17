@@ -270,6 +270,143 @@ export default {
                 return Response.json({ ok: false, error: err.message }, { status: 500 });
             }
         }
+        
+
+        // ==========================================
+        // API 5: HỆ THỐNG KẾT BẠN (/api/friends)
+        // ==========================================
+        if (url.pathname === "/api/friends") {
+            try {
+                // 1. Lấy danh sách bạn bè + lời mời chờ duyệt + trạng thái Online
+                if (request.method === "GET") {
+                    const me = String(url.searchParams.get("u") || "").trim();
+                    if (!me) return Response.json({ ok: false, error: "Thiếu tài khoản" }, { status: 400 });
+
+                    const { results } = await env.DB.prepare(`
+                        SELECT id, requester, target, status, created_at
+                        FROM friendships
+                        WHERE requester = ? OR target = ?
+                        ORDER BY id DESC
+                    `).bind(me, me).all();
+
+                    const rows = results || [];
+                    const friends = [];
+                    const incoming = [];
+                    const outgoing = [];
+                    const friendNames = [];
+
+                    rows.forEach(r => {
+                        if (r.status === "accepted") {
+                            const fName = r.requester === me ? r.target : r.requester;
+                            friends.push(fName);
+                            friendNames.push(fName);
+                        } else if (r.status === "pending") {
+                            if (r.target === me) incoming.push({ id: r.id, from: r.requester });
+                            else outgoing.push({ id: r.id, to: r.target });
+                        }
+                    });
+
+                    // Kiểm tra bạn nào đang Online trong vòng 25 giây gần nhất
+                    let onlineMap = {};
+                    if (friendNames.length > 0) {
+                        const activeThreshold = Date.now() - 25000;
+                        const { results: onlineRows } = await env.DB.prepare(`
+                            SELECT username, gender, lead_pet
+                            FROM player_presence
+                            WHERE updated_at >= ?
+                        `).bind(activeThreshold).all();
+
+                        (onlineRows || []).forEach(p => {
+                            onlineMap[p.username] = { gender: p.gender, leadPet: p.lead_pet };
+                        });
+                    }
+
+                    const friendList = friends.map(name => ({
+                        username: name,
+                        online: !!onlineMap[name],
+                        gender: onlineMap[name]?.gender || "Nam",
+                        leadPet: onlineMap[name]?.leadPet || ""
+                    }));
+
+                    // Xếp người đang Online lên đầu danh sách
+                    friendList.sort((a, b) => Number(b.online) - Number(a.online));
+
+                    return Response.json({
+                        ok: true,
+                        friends: friendList,
+                        incoming: incoming,
+                        outgoing: outgoing
+                    });
+                }
+
+                // 2. Gửi lời mời / Chấp nhận / Từ chối / Hủy kết bạn
+                if (request.method === "POST") {
+                    const body = await request.json();
+                    const action = String(body.action || "");
+                    const me = String(body.me || "").trim();
+                    const target = String(body.target || "").trim();
+
+                    if (!me || !target || me === target) {
+                        return Response.json({ ok: false, error: "Thông tin không hợp lệ" }, { status: 400 });
+                    }
+
+                    if (action === "request") {
+                        // Kiểm tra tài khoản đích có tồn tại không
+                        const userExists = await env.DB.prepare("SELECT username FROM players WHERE username = ?")
+                            .bind(target).first();
+                        if (!userExists) {
+                            return Response.json({ ok: false, error: `Không tìm thấy Thợ Săn [${target}]!` }, { status: 404 });
+                        }
+
+                        // Kiểm tra đã tồn tại quan hệ giữa 2 người chưa
+                        const existing = await env.DB.prepare(`
+                            SELECT id, requester, target, status FROM friendships
+                            WHERE (requester = ? AND target = ?) OR (requester = ? AND target = ?)
+                        `).bind(me, target, target, me).first();
+
+                        if (existing) {
+                            if (existing.status === "accepted") {
+                                return Response.json({ ok: false, error: "Hai bạn đã là bạn bè rồi!" });
+                            }
+                            if (existing.requester === target) {
+                                // Đối phương đã gửi lời mời trước -> tự động đồng ý thành bạn luôn!
+                                await env.DB.prepare("UPDATE friendships SET status = 'accepted' WHERE id = ?")
+                                    .bind(existing.id).run();
+                                return Response.json({ ok: true, autoAccepted: true });
+                            }
+                            return Response.json({ ok: false, error: "Bạn đã gửi lời mời trước đó rồi!" });
+                        }
+
+                        await env.DB.prepare(`
+                            INSERT INTO friendships (requester, target, status, created_at)
+                            VALUES (?, ?, 'pending', ?)
+                        `).bind(me, target, Date.now()).run();
+
+                        return Response.json({ ok: true });
+                    }
+
+                    if (action === "accept") {
+                        await env.DB.prepare(`
+                            UPDATE friendships SET status = 'accepted'
+                            WHERE requester = ? AND target = ? AND status = 'pending'
+                        `).bind(target, me).run();
+                        return Response.json({ ok: true });
+                    }
+
+                    if (action === "reject" || action === "remove") {
+                        await env.DB.prepare(`
+                            DELETE FROM friendships
+                            WHERE (requester = ? AND target = ?) OR (requester = ? AND target = ?)
+                        `).bind(me, target, target, me).run();
+                        return Response.json({ ok: true });
+                    }
+
+                    return Response.json({ ok: false, error: "Hành động không hợp lệ" }, { status: 400 });
+                }
+            } catch (err) {
+                return Response.json({ ok: false, error: err.message }, { status: 500 });
+            }
+        }
         return env.ASSETS.fetch(request);
     }
 };
