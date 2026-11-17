@@ -5788,6 +5788,11 @@
                 : 0;
             const gIcon = p.gender === 'Nữ' ? '👧' : '👦';
 
+            const isAlreadyFriend = (window._myFriendsSet && window._myFriendsSet.has(p.username));
+            const friendBtnHtml = isAlreadyFriend
+                ? `<button disabled class="bg-zinc-700 text-emerald-300 py-2.5 rounded-xl font-extrabold text-xs cursor-default border border-emerald-500/40">✅ Bạn Bè</button>`
+                : `<button onclick="sendFriendRequest('${p.username.replace(/'/g, "\\'")}')" class="bg-amber-600 hover:bg-amber-500 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">➕ Kết Bạn</button>`;
+
             content.innerHTML = `
             <div class="flex justify-between items-center mb-3">
                 <h3 class="font-bold text-base text-sky-300">${gIcon} Thợ Săn ${p.username}</h3>
@@ -5807,12 +5812,13 @@
                     <span class="font-bold text-yellow-300">${p.lead_pet || 'Tân Thủ'}</span>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-3 gap-1.5">
+                ${friendBtnHtml}
                 <button onclick="openPrivateChatWith('${p.username.replace(/'/g, "\\'")}')" class="bg-gradient-to-r from-sky-600 to-indigo-600 hover:brightness-110 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">
-                    💬 Nhắn Tin Riêng
+                    💬 Nhắn Riêng
                 </button>
                 <button onclick="greetPlayerOnWorldChat('${p.username.replace(/'/g, "\\'")}')" class="bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">
-                    👋 Vẫy Tay Chào
+                    👋 Vẫy Tay
                 </button>
             </div>`;
         };
@@ -6096,6 +6102,198 @@
         presenceTimer = setInterval(syncMapPlayersPresence, 8000);
         setTimeout(syncMapPlayersPresence, 2000);
     })();
+    </script>
+    <script>
+    // ==========================================
+    // HỆ THỐNG BẠN BÈ & LỜI MỜI KẾT BẠN
+    // ==========================================
+    window._myFriendsSet = new Set();
+
+    async function refreshFriendsState(renderToModal = false) {
+        const myUser = localStorage.getItem('ar_cloud_user');
+        if (!myUser) return;
+
+        try {
+            const res = await fetch(`/api/friends?u=${encodeURIComponent(myUser)}`);
+            const data = await res.json();
+            if (!data.ok) return;
+
+            const friends = data.friends || [];
+            const incoming = data.incoming || [];
+            window._myFriendsSet = new Set(friends.map(f => f.username));
+
+            // Cập nhật chấm đỏ báo lời mời kết bạn mới
+            const hasReq = incoming.length > 0;
+            const badge1 = document.getElementById('friend-req-badge');
+            const badge2 = document.getElementById('home-friend-dot');
+            if (badge1) badge1.classList.toggle('hidden', !hasReq);
+            if (badge2) badge2.classList.toggle('hidden', !hasReq);
+
+            if (renderToModal) {
+                const bodyEl = document.getElementById('friends-modal-body');
+                if (!bodyEl) return;
+
+                let html = '';
+
+                // 1. Lời mời kết bạn đang chờ duyệt
+                if (incoming.length > 0) {
+                    html += `<div class="mb-3">
+                        <div class="text-[11px] font-extrabold text-amber-300 mb-1.5">🔔 Lời mời kết bạn (${incoming.length}):</div>
+                        <div class="space-y-1.5">`;
+                    incoming.forEach(req => {
+                        const safeName = req.from.replace(/'/g, "\\'");
+                        html += `
+                        <div class="bg-amber-950/40 border border-amber-500/50 p-2.5 rounded-xl flex items-center justify-between">
+                            <span class="text-xs font-extrabold text-white">👤 ${req.from}</span>
+                            <div class="flex gap-1.5">
+                                <button onclick="respondFriendRequest('${safeName}', 'accept')" class="bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1 rounded-lg text-[11px] font-extrabold text-white cursor-pointer">✓ Đồng ý</button>
+                                <button onclick="respondFriendRequest('${safeName}', 'reject')" class="bg-zinc-700 hover:bg-zinc-600 px-2 py-1 rounded-lg text-[11px] font-bold text-zinc-300 cursor-pointer">✕</button>
+                            </div>
+                        </div>`;
+                    });
+                    html += `</div></div>`;
+                }
+
+                // 2. Danh sách bạn bè hiện có
+                html += `<div class="text-[11px] font-extrabold text-sky-300 mb-1.5">👥 Danh sách bạn bè (${friends.length}):</div>`;
+                if (friends.length === 0) {
+                    html += `<div class="text-center text-zinc-400 text-xs py-6 bg-zinc-950/60 rounded-xl border border-zinc-800">
+                        Chưa có người bạn nào.<br><span class="text-[10px] text-zinc-500">Nhập ID Thợ Săn ở trên hoặc bấm vào người chơi trên bản đồ để kết bạn!</span>
+                    </div>`;
+                } else {
+                    html += `<div class="space-y-2 max-h-60 overflow-y-auto pr-1">`;
+                    friends.forEach(f => {
+                        const safeName = f.username.replace(/'/g, "\\'");
+                        const gIcon = f.gender === 'Nữ' ? '👧' : '👦';
+                        const statusHtml = f.online
+                            ? `<span class="text-[10px] font-bold text-emerald-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>Online • ${f.leadPet || 'Đang săn thú'}</span>`
+                            : `<span class="text-[10px] text-zinc-500">⚫ Ngoại tuyến</span>`;
+
+                        html += `
+                        <div class="bg-zinc-800/90 border border-zinc-700 p-2.5 rounded-xl flex items-center justify-between">
+                            <div class="min-w-0 pr-2">
+                                <div class="text-xs font-extrabold text-white truncate">${gIcon} ${f.username}</div>
+                                ${statusHtml}
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button onclick="openPrivateChatWith('${safeName}')" class="bg-sky-600 hover:bg-sky-500 px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold text-white cursor-pointer">💬 Chat</button>
+                                <button onclick="removeFriend('${safeName}')" title="Xóa bạn" class="bg-zinc-900 hover:bg-red-900/70 border border-zinc-700 px-2 py-1.5 rounded-lg text-[10px] font-bold text-zinc-400 hover:text-red-300 cursor-pointer">🗑️</button>
+                            </div>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                bodyEl.innerHTML = html;
+            }
+        } catch (e) {}
+    }
+
+    window.openFriendsModal = async function() {
+        const myUser = localStorage.getItem('ar_cloud_user');
+        if (!myUser) {
+            alert('⚠️ Bạn cần đăng nhập tài khoản (☁️ Nick) để dùng tính năng Kết Bạn!');
+            return;
+        }
+
+        const modal = document.getElementById('modal-container');
+        const content = document.getElementById('modal-content');
+        modal.classList.remove('hidden');
+
+        content.innerHTML = `
+        <div class="flex justify-between items-center mb-3 pb-2 border-b border-zinc-800">
+            <h3 class="font-bold text-base text-sky-300">👥 Bạn Bè & Kết Giao</h3>
+            <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+        </div>
+
+        <div class="flex gap-1.5 mb-3">
+            <input id="friend-search-input" type="text" maxlength="16"
+                onkeydown="if(event.key==='Enter'){ event.preventDefault(); sendFriendRequestFromInput(); }"
+                placeholder="Nhập chính xác ID Thợ Săn..."
+                class="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-400 outline-none">
+            <button onclick="sendFriendRequestFromInput()" class="bg-amber-600 hover:bg-amber-500 px-3.5 py-2 rounded-xl text-xs font-extrabold text-white cursor-pointer shrink-0">
+                ➕ Kết Bạn
+            </button>
+        </div>
+
+        <div id="friends-modal-body">
+            <div class="text-center text-zinc-400 text-xs py-6">Đang tải danh sách bạn bè...</div>
+        </div>`;
+
+        await refreshFriendsState(true);
+    };
+
+    window.sendFriendRequestFromInput = function() {
+        const input = document.getElementById('friend-search-input');
+        if (!input) return;
+        const target = input.value.trim();
+        if (!target) return alert('⚠️ Vui lòng nhập ID Thợ Săn muốn kết bạn!');
+        input.value = '';
+        sendFriendRequest(target);
+    };
+
+    window.sendFriendRequest = async function(targetUsername) {
+        const myUser = localStorage.getItem('ar_cloud_user');
+        if (!myUser) return alert('⚠️ Bạn cần đăng nhập tài khoản (☁️ Nick) trước!');
+        if (targetUsername === myUser) return alert('⚠️ Không thể tự kết bạn với chính mình!');
+
+        try {
+            const res = await fetch('/api/friends', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'request', me: myUser, target: targetUsername })
+            });
+            const data = await res.json();
+            if (!data.ok) return alert('❌ ' + (data.error || 'Không gửi được lời mời!'));
+
+            if (data.autoAccepted) {
+                alert(`🎉 [${targetUsername}] cũng vừa gửi lời mời cho bạn — Hai người đã chính thức trở thành Bạn Bè!`);
+            } else {
+                alert(`📨 Đã gửi lời mời kết bạn tới Thợ Săn [${targetUsername}]!`);
+            }
+            refreshFriendsState(!!document.getElementById('friends-modal-body'));
+        } catch (e) {
+            alert('❌ Lỗi kết nối máy chủ!');
+        }
+    };
+
+    window.respondFriendRequest = async function(requesterName, decision) {
+        const myUser = localStorage.getItem('ar_cloud_user');
+        if (!myUser) return;
+
+        try {
+            await fetch('/api/friends', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: decision, me: myUser, target: requesterName })
+            });
+            if (decision === 'accept') {
+                alert(`🤝 Bạn và [${requesterName}] đã trở thành Bạn Bè!`);
+            }
+            refreshFriendsState(true);
+        } catch (e) {}
+    };
+
+    window.removeFriend = function(friendName) {
+        showInGameConfirm(`Bạn có chắc muốn hủy kết bạn với [${friendName}] không?`, async () => {
+            const myUser = localStorage.getItem('ar_cloud_user');
+            if (!myUser) return;
+            try {
+                await fetch('/api/friends', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'remove', me: myUser, target: friendName })
+                });
+                refreshFriendsState(true);
+            } catch (e) {}
+        });
+    };
+
+    // Tự động kiểm tra lời mời kết bạn mới mỗi 15 giây (chỉ chạy khi tab đang mở)
+    setInterval(() => {
+        if (!document.hidden) refreshFriendsState(false);
+    }, 15000);
+    setTimeout(() => refreshFriendsState(false), 3000);
     </script>
 </body>
 </html>
