@@ -16,7 +16,20 @@
     </script>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; height: 100dvh; width: 100%; overflow: hidden; background: #09090b; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
-        #map-screen { display: flex; flex-direction: column; height: 100vh; height: 100dvh; width: 100vw; position: absolute; inset: 0; background: #09090b; overflow: hidden; }
+        #map-screen {
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100dvh;
+            max-height: -webkit-fill-available;
+            background: #09090b;
+            overflow: hidden;
+            padding-top: max(8px, env(safe-area-inset-top));
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+            box-sizing: border-box;
+        }
         #map-container-wrap { flex: 1 1 auto; position: relative; width: 100%; height: 100%; min-height: 150px; overflow: hidden; }
         #map { height: 100% !important; width: 100% !important; position: absolute !important; inset: 0; z-index: 10; background: #18181b; }
         .leaflet-div-icon { background: transparent !important; border: none !important; }
@@ -386,7 +399,7 @@
     <!-- MÀN HÌNH BẢN ĐỒ GPS -->
     <div id="map-screen" class="hidden absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2 pb-2">
         <!-- THANH ĐIỀU HƯỚNG GÓC PHẢI BẢN ĐỒ: NHÀ, THÁP, BOSS + MŨI TÊN XỔ XUỐNG -->
-        <div id="map-top-nav" class="z-50 pt-1 pb-1 shrink-0 w-full flex flex-col items-end relative">
+        <div id="map-top-nav" class="relative z-[1000] px-2 pt-1 pb-1 shrink-0 w-full flex flex-col items-end">
             <!-- Hàng chính bên trái mũi tên: Nhà, Tháp, Boss + Nút mũi tên ▼ -->
             <div class="flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-2 py-1 rounded-full border border-white/15 shadow-xl">
                 <button onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow cursor-pointer whitespace-nowrap text-amber-200">🏠 Nhà</button>
@@ -5110,11 +5123,17 @@
                 
                     <!-- Khung chat mờ chính -->
                     <div id="floating-chat-box" class="w-64 sm:w-72 bg-zinc-950/60 hover:bg-zinc-950/85 focus-within:bg-zinc-950/95 transition-all duration-200 backdrop-blur-sm border border-white/15 rounded-xl p-2 shadow-xl">
-                        <div class="flex items-center justify-between border-b border-white/10 pb-1 mb-1">
+                        <div class="flex items-center justify-between border-b border-white/10 pb-1 mb-1 gap-1">
                             <span class="text-[10px] font-extrabold text-sky-300/90 tracking-wide">💬 Kênh Thế Giới</span>
-                            <button onclick="toggleFloatingChat(false)" title="Ẩn khung chat" class="text-[10px] text-zinc-300 hover:text-white bg-white/10 hover:bg-white/20 px-1.5 py-0.5 rounded cursor-pointer font-bold">
-                                Ẩn ✕
-                            </button>
+                            <div class="flex items-center gap-1">
+                                <button onclick="openPmInboxModal()" class="relative text-[10px] text-amber-200 hover:text-white bg-amber-600/40 hover:bg-amber-600/70 border border-amber-400/40 px-1.5 py-0.5 rounded cursor-pointer font-extrabold">
+                                    📩 Riêng
+                                    <span id="pm-unread-dot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping"></span>
+                                </button>
+                                <button onclick="toggleFloatingChat(false)" title="Ẩn khung chat" class="text-[10px] text-zinc-300 hover:text-white bg-white/10 hover:bg-white/20 px-1.5 py-0.5 rounded cursor-pointer font-bold">
+                                    Ẩn ✕
+                                </button>
+                            </div>
                         </div>
                 
                         <div id="floating-chat-messages" class="h-28 overflow-y-auto space-y-1 pr-1 text-[11px] leading-snug">
@@ -5900,6 +5919,129 @@
                 }
             };
         }
+
+        let lastKnownIncomingPmId = parseInt(localStorage.getItem('ar_last_pm_id') || '0');
+        let recentConversations = {}; // Lưu danh sách người đã nhắn tin gần đây
+
+        // Mở danh sách các cuộc trò chuyện riêng (Hộp thư 1-1)
+        window.openPmInboxModal = async function() {
+            const myUser = localStorage.getItem('ar_cloud_user');
+            if (!myUser) {
+                alert('⚠️ Bạn cần đăng nhập tài khoản (☁️ Nick) để dùng Chat Riêng!');
+                return;
+            }
+
+            // Tắt chấm đỏ thông báo
+            document.getElementById('pm-unread-dot')?.classList.add('hidden');
+            document.getElementById('pm-incoming-banner')?.remove();
+
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-zinc-800">
+                <h3 class="font-bold text-sm text-amber-300">📩 Hộp Thư Nhắn Tin Riêng</h3>
+                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+            </div>
+            <div id="pm-inbox-list" class="space-y-2 max-h-72 overflow-y-auto">
+                <div class="text-center text-zinc-400 text-xs py-6">Đang tải hộp thư...</div>
+            </div>`;
+
+            await checkIncomingPrivateMessages(true);
+        };
+
+        async function checkIncomingPrivateMessages(renderToModal = false) {
+            if (document.hidden) return;
+            const myUser = localStorage.getItem('ar_cloud_user');
+            if (!myUser) return;
+
+            try {
+                const res = await fetch(`/api/pm?mode=inbox&u=${encodeURIComponent(myUser)}`);
+                const data = await res.json();
+                if (!data.ok) return;
+
+                const msgs = data.messages || [];
+                const convMap = {};
+                let newestIncoming = null;
+
+                msgs.forEach(m => {
+                    const partner = m.sender === myUser ? m.receiver : m.sender;
+                    if (!convMap[partner]) {
+                        convMap[partner] = {
+                            partner: partner,
+                            lastText: (m.sender === myUser ? 'Bạn: ' : '') + m.text,
+                            id: m.id,
+                            isUnread: m.receiver === myUser && m.id > lastKnownIncomingPmId
+                        };
+                    }
+                    if (m.receiver === myUser && m.id > lastKnownIncomingPmId) {
+                        if (!newestIncoming || m.id > newestIncoming.id) {
+                            newestIncoming = m;
+                        }
+                    }
+                });
+
+                recentConversations = convMap;
+
+                // Nếu có tin nhắn mới gửi tới mà người chơi chưa mở đúng khung chat với người đó
+                if (newestIncoming) {
+                    lastKnownIncomingPmId = newestIncoming.id;
+                    localStorage.setItem('ar_last_pm_id', String(lastKnownIncomingPmId));
+
+                    if (activePmTarget !== newestIncoming.sender) {
+                        document.getElementById('pm-unread-dot')?.classList.remove('hidden');
+                        showPmIncomingBanner(newestIncoming.sender, newestIncoming.text);
+                    }
+                }
+
+                if (renderToModal) {
+                    const listEl = document.getElementById('pm-inbox-list');
+                    if (!listEl) return;
+                    const partners = Object.values(convMap);
+                    if (partners.length === 0) {
+                        listEl.innerHTML = `<div class="text-center text-zinc-400 text-xs py-8">Chưa có tin nhắn riêng nào.<br><span class="text-[10px] text-zinc-500">Hãy chạm vào nhân vật người chơi khác trên bản đồ để bắt đầu trò chuyện!</span></div>`;
+                    } else {
+                        listEl.innerHTML = partners.map(c => `
+                        <div onclick="openPrivateChatWith('${c.partner.replace(/'/g, "\\'")}')" class="bg-zinc-800/90 hover:bg-zinc-700 border ${c.isUnread ? 'border-amber-400' : 'border-zinc-700'} p-3 rounded-xl flex items-center justify-between cursor-pointer transition">
+                            <div class="min-w-0 pr-2">
+                                <div class="text-xs font-extrabold text-sky-300 flex items-center gap-1.5">
+                                    <span>👤 ${c.partner}</span>
+                                    ${c.isUnread ? '<span class="bg-red-500 text-white text-[9px] px-1.5 py-0.2 rounded-full">MỚI</span>' : ''}
+                                </div>
+                                <div class="text-[11px] text-zinc-300 truncate mt-0.5">${c.lastText}</div>
+                            </div>
+                            <span class="text-xs font-bold text-amber-300 shrink-0">Mở ›</span>
+                        </div>`).join('');
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function showPmIncomingBanner(sender, text) {
+            document.getElementById('pm-incoming-banner')?.remove();
+            const banner = document.createElement('div');
+            banner.id = 'pm-incoming-banner';
+            banner.className = 'fixed top-14 left-1/2 -translate-x-1/2 z-[95] bg-zinc-900/95 border-2 border-amber-400 rounded-2xl px-3.5 py-2 shadow-2xl flex items-center gap-2.5 max-w-xs w-11/12 cursor-pointer animate-bounce';
+            banner.innerHTML = `
+                <span class="text-xl">📩</span>
+                <div class="flex-1 min-w-0">
+                    <div class="text-[11px] font-extrabold text-amber-300 truncate">Tin riêng từ ${sender}</div>
+                    <div class="text-[11px] text-white truncate">${text}</div>
+                </div>
+                <span class="bg-sky-600 text-white text-[10px] font-extrabold px-2 py-1 rounded-lg shrink-0">Trả lời</span>
+            `;
+            banner.onclick = () => {
+                banner.remove();
+                document.getElementById('pm-unread-dot')?.classList.add('hidden');
+                openPrivateChatWith(sender);
+            };
+            document.body.appendChild(banner);
+            setTimeout(() => banner.remove(), 7000);
+        }
+
+        // Kiểm tra hộp thư đến mỗi 6 giây
+        setInterval(() => checkIncomingPrivateMessages(false), 6000);
         
         // Tự động bật đồng bộ vị trí người chơi mỗi 8 giây
         presenceTimer = setInterval(syncMapPlayersPresence, 8000);
