@@ -436,8 +436,8 @@
                     <span>🥚 Ấp trứng</span>
                     <span class="text-emerald-200">(<span id="egg-count-badge">0</span>)</span>
                 </button>
-                <button onclick="selectMapDropdownTab(() => openArenaMenu())" class="w-full text-left bg-red-600/90 hover:bg-red-500 px-3 py-2 rounded-xl border border-red-400 text-xs font-bold cursor-pointer">
-                    ⚔️ Đấu PvP
+               <button onclick="selectMapDropdownTab(() => openPvpArenaHub())" class="w-full text-left bg-red-600/90 hover:bg-red-500 px-3 py-2 rounded-xl border border-red-400 text-xs font-bold cursor-pointer">
+                    ⚔️ Đấu PvP (BXH)
                 </button>
                 <button onclick="selectMapDropdownTab(() => openFriendsModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
                     <span>👥 Bạn Bè</span>
@@ -6636,7 +6636,7 @@
                     <span class="font-bold text-yellow-300">${p.lead_pet || 'Tân Thủ'}</span>
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-1.5">
+            <div class="grid grid-cols-3 gap-1.5 mb-2">
                 ${friendBtnHtml}
                 <button onclick="openPrivateChatWith('${p.username.replace(/'/g, "\\'")}')" class="bg-gradient-to-r from-sky-600 to-indigo-600 hover:brightness-110 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">
                     💬 Nhắn Riêng
@@ -6644,7 +6644,10 @@
                 <button onclick="greetPlayerOnWorldChat('${p.username.replace(/'/g, "\\'")}')" class="bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">
                     👋 Vẫy Tay
                 </button>
-            </div>`;
+            </div>
+            <button onclick="openDeathmatchChallengeModal('${p.username.replace(/'/g, "\\'")}')" class="w-full bg-gradient-to-r from-red-600 to-rose-700 hover:brightness-110 py-2.5 rounded-xl font-black text-xs text-white cursor-pointer shadow-lg border border-red-400/50">
+                ☠️ Khiêu Chiến Sinh Tử 1vs1 (Thua Mất Thú)
+            </button>`;
         };
 
         window.greetPlayerOnWorldChat = function(targetUsername) {
@@ -7000,6 +7003,7 @@
                                 ${statusHtml}
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0">
+                                ${f.online ? `<button onclick="openDeathmatchChallengeModal('${safeName}')" class="bg-red-700 hover:bg-red-600 px-2 py-1.5 rounded-lg text-[10px] font-black text-white cursor-pointer">☠️ Sinh Tử</button>` : ''}
                                 <button onclick="openPrivateChatWith('${safeName}')" class="bg-sky-600 hover:bg-sky-500 px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold text-white cursor-pointer">💬 Chat</button>
                                 <button onclick="removeFriend('${safeName}')" title="Xóa bạn" class="bg-zinc-900 hover:bg-red-900/70 border border-zinc-700 px-2 py-1.5 rounded-lg text-[10px] font-bold text-zinc-400 hover:text-red-300 cursor-pointer">🗑️</button>
                             </div>
@@ -7037,6 +7041,9 @@
                 class="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-400 outline-none">
             <button onclick="sendFriendRequestFromInput()" class="bg-amber-600 hover:bg-amber-500 px-3.5 py-2 rounded-xl text-xs font-extrabold text-white cursor-pointer shrink-0">
                 ➕ Kết Bạn
+            </button>
+            <button onclick="openDeathmatchChallengeModal('${f.username}')" class="bg-red-700 hover:bg-red-600 px-2 py-1 rounded-lg text-[10px] font-black text-white cursor-pointer">
+                ⚔️ Sinh Tử
             </button>
         </div>
 
@@ -7120,5 +7127,6 @@
     setTimeout(() => refreshFriendsState(false), 3000);
     </script>
     <script src="./admin.js"></script>
+    <script src="pvp.js"></script>
 </body>
 </html>
