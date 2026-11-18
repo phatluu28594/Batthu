@@ -1,5 +1,7 @@
 // ============================================================================
-// BẮT THÚ VƯƠNG - MODULE QUẢN TRỊ VIÊN CAO CẤP (admin.js - Bản Fix Scope)
+// BẮT THÚ VƯƠNG - MODULE QUẢN TRỊ VIÊN CAO CẤP (admin.js - Bản Đầy Đủ)
+// Bao gồm: Tạo Thú (tùy chọn kỹ năng Hồi Máu x2 Dame), Tạo Trứng, Cấp Tài Nguyên,
+// Gọi Boss Thế Giới 3 Miền & Hiển thị nhãn kỹ năng hồi máu trong hồ sơ thú.
 // ============================================================================
 
 (function () {
@@ -10,6 +12,7 @@
         return ADMIN_ACCOUNTS.some(id => id.toLowerCase() === u.toLowerCase());
     }
 
+    // Tự động gắn hoặc gỡ nút [👑 GM] tùy theo tài khoản đang đăng nhập
     function syncAdminUiButton() {
         const isAdmin = isCurrentUserAdmin();
         let homeBtn = document.getElementById('btn-admin-home');
@@ -45,10 +48,11 @@
     setInterval(syncAdminUiButton, 2000);
     window.addEventListener('load', syncAdminUiButton);
 
-    function buildAdminCustomPet(name, rarityIdx, level, customElement, customTraitType) {
-        const monsters = typeof allMonsters !== 'undefined' ? allMonsters : [];
-        const rarityList = typeof rarities !== 'undefined' ? rarities : [];
-        const traitsList = typeof possibleTraits !== 'undefined' ? possibleTraits : [];
+    // Dựng đối tượng linh thú tùy chỉnh chuẩn dữ liệu game
+    function buildAdminCustomPet(name, rarityIdx, level, customElement, customTraitType, forceHealSkill = false) {
+        const monsters = (typeof allMonsters !== 'undefined') ? allMonsters : [];
+        const rarityList = (typeof rarities !== 'undefined') ? rarities : [];
+        const traitsList = (typeof possibleTraits !== 'undefined') ? possibleTraits : [];
 
         const base = monsters.find(m => m.name === name) || monsters[0] || {
             id: 101, name: 'Gà Lửa', emoji: '🐔', element: 'Hoa', hp: 110, maxHp: 110, atk: 42, speed: 62
@@ -75,11 +79,18 @@
             atk: Math.floor((base.atk + (lv - 1) * 8) * mult),
             speed: Math.floor((base.speed + (lv - 1) * 2) * (1 + (mult - 1) * 0.4))
         };
-        if (chosenTrait) raw.trait = { ...chosenTrait, chance: 35 };
+
+        if (chosenTrait) {
+            raw.trait = { ...chosenTrait, chance: 35 };
+        }
+        if (forceHealSkill || elem === 'Moc' || elem === 'Thuy') {
+            raw.hasHealSkill = true;
+        }
 
         return typeof sanitizePetsData === 'function' ? sanitizePetsData([raw])[0] : raw;
     }
 
+    // Gửi gói quà Admin qua API Cloudflare Worker (/api/admin) cho người chơi khác
     async function sendAdminGiftToRemotePlayer(targetUsername, giftPayload) {
         const adminUser = localStorage.getItem('ar_cloud_user');
         const adminPin = localStorage.getItem('ar_cloud_pin');
@@ -94,19 +105,23 @@
                     gift: giftPayload
                 })
             });
-            const data = await res.json();
-            if (!data.ok) {
-                alert('❌ Lỗi gửi cho người chơi: ' + (data.error || 'Chưa cấu hình API /api/admin trên Worker!'));
+            const text = await res.text();
+            let data = {};
+            try { data = JSON.parse(text); } catch (e) {}
+
+            if (!res.ok || !data.ok) {
+                alert(`❌ Không gửi được cho [${targetUsername}]!\nLý do: ${data.error || 'Worker chưa có API /api/admin (Mã lỗi ' + res.status + ')'}`);
                 return false;
             }
             alert(`✅ Đã gửi thành công tới kho của người chơi [${targetUsername}]!`);
             return true;
         } catch (err) {
-            alert('❌ Lỗi kết nối máy chủ Admin (kiểm tra lại endpoint /api/admin trên Worker): ' + err.message);
+            alert('❌ Lỗi kết nối máy chủ Admin: ' + err.message);
             return false;
         }
     }
 
+    // Mở giao diện Bảng Điều Khiển Admin
     window.openAdminGmModal = function () {
         if (!isCurrentUserAdmin()) {
             alert('⛔ Bạn không có quyền truy cập Bảng Điều Khiển Admin!');
@@ -118,9 +133,9 @@
         if (!modal || !content) return;
         modal.classList.remove('hidden');
 
-        const monsters = typeof allMonsters !== 'undefined' ? allMonsters : [];
-        const rarityList = typeof rarities !== 'undefined' ? rarities : [];
-        const traitsList = typeof possibleTraits !== 'undefined' ? possibleTraits : [];
+        const monsters = (typeof allMonsters !== 'undefined') ? allMonsters : [];
+        const rarityList = (typeof rarities !== 'undefined') ? rarities : [];
+        const traitsList = (typeof possibleTraits !== 'undefined') ? possibleTraits : [];
 
         const monsterOptions = monsters.map(m =>
             `<option value="${m.name}">${m.emoji} ${m.name} (Hệ ${m.element})</option>`
@@ -159,8 +174,8 @@
                     <select id="gm-pet-element" class="bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-1.5 text-white">
                         <option value="DEFAULT">Hệ mặc định</option>
                         <option value="Kim">⚔️ Hệ Kim</option>
-                        <option value="Moc">🌿 Hệ Mộc</option>
-                        <option value="Thuy">💧 Hệ Thủy</option>
+                        <option value="Moc">🌿 Hệ Mộc (Có Hồi Máu)</option>
+                        <option value="Thuy">💧 Hệ Thủy (Có Hồi Máu)</option>
                         <option value="Hoa">🔥 Hệ Hỏa</option>
                         <option value="Tho">🪨 Hệ Thổ</option>
                     </select>
@@ -169,6 +184,10 @@
                     <option value="RANDOM">🎲 Đặc kỹ ngẫu nhiên</option>
                     ${traitOptions}
                 </select>
+                <label class="flex items-center gap-2 bg-emerald-950/60 border border-emerald-500/40 rounded-lg px-2.5 py-1.5 text-emerald-300 font-bold cursor-pointer">
+                    <input id="gm-pet-heal" type="checkbox" checked class="accent-emerald-500 w-4 h-4">
+                    <span>💚 Gắn Kỹ năng: Hồi Phục Linh Hồn (Hồi x2 Dame)</span>
+                </label>
                 <button onclick="adminCreatePet()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg font-extrabold text-white cursor-pointer">
                     ✨ Tạo Linh Thú Ngay
                 </button>
@@ -181,6 +200,10 @@
                     <select id="gm-egg-name" class="bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-1.5 text-white">${monsterOptions}</select>
                     <select id="gm-egg-rarity" class="bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-1.5 text-white">${rarityOptions}</select>
                 </div>
+                <label class="flex items-center gap-2 bg-cyan-950/50 border border-cyan-500/40 rounded-lg px-2.5 py-1.5 text-cyan-200 font-bold cursor-pointer">
+                    <input id="gm-egg-heal" type="checkbox" checked class="accent-cyan-500 w-4 h-4">
+                    <span>💚 Thú nở từ trứng có Kỹ năng Hồi Máu (x2 Dame)</span>
+                </label>
                 <button onclick="adminCreateEgg()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-2 rounded-lg font-extrabold text-white cursor-pointer">
                     🥚 Tạo Trứng Ngay (Sẵn sàng nở)
                 </button>
@@ -188,14 +211,19 @@
 
             <!-- 3. BƠM TÀI NGUYÊN & VẬT PHẨM -->
             <div class="bg-zinc-800/90 border border-yellow-500/40 rounded-xl p-3 space-y-2">
-                <div class="font-extrabold text-yellow-300">💰 3. Cấp Vàng, Kim Cương & Đá</div>
+                <div class="font-extrabold text-yellow-300">💰 3. Cấp Vàng, Kim Cương & Vật Phẩm</div>
                 <div class="grid grid-cols-2 gap-1.5">
                     <input id="gm-add-coins" type="number" value="10000" placeholder="Số Vàng 🪙" class="bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-yellow-300 font-bold">
                     <input id="gm-add-diamonds" type="number" value="500" placeholder="Số Kim Cương 💎" class="bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sky-300 font-bold">
                 </div>
-                <button onclick="adminGrantCurrency()" class="w-full bg-amber-600 hover:bg-amber-500 py-2 rounded-lg font-extrabold text-white cursor-pointer">
-                    🎁 Gửi Tài Nguyên
-                </button>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="adminGrantCurrency()" class="bg-amber-600 hover:bg-amber-500 py-2 rounded-lg font-extrabold text-white cursor-pointer">
+                        🎁 Gửi Vàng & KC
+                    </button>
+                    <button onclick="adminGrantStonesAndItems()" class="bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg font-extrabold text-white cursor-pointer">
+                        💎 +20 Đá & Vé Tập
+                    </button>
+                </div>
             </div>
 
             <!-- 4. ĐIỀU KHIỂN BOSS THẾ GIỚI -->
@@ -220,16 +248,21 @@
         const level = parseInt(document.getElementById('gm-pet-level')?.value || '1', 10);
         const elem = document.getElementById('gm-pet-element')?.value;
         const traitType = document.getElementById('gm-pet-trait')?.value;
+        const forceHeal = !!document.getElementById('gm-pet-heal')?.checked;
 
-        const newPet = buildAdminCustomPet(name, rarityIdx, level, elem, traitType);
+        const newPet = buildAdminCustomPet(name, rarityIdx, level, elem, traitType, forceHeal);
         const currentUser = (localStorage.getItem('ar_cloud_user') || '').toLowerCase();
+        const healNote = newPet.hasHealSkill ? ' + 💚 Hồi Máu x2 Dame' : '';
 
         if (!targetUser || targetUser.toLowerCase() === currentUser) {
-            if (typeof team !== 'undefined' && team.length < 3) team.push(newPet);
-            else if (typeof farm !== 'undefined') farm.push(newPet);
+            if (typeof team !== 'undefined' && Array.isArray(team)) {
+                if (team.length < 3) team.push(newPet);
+                else if (typeof farm !== 'undefined' && Array.isArray(farm)) farm.push(newPet);
+            }
             if (typeof saveGameData === 'function') saveGameData();
             if (typeof updateTeamCount === 'function') updateTeamCount();
-            alert(`🎉 Admin đã tạo thành công [${newPet.rarity.badge} ${newPet.name} Lv.${newPet.level}] vào kho của bạn!`);
+            if (typeof syncCurrentAccountToCloud === 'function') syncCurrentAccountToCloud();
+            alert(`🎉 Admin đã tạo thành công [${newPet.rarity.badge} ${newPet.name} Lv.${newPet.level}${healNote}] vào kho của bạn!`);
         } else {
             await sendAdminGiftToRemotePlayer(targetUser, { type: 'pet', pet: newPet });
         }
@@ -239,7 +272,8 @@
         const targetUser = document.getElementById('gm-target-user')?.value.trim();
         const name = document.getElementById('gm-egg-name')?.value;
         const rarityIdx = parseInt(document.getElementById('gm-egg-rarity')?.value || '0', 10);
-        const childPet = buildAdminCustomPet(name, rarityIdx, 1, 'DEFAULT', 'RANDOM');
+        const forceHeal = !!document.getElementById('gm-egg-heal')?.checked;
+        const childPet = buildAdminCustomPet(name, rarityIdx, 1, 'DEFAULT', 'RANDOM', forceHeal);
 
         const newEgg = {
             name: `Trứng Thần ${childPet.name}`,
@@ -252,8 +286,9 @@
 
         const currentUser = (localStorage.getItem('ar_cloud_user') || '').toLowerCase();
         if (!targetUser || targetUser.toLowerCase() === currentUser) {
-            if (typeof eggs !== 'undefined') eggs.push(newEgg);
+            if (typeof eggs !== 'undefined' && Array.isArray(eggs)) eggs.push(newEgg);
             if (typeof saveGameData === 'function') saveGameData();
+            if (typeof syncCurrentAccountToCloud === 'function') syncCurrentAccountToCloud();
             alert(`🥚 Đã tạo [${newEgg.name}] (${newEgg.rarity.badge}) sẵn sàng ấp nở!`);
         } else {
             await sendAdminGiftToRemotePlayer(targetUser, { type: 'egg', egg: newEgg });
@@ -270,9 +305,27 @@
             if (typeof playerCoins !== 'undefined') playerCoins += coins;
             if (typeof playerDiamonds !== 'undefined') playerDiamonds += diamonds;
             if (typeof saveGameData === 'function') saveGameData();
+            if (typeof syncCurrentAccountToCloud === 'function') syncCurrentAccountToCloud();
             alert(`💰 Đã cộng +${coins.toLocaleString()}🪙 và +${diamonds.toLocaleString()}💎 cho tài khoản của bạn!`);
         } else {
             await sendAdminGiftToRemotePlayer(targetUser, { type: 'currency', coins, diamonds });
+        }
+    };
+
+    window.adminGrantStonesAndItems = function () {
+        if (typeof inventory !== 'undefined') {
+            inventory.food = (inventory.food || 0) + 20;
+            inventory.toy = (inventory.toy || 0) + 20;
+            inventory.trainer = (inventory.trainer || 0) + 20;
+            inventory.stoneKim = (inventory.stoneKim || 0) + 20;
+            inventory.stoneMoc = (inventory.stoneMoc || 0) + 20;
+            inventory.stoneThuy = (inventory.stoneThuy || 0) + 20;
+            inventory.stoneHoa = (inventory.stoneHoa || 0) + 20;
+            inventory.stoneTho = (inventory.stoneTho || 0) + 20;
+            localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+            if (typeof saveGameData === 'function') saveGameData();
+            if (typeof syncCurrentAccountToCloud === 'function') syncCurrentAccountToCloud();
+            alert('💎 Đã cộng +20 Đá Ngũ Hành các loại, +20 Vé Tập Luyện, Thức Ăn & Đồ Chơi vào túi!');
         }
     };
 
@@ -292,10 +345,29 @@
 
     window.adminResetWorldBossHp = function () {
         if (typeof wbState !== 'undefined') {
-            const lv = typeof bossLevel !== 'undefined' ? bossLevel : 1;
+            const lv = (typeof bossLevel !== 'undefined') ? bossLevel : 1;
             wbState.maxHp = 5000 + lv * 3000;
             wbState.hp = wbState.maxHp;
             alert(`⚡ Đã hồi đầy ${wbState.maxHp.toLocaleString()} HP cho Boss Thế Giới!`);
         }
     };
+
+    // Tự động bổ sung huy hiệu hiển thị Kỹ năng Hồi Máu trong hồ sơ thú ở Đội Hình (openPetDetail)
+    const _origOpenPetDetail = window.openPetDetail;
+    if (typeof _origOpenPetDetail === 'function') {
+        window.openPetDetail = function (index) {
+            _origOpenPetDetail.apply(this, arguments);
+            const pet = (typeof team !== 'undefined') ? team[index] : null;
+            if (!pet) return;
+            if (pet.element === 'Moc' || pet.element === 'Thuy' || pet.hasHealSkill) {
+                const badgeContainer = document.querySelector('#modal-content .bg-amber-950\\/70');
+                if (badgeContainer && !document.getElementById('pet-detail-heal-badge')) {
+                    badgeContainer.insertAdjacentHTML(
+                        'afterend',
+                        `<div id="pet-detail-heal-badge" class="mt-1 inline-flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-400/50 px-3 py-0.5 rounded-full text-[11px] font-extrabold text-emerald-300">💚 Kỹ năng: Hồi Phục Linh Hồn (Hồi x2 Dame)</div>`
+                    );
+                }
+            }
+        };
+    }
 })();
