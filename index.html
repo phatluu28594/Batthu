@@ -841,7 +841,8 @@
             { name: 'Đòn đánh Trúng độc', icon: '🟢 Độc', type: 'poison', chance: 25 },
             { name: 'Thiêu đốt diện rộng', icon: '🔥 Cháy', type: 'burn', chance: 22 },
             { name: 'Làm chậm đối thủ', icon: '❄️ Chậm', type: 'slow', chance: 25 },
-            { name: 'Hộ thân Buff Giáp', icon: '🛡️ Buff', type: 'shield', chance: 30 }
+            { name: 'Hộ thân Buff Giáp', icon: '🛡️ Buff', type: 'shield', chance: 30 },
+            { name: 'Hồi Phục Linh Hồn (x2 Dame)', icon: '💚 Hồi Máu', type: 'heal', chance: 30 }
         ];
 
         const rarities = [
@@ -2298,8 +2299,8 @@
             let currentTier = pet.gearTier || 0;
             let tierCapLv = currentTier < 10 ? (currentTier + 1) * 10 : 100;
             let sellPrice = window.getPetSellPrice ? window.getPetSellPrice(pet) : 50;
-            const hasHealTag = (pet.element === 'Moc' || pet.element === 'Thuy' || pet.hasHealSkill)
-                ? `<div class="mt-1 inline-flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-400/50 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-emerald-300">💚 Kỹ năng: Hồi Phục Linh Hồn (x2 Dame)</div>`
+            const hasHealTag = (pet.trait?.type === 'heal' || pet.hasHealSkill)
+                ? `<div class="mt-1 inline-flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-400/50 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-emerald-300">💚 Đặc kỹ: Hồi Phục Linh Hồn (Hồi x2 Dame)</div>`
                 : '';
 
             let gearsHtml = ['claw', 'armor', 'orb'].map(slotKey => {
@@ -4512,7 +4513,7 @@
                 const fullHp = pet.maxHp + bonus.maxHp;
                 const isFainted = pet.hp <= 0;
                 const elemInfo = elementNames[pet.element] || { label: pet.element, color: 'text-zinc-300' };
-                const hasHealTag = (pet.element === 'Moc' || pet.element === 'Thuy' || pet.hasHealSkill)
+                const hasHealTag = (pet.trait?.type === 'heal' || pet.hasHealSkill)
                     ? `<span class="text-[9px] bg-emerald-950 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.2 rounded ml-1">💚 Hồi Máu x2 Dame</span>`
                     : '';
 
@@ -4595,7 +4596,7 @@
                     critRate: baseCrit,
                     blockRate: (p.blockRate ?? 15) + b.blockRate,
                     armorBreak: (p.armorBreak ?? 15) + b.armorBreak,
-                    skill: (p.element === 'Moc' || p.element === 'Thuy' || p.hasHealSkill) ? { ...HEAL_SKILL_CONFIG } : null,
+                    skill: (p.trait?.type === 'heal' || p.hasHealSkill) ? { ...HEAL_SKILL_CONFIG } : null,
                     skillCd: 0
                 };
             });
