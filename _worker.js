@@ -28,7 +28,6 @@ export default {
                     )
                 `).run();
 
-                // Tự động bổ sung cột nếu bảng players được tạo từ phiên bản cũ bị thiếu cột
                 const alterQueries = [
                     "ALTER TABLE players ADD COLUMN gender TEXT DEFAULT 'Nam'",
                     "ALTER TABLE players ADD COLUMN session_token TEXT",
@@ -38,6 +37,7 @@ export default {
                 for (const sql of alterQueries) {
                     try { await db.prepare(sql).run(); } catch (e) {}
                 }
+
                 const body = await request.json();
                 const { action, username, pin, gender, sessionToken, gameData } = body;
 
@@ -97,7 +97,6 @@ export default {
                 }
 
                 if (action === "sync") {
-                    // 1. Kiểm tra tài khoản trong bảng 'players' với cột 'game_data'
                     const existing = await db.prepare(
                         "SELECT game_data FROM players WHERE LOWER(username) = LOWER(?) AND pin = ?"
                     ).bind(cleanUser, pin).first();
@@ -106,15 +105,11 @@ export default {
                         return jsonResponse({ ok: false, error: "Sai tài khoản hoặc mã PIN!" }, 401);
                     }
 
-                    // 2. Chuyển object gameData thành chuỗi JSON an toàn
                     const saveDataStr = JSON.stringify(gameData || {});
-
-                    // Nếu dữ liệu không thay đổi thì bỏ qua để tiết kiệm lượt ghi D1
                     if (existing.game_data === saveDataStr) {
                         return jsonResponse({ ok: true, skipped: true });
                     }
 
-                    // 3. Cập nhật dữ liệu mới vào cột 'game_data'
                     await db.prepare(
                         "UPDATE players SET game_data = ?, updated_at = ? WHERE LOWER(username) = LOWER(?) AND pin = ?"
                     ).bind(saveDataStr, Date.now(), cleanUser, pin).run();
@@ -477,4 +472,32 @@ export default {
                 const targetRow = await db.prepare("SELECT username, game_data FROM players WHERE LOWER(username) = LOWER(?)")
                     .bind(targetUser).first();
                 if (!targetRow) {
-                    return jsonResponse({
+                    return jsonResponse({ ok: false, error: `Không tìm thấy người chơi [${targetUser}]!` }, 404);
+                }
+
+                let targetData = {};
+                try { targetData = JSON.parse(targetRow.game_data || "{}"); } catch (e) {}
+                targetData.farm = Array.isArray(targetData.farm) ? targetData.farm : [];
+                targetData.eggs = Array.isArray(targetData.eggs) ? targetData.eggs : [];
+
+                if (gift.type === "pet" && gift.pet) {
+                    targetData.farm.push(gift.pet);
+                } else if (gift.type === "egg" && gift.egg) {
+                    targetData.eggs.push(gift.egg);
+                } else if (gift.type === "currency") {
+                    targetData.coins = (targetData.coins || 0) + (Number(gift.coins) || 0);
+                    targetData.diamonds = (targetData.diamonds || 0) + (Number(gift.diamonds) || 0);
+                }
+
+                await db.prepare("UPDATE players SET game_data = ?, updated_at = ? WHERE username = ?")
+                    .bind(JSON.stringify(targetData), Date.now(), targetRow.username).run();
+
+                return jsonResponse({ ok: true });
+            } catch (err) {
+                return jsonResponse({ ok: false, error: "Lỗi Admin API: " + err.message }, 500);
+            }
+        }
+
+        return env.ASSETS.fetch(request);
+    }
+};
