@@ -1,6 +1,5 @@
 // ============================================================================
-// BẮT THÚ VƯƠNG - MODULE QUẢN TRỊ VIÊN CAO CẤP (admin.js)
-// Tách biệt hoàn toàn khỏi index.html để giữ mã nguồn gọn nhẹ & dễ bảo trì
+// BẮT THÚ VƯƠNG - MODULE QUẢN TRỊ VIÊN CAO CẤP (admin.js - Bản Fix Scope)
 // ============================================================================
 
 (function () {
@@ -11,7 +10,6 @@
         return ADMIN_ACCOUNTS.some(id => id.toLowerCase() === u.toLowerCase());
     }
 
-    // Tự động gắn hoặc gỡ nút [👑 GM] tùy theo tài khoản đang đăng nhập
     function syncAdminUiButton() {
         const isAdmin = isCurrentUserAdmin();
         let homeBtn = document.getElementById('btn-admin-home');
@@ -47,11 +45,10 @@
     setInterval(syncAdminUiButton, 2000);
     window.addEventListener('load', syncAdminUiButton);
 
-    // Dựng đối tượng linh thú tùy chỉnh chuẩn dữ liệu game
     function buildAdminCustomPet(name, rarityIdx, level, customElement, customTraitType) {
-        const monsters = window.allMonsters || [];
-        const rarityList = window.rarities || [];
-        const traitsList = window.possibleTraits || [];
+        const monsters = typeof allMonsters !== 'undefined' ? allMonsters : [];
+        const rarityList = typeof rarities !== 'undefined' ? rarities : [];
+        const traitsList = typeof possibleTraits !== 'undefined' ? possibleTraits : [];
 
         const base = monsters.find(m => m.name === name) || monsters[0] || {
             id: 101, name: 'Gà Lửa', emoji: '🐔', element: 'Hoa', hp: 110, maxHp: 110, atk: 42, speed: 62
@@ -80,10 +77,9 @@
         };
         if (chosenTrait) raw.trait = { ...chosenTrait, chance: 35 };
 
-        return typeof window.sanitizePetsData === 'function' ? window.sanitizePetsData([raw])[0] : raw;
+        return typeof sanitizePetsData === 'function' ? sanitizePetsData([raw])[0] : raw;
     }
 
-    // Gửi gói quà Admin qua API Cloudflare Worker (/api/admin) cho người chơi khác
     async function sendAdminGiftToRemotePlayer(targetUsername, giftPayload) {
         const adminUser = localStorage.getItem('ar_cloud_user');
         const adminPin = localStorage.getItem('ar_cloud_pin');
@@ -100,18 +96,17 @@
             });
             const data = await res.json();
             if (!data.ok) {
-                alert('❌ Lỗi gửi cho người chơi: ' + (data.error || 'Không tìm thấy ID người nhận!'));
+                alert('❌ Lỗi gửi cho người chơi: ' + (data.error || 'Chưa cấu hình API /api/admin trên Worker!'));
                 return false;
             }
             alert(`✅ Đã gửi thành công tới kho của người chơi [${targetUsername}]!`);
             return true;
         } catch (err) {
-            alert('❌ Lỗi kết nối máy chủ Admin: ' + err.message);
+            alert('❌ Lỗi kết nối máy chủ Admin (kiểm tra lại endpoint /api/admin trên Worker): ' + err.message);
             return false;
         }
     }
 
-    // Mở giao diện Bảng Điều Khiển Admin
     window.openAdminGmModal = function () {
         if (!isCurrentUserAdmin()) {
             alert('⛔ Bạn không có quyền truy cập Bảng Điều Khiển Admin!');
@@ -123,15 +118,19 @@
         if (!modal || !content) return;
         modal.classList.remove('hidden');
 
-        const monsterOptions = (window.allMonsters || []).map(m =>
+        const monsters = typeof allMonsters !== 'undefined' ? allMonsters : [];
+        const rarityList = typeof rarities !== 'undefined' ? rarities : [];
+        const traitsList = typeof possibleTraits !== 'undefined' ? possibleTraits : [];
+
+        const monsterOptions = monsters.map(m =>
             `<option value="${m.name}">${m.emoji} ${m.name} (Hệ ${m.element})</option>`
         ).join('');
 
-        const rarityOptions = (window.rarities || []).map((r, idx) =>
+        const rarityOptions = rarityList.map((r, idx) =>
             `<option value="${idx}">${r.badge} ${r.name} (x${r.statMultiplier})</option>`
         ).join('');
 
-        const traitOptions = (window.possibleTraits || []).map(t =>
+        const traitOptions = traitsList.map(t =>
             `<option value="${t.type}">${t.icon} - ${t.name}</option>`
         ).join('');
 
@@ -226,10 +225,10 @@
         const currentUser = (localStorage.getItem('ar_cloud_user') || '').toLowerCase();
 
         if (!targetUser || targetUser.toLowerCase() === currentUser) {
-            if (window.team && window.team.length < 3) window.team.push(newPet);
-            else if (window.farm) window.farm.push(newPet);
-            if (typeof window.saveGameData === 'function') window.saveGameData();
-            if (typeof window.updateTeamCount === 'function') window.updateTeamCount();
+            if (typeof team !== 'undefined' && team.length < 3) team.push(newPet);
+            else if (typeof farm !== 'undefined') farm.push(newPet);
+            if (typeof saveGameData === 'function') saveGameData();
+            if (typeof updateTeamCount === 'function') updateTeamCount();
             alert(`🎉 Admin đã tạo thành công [${newPet.rarity.badge} ${newPet.name} Lv.${newPet.level}] vào kho của bạn!`);
         } else {
             await sendAdminGiftToRemotePlayer(targetUser, { type: 'pet', pet: newPet });
@@ -253,8 +252,8 @@
 
         const currentUser = (localStorage.getItem('ar_cloud_user') || '').toLowerCase();
         if (!targetUser || targetUser.toLowerCase() === currentUser) {
-            if (window.eggs) window.eggs.push(newEgg);
-            if (typeof window.saveGameData === 'function') window.saveGameData();
+            if (typeof eggs !== 'undefined') eggs.push(newEgg);
+            if (typeof saveGameData === 'function') saveGameData();
             alert(`🥚 Đã tạo [${newEgg.name}] (${newEgg.rarity.badge}) sẵn sàng ấp nở!`);
         } else {
             await sendAdminGiftToRemotePlayer(targetUser, { type: 'egg', egg: newEgg });
@@ -268,9 +267,9 @@
         const currentUser = (localStorage.getItem('ar_cloud_user') || '').toLowerCase();
 
         if (!targetUser || targetUser.toLowerCase() === currentUser) {
-            window.playerCoins = (window.playerCoins || 0) + coins;
-            window.playerDiamonds = (window.playerDiamonds || 0) + diamonds;
-            if (typeof window.saveGameData === 'function') window.saveGameData();
+            if (typeof playerCoins !== 'undefined') playerCoins += coins;
+            if (typeof playerDiamonds !== 'undefined') playerDiamonds += diamonds;
+            if (typeof saveGameData === 'function') saveGameData();
             alert(`💰 Đã cộng +${coins.toLocaleString()}🪙 và +${diamonds.toLocaleString()}💎 cho tài khoản của bạn!`);
         } else {
             await sendAdminGiftToRemotePlayer(targetUser, { type: 'currency', coins, diamonds });
@@ -278,9 +277,12 @@
     };
 
     window.adminForceSpawnWorldBoss = function () {
+        if (typeof isWorldBossActiveNow !== 'undefined') {
+            isWorldBossActiveNow = function () { return true; };
+        }
         window.isWorldBossActiveNow = function () { return true; };
-        if (typeof window.renderWorldBossMarkersOnMap === 'function') {
-            window.renderWorldBossMarkersOnMap();
+        if (typeof renderWorldBossMarkersOnMap === 'function') {
+            renderWorldBossMarkersOnMap();
         }
         if (typeof window.sendWorldChat === 'function') {
             window.sendWorldChat('🚨 [SỰ KIỆN ADMIN] Boss Thế Giới 3 Miền vừa được triệu hồi khẩn cấp trên bản đồ!', true);
@@ -289,11 +291,11 @@
     };
 
     window.adminResetWorldBossHp = function () {
-        if (typeof window.wbState !== 'undefined') {
-            const lv = window.bossLevel || 1;
-            window.wbState.maxHp = 5000 + lv * 3000;
-            window.wbState.hp = window.wbState.maxHp;
-            alert(`⚡ Đã hồi đầy ${window.wbState.maxHp.toLocaleString()} HP cho Boss Thế Giới!`);
+        if (typeof wbState !== 'undefined') {
+            const lv = typeof bossLevel !== 'undefined' ? bossLevel : 1;
+            wbState.maxHp = 5000 + lv * 3000;
+            wbState.hp = wbState.maxHp;
+            alert(`⚡ Đã hồi đầy ${wbState.maxHp.toLocaleString()} HP cho Boss Thế Giới!`);
         }
     };
 })();
