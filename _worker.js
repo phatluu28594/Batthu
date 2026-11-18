@@ -5,6 +5,16 @@ function jsonResponse(data, status = 200) {
     });
 }
 
+function getCurrentWeekKey() {
+    const now = new Date(Date.now() + 7 * 3600 * 1000); // Giờ Việt Nam (UTC+7)
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
@@ -50,7 +60,7 @@ export default {
                     if (cleanUser.length < 3 || cleanUser.length > 16) {
                         return jsonResponse({ ok: false, error: "ID Game phải từ 3 đến 16 ký tự!" }, 400);
                     }
-                    if (!/^\d{8}$/.test(pin || "")) {
+                    if (!/^\\d{8}$/.test(pin || "")) {
                         return jsonResponse({ ok: false, error: "Mã PIN phải gồm đúng 8 chữ số!" }, 400);
                     }
                     const existing = await db.prepare("SELECT username FROM players WHERE LOWER(username) = LOWER(?)").bind(cleanUser).first();
@@ -495,6 +505,235 @@ export default {
                 return jsonResponse({ ok: true });
             } catch (err) {
                 return jsonResponse({ ok: false, error: "Lỗi Admin API: " + err.message }, 500);
+            }
+        }
+
+        // ==========================================
+        // API 7: ĐẤU TRƯỜNG PVP DANH VỌNG & KHIÊU CHIẾN SINH TỬ (/api/pvp)
+        // ==========================================
+        if (url.pathname === "/api/pvp") {
+            try {
+                if (!db) return jsonResponse({ ok: false, error: "Chưa kết nối D1!" }, 500);
+
+                await db.batch([
+                    db.prepare(`
+                        CREATE TABLE IF NOT EXISTS pvp_leaderboard (
+                            username TEXT NOT NULL,
+                            week_key TEXT NOT NULL,
+                            points INTEGER NOT NULL DEFAULT 1000,
+                            wins INTEGER NOT NULL DEFAULT 0,
+                            losses INTEGER NOT NULL DEFAULT 0,
+                            lead_pet TEXT,
+                            updated_at INTEGER NOT NULL,
+                            PRIMARY KEY (username, week_key)
+                        )
+                    `),
+                    db.prepare(`
+                        CREATE TABLE IF NOT EXISTS pvp_duels (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            challenger TEXT NOT NULL,
+                            defender TEXT NOT NULL,
+                            challenger_pet TEXT NOT NULL,
+                            defender_pet TEXT,
+                            status TEXT NOT NULL DEFAULT 'pending',
+                            seed INTEGER NOT NULL,
+                            winner TEXT,
+                            created_at INTEGER NOT NULL,
+                            updated_at INTEGER NOT NULL
+                        )
+                    `),
+                    db.prepare(`CREATE INDEX IF NOT EXISTS idx_pvp_duel_def ON pvp_duels(defender, status)`),
+                    db.prepare(`CREATE INDEX IF NOT EXISTS idx_pvp_duel_chal ON pvp_duels(challenger, status)`)
+                ]);
+
+                const weekKey = getCurrentWeekKey();
+
+                // GET: Lấy BXH Tuần + Điểm cá nhân + Kiểm tra lời mời/trận Khiêu Chiến Sinh Tử
+                if (request.method === "GET") {
+                    const me = String(url.searchParams.get("u") || "").trim();
+
+                    const { results: topRows } = await db.prepare(`
+                        SELECT username, points, wins, losses, lead_pet
+                        FROM pvp_leaderboard
+                        WHERE week_key = ?
+                        ORDER BY points DESC, wins DESC
+                        LIMIT 20
+                    `).bind(weekKey).all();
+
+                    let myRank = { points: 1000, wins: 0, losses: 0 };
+                    let incomingDuels = [];
+                    let activeDuel = null;
+
+                    if (me) {
+                        const mine = await db.prepare(`
+                            SELECT points, wins, losses FROM pvp_leaderboard
+                            WHERE LOWER(username) = LOWER(?) AND week_key = ?
+                        `).bind(me, weekKey).first();
+                        if (mine) myRank = mine;
+
+                        const now = Date.now();
+                        // Lời mời khiêu chiến sinh tử gửi đến mình (còn hiệu lực trong 60 giây)
+                        const { results: inc } = await db.prepare(`
+                            SELECT id, challenger, defender, challenger_pet, status, seed, created_at
+                            FROM pvp_duels
+                            WHERE LOWER(defender) = LOWER(?) AND status = 'pending' AND created_at >= ?
+                            ORDER BY id DESC LIMIT 5
+                        `).bind(me, now - 60000).all();
+                        incomingDuels = inc || [];
+
+                        // Trận khiêu chiến sinh tử vừa được chấp nhận (dành cho bên thách đấu nhận tín hiệu vào trận)
+                        const acc = await db.prepare(`
+                            SELECT id, challenger, defender, challenger_pet, defender_pet, status, seed, updated_at
+                            FROM pvp_duels
+                            WHERE (LOWER(challenger) = LOWER(?) OR LOWER(defender) = LOWER(?))
+                              AND status = 'accepted' AND updated_at >= ?
+                            ORDER BY id DESC LIMIT 1
+                        `).bind(me, me, now - 30000).first();
+                        if (acc) activeDuel = acc;
+                    }
+
+                    return jsonResponse({
+                        ok: true,
+                        weekKey,
+                        leaderboard: topRows || [],
+                        myRank,
+                        incomingDuels,
+                        activeDuel
+                    });
+                }
+
+                if (request.method === "POST") {
+                    const body = await request.json();
+                    const action = String(body.action || "");
+                    const me = String(body.username || "").trim();
+
+                    // 1. Tìm đối thủ thật cho Đấu Trường Danh Vọng 1vs1
+                    if (action === "find_rank_opponent") {
+                        const { results: candidates } = await db.prepare(`
+                            SELECT username, game_data FROM players
+                            WHERE LOWER(username) != LOWER(?) AND game_data IS NOT NULL AND game_data != ''
+                            ORDER BY updated_at DESC LIMIT 30
+                        `).bind(me).all();
+
+                        const validOpponents = [];
+                        for (const row of (candidates || [])) {
+                            try {
+                                const gd = JSON.parse(row.game_data || "{}");
+                                const pool = [...(gd.team || []), ...(gd.farm || [])].filter(p => p && p.name && p.maxHp);
+                                if (pool.length > 0) {
+                                    // Chọn thú mạnh nhất của đối thủ
+                                    pool.sort((a, b) => ((b.atk || 0) + (b.maxHp || 0)) - ((a.atk || 0) + (a.maxHp || 0)));
+                                    validOpponents.push({ username: row.username, pet: pool[0] });
+                                }
+                            } catch (e) {}
+                        }
+
+                        if (validOpponents.length === 0) {
+                            return jsonResponse({ ok: false, error: "Chưa tìm thấy Thợ Săn nào khác có linh thú trên máy chủ!" }, 404);
+                        }
+
+                        const picked = validOpponents[Math.floor(Math.random() * validOpponents.length)];
+                        const seed = Math.floor(Math.random() * 2147483646) + 1;
+                        return jsonResponse({ ok: true, opponent: picked, seed });
+                    }
+
+                    // 2. Cập nhật kết quả Đấu Trường Danh Vọng & BXH Tuần
+                    if (action === "report_rank_result") {
+                        const isWin = !!body.isWin;
+                        const leadPet = String(body.leadPet || "").slice(0, 60);
+                        const delta = isWin ? 25 : -15;
+
+                        const existing = await db.prepare(`
+                            SELECT points, wins, losses FROM pvp_leaderboard
+                            WHERE username = ? AND week_key = ?
+                        `).bind(me, weekKey).first();
+
+                        const newPoints = Math.max(0, (existing ? existing.points : 1000) + delta);
+                        const newWins = (existing ? existing.wins : 0) + (isWin ? 1 : 0);
+                        const newLosses = (existing ? existing.losses : 0) + (isWin ? 0 : 1);
+
+                        await db.prepare(`
+                            INSERT INTO pvp_leaderboard (username, week_key, points, wins, losses, lead_pet, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            ON CONFLICT(username, week_key) DO UPDATE SET
+                                points = excluded.points,
+                                wins = excluded.wins,
+                                losses = excluded.losses,
+                                lead_pet = excluded.lead_pet,
+                                updated_at = excluded.updated_at
+                        `).bind(me, weekKey, newPoints, newWins, newLosses, leadPet, Date.now()).run();
+
+                        return jsonResponse({ ok: true, points: newPoints, delta, wins: newWins, losses: newLosses });
+                    }
+
+                    // 3. Gửi lời mời Khiêu Chiến Sinh Tử qua Avatar / Bạn bè
+                    if (action === "duel_challenge") {
+                        const target = String(body.target || "").trim();
+                        const pet = body.pet;
+                        if (!me || !target || me.toLowerCase() === target.toLowerCase() || !pet) {
+                            return jsonResponse({ ok: false, error: "Thông tin khiêu chiến không hợp lệ!" }, 400);
+                        }
+
+                        const targetExists = await db.prepare("SELECT username FROM players WHERE LOWER(username) = LOWER(?)")
+                            .bind(target).first();
+                        if (!targetExists) {
+                            return jsonResponse({ ok: false, error: `Không tìm thấy người chơi [${target}]!` }, 404);
+                        }
+
+                        const now = Date.now();
+                        const seed = Math.floor(Math.random() * 2147483646) + 1;
+                        const res = await db.prepare(`
+                            INSERT INTO pvp_duels (challenger, defender, challenger_pet, status, seed, created_at, updated_at)
+                            VALUES (?, ?, ?, 'pending', ?, ?, ?)
+                        `).bind(me, targetExists.username, JSON.stringify(pet), seed, now, now).run();
+
+                        return jsonResponse({ ok: true, duelId: res.meta?.last_row_id, seed });
+                    }
+
+                    // 4. Bên B Chấp Nhận Khiêu Chiến Sinh Tử
+                    if (action === "duel_accept") {
+                        const duelId = Number(body.duelId);
+                        const pet = body.pet;
+                        if (!duelId || !pet) return jsonResponse({ ok: false, error: "Thiếu dữ liệu thú xuất chiến!" }, 400);
+
+                        const duel = await db.prepare("SELECT * FROM pvp_duels WHERE id = ? AND status = 'pending'")
+                            .bind(duelId).first();
+                        if (!duel) {
+                            return jsonResponse({ ok: false, error: "Lời khiêu chiến đã hết hạn hoặc bị hủy!" }, 404);
+                        }
+
+                        const now = Date.now();
+                        await db.prepare(`
+                            UPDATE pvp_duels
+                            SET defender_pet = ?, status = 'accepted', updated_at = ?
+                            WHERE id = ?
+                        `).bind(JSON.stringify(pet), now, duelId).run();
+
+                        const updated = await db.prepare("SELECT * FROM pvp_duels WHERE id = ?").bind(duelId).first();
+                        return jsonResponse({ ok: true, duel: updated });
+                    }
+
+                    // 5. Từ chối hoặc Hủy Khiêu Chiến Sinh Tử
+                    if (action === "duel_decline") {
+                        const duelId = Number(body.duelId);
+                        await db.prepare("UPDATE pvp_duels SET status = 'declined', updated_at = ? WHERE id = ?")
+                            .bind(Date.now(), duelId).run();
+                        return jsonResponse({ ok: true });
+                    }
+
+                    // 6. Chốt kết quả Khiêu Chiến Sinh Tử (Đánh dấu hoàn thành để không chiếu lại lần 2)
+                    if (action === "duel_finish") {
+                        const duelId = Number(body.duelId);
+                        const winner = String(body.winner || "");
+                        await db.prepare("UPDATE pvp_duels SET status = 'finished', winner = ?, updated_at = ? WHERE id = ?")
+                            .bind(winner, Date.now(), duelId).run();
+                        return jsonResponse({ ok: true });
+                    }
+
+                    return jsonResponse({ ok: false, error: "Lệnh PvP không hợp lệ!" }, 400);
+                }
+            } catch (err) {
+                return jsonResponse({ ok: false, error: "Lỗi PvP API: " + err.message }, 500);
             }
         }
 
