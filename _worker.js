@@ -97,6 +97,7 @@ export default {
                 }
 
                 if (action === "sync") {
+                    // 1. Kiểm tra tài khoản trong bảng 'players' với cột 'game_data'
                     const existing = await db.prepare(
                         "SELECT game_data FROM players WHERE LOWER(username) = LOWER(?) AND pin = ?"
                     ).bind(cleanUser, pin).first();
@@ -105,11 +106,15 @@ export default {
                         return jsonResponse({ ok: false, error: "Sai tài khoản hoặc mã PIN!" }, 401);
                     }
 
+                    // 2. Chuyển object gameData thành chuỗi JSON an toàn
                     const saveDataStr = JSON.stringify(gameData || {});
+
+                    // Nếu dữ liệu không thay đổi thì bỏ qua để tiết kiệm lượt ghi D1
                     if (existing.game_data === saveDataStr) {
                         return jsonResponse({ ok: true, skipped: true });
                     }
 
+                    // 3. Cập nhật dữ liệu mới vào cột 'game_data'
                     await db.prepare(
                         "UPDATE players SET game_data = ?, updated_at = ? WHERE LOWER(username) = LOWER(?) AND pin = ?"
                     ).bind(saveDataStr, Date.now(), cleanUser, pin).run();
