@@ -4,7 +4,7 @@
 // ============================================================================
 
 (function () {
-    const ADMIN_ACCOUNTS = ['AdminPhat', 'PhatLuu28'];
+    const ADMIN_ACCOUNTS = ['GiaPhat28594', 'ThuyHan171097'];
 
     function isCurrentUserAdmin() {
         const u = (localStorage.getItem('ar_cloud_user') || '').trim();
