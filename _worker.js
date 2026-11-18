@@ -28,6 +28,16 @@ export default {
                     )
                 `).run();
 
+                // Tự động bổ sung cột nếu bảng players được tạo từ phiên bản cũ bị thiếu cột
+                const alterQueries = [
+                    "ALTER TABLE players ADD COLUMN gender TEXT DEFAULT 'Nam'",
+                    "ALTER TABLE players ADD COLUMN session_token TEXT",
+                    "ALTER TABLE players ADD COLUMN game_data TEXT",
+                    "ALTER TABLE players ADD COLUMN updated_at INTEGER"
+                ];
+                for (const sql of alterQueries) {
+                    try { await db.prepare(sql).run(); } catch (e) {}
+                }
                 const body = await request.json();
                 const { action, username, pin, gender, sessionToken, gameData } = body;
 
