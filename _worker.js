@@ -140,6 +140,18 @@ export default {
             try {
                 if (!db) return jsonResponse({ ok: false, error: "Chưa kết nối D1!" }, 500);
 
+                await db.prepare(`
+                    CREATE TABLE IF NOT EXISTS world_chat (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        sender TEXT,
+                        gender TEXT DEFAULT 'Nam',
+                        pet_info TEXT DEFAULT '',
+                        text TEXT NOT NULL,
+                        is_system INTEGER DEFAULT 0,
+                        created_at INTEGER NOT NULL
+                    )
+                `).run();
+
                 if (request.method === "GET") {
                     const { results } = await db.prepare(
                         "SELECT id, sender, gender, pet_info, text, is_system, created_at FROM world_chat ORDER BY id DESC LIMIT 25"
@@ -316,6 +328,18 @@ export default {
         // ==========================================
         if (url.pathname === "/api/pm") {
             try {
+                if (!db) return jsonResponse({ ok: false, error: "Chưa kết nối D1!" }, 500);
+
+                await db.prepare(`
+                    CREATE TABLE IF NOT EXISTS private_messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        sender TEXT NOT NULL,
+                        receiver TEXT NOT NULL,
+                        text TEXT NOT NULL,
+                        created_at INTEGER NOT NULL
+                    )
+                `).run();
+
                 if (request.method === "GET") {
                     const mode = url.searchParams.get("mode");
 
@@ -796,7 +820,9 @@ export default {
                         await db.prepare("UPDATE pvp_duels SET status = 'finished', winner = ?, updated_at = ? WHERE id = ?")
                             .bind(winner, Date.now(), duelId).run();
                         return jsonResponse({ ok: true });
-                         return jsonResponse({ ok: false, error: "Lệnh PvP không hợp lệ!" }, 400);
+                    }
+
+                    return jsonResponse({ ok: false, error: "Lệnh PvP không hợp lệ!" }, 400);
                 }
             } catch (err) {
                 return jsonResponse({ ok: false, error: "Lỗi PvP API: " + err.message }, 500);
@@ -826,11 +852,38 @@ export default {
                     const { results } = await db.prepare(
                         "SELECT region_key, active, boss_name, hp, max_hp, opened_by, updated_at FROM world_boss_state"
                     ).all();
-                    return jsonResponse({ ok: true, bosses: results || [] });
+                    return new Response(JSON.stringify({ ok: true, bosses: results || [] }), {
+                        status: 200,
+                        headers: {
+                            "Content-Type": "application/json; charset=utf-8",
+                            "Cache-Control": "no-store, no-cache, must-revalidate"
+                        }
+                    });
                 }
 
                 if (request.method === "POST") {
                     const body = await request.json();
+
+                    // Người chơi báo cáo sát thương lên Boss Thế Giới
+                    if (body.action === "damage") {
+                        const regionKey = String(body.regionKey || "").trim();
+                        const dmg = Math.max(0, Math.floor(Number(body.damage) || 0));
+                        if (regionKey && dmg > 0) {
+                            const row = await db.prepare("SELECT active, hp FROM world_boss_state WHERE region_key = ?")
+                                .bind(regionKey).first();
+                            if (row && Number(row.active) === 1) {
+                                const nextHp = Math.max(0, (Number(row.hp) || 0) - dmg);
+                                const nextActive = nextHp > 0 ? 1 : 0;
+                                await db.prepare("UPDATE world_boss_state SET hp = ?, active = ?, updated_at = ? WHERE region_key = ?")
+                                    .bind(nextHp, nextActive, Date.now(), regionKey).run();
+                            }
+                        }
+                        const { results } = await db.prepare(
+                            "SELECT region_key, active, boss_name, hp, max_hp, opened_by, updated_at FROM world_boss_state"
+                        ).all();
+                        return jsonResponse({ ok: true, bosses: results || [] });
+                    }
+
                     const adminUser = String(body.adminUser || "").trim();
                     const adminPin = String(body.adminPin || "").trim();
                     const ADMIN_LIST = ["GiaPhat28594", "ThuyHan171097"];
