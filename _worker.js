@@ -108,11 +108,15 @@ export default {
 
                 if (action === "sync") {
                     const existing = await db.prepare(
-                        "SELECT game_data FROM players WHERE LOWER(username) = LOWER(?) AND pin = ?"
+                        "SELECT session_token, game_data FROM players WHERE LOWER(username) = LOWER(?) AND pin = ?"
                     ).bind(cleanUser, pin).first();
 
                     if (!existing) {
                         return jsonResponse({ ok: false, error: "Sai tài khoản hoặc mã PIN!" }, 401);
+                    }
+
+                    if (sessionToken && existing.session_token && existing.session_token !== sessionToken) {
+                        return jsonResponse({ ok: false, code: "SESSION_EXPIRED", error: "Phiên đăng nhập đã hết hạn trên thiết bị này!" }, 401);
                     }
 
                     const saveDataStr = JSON.stringify(gameData || {});
@@ -125,6 +129,35 @@ export default {
                     ).bind(saveDataStr, Date.now(), cleanUser, pin).run();
 
                     return jsonResponse({ ok: true });
+                }
+
+                if (action === "pull") {
+                    const player = await db.prepare(
+                        "SELECT username, gender, session_token, game_data FROM players WHERE LOWER(username) = LOWER(?) AND pin = ?"
+                    ).bind(cleanUser, pin).first();
+
+                    if (!player) {
+                        return jsonResponse({ ok: false, error: "Không tìm thấy tài khoản!" }, 404);
+                    }
+                    if (sessionToken && player.session_token && player.session_token !== sessionToken) {
+                        return jsonResponse({ ok: false, code: "SESSION_EXPIRED" }, 401);
+                    }
+
+                    let parsedGameData = {};
+                    try { parsedGameData = JSON.parse(player.game_data || "{}"); } catch (e) {}
+
+                    return new Response(JSON.stringify({
+                        ok: true,
+                        username: player.username,
+                        gender: player.gender || "Nam",
+                        gameData: parsedGameData
+                    }), {
+                        status: 200,
+                        headers: {
+                            "Content-Type": "application/json; charset=utf-8",
+                            "Cache-Control": "no-store, no-cache, must-revalidate"
+                        }
+                    });
                 }
 
                 return jsonResponse({ ok: false, error: "Hành động không hợp lệ!" }, 400);

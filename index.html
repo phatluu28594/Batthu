@@ -3984,22 +3984,136 @@
                 let sessionCheckTimer = null;
                 let selectedGender = localStorage.getItem("ar_cloud_gender") || "Nam";
             
+                function resetLocalGameStateToDefault() {
+                    const GAME_DATA_KEYS = [
+                        'ar_team', 'ar_farm', 'ar_eggs', 'ar_coins', 'ar_diamonds',
+                        'ar_max_pet_capacity', 'ar_tower_floor', 'ar_boss_level', 'ar_steps',
+                        'ar_catch_stamina', 'ar_catch_stamina_time', 'ar_scan_stamina', 'ar_scan_stamina_time',
+                        'ar_training_poles', 'ar_resting_pets', 'ar_inventory', 'ar_quests', 'ar_last_pm_id'
+                    ];
+                    GAME_DATA_KEYS.forEach(k => localStorage.removeItem(k));
+
+                    team = [];
+                    farm = [];
+                    eggs = [];
+                    restingPets = [];
+                    trainingPoles = [null, null, null, null];
+                    playerCoins = 1500;
+                    playerDiamonds = 50;
+                    maxPetCapacity = 10;
+                    towerFloor = 1;
+                    bossLevel = 1;
+                    totalSteps = 0;
+                    catchStamina = 15;
+                    lastCatchStaminaTime = Date.now();
+                    scanStamina = 5;
+                    lastScanStaminaTime = Date.now();
+                    inventory = {
+                        food: 15, toy: 15, trainer: 10,
+                        stoneKim: 5, stoneMoc: 5, stoneThuy: 5, stoneHoa: 5, stoneTho: 5
+                    };
+                    dailyQuests = [
+                        { id: 1, title: 'Bắt 3 linh thú bất kỳ', target: 3, progress: 0, reward: 200, claimed: false },
+                        { id: 2, title: 'Thắng 2 trận đấu trường', target: 2, progress: 0, reward: 300, claimed: false },
+                        { id: 3, title: 'Cho linh thú ăn 2 lần', target: 2, progress: 0, reward: 150, claimed: false }
+                    ];
+
+                    localStorage.setItem('ar_max_pet_capacity', maxPetCapacity);
+                    localStorage.setItem('ar_tower_floor', towerFloor);
+                    localStorage.setItem('ar_boss_level', bossLevel);
+                    localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+                    localStorage.setItem('ar_quests', JSON.stringify(dailyQuests));
+
+                    saveGameData();
+                    updateTeamCount();
+                    if (typeof renderFarmVisualPets === 'function') renderFarmVisualPets();
+                    if (window.updateHunterGpsAppearance) window.updateHunterGpsAppearance();
+                }
+
                 function handleSessionExpired() {
                     if (sessionCheckTimer) {
                         clearInterval(sessionCheckTimer);
                         sessionCheckTimer = null;
                     }
-                    if (chatPollTimer) {
-                        clearInterval(chatPollTimer);
-                        chatPollTimer = null;
+                    if (autoCloudSyncTimer) {
+                        clearInterval(autoCloudSyncTimer);
+                        autoCloudSyncTimer = null;
                     }
                     localStorage.removeItem("ar_cloud_user");
                     localStorage.removeItem("ar_cloud_pin");
                     localStorage.removeItem("ar_cloud_gender");
                     localStorage.removeItem("ar_cloud_session");
-            
-                    alert("⚠️ Tài khoản của bạn vừa được đăng nhập trên một thiết bị khác!\nThiết bị này sẽ tự động đăng xuất để bảo vệ dữ liệu.");
+
+                    // Xóa sạch dữ liệu tài khoản cũ trên thiết bị bị đá văng
+                    resetLocalGameStateToDefault();
+
+                    alert("⚠️ Tài khoản của bạn vừa được đăng nhập trên một thiết bị khác!\nThiết bị này đã tự động đăng xuất và xóa dữ liệu phiên cũ.");
                     openCloudAccountModal(true);
+                }
+
+                let autoCloudSyncTimer = null;
+                let lastSyncedSnapshotStr = "";
+
+                async function silentCloudSync(force = false) {
+                    const username = localStorage.getItem("ar_cloud_user");
+                    const pin = localStorage.getItem("ar_cloud_pin");
+                    const currentToken = localStorage.getItem("ar_cloud_session");
+                    if (!username || !pin || !currentToken) return;
+
+                    const stateObj = packCurrentGameState();
+                    const snapStr = JSON.stringify(stateObj);
+                    if (!force && snapStr === lastSyncedSnapshotStr) return;
+
+                    try {
+                        const res = await fetch("/api/auth", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                action: "sync",
+                                username: username,
+                                pin: pin,
+                                sessionToken: currentToken,
+                                gameData: stateObj
+                            })
+                        });
+                        const result = await res.json();
+                        if (result.code === "SESSION_EXPIRED") {
+                            handleSessionExpired();
+                            return;
+                        }
+                        if (result.ok) {
+                            lastSyncedSnapshotStr = snapStr;
+                        }
+                    } catch (e) {}
+                }
+
+                async function pullLatestCloudStateOnBoot() {
+                    const username = localStorage.getItem("ar_cloud_user");
+                    const pin = localStorage.getItem("ar_cloud_pin");
+                    const currentToken = localStorage.getItem("ar_cloud_session");
+                    if (!username || !pin || !currentToken) return;
+
+                    try {
+                        const res = await fetch("/api/auth", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                action: "pull",
+                                username: username,
+                                pin: pin,
+                                sessionToken: currentToken
+                            })
+                        });
+                        const result = await res.json();
+                        if (result.code === "SESSION_EXPIRED") {
+                            handleSessionExpired();
+                            return;
+                        }
+                        if (result.ok && result.gameData) {
+                            applyCloudGameState(result.gameData);
+                            lastSyncedSnapshotStr = JSON.stringify(packCurrentGameState());
+                        }
+                    } catch (e) {}
                 }
             
                 // Kiểm tra định kỳ phiên đăng nhập để đá văng máy cũ nếu có máy mới đăng nhập
@@ -4007,6 +4121,10 @@
                     if (sessionCheckTimer) {
                         clearInterval(sessionCheckTimer);
                         sessionCheckTimer = null;
+                    }
+                    if (autoCloudSyncTimer) {
+                        clearInterval(autoCloudSyncTimer);
+                        autoCloudSyncTimer = null;
                     }
                     if (!username) return;
             
@@ -4032,7 +4150,12 @@
                         } catch (e) {
                             // Bỏ qua lỗi mạng tạm thời
                         }
-                    }, 12000); // Kiểm tra mỗi 12 giây
+                    }, 10000); // Kiểm tra mỗi 10 giây
+
+                    // Tự động đồng bộ tiến trình lên Cloud mỗi 20 giây để dữ liệu 2 máy luôn thống nhất
+                    autoCloudSyncTimer = setInterval(() => {
+                        silentCloudSync(false);
+                    }, 20000);
                 };
             
                 window.selectAccountGender = function(gender) {
@@ -4118,7 +4241,7 @@
             
                     ${savedUser ? `
                     <button onclick="logoutCloudAccount()" class="w-full mt-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 py-2 rounded-xl font-bold text-[11px] text-red-300 cursor-pointer">
-                        🚪 Đăng Xuất / Đổi Tài Khoản Khác
+                        🚪 Đăng Xuất & Xóa Dữ Liệu Trên Máy Này
                     </button>` : ''}`;
             
                     if (savedUser) selectAccountGender(selectedGender);
@@ -4175,6 +4298,10 @@
                     if (!/^\d{8}$/.test(pin)) return alert("⚠️ Mã PIN bắt buộc phải gồm đúng 8 chữ số (0-9)!");
             
                     try {
+                        // Reset sạch dữ liệu cũ trên máy trước khi tạo tài khoản mới
+                        resetLocalGameStateToDefault();
+                        const initialGameData = packCurrentGameState();
+
                         const res = await fetch("/api/auth", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -4183,7 +4310,7 @@
                                 username: username,
                                 pin: pin,
                                 gender: selectedGender,
-                                gameData: packCurrentGameState()
+                                gameData: initialGameData
                             })
                         });
                         const result = await res.json();
@@ -4194,6 +4321,7 @@
                         localStorage.setItem("ar_cloud_gender", result.gender);
                         if (window.updateHunterGpsAppearance) window.updateHunterGpsAppearance();
                         localStorage.setItem("ar_cloud_session", result.sessionToken);
+                        lastSyncedSnapshotStr = JSON.stringify(initialGameData);
             
                         startSessionGuard(result.username);
                         closeModal();
@@ -4203,7 +4331,7 @@
                     }
                 };
             
-                // ĐĂNG NHẬP TÀI KHOẢN ĐÃ CÓ (TỰ ĐỘNG ĐÁ MÁY CŨ)
+                // ĐĂNG NHẬP TÀI KHOẢN ĐÃ CÓ (TỰ ĐỘNG ĐÁ MÁY CŨ & GHI ĐÈ SẠCH DỮ LIỆU LOCAL)
                 window.loginCloudAccount = async function() {
                     const username = document.getElementById("cloud-username-input")?.value.trim();
                     const pin = document.getElementById("cloud-pin-input")?.value.trim();
@@ -4223,7 +4351,9 @@
                         });
                         const result = await res.json();
                         if (!result.ok) return alert("❌ " + (result.error || "Sai thông tin đăng nhập!"));
-            
+
+                        // Xóa sạch dữ liệu cũ trên máy rồi nạp chuẩn 100% dữ liệu từ Cloud
+                        resetLocalGameStateToDefault();
                         applyCloudGameState(result.gameData);
             
                         localStorage.setItem("ar_cloud_user", result.username);
@@ -4231,6 +4361,7 @@
                         localStorage.setItem("ar_cloud_gender", result.gender || "Nam");
                         if (window.updateHunterGpsAppearance) window.updateHunterGpsAppearance();
                         localStorage.setItem("ar_cloud_session", result.sessionToken);
+                        lastSyncedSnapshotStr = JSON.stringify(packCurrentGameState());
             
                         startSessionGuard(result.username);
                         closeModal();
@@ -4251,6 +4382,7 @@
                     if (!username || !pin) return openCloudAccountModal();
             
                     try {
+                        const stateObj = packCurrentGameState();
                         const res = await fetch("/api/auth", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -4259,13 +4391,14 @@
                                 username: username,
                                 pin: pin,
                                 sessionToken: currentToken,
-                                gameData: packCurrentGameState()
+                                gameData: stateObj
                             })
                         });
                         const result = await res.json();
                         if (result.code === "SESSION_EXPIRED") return handleSessionExpired();
                         if (!result.ok) return alert("❌ " + (result.error || "Lỗi đồng bộ!"));
-            
+
+                        lastSyncedSnapshotStr = JSON.stringify(stateObj);
                         alert(`☁️ Đã sao lưu toàn bộ tiến trình của [${username}] lên Cloudflare!`);
                     } catch (err) {
                         alert("❌ Lỗi lưu dữ liệu: " + err.message);
@@ -4273,16 +4406,42 @@
                 };
             
                 window.logoutCloudAccount = function() {
-                    if (!confirm("Bạn có chắc muốn đăng xuất khỏi thiết bị này? (Dữ liệu trên mây vẫn được giữ nguyên)")) return;
-                    if (sessionCheckTimer) {
-                        clearInterval(sessionCheckTimer);
-                        sessionCheckTimer = null;
+                    const doLogout = async () => {
+                        const u = localStorage.getItem("ar_cloud_user");
+                        // Lưu dữ liệu lần cuối lên Cloud trước khi dọn sạch máy
+                        await silentCloudSync(true);
+
+                        if (sessionCheckTimer) {
+                            clearInterval(sessionCheckTimer);
+                            sessionCheckTimer = null;
+                        }
+                        if (autoCloudSyncTimer) {
+                            clearInterval(autoCloudSyncTimer);
+                            autoCloudSyncTimer = null;
+                        }
+                        if (typeof window.notifyPlayerOffline === 'function' && u) {
+                            window.notifyPlayerOffline(u);
+                        }
+
+                        localStorage.removeItem("ar_cloud_user");
+                        localStorage.removeItem("ar_cloud_pin");
+                        localStorage.removeItem("ar_cloud_gender");
+                        localStorage.removeItem("ar_cloud_session");
+                        lastSyncedSnapshotStr = "";
+
+                        // Xóa toàn bộ dữ liệu thú/túi/vàng của tài khoản vừa đăng xuất khỏi máy này
+                        resetLocalGameStateToDefault();
+                        openCloudAccountModal(true);
+                    };
+
+                    if (typeof showInGameConfirm === 'function') {
+                        showInGameConfirm(
+                            "🚪 Đăng xuất khỏi thiết bị này?\n(Dữ liệu đã được lưu trên mây, bộ nhớ trên máy này sẽ được làm sạch về mặc định)",
+                            doLogout
+                        );
+                    } else {
+                        doLogout();
                     }
-                    localStorage.removeItem("ar_cloud_user");
-                    localStorage.removeItem("ar_cloud_pin");
-                    localStorage.removeItem("ar_cloud_gender");
-                    localStorage.removeItem("ar_cloud_session");
-                    openCloudAccountModal(true);
                 };
             
                 // ==========================================
@@ -4452,6 +4611,7 @@
                     if (!existingUser) {
                         setTimeout(() => openCloudAccountModal(true), 500);
                     } else {
+                        pullLatestCloudStateOnBoot();
                         startSessionGuard(existingUser);
                     }
                     initFloatingWorldChat();
