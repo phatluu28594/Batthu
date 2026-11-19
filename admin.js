@@ -89,8 +89,12 @@
     }
 
     async function sendAdminGiftToRemotePlayer(targetUsername, giftPayload) {
-        const adminUser = localStorage.getItem('ar_cloud_user');
-        const adminPin = localStorage.getItem('ar_cloud_pin');
+        const adminUser = (localStorage.getItem('ar_cloud_user') || '').trim();
+        const adminPin = (localStorage.getItem('ar_cloud_pin') || '').trim();
+        if (!adminUser || !adminPin) {
+            alert('❌ Thiếu thông tin đăng nhập GM (ID hoặc mã PIN)! Hãy bấm nút ☁️ Nick để đăng nhập lại.');
+            return false;
+        }
         try {
             const res = await fetch('/api/admin', {
                 method: 'POST',
@@ -107,16 +111,125 @@
             try { data = JSON.parse(text); } catch (e) {}
 
             if (!res.ok || !data.ok) {
-                alert(`❌ Không gửi được cho [${targetUsername}]!\nLý do: ${data.error || 'Worker chưa có API /api/admin (Mã lỗi ' + res.status + ')'}`);
+                alert(`❌ Không gửi được cho [${targetUsername}]!\nLý do: ${data.error || 'Lỗi máy chủ (Mã ' + res.status + ')'}`);
                 return false;
             }
-            alert(`✅ Đã gửi thành công tới kho của người chơi [${targetUsername}]!`);
+            alert(`✅ Đã gửi quà thành công tới hộp thư của [${data.targetUser || targetUsername}]!\nNgười chơi sẽ tự động nhận ngay khi vào game hoặc sau vài giây.`);
             return true;
         } catch (err) {
             alert('❌ Lỗi kết nối máy chủ Admin: ' + err.message);
             return false;
         }
     }
+
+    // Tự động kiểm tra và nhận quà GM gửi tới cho tất cả người chơi
+    let isCheckingAdminGifts = false;
+    const claimedGiftIdCache = new Set();
+
+    window.checkAndClaimAdminGifts = async function () {
+        if (isCheckingAdminGifts) return;
+        const myUser = (localStorage.getItem('ar_cloud_user') || '').trim();
+        if (!myUser) return;
+
+        isCheckingAdminGifts = true;
+        try {
+            const res = await fetch('/api/admin?u=' + encodeURIComponent(myUser) + '&t=' + Date.now(), { cache: 'no-store' });
+            const data = await res.json();
+            if (!data.ok || !Array.isArray(data.gifts) || data.gifts.length === 0) {
+                return;
+            }
+
+            const newlyClaimedIds = [];
+            const summaryLines = [];
+
+            for (const row of data.gifts) {
+                if (!row || claimedGiftIdCache.has(row.id)) continue;
+                claimedGiftIdCache.add(row.id);
+
+                let gift = {};
+                try { gift = JSON.parse(row.gift_json || '{}'); } catch (e) {}
+
+                if (gift.type === 'pet' && gift.pet) {
+                    const sanitized = (typeof sanitizePetsData === 'function') ? sanitizePetsData([gift.pet])[0] : gift.pet;
+                    if (sanitized) {
+                        if (typeof ensurePetGears === 'function') ensurePetGears(sanitized);
+                        if (typeof farm !== 'undefined' && Array.isArray(farm)) {
+                            farm.push(sanitized);
+                        } else if (typeof team !== 'undefined' && Array.isArray(team)) {
+                            team.push(sanitized);
+                        }
+                        summaryLines.push(`🐾 Linh thú: [${sanitized.rarity?.badge || ''} ${sanitized.name} Lv.${sanitized.level || 1}] (đã vào Kho Trại Hộ)`);
+                    }
+                } else if (gift.type === 'egg' && gift.egg) {
+                    if (typeof eggs !== 'undefined' && Array.isArray(eggs)) {
+                        eggs.push(gift.egg);
+                    }
+                    summaryLines.push(`🥚 Trứng: [${gift.egg.name || 'Trứng Thần'}] (đã vào Khu Ấp Trứng)`);
+                } else if (gift.type === 'currency') {
+                    const c = Number(gift.coins) || 0;
+                    const d = Number(gift.diamonds) || 0;
+                    if (typeof playerCoins !== 'undefined') playerCoins += c;
+                    if (typeof playerDiamonds !== 'undefined') playerDiamonds += d;
+                    if (c > 0) summaryLines.push(`🪙 +${c.toLocaleString()} Vàng`);
+                    if (d > 0) summaryLines.push(`💎 +${d.toLocaleString()} Kim Cương`);
+                } else if (gift.type === 'items' && gift.items && typeof inventory !== 'undefined') {
+                    for (const [k, qty] of Object.entries(gift.items)) {
+                        inventory[k] = (inventory[k] || 0) + (Number(qty) || 0);
+                    }
+                    localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+                    summaryLines.push(`🎒 +20 Đá Ngũ Hành các loại, +20 Vé Tập, Thức Ăn & Đồ Chơi`);
+                }
+
+                newlyClaimedIds.push(row.id);
+            }
+
+            if (newlyClaimedIds.length > 0) {
+                if (typeof saveGameData === 'function') saveGameData();
+                if (typeof updateTeamCount === 'function') updateTeamCount();
+
+                // Đánh dấu đã nhận trên Server trước, sau đó đồng bộ save game mới lên Cloud
+                await fetch('/api/admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'claim_gifts',
+                        username: myUser,
+                        giftIds: newlyClaimedIds
+                    })
+                }).catch(() => {});
+
+                if (typeof syncCurrentAccountToCloud === 'function') {
+                    // Đồng bộ ngầm không hiện popup lưu
+                    const pin = localStorage.getItem('ar_cloud_pin');
+                    const sessionToken = localStorage.getItem('ar_cloud_session');
+                    if (pin && typeof packCurrentGameState === 'function') {
+                        fetch('/api/auth', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'sync',
+                                username: myUser,
+                                pin: pin,
+                                sessionToken: sessionToken,
+                                gameData: packCurrentGameState()
+                            })
+                        }).catch(() => {});
+                    }
+                }
+
+                if (summaryLines.length > 0) {
+                    alert(`🎁 BẠN NHẬN ĐƯỢC QUÀ TỪ ADMIN (GM)!\n\n${summaryLines.join('\n')}`);
+                }
+            }
+        } catch (e) {
+        } finally {
+            isCheckingAdminGifts = false;
+        }
+    };
+
+    // Kiểm tra hộp thư quà GM ngay khi tải trang và định kỳ mỗi 8 giây
+    setTimeout(() => window.checkAndClaimAdminGifts(), 2000);
+    setInterval(() => window.checkAndClaimAdminGifts(), 8000);
 
     window.openAdminGmModal = function () {
         if (!isCurrentUserAdmin()) {
@@ -185,7 +298,7 @@
                     <span>💚 Gắn Kỹ năng: Hồi Phục Linh Hồn (Hồi x2 Dame)</span>
                 </label>
                 <button onclick="adminCreatePet()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg font-extrabold text-white cursor-pointer">
-                    ✨ Tạo Linh Thú Ngay
+                    ✨ Tạo / Gửi Linh Thú Ngay
                 </button>
             </div>
 
@@ -201,7 +314,7 @@
                     <span>💚 Thú nở từ trứng có Kỹ năng Hồi Máu (x2 Dame)</span>
                 </label>
                 <button onclick="adminCreateEgg()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-2 rounded-lg font-extrabold text-white cursor-pointer">
-                    🥚 Tạo Trứng Ngay (Sẵn sàng nở)
+                    🥚 Tạo / Gửi Trứng Ngay (Sẵn sàng nở)
                 </button>
             </div>
 
@@ -311,20 +424,32 @@
         }
     };
 
-    window.adminGrantStonesAndItems = function () {
-        if (typeof inventory !== 'undefined') {
-            inventory.food = (inventory.food || 0) + 20;
-            inventory.toy = (inventory.toy || 0) + 20;
-            inventory.trainer = (inventory.trainer || 0) + 20;
-            inventory.stoneKim = (inventory.stoneKim || 0) + 20;
-            inventory.stoneMoc = (inventory.stoneMoc || 0) + 20;
-            inventory.stoneThuy = (inventory.stoneThuy || 0) + 20;
-            inventory.stoneHoa = (inventory.stoneHoa || 0) + 20;
-            inventory.stoneTho = (inventory.stoneTho || 0) + 20;
-            localStorage.setItem('ar_inventory', JSON.stringify(inventory));
-            if (typeof saveGameData === 'function') saveGameData();
-            if (typeof syncCurrentAccountToCloud === 'function') syncCurrentAccountToCloud();
-            alert('💎 Đã cộng +20 Đá Ngũ Hành các loại, +20 Vé Tập Luyện, Thức Ăn & Đồ Chơi vào túi!');
+    window.adminGrantStonesAndItems = async function () {
+        const targetUser = document.getElementById('gm-target-user')?.value.trim();
+        const currentUser = (localStorage.getItem('ar_cloud_user') || '').toLowerCase();
+        const pack = {
+            food: 20,
+            toy: 20,
+            trainer: 20,
+            stoneKim: 20,
+            stoneMoc: 20,
+            stoneThuy: 20,
+            stoneHoa: 20,
+            stoneTho: 20
+        };
+
+        if (!targetUser || targetUser.toLowerCase() === currentUser) {
+            if (typeof inventory !== 'undefined') {
+                for (const [k, qty] of Object.entries(pack)) {
+                    inventory[k] = (inventory[k] || 0) + qty;
+                }
+                localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+                if (typeof saveGameData === 'function') saveGameData();
+                if (typeof syncCurrentAccountToCloud === 'function') syncCurrentAccountToCloud();
+                alert('💎 Đã cộng +20 Đá Ngũ Hành các loại, +20 Vé Tập Luyện, Thức Ăn & Đồ Chơi vào túi!');
+            }
+        } else {
+            await sendAdminGiftToRemotePlayer(targetUser, { type: 'items', items: pack });
         }
     };
 

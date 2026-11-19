@@ -4235,6 +4235,9 @@
                         startSessionGuard(result.username);
                         closeModal();
                         alert(`🎉 Chào mừng ${result.gender === 'Nữ' ? 'Nữ' : 'Nam'} Thợ Săn [${result.username}] trở lại!`);
+                        if (typeof window.checkAndClaimAdminGifts === 'function') {
+                            setTimeout(() => window.checkAndClaimAdminGifts(), 600);
+                        }
                     } catch (err) {
                         alert("❌ Lỗi đăng nhập: " + err.message);
                     }
@@ -5261,7 +5264,7 @@
             <button onclick="closeModal()" class="w-full bg-purple-600 hover:bg-purple-500 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">Đóng</button>`;
         };
     </script>
-    <script src="./admin.js?v=20261119"></script>
+    <script src="./admin.js?v=20261119b"></script>
     <script src="arena.js?v=20261119"></script>
     <script src="pvp.js"></script>
 </body>

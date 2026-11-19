@@ -548,53 +548,97 @@ export default {
         }
 
         // ==========================================
-        // API 6: BẢNG ĐIỀU KHIỂN QUẢN TRỊ VIÊN (/api/admin)
+        // API 6: BẢNG ĐIỀU KHIỂN QUẢN TRỊ VIÊN & HỘP THƯ QUÀ GM (/api/admin)
         // ==========================================
-        if (url.pathname === "/api/admin" && request.method === "POST") {
+        if (url.pathname === "/api/admin") {
             try {
                 if (!db) return jsonResponse({ ok: false, error: "Chưa kết nối D1!" }, 500);
 
-                const body = await request.json();
-                const adminUser = String(body.adminUser || "").trim();
-                const adminPin = String(body.adminPin || "").trim();
-                const targetUser = String(body.targetUser || "").trim();
-                const gift = body.gift || {};
+                await db.batch([
+                    db.prepare(`
+                        CREATE TABLE IF NOT EXISTS admin_gifts (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            target_user TEXT NOT NULL,
+                            sender_user TEXT NOT NULL,
+                            gift_json TEXT NOT NULL,
+                            claimed INTEGER NOT NULL DEFAULT 0,
+                            created_at INTEGER NOT NULL
+                        )
+                    `),
+                    db.prepare(`CREATE INDEX IF NOT EXISTS idx_admin_gifts_target ON admin_gifts(target_user, claimed)`)
+                ]);
 
-                const ADMIN_LIST = ["GiaPhat28594", "ThuyHan171097"];
-                if (!ADMIN_LIST.some(id => id.toLowerCase() === adminUser.toLowerCase())) {
-                    return jsonResponse({ ok: false, error: "Tài khoản không có quyền Admin!" }, 403);
+                // GET: Người chơi kiểm tra quà GM đang chờ nhận (không bị ghi đè khi sync)
+                if (request.method === "GET") {
+                    const me = String(url.searchParams.get("u") || "").trim();
+                    if (!me) return jsonResponse({ ok: false, error: "Thiếu tài khoản" }, 400);
+
+                    const { results } = await db.prepare(`
+                        SELECT id, sender_user, gift_json, created_at
+                        FROM admin_gifts
+                        WHERE LOWER(target_user) = LOWER(?) AND claimed = 0
+                        ORDER BY id ASC
+                        LIMIT 20
+                    `).bind(me).all();
+
+                    return new Response(JSON.stringify({ ok: true, gifts: results || [] }), {
+                        status: 200,
+                        headers: {
+                            "Content-Type": "application/json; charset=utf-8",
+                            "Cache-Control": "no-store, no-cache, must-revalidate"
+                        }
+                    });
                 }
 
-                const adminRow = await db.prepare("SELECT pin FROM players WHERE LOWER(username) = LOWER(?)")
-                    .bind(adminUser).first();
-                if (!adminRow || adminRow.pin !== adminPin) {
-                    return jsonResponse({ ok: false, error: "Sai mã PIN xác thực Admin!" }, 401);
+                if (request.method === "POST") {
+                    const body = await request.json();
+
+                    // Người chơi xác nhận đã nhận quà xong -> đánh dấu claimed = 1
+                    if (body.action === "claim_gifts") {
+                        const me = String(body.username || "").trim();
+                        const ids = Array.isArray(body.giftIds) ? body.giftIds.map(Number).filter(n => n > 0) : [];
+                        for (const gid of ids) {
+                            await db.prepare(
+                                "UPDATE admin_gifts SET claimed = 1 WHERE id = ? AND LOWER(target_user) = LOWER(?)"
+                            ).bind(gid, me).run();
+                        }
+                        return jsonResponse({ ok: true });
+                    }
+
+                    // GM gửi quà cho người chơi khác
+                    const adminUser = String(body.adminUser || "").trim();
+                    const adminPin = String(body.adminPin || "").trim();
+                    const targetUser = String(body.targetUser || "").trim();
+                    const gift = body.gift || {};
+
+                    const ADMIN_LIST = ["GiaPhat28594", "ThuyHan171097"];
+                    if (!ADMIN_LIST.some(id => id.toLowerCase() === adminUser.toLowerCase())) {
+                        return jsonResponse({ ok: false, error: "Tài khoản không có quyền Admin!" }, 403);
+                    }
+
+                    const adminRow = await db.prepare("SELECT pin FROM players WHERE LOWER(username) = LOWER(?)")
+                        .bind(adminUser).first();
+                    if (!adminRow || adminRow.pin !== adminPin) {
+                        return jsonResponse({ ok: false, error: "Sai mã PIN xác thực Admin!" }, 401);
+                    }
+
+                    if (!targetUser) {
+                        return jsonResponse({ ok: false, error: "Vui lòng nhập ID người nhận!" }, 400);
+                    }
+
+                    const targetRow = await db.prepare("SELECT username FROM players WHERE LOWER(username) = LOWER(?)")
+                        .bind(targetUser).first();
+                    if (!targetRow) {
+                        return jsonResponse({ ok: false, error: `Không tìm thấy người chơi [${targetUser}]!` }, 404);
+                    }
+
+                    await db.prepare(`
+                        INSERT INTO admin_gifts (target_user, sender_user, gift_json, claimed, created_at)
+                        VALUES (?, ?, ?, 0, ?)
+                    `).bind(targetRow.username, adminUser, JSON.stringify(gift), Date.now()).run();
+
+                    return jsonResponse({ ok: true, targetUser: targetRow.username });
                 }
-
-                const targetRow = await db.prepare("SELECT username, game_data FROM players WHERE LOWER(username) = LOWER(?)")
-                    .bind(targetUser).first();
-                if (!targetRow) {
-                    return jsonResponse({ ok: false, error: `Không tìm thấy người chơi [${targetUser}]!` }, 404);
-                }
-
-                let targetData = {};
-                try { targetData = JSON.parse(targetRow.game_data || "{}"); } catch (e) {}
-                targetData.farm = Array.isArray(targetData.farm) ? targetData.farm : [];
-                targetData.eggs = Array.isArray(targetData.eggs) ? targetData.eggs : [];
-
-                if (gift.type === "pet" && gift.pet) {
-                    targetData.farm.push(gift.pet);
-                } else if (gift.type === "egg" && gift.egg) {
-                    targetData.eggs.push(gift.egg);
-                } else if (gift.type === "currency") {
-                    targetData.coins = (targetData.coins || 0) + (Number(gift.coins) || 0);
-                    targetData.diamonds = (targetData.diamonds || 0) + (Number(gift.diamonds) || 0);
-                }
-
-                await db.prepare("UPDATE players SET game_data = ?, updated_at = ? WHERE username = ?")
-                    .bind(JSON.stringify(targetData), Date.now(), targetRow.username).run();
-
-                return jsonResponse({ ok: true });
             } catch (err) {
                 return jsonResponse({ ok: false, error: "Lỗi Admin API: " + err.message }, 500);
             }
