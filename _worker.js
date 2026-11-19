@@ -60,7 +60,7 @@ export default {
                     if (cleanUser.length < 3 || cleanUser.length > 16) {
                         return jsonResponse({ ok: false, error: "ID Game phải từ 3 đến 16 ký tự!" }, 400);
                     }
-                    if (!/^\\d{8}$/.test(pin || "")) {
+                    if (!/^[0-9]{8}$/.test(String(pin || "").trim())) {
                         return jsonResponse({ ok: false, error: "Mã PIN phải gồm đúng 8 chữ số!" }, 400);
                     }
                     const existing = await db.prepare("SELECT username FROM players WHERE LOWER(username) = LOWER(?)").bind(cleanUser).first();
