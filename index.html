@@ -5532,6 +5532,79 @@
             renderWorldBossLoop();
         };
 
+        // ==========================================
+        // NẠP HÌNH NỀN SẢNH BOSS & SPRITE NHÂN VẬT THỢ SĂN (NAM / NỮ)
+        // ==========================================
+        const wbBgImg = new Image();
+        wbBgImg.src = './battle-bg.webp'; // Anh có thể đổi thành './boss-lobby-bg.webp' nếu có ảnh nền sảnh riêng
+
+        const wbHunterSheets = {
+            Nam: { idle: new Image(), walk: new Image() },
+            Nữ:  { idle: new Image(), walk: new Image() }
+        };
+        wbHunterSheets.Nam.idle.src = 'assets/char_nam_idle.webp';
+        wbHunterSheets.Nam.walk.src = 'assets/char_nam_walk.webp';
+        wbHunterSheets.Nữ.idle.src  = 'assets/char_nu_idle.webp';
+        wbHunterSheets.Nữ.walk.src  = 'assets/char_nu_walk.webp';
+
+        const WB_DIR_ROW = { down: 0, left: 1, right: 2, up: 3 };
+
+        function drawWorldBossHunter(ctx, x, y, gender, isWalking, dir, labelText, isSelf, tick) {
+            const gKey = gender === 'Nữ' ? 'Nữ' : 'Nam';
+            const stateKey = isWalking ? 'walk' : 'idle';
+            const img = wbHunterSheets[gKey]?.[stateKey];
+
+            // Vòng sáng định vị dưới chân nhân vật
+            ctx.save();
+            ctx.beginPath();
+            ctx.ellipse(x, y + 24, 15, 6, 0, 0, Math.PI * 2);
+            ctx.fillStyle = isSelf ? 'rgba(250, 204, 21, 0.38)' : 'rgba(56, 189, 248, 0.30)';
+            ctx.fill();
+            ctx.strokeStyle = isSelf ? '#facc15' : '#38bdf8';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+
+            // Vẽ Sprite 10 cột x 4 hàng của Thợ Săn Nam / Nữ
+            if (img && img.complete && img.naturalWidth > 0) {
+                const cols = 10;
+                const rows = 4;
+                const fw = img.naturalWidth / cols;
+                const fh = img.naturalHeight / rows;
+                const col = Math.floor(tick * (isWalking ? 1.8 : 1.0)) % cols;
+                const row = WB_DIR_ROW[dir] ?? 0;
+
+                const drawW = 38;
+                const drawH = 62;
+                ctx.drawImage(
+                    img,
+                    col * fw, row * fh, fw, fh,
+                    x - drawW / 2, y - drawH + 24, drawW, drawH
+                );
+            } else {
+                // Dự phòng khi ảnh đang tải
+                ctx.font = '26px serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(gKey === 'Nữ' ? '👧' : '👦', x, y);
+            }
+
+            // Bảng tên nhân vật phía trên đầu
+            ctx.save();
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            const textW = ctx.measureText(labelText).width;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.72)';
+            ctx.fillRect(x - textW / 2 - 6, y - 54, textW + 12, 16);
+            ctx.strokeStyle = isSelf ? '#facc15' : (gKey === 'Nữ' ? '#f472b6' : '#38bdf8');
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x - textW / 2 - 6, y - 54, textW + 12, 16);
+
+            ctx.fillStyle = isSelf ? '#fef08a' : '#f4f4f5';
+            ctx.fillText(labelText, x, y - 42);
+            ctx.restore();
+        }
+
         function renderWorldBossLoop() {
             if (!wbState.active) return;
             const canvas = document.getElementById('world-boss-canvas');
@@ -5548,8 +5621,10 @@
             const toPxY = ny => (ny / 1000) * H;
 
             const now = Date.now();
+            const tick = now / 95;
             const isWaiting = now < wbState.respawnEndTime;
 
+            // Cập nhật thông báo hồi sinh & thanh HP Boss
             const banner = document.getElementById('wb-respawn-banner');
             if (isWaiting) {
                 const remainMs = wbState.respawnEndTime - now;
@@ -5564,10 +5639,14 @@
             document.getElementById('wb-hp-bar').style.width = `${(wbState.hp / wbState.maxHp) * 100}%`;
             document.getElementById('wb-hp-text').innerText = `${wbState.hp.toLocaleString()} / ${wbState.maxHp.toLocaleString()} HP`;
 
+            // Di chuyển nhân vật của bản thân & xác định hướng quay mặt (up/down/left/right)
             const dx = wbState.targetX - wbState.playerX;
             const dy = wbState.targetY - wbState.playerY;
             const dist = Math.hypot(dx, dy);
+            let isPlayerWalking = false;
+
             if (dist > 4) {
+                isPlayerWalking = true;
                 const speed = 6;
                 let nextY = wbState.playerY + (dy / dist) * speed;
                 if (isWaiting && nextY < wbState.gateLineY + 25) {
@@ -5575,6 +5654,14 @@
                 }
                 wbState.playerX += (dx / dist) * speed;
                 wbState.playerY = nextY;
+
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    wbState.playerDir = dx >= 0 ? 'right' : 'left';
+                } else {
+                    wbState.playerDir = dy >= 0 ? 'down' : 'up';
+                }
+            } else if (!wbState.playerDir) {
+                wbState.playerDir = 'up';
             }
 
             const distToBoss = Math.hypot(wbState.playerX - wbState.bossX, wbState.playerY - wbState.bossY);
@@ -5586,15 +5673,35 @@
             }
 
             ctx.clearRect(0, 0, W, H);
-            const bgGrad = ctx.createRadialGradient(W / 2, H * 0.31, 30, W / 2, H * 0.5, H * 0.85);
-            bgGrad.addColorStop(0, '#450a0a');
-            bgGrad.addColorStop(0.55, '#18181b');
-            bgGrad.addColorStop(1, '#09090b');
-            ctx.fillStyle = bgGrad;
-            ctx.fillRect(0, 0, W, H);
 
+            // 1. VẼ HÌNH NỀN BACKGROUND SẢNH BOSS (CĂN GIỮA TỶ LỆ CHUẨN)
+            if (wbBgImg.complete && wbBgImg.naturalWidth > 0) {
+                const imgRatio = wbBgImg.naturalWidth / wbBgImg.naturalHeight;
+                const canvasRatio = W / H;
+                let drawW = W, drawH = H, offsetX = 0, offsetY = 0;
+                if (canvasRatio > imgRatio) {
+                    drawH = W / imgRatio;
+                    offsetY = (H - drawH) / 2;
+                } else {
+                    drawW = H * imgRatio;
+                    offsetX = (W - drawW) / 2;
+                }
+                ctx.drawImage(wbBgImg, offsetX, offsetY, drawW, drawH);
+                // Phủ lớp tối nhẹ để nổi bật Boss và nhân vật
+                ctx.fillStyle = 'rgba(9, 9, 11, 0.32)';
+                ctx.fillRect(0, 0, W, H);
+            } else {
+                const bgGrad = ctx.createRadialGradient(W / 2, H * 0.35, 30, W / 2, H * 0.5, H * 0.85);
+                bgGrad.addColorStop(0, '#450a0a');
+                bgGrad.addColorStop(0.55, '#18181b');
+                bgGrad.addColorStop(1, '#09090b');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, W, H);
+            }
+
+            // 2. VẼ VẠCH XUẤT PHÁT & VÒNG ĐIỂM XUẤT PHÁT PHÍA DƯỚI
             const gateY = toPxY(wbState.gateLineY);
-            ctx.fillStyle = isWaiting ? 'rgba(239, 68, 68, 0.14)' : 'rgba(16, 185, 129, 0.10)';
+            ctx.fillStyle = isWaiting ? 'rgba(239, 68, 68, 0.16)' : 'rgba(16, 185, 129, 0.10)';
             ctx.fillRect(0, gateY, W, H - gateY);
 
             ctx.save();
@@ -5602,7 +5709,7 @@
             ctx.setLineDash([14, 8]);
             ctx.moveTo(0, gateY);
             ctx.lineTo(W, gateY);
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 3.5;
             ctx.strokeStyle = isWaiting ? '#ef4444' : '#10b981';
             ctx.stroke();
             ctx.restore();
@@ -5617,58 +5724,78 @@
             );
 
             ctx.beginPath();
-            ctx.arc(toPxX(wbState.spawnX), toPxY(wbState.spawnY), 28, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(250, 204, 21, 0.55)';
+            ctx.ellipse(toPxX(wbState.spawnX), toPxY(wbState.spawnY) + 18, 34, 12, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(250, 204, 21, 0.65)';
             ctx.lineWidth = 2;
             ctx.stroke();
 
+            // 3. VẼ BOSS ĐỨNG Ở CHÍNH GIỮA SẢNH (SPRITE HOẠT HỌA ĐỘNG)
             const bx = toPxX(wbState.bossX);
             const by = toPxY(wbState.bossY);
             const pulse = Math.sin(now / 240) * 6;
 
+            // Vòng địa trận lửa đỏ dưới chân Boss
+            ctx.save();
             ctx.beginPath();
-            ctx.arc(bx, by, 72 + pulse, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+            ctx.ellipse(bx, by + 48, 86 + pulse, 28 + pulse * 0.3, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.22)';
             ctx.fill();
-            ctx.strokeStyle = 'rgba(248, 113, 113, 0.7)';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(248, 113, 113, 0.85)';
+            ctx.lineWidth = 2.5;
             ctx.stroke();
+            ctx.restore();
 
-            ctx.font = '56px serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(activeWorldBossRegion?.emoji || '🐉', bx, by);
+            const bossSpriteKey = activeWorldBossRegion?.spriteKey || 'Rồng Lửa';
+            if (typeof drawBossEntity === 'function' && bossSpriteConfigs?.[bossSpriteKey]) {
+                const bossFrame = Math.floor(tick * 1.1);
+                drawBossEntity(ctx, { spriteKey: bossSpriteKey, emoji: activeWorldBossRegion?.emoji || '🐉' }, 'idle', bossFrame, bx, by, 105);
+            } else {
+                ctx.font = '68px serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(activeWorldBossRegion?.emoji || '🐉', bx, by);
+            }
+
+            // Bảng tên Boss nổi bật phía trên đầu
+            const bossTitle = `🔥 ${activeWorldBossRegion?.bossName || 'BOSS THẾ GIỚI'} (Chạm để đánh)`;
+            ctx.save();
             ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            const bTitleW = ctx.measureText(bossTitle).width;
+            ctx.fillStyle = 'rgba(69, 10, 10, 0.85)';
+            ctx.fillRect(bx - bTitleW / 2 - 8, by - 88, bTitleW + 16, 20);
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 1.2;
+            ctx.strokeRect(bx - bTitleW / 2 - 8, by - 88, bTitleW + 16, 20);
             ctx.fillStyle = '#fde047';
-            ctx.fillText(`🔥 ${activeWorldBossRegion?.bossName || 'BOSS THẾ GIỚI'} (Ấn vào để đánh)`, bx, by - 48);
+            ctx.fillText(bossTitle, bx, by - 74);
+            ctx.restore();
 
+            // 4. VẼ CÁC NGƯỜI CHƠI KHÁC (CHAR_NAM / CHAR_NU DI CHUYỂN QUANH BOSS)
             wbState.otherPlayers.forEach((op, idx) => {
-                const angle = (now / 1800) + idx * 1.05;
-                const ox = toPxX(wbState.bossX + Math.cos(angle) * 150);
-                const oy = toPxY(wbState.bossY + Math.sin(angle) * 115);
+                if (!op.gender) op.gender = idx % 2 === 0 ? 'Nam' : 'Nữ';
+                const angle = (now / 2200) + idx * 1.05;
+                const nextAngle = angle + 0.05;
+                const ox = toPxX(wbState.bossX + Math.cos(angle) * 165);
+                const oy = toPxY(wbState.bossY + 35 + Math.sin(angle) * 115);
+                const nox = toPxX(wbState.bossX + Math.cos(nextAngle) * 165);
+                const noy = toPxY(wbState.bossY + 35 + Math.sin(nextAngle) * 115);
 
-                ctx.beginPath();
-                ctx.arc(ox, oy, 11, 0, Math.PI * 2);
-                ctx.fillStyle = op.color;
-                ctx.fill();
-                ctx.font = 'bold 10px sans-serif';
-                ctx.fillStyle = '#e4e4e7';
-                ctx.fillText(op.name, ox, oy - 17);
+                const odx = nox - ox;
+                const ody = noy - oy;
+                const oDir = Math.abs(odx) > Math.abs(ody)
+                    ? (odx >= 0 ? 'right' : 'left')
+                    : (ody >= 0 ? 'down' : 'up');
+
+                drawWorldBossHunter(ctx, ox, oy, op.gender, true, oDir, op.name, false, tick + idx * 3);
             });
 
+            // 5. VẼ NHÂN VẬT CỦA ANH (TỰ ĐỘNG LẤY GIỚI TÍNH NAM/NỮ CỦA TÀI KHOẢN)
+            const myGender = localStorage.getItem('ar_cloud_gender') === 'Nữ' ? 'Nữ' : 'Nam';
+            const myName = localStorage.getItem('ar_cloud_user') || 'BẠN';
             const px = toPxX(wbState.playerX);
             const py = toPxY(wbState.playerY);
-            ctx.beginPath();
-            ctx.arc(px, py, 15, 0, Math.PI * 2);
-            ctx.fillStyle = isWaiting ? '#71717a' : '#facc15';
-            ctx.fill();
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = '#ffffff';
-            ctx.stroke();
-
-            ctx.font = 'bold 11px sans-serif';
-            ctx.fillStyle = '#fef08a';
-            ctx.fillText('⭐ BẠN', px, py - 22);
+            drawWorldBossHunter(ctx, px, py, myGender, isPlayerWalking, wbState.playerDir || 'up', `⭐ ${myName}`, true, tick);
 
             wbState.loopId = requestAnimationFrame(renderWorldBossLoop);
         }
