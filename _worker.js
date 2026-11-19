@@ -175,20 +175,88 @@ export default {
         }
 
         // ==========================================
-        // API 3: ĐỒNG BỘ VỊ TRÍ NGƯỜI CHƠI TRÊN BẢN ĐỒ (/api/presence)
+        // API 3: ĐỒNG BỘ VỊ TRÍ NGƯỜI CHƠI TRÊN BẢN ĐỒ & SẢNH BOSS (/api/presence)
         // ==========================================
         if (url.pathname === "/api/presence" && request.method === "POST") {
             try {
+                if (!db) return jsonResponse({ ok: false, error: "Chưa kết nối D1!" }, 500);
+
+                await db.prepare(`
+                    CREATE TABLE IF NOT EXISTS player_presence (
+                        username TEXT PRIMARY KEY,
+                        gender TEXT DEFAULT 'Nam',
+                        lat REAL DEFAULT 0,
+                        lng REAL DEFAULT 0,
+                        dir TEXT DEFAULT 'down',
+                        state TEXT DEFAULT 'idle',
+                        lead_pet TEXT DEFAULT '',
+                        updated_at INTEGER NOT NULL
+                    )
+                `).run();
+
                 const body = await request.json();
                 const now = Date.now();
                 const username = String(body.username || "").trim();
 
+                // 1. Thoát game / rời bản đồ
                 if (body.action === "offline" && username) {
                     await db.prepare("DELETE FROM player_presence WHERE username = ?")
                         .bind(username).run();
                     return jsonResponse({ ok: true });
                 }
 
+                // 2. Đồng bộ người chơi cùng đứng trong Sảnh Boss Thế Giới
+                if (body.action === "world_boss") {
+                    const bossId = String(body.bossId || "default");
+                    const posX = Math.round(Number(body.x) || 500);
+                    const posY = Math.round(Number(body.y) || 750);
+                    const dir = String(body.dir || "up");
+                    const stateTag = `wb:${bossId}:${posX}:${posY}:${dir}`;
+
+                    if (username) {
+                        await db.prepare(`
+                            INSERT INTO player_presence (username, gender, lat, lng, dir, state, lead_pet, updated_at)
+                            VALUES (?, ?, 0, 0, ?, ?, ?, ?)
+                            ON CONFLICT(username) DO UPDATE SET
+                                gender = excluded.gender,
+                                dir = excluded.dir,
+                                state = excluded.state,
+                                lead_pet = excluded.lead_pet,
+                                updated_at = excluded.updated_at
+                        `).bind(
+                            username,
+                            body.gender === "Nữ" ? "Nữ" : "Nam",
+                            dir,
+                            stateTag,
+                            String(body.leadPet || ""),
+                            now
+                        ).run();
+                    }
+
+                    const activeThreshold = now - 15000;
+                    const { results } = await db.prepare(`
+                        SELECT username, gender, state, lead_pet
+                        FROM player_presence
+                        WHERE LOWER(username) != LOWER(?) AND state LIKE ? AND updated_at >= ?
+                        LIMIT 50
+                    `).bind(username, `wb:${bossId}:%`, activeThreshold).all();
+
+                    const lobbyPlayers = (results || []).map(r => {
+                        const parts = String(r.state || "").split(":");
+                        return {
+                            name: r.username,
+                            gender: r.gender || "Nam",
+                            x: Number(parts[2]) || 500,
+                            y: Number(parts[3]) || 700,
+                            dir: parts[4] || "up",
+                            leadPet: r.lead_pet || ""
+                        };
+                    });
+
+                    return jsonResponse({ ok: true, players: lobbyPlayers });
+                }
+
+                // 3. Đồng bộ vị trí GPS trên bản đồ thế giới (bán kính 200m)
                 if (username && typeof body.lat === "number" && typeof body.lng === "number") {
                     await db.prepare(`
                         INSERT INTO player_presence (username, gender, lat, lng, dir, state, lead_pet, updated_at)
@@ -217,7 +285,7 @@ export default {
                 const { results } = await db.prepare(`
                     SELECT username, gender, lat, lng, dir, state, lead_pet
                     FROM player_presence
-                    WHERE username != ? AND updated_at >= ?
+                    WHERE LOWER(username) != LOWER(?) AND state NOT LIKE 'wb:%' AND updated_at >= ?
                     LIMIT 100
                 `).bind(username, activeThreshold).all();
 
