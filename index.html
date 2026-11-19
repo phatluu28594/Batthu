@@ -6358,31 +6358,31 @@
                 };
             
                 async function fetchWorldChatMessages() {
-                    if (document.hidden) return; // Tiết kiệm request khi người chơi ẩn tab
+                    if (document.hidden) return;
                     const box = document.getElementById("floating-chat-messages");
                     if (!box) return;
-            
+
                     try {
-                        const res = await fetch("/api/chat");
+                        const res = await fetch("/api/chat?t=" + Date.now(), { cache: "no-store" });
                         const result = await res.json();
                         if (!result.ok) return;
-            
-                        // Chỉ lọc lấy tin nhắn phát sinh từ lúc người chơi mở game trở đi
-                        const msgs = (result.messages || []).filter(m => (m.created_at || 0) >= sessionChatStartTime);
+
+                        // Trừ hao 15 giây tránh lệch đồng hồ giữa máy người chơi và máy chủ Cloudflare
+                        const msgs = (result.messages || []).filter(m => (m.created_at || 0) >= (sessionChatStartTime - 15000));
                         if (msgs.length === 0) {
                             if (box.innerHTML.includes("Đang tải")) {
                                 box.innerHTML = `<div class="text-zinc-400 text-[10px] italic">Chào mừng tới kênh thế giới!</div>`;
                             }
                             return;
                         }
-            
+
                         const newestId = msgs[msgs.length - 1].id || 0;
-                        const hasNewMessage = newestId > lastMessageId;
-            
+                        const hasNewMessage = newestId > lastMessageId || box.querySelector('.optimistic-msg');
+
                         if (hasNewMessage) {
-                            const isAtBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 35;
-            
+                            const isAtBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 45;
                             window._worldShowcasedPets = window._worldShowcasedPets || {};
+
                             box.innerHTML = msgs.map(m => {
                                 if (m.pet_info && String(m.pet_info).startsWith('SHOWCASE|')) {
                                     try {
@@ -6412,49 +6412,64 @@
                                     <span class="text-zinc-100">${m.text}</span>
                                 </div>`;
                             }).join('');
-            
+
                             if (isAtBottom || lastMessageId === 0) {
                                 box.scrollTop = box.scrollHeight;
                             }
-            
-                            if (!isFloatingChatVisible && hasNewMessage) {
+
+                            if (!isFloatingChatVisible && newestId > lastMessageId) {
                                 document.getElementById("floating-chat-badge")?.classList.remove("hidden");
                             }
                             lastMessageId = newestId;
                         }
                     } catch (e) {}
                 }
-            
+
                 window.initFloatingWorldChat = function() {
                     const box = document.getElementById("floating-chat-messages");
                     if (box) box.innerHTML = `<div class="text-zinc-400 text-[10px] italic">Chào mừng tới kênh thế giới!</div>`;
                     if (chatPollTimer) clearInterval(chatPollTimer);
-                    chatPollTimer = setInterval(fetchWorldChatMessages, 5000); // Cập nhật mỗi 5 giây
+                    fetchWorldChatMessages();
+                    chatPollTimer = setInterval(fetchWorldChatMessages, 3500);
                 };
-            
+
                 window.handleSendFloatingChat = async function() {
                     const input = document.getElementById("floating-chat-input");
                     if (!input) return;
                     const text = input.value.trim();
                     if (!text) return;
-            
-                    if (Date.now() - lastChatSentAt < 3000) {
-                        return alert("⏳ Chờ 3 giây giữa mỗi lần nhắn nhé!");
+
+                    if (Date.now() - lastChatSentAt < 2000) {
+                        return alert("⏳ Chờ 2 giây giữa mỗi lần nhắn nhé!");
                     }
                     lastChatSentAt = Date.now();
                     input.value = "";
-            
+
                     await window.sendWorldChat(text, false);
                 };
-            
+
                 window.sendWorldChat = async function(text, isSystemBroadcast = false) {
+                    const senderName = localStorage.getItem("ar_cloud_user") || "Thợ Săn Ẩn Danh";
+                    const senderGender = localStorage.getItem("ar_cloud_gender") || "Nam";
+                    const box = document.getElementById("floating-chat-messages");
+
+                    // Hiện tin nhắn ngay lập tức trên khung chat của người gửi (Optimistic UI)
+                    if (box) {
+                        if (box.innerHTML.includes("Chào mừng tới kênh thế giới")) box.innerHTML = "";
+                        const gBadge = senderGender === "Nữ" ? "👧" : "👦";
+                        const nameColor = senderGender === "Nữ" ? "text-pink-300" : "text-sky-300";
+                        const instantHtml = isSystemBroadcast
+                            ? `<div class="optimistic-msg text-amber-300 font-bold bg-amber-950/50 border border-amber-500/30 rounded px-1.5 py-0.5 text-[10px]">${text}</div>`
+                            : `<div class="optimistic-msg break-words text-white/95 drop-shadow"><span class="font-extrabold ${nameColor}">${gBadge}${senderName}:</span> <span class="text-zinc-100">${text}</span></div>`;
+                        box.insertAdjacentHTML("beforeend", instantHtml);
+                        box.scrollTop = box.scrollHeight;
+                    }
+
                     try {
-                        const senderName = localStorage.getItem("ar_cloud_user") || "Thợ Săn Ẩn Danh";
-                        const senderGender = localStorage.getItem("ar_cloud_gender") || "Nam";
                         const leadPet = (typeof team !== "undefined" && team[0])
                             ? `${team[0].rarity?.badge || ''} ${team[0].name} Lv.${Math.floor(team[0].level || 1)}`
                             : "Tân Thủ";
-            
+
                         await fetch("/api/chat", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -6466,8 +6481,8 @@
                                 isSystem: isSystemBroadcast
                             })
                         });
-            
-                        fetchWorldChatMessages();
+
+                        await fetchWorldChatMessages();
                     } catch (e) {
                         console.error("Chat error:", e);
                     }
