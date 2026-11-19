@@ -972,9 +972,4 @@
         }
     }
 })();
-"""
 
-with open("pvp.js", "w", encoding="utf-8") as f:
-    f.write(pvp_js_canvas)
-
-print("Updated pvp.js with fullscreen battle-bg.webp canvas arena")
