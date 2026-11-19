@@ -796,12 +796,87 @@ export default {
                         await db.prepare("UPDATE pvp_duels SET status = 'finished', winner = ?, updated_at = ? WHERE id = ?")
                             .bind(winner, Date.now(), duelId).run();
                         return jsonResponse({ ok: true });
-                    }
-
-                    return jsonResponse({ ok: false, error: "Lệnh PvP không hợp lệ!" }, 400);
+                         return jsonResponse({ ok: false, error: "Lệnh PvP không hợp lệ!" }, 400);
                 }
             } catch (err) {
                 return jsonResponse({ ok: false, error: "Lỗi PvP API: " + err.message }, 500);
+            }
+        }
+
+        // ==========================================
+        // API 8: ĐỒNG BỘ TRẠNG THÁI BOSS 3 MIỀN (/api/world-boss)
+        // ==========================================
+        if (url.pathname === "/api/world-boss") {
+            try {
+                if (!db) return jsonResponse({ ok: false, error: "Chưa kết nối D1!" }, 500);
+
+                await db.prepare(`
+                    CREATE TABLE IF NOT EXISTS world_boss_state (
+                        region_key TEXT PRIMARY KEY,
+                        active INTEGER NOT NULL DEFAULT 0,
+                        boss_name TEXT DEFAULT '',
+                        hp INTEGER DEFAULT 0,
+                        max_hp INTEGER DEFAULT 0,
+                        opened_by TEXT DEFAULT '',
+                        updated_at INTEGER NOT NULL
+                    )
+                `).run();
+
+                if (request.method === "GET") {
+                    const { results } = await db.prepare(
+                        "SELECT region_key, active, boss_name, hp, max_hp, opened_by, updated_at FROM world_boss_state"
+                    ).all();
+                    return jsonResponse({ ok: true, bosses: results || [] });
+                }
+
+                if (request.method === "POST") {
+                    const body = await request.json();
+                    const adminUser = String(body.adminUser || "").trim();
+                    const adminPin = String(body.adminPin || "").trim();
+                    const ADMIN_LIST = ["GiaPhat28594", "ThuyHan171097"];
+
+                    if (!ADMIN_LIST.some(id => id.toLowerCase() === adminUser.toLowerCase())) {
+                        return jsonResponse({ ok: false, error: "Tài khoản không có quyền GM/Admin!" }, 403);
+                    }
+                    const adminRow = await db.prepare("SELECT pin FROM players WHERE LOWER(username) = LOWER(?)")
+                        .bind(adminUser).first();
+                    if (!adminRow || adminRow.pin !== adminPin) {
+                        return jsonResponse({ ok: false, error: "Sai mã PIN xác thực GM!" }, 401);
+                    }
+
+                    const regions = Array.isArray(body.regions) ? body.regions : [];
+                    const now = Date.now();
+                    for (const r of regions) {
+                        const key = String(r.regionKey || "").trim();
+                        if (!key) continue;
+                        await db.prepare(`
+                            INSERT INTO world_boss_state (region_key, active, boss_name, hp, max_hp, opened_by, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            ON CONFLICT(region_key) DO UPDATE SET
+                                active = excluded.active,
+                                boss_name = excluded.boss_name,
+                                hp = excluded.hp,
+                                max_hp = excluded.max_hp,
+                                opened_by = excluded.opened_by,
+                                updated_at = excluded.updated_at
+                        `).bind(
+                            key,
+                            r.active ? 1 : 0,
+                            String(r.bossName || ""),
+                            Number(r.hp) || 0,
+                            Number(r.maxHp) || 0,
+                            adminUser,
+                            now
+                        ).run();
+                    }
+
+                    const { results } = await db.prepare(
+                        "SELECT region_key, active, boss_name, hp, max_hp, opened_by, updated_at FROM world_boss_state"
+                    ).all();
+                    return jsonResponse({ ok: true, bosses: results || [] });
+                }
+            } catch (err) {
+                return jsonResponse({ ok: false, error: "Lỗi World Boss API: " + err.message }, 500);
             }
         }
 
