@@ -782,9 +782,7 @@
                                 saveGameData();
 
                                 showInGameConfirm(
-                                    `🏆 Chúc mừng! Bạn đã vượt qua Tầng ${clearedFloor} và nhận +${rewardGold}🪙${diamondNote}!
-
-🗼 Bạn có muốn tiếp tục khiêu chiến Tầng ${towerFloor} ngay bây giờ không?`,
+                                    `🏆 Chúc mừng! Bạn đã vượt qua Tầng ${clearedFloor} và nhận +${rewardGold}🪙${diamondNote}!\n\n🗼 Bạn có muốn tiếp tục khiêu chiến Tầng ${towerFloor} ngay bây giờ không?`,
                                     () => {
                                         startBattle('tower', selectedIndex);
                                     },
@@ -805,8 +803,7 @@
                                     window.sendWorldChat(`🏆 [${hunterName}] vừa tung đòn kết liễu hạ gục Boss Thế Giới [${enemy.name}]!`, true);
                                 }
 
-                                alert(`🏆 KẾT LIỄU BOSS THẾ GIỚI!
-Bạn gây ${dealt.toLocaleString()} sát thương và nhận +${rewardGold}🪙${diamondNote}!`);
+                                alert(`🏆 KẾT LIỄU BOSS THẾ GIỚI!\nBạn gây ${dealt.toLocaleString()} sát thương và nhận +${rewardGold}🪙${diamondNote}!`);
                                 document.getElementById('battle-screen').classList.add('hidden');
                                 switchGameMusic('map');
                                 openWorldBossLobby(activeWorldBossRegion);
@@ -841,8 +838,7 @@ Bạn gây ${dealt.toLocaleString()} sát thương và nhận +${rewardGold}🪙
                             if (fallenList.length > 0) {
                                 sendDefeatedPetsToHospital(fallenList);
                             } else if (deadForeverNames.length > 0) {
-                                alert(`💀 Thất bại!
-Linh thú ${deadForeverNames.join(', ')} đã cạn tim và tử trận vĩnh viễn!`);
+                                alert(`💀 Thất bại!\nLinh thú ${deadForeverNames.join(', ')} đã cạn tim và tử trận vĩnh viễn!`);
                             } else {
                                 alert('💀 Thất bại! Đội hình của bạn đã bị đánh bại.');
                             }
@@ -1089,8 +1085,7 @@ Linh thú ${deadForeverNames.join(', ')} đã cạn tim và tử trận vĩnh vi
         window.enterRegionalWorldBoss = async function(regionId) {
             await fetchWorldBossServerState(false);
             if (!isWorldBossRegionOpen(regionId)) {
-                alert(`⏳ Boss Thế Giới khu vực này hiện chưa mở hoặc đã bị thu hồi!
-Khung giờ kế tiếp: ${getNextWorldBossTimeText()}`);
+                alert(`⏳ Boss Thế Giới khu vực này hiện chưa mở hoặc đã bị thu hồi!\nKhung giờ kế tiếp: ${getNextWorldBossTimeText()}`);
                 renderWorldBossMarkersOnMap();
                 return;
             }
@@ -1162,8 +1157,7 @@ Khung giờ kế tiếp: ${getNextWorldBossTimeText()}`);
                 return;
             }
             if (!team || team.length < 3) {
-                alert('⚠️ Boss Thế Giới yêu cầu đội hình đủ 3 linh thú (3vs1)!
-Hãy vào Túi / Trang Trại để xếp đủ 3 thú vào đội.');
+                alert('⚠️ Boss Thế Giới yêu cầu đội hình đủ 3 linh thú (3vs1)!\nHãy vào Túi / Trang Trại để xếp đủ 3 thú vào đội.');
                 return;
             }
             const alivePets = team.filter(p => p && p.hp > 0);
@@ -1194,8 +1188,7 @@ Hãy vào Túi / Trang Trại để xếp đủ 3 thú vào đội.');
             wbState.targetY = wbState.spawnY;
 
             openWorldBossLobby(activeWorldBossRegion);
-            alert(`💀 Đội hình bị Boss đánh gục!
-Bạn đã gây ${Math.floor(damageDealt).toLocaleString()} sát thương. Chờ 10 giây tại vạch xuất phát để tiếp tục tấn công!`);
+            alert(`💀 Đội hình bị Boss đánh gục!\nBạn đã gây ${Math.floor(damageDealt).toLocaleString()} sát thương. Chờ 10 giây tại vạch xuất phát để tiếp tục tấn công!`);
         };
 
         // Nạp hình nền Sảnh Boss
@@ -1643,3 +1636,5 @@ window.startBattle = startBattle;
 window.exitBattleScreen = exitBattleScreen;
 window.renderWorldBossMarkersOnMap = renderWorldBossMarkersOnMap;
 window.openWorldBossMenu = openWorldBossMenu;
+window.triggerWorldBossFight = triggerWorldBossFight;
+window.startWorldBossBattle = startWorldBossBattle;
