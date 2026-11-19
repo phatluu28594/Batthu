@@ -20,17 +20,17 @@
         const possibleTraits = [
             { name: 'Khả năng Làm choáng', icon: '💫 Choáng', type: 'stun', chance: 20 },
             { name: 'Đòn đánh Trúng độc', icon: '🟢 Độc', type: 'poison', chance: 25 },
-            { name: 'Thiêu đốt diện rộng', icon: '🔥 Cháy', type: 'burn', chance: 22 },
+            { name: 'Thiêu đốt diện rộng', icon: '🔥 Cháy', type: 'burn', chance: 25 },
             { name: 'Làm chậm đối thủ', icon: '❄️ Chậm', type: 'slow', chance: 25 },
             { name: 'Hộ thân Buff Giáp', icon: '🛡️ Buff', type: 'shield', chance: 30 },
-            { name: 'Hồi Phục Linh Hồn (x2 Dame)', icon: '💚 Hồi Máu', type: 'heal', chance: 30 }
+            { name: 'Hồi Phục Linh Hồn', icon: '💚 Hồi Máu', type: 'heal', chance: 30 }
         ];
 
         const rarities = [
-            { name: 'Thường', color: 'text-zinc-300', bg: 'border-zinc-600', badge: '⚪ Trắng', rate: 54, statMultiplier: 1.0 },     // 54% (44% + 10% bù tròn 100%)
-            { name: 'Hiếm', color: 'text-emerald-400', bg: 'border-emerald-500', badge: '🟢 Xanh', rate: 30, statMultiplier: 1.3 },     // 30%
-            { name: 'Cực Hiếm', color: 'text-yellow-400', bg: 'border-yellow-500', badge: '🟡 Vàng', rate: 10, statMultiplier: 1.6 }, // 10%
-            { name: 'Huyền Thoại', color: 'text-red-500', bg: 'border-red-500', badge: '🔴 Đỏ', rate: 5, statMultiplier: 2.0 },      // 5%
+            { name: 'Thường', color: 'text-zinc-300', bg: 'border-zinc-600', badge: '⚪ Trắng', rate: 59, statMultiplier: 1.0 },     // 54% (44% + 10% bù tròn 100%)
+            { name: 'Hiếm', color: 'text-emerald-400', bg: 'border-emerald-500', badge: '🟢 Xanh', rate: 33, statMultiplier: 1.3 },     // 30%
+            { name: 'Cực Hiếm', color: 'text-yellow-400', bg: 'border-yellow-500', badge: '🟡 Vàng', rate: 5, statMultiplier: 1.6 }, // 10%
+            { name: 'Huyền Thoại', color: 'text-red-500', bg: 'border-red-500', badge: '🔴 Đỏ', rate: 2, statMultiplier: 2.0 },      // 5%
             { name: 'Thần Thánh', color: 'text-purple-400', bg: 'border-purple-500', badge: '🟣 Tím', rate: 1, statMultiplier: 2.5 }    // 1%
         ];
 
@@ -849,7 +849,7 @@ window.PET_SELL_PRICE_BY_RARITY = {
     'Hiếm': 100,
     'Cực Hiếm': 150,
     'Huyền Thoại': 200,
-    'Thần Thánh': 250
+    'Thần Thánh': 350
 };
 
 window.getPetSellPrice = function(pet) {
