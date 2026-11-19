@@ -151,7 +151,7 @@ export default {
                     const body = await request.json();
                     const sender = String(body.sender || "Thợ Săn Ẩn Danh").slice(0, 32);
                     const gender = body.gender === "Nữ" ? "Nữ" : "Nam";
-                    const petInfo = String(body.petInfo || "").slice(0, 60);
+                    const petInfo = String(body.petInfo || "").slice(0, 1500);
                     const text = String(body.text || "").trim().slice(0, 180);
                     const isSystem = body.isSystem ? 1 : 0;
 
