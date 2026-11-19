@@ -187,13 +187,24 @@
             { id: 103, name: 'Chuột Xám', emoji: '🐭', element: 'Thuy', hp: 100, maxHp: 100, atk: 44, speed: 88 },
             { id: 104, name: 'Kiến Lửa', emoji: '🐜', element: 'Hoa', hp: 105, maxHp: 105, atk: 48, speed: 76 },
             { id: 105, name: 'Ong Vàng', emoji: '🐝', element: 'Moc', hp: 100, maxHp: 100, atk: 50, speed: 92 },
+            { id: 106, name: 'Vịt Vàng', emoji: '🦆', element: 'Thuy', hp: 120, maxHp: 120, atk: 46, speed: 72 },
+            { id: 107, name: 'Thỏ Trắng', emoji: '🐇', element: 'Moc', hp: 115, maxHp: 115, atk: 48, speed: 94 },
+            { id: 108, name: 'Dơi Đêm', emoji: '🦇', element: 'Kim', hp: 115, maxHp: 115, atk: 54, speed: 96 },
             { id: 201, name: 'Chó Husky', emoji: '🐕', element: 'Thuy', hp: 145, maxHp: 145, atk: 56, speed: 74 },
             { id: 202, name: 'Rùa Xanh', emoji: '🐢', element: 'Thuy', hp: 190, maxHp: 190, atk: 45, speed: 40 },
             { id: 203, name: 'Bướm Lam', emoji: '🦋', element: 'Thuy', hp: 125, maxHp: 125, atk: 58, speed: 95 },
+            { id: 204, name: 'Capybara', emoji: '🦫', element: 'Thuy', hp: 175, maxHp: 175, atk: 50, speed: 55 },
+            { id: 205, name: 'Koala', emoji: '🐨', element: 'Moc', hp: 165, maxHp: 165, atk: 52, speed: 52 },
+            { id: 206, name: 'Rái Cá', emoji: '🦦', element: 'Thuy', hp: 145, maxHp: 145, atk: 60, speed: 85 },
+            { id: 207, name: 'Khỉ Tinh Nghịch', emoji: '🐒', element: 'Moc', hp: 140, maxHp: 140, atk: 62, speed: 91 },
+            { id: 208, name: 'Cáo Sa Mạc', emoji: '🦊', element: 'Hoa', hp: 145, maxHp: 145, atk: 64, speed: 89 },
+            { id: 209, name: 'Hải Cẩu', emoji: '🦭', element: 'Thuy', hp: 180, maxHp: 180, atk: 56, speed: 64 },
             { id: 301, name: 'Đại Bàng', emoji: '🦅', element: 'Kim', hp: 175, maxHp: 175, atk: 72, speed: 90 },
             { id: 302, name: 'Sói Tuyết', emoji: '🐺', element: 'Thuy', hp: 185, maxHp: 185, atk: 76, speed: 86 },
-            { id: 303, name: 'Hồ Ly', emoji: '🦊', element: 'Hoa', hp: 185, maxHp: 185, atk: 76, speed: 86 }
-      
+            { id: 303, name: 'Hồ Ly', emoji: '🦊', element: 'Hoa', hp: 185, maxHp: 185, atk: 76, speed: 86 },
+            { id: 304, name: 'Gấu Trúc', emoji: '🐼', element: 'Moc', hp: 205, maxHp: 205, atk: 70, speed: 60 },
+            { id: 305, name: 'Hà Mã', emoji: '🦛', element: 'Tho', hp: 225, maxHp: 225, atk: 68, speed: 46 },
+            { id: 306, name: 'Voi Khổng Lồ', emoji: '🐘', element: 'Tho', hp: 240, maxHp: 240, atk: 74, speed: 44 }
         ];
         
         let currentWildMonster = null;
@@ -290,6 +301,102 @@
                 cols: 8, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.7
+            },
+            'Cáo Sa Mạc': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/caosamac.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.6
+            },
+            'Capybara': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/capypara.webp',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.6
+            },
+            'Dơi Đêm': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/doi.webp',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.55
+            },
+            'Gấu Trúc': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/gautruc.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.7
+            },
+            'Hải Cẩu': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/haicau.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.6
+            },
+            'Hà Mã': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/hama.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.75
+            },
+            'Koala': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/koala.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.55
+            },
+            'Khỉ Tinh Nghịch': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/khi.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.6
+            },
+            'Rái Cá': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/raica.webp',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.6
+            },
+            'Thỏ Trắng': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/tho.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.55
+            },
+            'Vịt': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/vit.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.55
+            },
+            'Voi Khổng Lồ': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/voi.webp',
+                cols: 10, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.8
             }
         };
 
