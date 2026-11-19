@@ -1,6 +1,6 @@
 // ============================================================================
 // BẮT THÚ VƯƠNG - MODULE CHIẾN ĐẤU THÁP, BOSS THẾ GIỚI & ĐẤU TRƯỜNG (arena.js)
-// Tách trực tiếp từ index.html: Tháp Vô Tận, Boss 3 Miền MMO, Đấu Trường ATB 1vs1 / 3vs1
+// Đã đồng bộ hoàn toàn Server (/api/world-boss), Sảnh Boss MMO & Đánh Boss 3vs1
 // ============================================================================
 
 // 1. THÁP VÔ TẬN (TOWER)
@@ -35,7 +35,6 @@
         };
 
         function tryCastHealLowestAlly(caster, activeTeam, teamHpList, teamSlots, defaultX, defaultY, impactEffects) {
-            // 1. Tìm đồng minh còn sống (HP > 0) có lượng HP hiện tại thấp nhất (và chưa đầy máu)
             let lowestIdx = -1;
             let lowestHp = Infinity;
             activeTeam.forEach((ally, idx) => {
@@ -46,9 +45,8 @@
                 }
             });
 
-            if (lowestIdx === -1) return false; // Cả đội đều đang đầy máu -> không buff thừa
+            if (lowestIdx === -1) return false;
 
-            // 2. Hồi máu = x2 lần sát thương (atk) của thú thi triển
             const healAmount = Math.max(1, Math.floor((caster.atk || 10) * 2));
             const targetPet = activeTeam[lowestIdx];
             const oldHp = teamHpList[lowestIdx];
@@ -57,7 +55,6 @@
 
             if (actualHealed <= 0) return false;
 
-            // 3. Hiện vòng sáng hồi phục & số xanh +HP bay lên ngay trên đầu thú được hồi
             const slotPos = teamSlots[lowestIdx] || { x: defaultX, y: defaultY };
             if (Array.isArray(impactEffects)) {
                 impactEffects.push({
@@ -81,9 +78,7 @@
         // ==========================================
         let battleCanvas, battleCtx, battleInterval;
         let currentBattleSyncFn = null;
-        // ==========================================
-        // BẢNG CHỌN LINH THÚ XUẤT CHIẾN 1VS1 (THÁP / PVP)
-        // ==========================================
+
         window.openSelectFighterModal = function(mode) {
             checkPetSurvival();
             if (!team || team.length === 0) {
@@ -91,7 +86,6 @@
                 return;
             }
 
-            // Nếu trong túi chỉ có 1 con duy nhất và còn HP thì vào đánh 1vs1 luôn
             if (team.length === 1) {
                 if (team[0].hp <= 0) {
                     alert(`⚠️ Linh thú [${team[0].name}] đã cạn HP! Hãy hồi sức trước khi chiến đấu.`);
@@ -153,10 +147,21 @@
                 ${listHtml}
             </div>`;
         };
+
         function startBattle(mode, selectedIndex = 0) {
             checkPetSurvival();
             if (team.length === 0) { alert('Đội hình trống!'); return; }
-            if (mode === 'boss' && team.length < 3) { alert('⚠️ Boss Thế Giới yêu cầu đủ 3 linh thú (3vs1)!'); return; }
+            if (mode === 'boss') {
+                if (team.length < 3) {
+                    alert('⚠️ Boss Thế Giới yêu cầu đủ 3 linh thú (3vs1) trong đội hình!');
+                    return;
+                }
+                const aliveCount = team.filter(p => p && p.hp > 0).length;
+                if (aliveCount === 0) {
+                    alert('⚠️ Tất cả linh thú trong đội đều đã cạn HP! Hãy hồi sức trước khi đánh Boss.');
+                    return;
+                }
+            }
 
             const chosenPet = team[selectedIndex] || team[0];
             if (mode !== 'boss' && chosenPet.hp <= 0) {
@@ -166,6 +171,15 @@
 
             closeModal();
             closeTowerScreen();
+            if (mode === 'boss') {
+                // Tạm dừng loop sảnh Boss khi bước vào trận đánh
+                wbState.active = false;
+                if (wbState.loopId) {
+                    cancelAnimationFrame(wbState.loopId);
+                    wbState.loopId = null;
+                }
+                document.getElementById('world-boss-screen')?.classList.add('hidden');
+            }
             document.getElementById('map-screen').classList.add('hidden');
             document.getElementById('battle-screen').classList.remove('hidden');
             switchGameMusic('battle');
@@ -217,15 +231,23 @@
             const randomBossKey = bossKeys[Math.floor(Math.random() * bossKeys.length)];
             const chosenBossCfg = bossSpriteConfigs[randomBossKey];
 
+            // Nếu đánh Boss Thế Giới -> lấy đúng thông tin & HP hiện tại của Boss khu vực đó
+            let wbRegion = activeWorldBossRegion || WORLD_BOSS_REGIONS[0];
+            let wbSpriteKey = (wbRegion && bossSpriteConfigs[wbRegion.spriteKey]) ? wbRegion.spriteKey : randomBossKey;
+            let wbCfg = bossSpriteConfigs[wbSpriteKey] || chosenBossCfg;
+            let wbServerRow = wbRegion ? getServerBossRegionState(wbRegion.id) : null;
+            let wbCurrentHp = Math.max(100, Number(wbServerRow?.hp) || Number(wbState.hp) || (5000 + bossLevel * 3000));
+            let wbMaxHp = Math.max(wbCurrentHp, Number(wbServerRow?.max_hp) || Number(wbState.maxHp) || (5000 + bossLevel * 3000));
+
             let enemy = mode === 'boss' ? {
-                name: `${chosenBossCfg.displayName} (Boss Lv.${bossLevel})`,
-                spriteKey: randomBossKey,
-                element: chosenBossCfg.element,
-                emoji: '👹',
-                hp: 300 + (bossLevel * 100),
-                maxHp: 300 + (bossLevel * 100),
-                atk: 30 + (bossLevel * 8),
-                speed: 45 + bossLevel * 3,
+                name: `${wbServerRow?.boss_name || wbRegion?.bossName || wbCfg.displayName}`,
+                spriteKey: wbSpriteKey,
+                element: wbCfg.element || 'Hoa',
+                emoji: wbRegion?.emoji || '👹',
+                hp: wbCurrentHp,
+                maxHp: wbMaxHp,
+                atk: 38 + (bossLevel * 10),
+                speed: 48 + bossLevel * 3,
                 accuracy: 95, dodgeRate: 15, critRate: 20, blockRate: 20, armorBreak: 20, comboRate: 25
             } :
             mode === 'tower' ? {
@@ -242,14 +264,35 @@
             { name: 'Đối Thủ PvP', element: 'Tho', emoji: '🤖', hp: 160, maxHp: 160, atk: 25, speed: 52, accuracy: 90, dodgeRate: 18, critRate: 18, blockRate: 18, armorBreak: 16, comboRate: 22 };
 
             let enemyHp = enemy.hp;
+            const startEnemyHp = enemy.hp;
             let teamStatus = activeTeam.map(() => ({ stun: 0, poison: 0, burn: 0, slow: 0, shield: 0 }));
             let enemyStatus = { stun: 0, poison: 0, burn: 0, slow: 0, shield: 0 };
 
-           const teamNamesEl = document.getElementById('battle-team-names');
+            const teamNamesEl = document.getElementById('battle-team-names');
             if (teamNamesEl) {
                 teamNamesEl.innerText = activeTeam.map(p => `${p.name} Lv.${Math.floor(p.level || 1)}`).join(', ');
             }
             document.getElementById('battle-enemy-name').innerText = `${enemy.name} [${elementNames[enemy.element]?.label}] (⚡${enemy.speed} | 🔥${enemy.comboRate}%)`;
+
+            // Gắn nút Rút lui đúng ngữ cảnh (nếu đang đánh Boss Thế Giới thì quay về Sảnh Boss)
+            const retreatBtn = document.querySelector('#battle-screen button[onclick*="exitBattleScreen"]');
+            const origRetreatAttr = retreatBtn ? retreatBtn.getAttribute('onclick') : null;
+            if (retreatBtn && mode === 'boss') {
+                retreatBtn.onclick = function () {
+                    const dealt = Math.max(0, startEnemyHp - Math.max(0, enemyHp));
+                    if (dealt > 0) reportDamageToWorldBoss(dealt);
+                    retreatBtn.onclick = null;
+                    if (origRetreatAttr) retreatBtn.setAttribute('onclick', origRetreatAttr);
+                    if (typeof currentBattleSyncFn === 'function') {
+                        currentBattleSyncFn();
+                        currentBattleSyncFn = null;
+                    }
+                    if (battleInterval) clearInterval(battleInterval);
+                    document.getElementById('battle-screen').classList.add('hidden');
+                    switchGameMusic('map');
+                    openWorldBossLobby(activeWorldBossRegion);
+                };
+            }
 
             battleCanvas = document.getElementById('battleCanvas');
             let dpr = window.devicePixelRatio || 1;
@@ -374,7 +417,6 @@
                                 document.getElementById('battle-log').innerText = `[Hiệp ${roundNumber}] 💫 ${actorName} bị choáng, mất lượt!`;
                                 turnDelayFrames = 26;
                             } else {
-                                // KIỂM TRA KỸ NĂNG HỒI MÁU (x2 DAME) CHO ĐỒNG MINH THẤP MÁU NHẤT
                                 let usedHealSkill = false;
                                 if (nextActor.side === 'team') {
                                     const caster = activeTeam[nextActor.index];
@@ -382,7 +424,7 @@
                                         if ((caster.skillCd || 0) <= 0) {
                                             usedHealSkill = tryCastHealLowestAlly(caster, activeTeam, teamHpList, teamSlots, cx - 85, cy, impactEffects);
                                             if (usedHealSkill) {
-                                                caster.skillCd = caster.skill.cooldown || 3; // Hồi chiêu 3 lượt
+                                                caster.skillCd = caster.skill.cooldown || 3;
                                                 syncBattleHpToTeam();
                                                 turnDelayFrames = 22;
                                             }
@@ -660,7 +702,6 @@
                         animFrame = Math.min(pMaxFrames - 1, Math.floor((12 - teamHitShake[i]) * (pMaxFrames / 12)));
                     }
 
-                    // Vòng hào quang phẩm chất to rõ dưới chân thú
                     if (!isPetDead) drawRarityAura(battleCtx, pet, posX, posY + 42, idleTick, 72);
 
                     if (hasSprite) {
@@ -717,11 +758,16 @@
                     syncBattleHpToTeam();
                     currentBattleSyncFn = null;
 
+                    if (retreatBtn) {
+                        retreatBtn.onclick = null;
+                        if (origRetreatAttr) retreatBtn.setAttribute('onclick', origRetreatAttr);
+                    }
+
                     setTimeout(() => {
                         clearInterval(battleInterval);
                         if (enemyHp <= 0) {
-                            let rewardGold = mode === 'boss' ? 700 + (bossLevel * 200) : mode === 'tower' ? 300 + (towerFloor * 50) : 350;
-                            let rewardDiamond = mode === 'boss' ? 10 : (mode === 'tower' && towerFloor % 5 === 0 ? 5 : 0);
+                            let rewardGold = mode === 'boss' ? 1200 + (bossLevel * 250) : mode === 'tower' ? 300 + (towerFloor * 50) : 350;
+                            let rewardDiamond = mode === 'boss' ? 15 : (mode === 'tower' && towerFloor % 5 === 0 ? 5 : 0);
                             playerCoins += rewardGold;
                             playerDiamonds += rewardDiamond;
                             saveGameData();
@@ -736,7 +782,9 @@
                                 saveGameData();
 
                                 showInGameConfirm(
-                                    `🏆 Chúc mừng! Bạn đã vượt qua Tầng ${clearedFloor} và nhận +${rewardGold}🪙${diamondNote}!\n\n🗼 Bạn có muốn tiếp tục khiêu chiến Tầng ${towerFloor} ngay bây giờ không?`,
+                                    `🏆 Chúc mừng! Bạn đã vượt qua Tầng ${clearedFloor} và nhận +${rewardGold}🪙${diamondNote}!
+
+🗼 Bạn có muốn tiếp tục khiêu chiến Tầng ${towerFloor} ngay bây giờ không?`,
                                     () => {
                                         startBattle('tower', selectedIndex);
                                     },
@@ -745,23 +793,32 @@
                                     }
                                 );
                                 return;
-                             } else if (mode === 'boss') {
-                                        bossLevel++;
-                                        localStorage.setItem('ar_boss_level', bossLevel);
-                                        saveGameData();
-                                        alert(`🏆 Chiến thắng vẻ vang! Nhận +${rewardGold}🪙${diamondNote}!`);
-                                        exitBattleScreen();
-                                        openWorldBossLobby(true);
-                                        return;
+                            } else if (mode === 'boss') {
+                                const dealt = Math.max(0, startEnemyHp - Math.max(0, enemyHp));
+                                reportDamageToWorldBoss(dealt);
+                                bossLevel++;
+                                localStorage.setItem('ar_boss_level', bossLevel);
+                                saveGameData();
+
+                                const hunterName = localStorage.getItem('ar_cloud_user') || 'Một Thợ Săn';
+                                if (window.sendWorldChat) {
+                                    window.sendWorldChat(`🏆 [${hunterName}] vừa tung đòn kết liễu hạ gục Boss Thế Giới [${enemy.name}]!`, true);
+                                }
+
+                                alert(`🏆 KẾT LIỄU BOSS THẾ GIỚI!
+Bạn gây ${dealt.toLocaleString()} sát thương và nhận +${rewardGold}🪙${diamondNote}!`);
+                                document.getElementById('battle-screen').classList.add('hidden');
+                                switchGameMusic('map');
+                                openWorldBossLobby(activeWorldBossRegion);
+                                return;
                             } else {
                                 alert(`🏆 Chiến thắng vẻ vang! Nhận +${rewardGold}🪙!`);
                             }
                         } else {
                             if (mode === 'boss') {
-                                clearInterval(battleInterval);
                                 document.getElementById('battle-screen').classList.add('hidden');
                                 switchGameMusic('map');
-                                onPlayerDefeatedByWorldBoss(enemy.maxHp - Math.max(0, enemyHp));
+                                onPlayerDefeatedByWorldBoss(Math.max(0, startEnemyHp - Math.max(0, enemyHp)));
                                 return;
                             }
                             let fallenList = [];
@@ -784,7 +841,8 @@
                             if (fallenList.length > 0) {
                                 sendDefeatedPetsToHospital(fallenList);
                             } else if (deadForeverNames.length > 0) {
-                                alert(`💀 Thất bại!\nLinh thú ${deadForeverNames.join(', ')} đã cạn tim và tử trận vĩnh viễn!`);
+                                alert(`💀 Thất bại!
+Linh thú ${deadForeverNames.join(', ')} đã cạn tim và tử trận vĩnh viễn!`);
                             } else {
                                 alert('💀 Thất bại! Đội hình của bạn đã bị đánh bại.');
                             }
@@ -808,10 +866,7 @@
         }
 
 
-// 3. BOSS THẾ GIỚI 3 MIỀN & SẢNH BOSS MMO
-        // ==========================================
-        // CẤU HÌNH BOSS THẾ GIỚI 3 MIỀN & KHUNG GIỜ XUẤT HIỆN
-        // ==========================================
+// 3. BOSS THẾ GIỚI 3 MIỀN & SẢNH BOSS MMO (ĐỒNG BỘ SERVER /api/world-boss)
         const WORLD_BOSS_REGIONS = [
             {
                 id: 'bac',
@@ -842,63 +897,67 @@
             }
         ];
 
-        // Khung giờ Boss xuất hiện (12h00-13h00 và 20h00-21h00 hằng ngày)
+        // Khung giờ cố định hằng ngày (12h00-13h00 & 20h00-21h00)
         const WORLD_BOSS_HOURS = [
             { startHour: 12, endHour: 13 },
             { startHour: 20, endHour: 21 }
         ];
 
         let worldBossMapMarkers = [];
+        let serverWorldBossList = [];
 
-        // ==========================================
-        // BỘ NHỚ TRẠNG THÁI BOSS THẾ GIỚI ĐỒNG BỘ TỪ SERVER CLOUDFLARE
-        // ==========================================
-        let serverWorldBossState = {};
-        let lastWorldBossSyncTime = 0;
-        window.serverWorldBossActive = false;
+        function getServerBossRegionState(regionId) {
+            if (!Array.isArray(serverWorldBossList)) return null;
+            return serverWorldBossList.find(b => b.region_key === regionId) || null;
+        }
 
-        async function syncWorldBossStateFromServer(force = false) {
-            const now = Date.now();
-            if (!force && now - lastWorldBossSyncTime < 10000) return;
-            lastWorldBossSyncTime = now;
-
+        async function fetchWorldBossServerState(forceRender = false) {
             try {
-                const res = await fetch('/api/world-boss');
-                if (!res.ok) return;
+                const res = await fetch('/api/world-boss?t=' + Date.now(), { cache: 'no-store' });
                 const data = await res.json();
                 if (data.ok && Array.isArray(data.bosses)) {
-                    let anyActive = false;
-                    data.bosses.forEach(b => {
-                        serverWorldBossState[b.region_key] = b;
-                        if (b.active === 1) anyActive = true;
-                    });
-                    window.serverWorldBossActive = anyActive;
+                    serverWorldBossList = data.bosses;
+                    window.serverWorldBossActive = serverWorldBossList.some(b => Number(b.active) === 1);
 
-                    if (typeof map !== 'undefined' && map) {
+                    // Cập nhật thanh máu thực tế nếu đang đứng trong Sảnh Boss
+                    if (wbState.active && activeWorldBossRegion) {
+                        const curRow = getServerBossRegionState(activeWorldBossRegion.id);
+                        if (curRow && Number(curRow.active) === 1) {
+                            if (Number(curRow.max_hp) > 0) wbState.maxHp = Number(curRow.max_hp);
+                            if (Number(curRow.hp) >= 0) wbState.hp = Number(curRow.hp);
+                        }
+                    }
+
+                    if (forceRender && typeof map !== 'undefined' && map) {
                         renderWorldBossMarkersOnMap();
                     }
                 }
             } catch (e) {}
+            return serverWorldBossList;
         }
-        window.syncWorldBossStateFromServer = syncWorldBossStateFromServer;
+        window.fetchWorldBossServerState = fetchWorldBossServerState;
 
-        function isDefaultBossHour() {
+        function isWorldBossScheduleOpen() {
             const h = new Date().getHours();
             return WORLD_BOSS_HOURS.some(slot => h >= slot.startHour && h < slot.endHour);
         }
 
-        function isRegionBossActive(regionId) {
-            if (regionId && serverWorldBossState[regionId]) {
-                if (serverWorldBossState[regionId].active === 1) return true;
-                if (serverWorldBossState[regionId].active === 0 && !isDefaultBossHour()) return false;
+        function isWorldBossRegionOpen(regionId) {
+            // Ưu tiên trạng thái do Admin/GM gọi hoặc thu hồi trên Server
+            const row = getServerBossRegionState(regionId);
+            if (row) {
+                if (Number(row.active) === 1) return true;
+                // Nếu Admin đã chủ động thu hồi (opened_by có giá trị và active = 0) trong 2 tiếng gần đây thì ẩn Boss
+                if (Number(row.active) === 0 && row.opened_by && (Date.now() - Number(row.updated_at || 0) < 7200000)) {
+                    return false;
+                }
             }
-            if (window.serverWorldBossActive) return true;
-            return isDefaultBossHour();
+            if (window.serverWorldBossActive === true) return true;
+            return isWorldBossScheduleOpen();
         }
 
-        function isWorldBossActiveNow(regionId) {
-            if (regionId) return isRegionBossActive(regionId);
-            return WORLD_BOSS_REGIONS.some(r => isRegionBossActive(r.id));
+        function isWorldBossActiveNow() {
+            return WORLD_BOSS_REGIONS.some(r => isWorldBossRegionOpen(r.id));
         }
         window.isWorldBossActiveNow = isWorldBossActiveNow;
 
@@ -913,25 +972,26 @@
             worldBossMapMarkers.forEach(m => map.removeLayer(m));
             worldBossMapMarkers = [];
 
-            if (!isWorldBossActiveNow()) return;
-
             WORLD_BOSS_REGIONS.forEach(region => {
-                if (!isRegionBossActive(region.id)) return;
+                if (!isWorldBossRegionOpen(region.id)) return;
+
+                const row = getServerBossRegionState(region.id);
+                const displayBossName = (row && row.boss_name) ? row.boss_name : region.bossName;
 
                 const bossIcon = L.divIcon({
                     className: 'leaflet-div-icon',
                     html: `
-                    <div onclick="enterRegionalWorldBoss('${region.id}')" class="flex flex-col items-center cursor-pointer pointer-events-auto animate-bounce" style="width: 115px;">
+                    <div onclick="enterRegionalWorldBoss('${region.id}')" class="flex flex-col items-center cursor-pointer pointer-events-auto animate-bounce" style="width: 120px;">
                         <div class="bg-red-950/95 border-2 border-yellow-400 text-yellow-300 text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg whitespace-nowrap">
                             🔥 ${region.regionName}
                         </div>
                         <div class="text-4xl drop-shadow-[0_0_12px_rgba(239,68,68,0.95)] mt-0.5">${region.emoji}</div>
                         <div class="bg-black/85 text-white text-[9px] font-bold px-2 py-0.5 rounded-full border border-red-500/60 whitespace-nowrap">
-                            ${region.bossName}
+                            ${displayBossName}
                         </div>
                     </div>`,
-                    iconSize: [115, 75],
-                    iconAnchor: [57, 45]
+                    iconSize: [120, 75],
+                    iconAnchor: [60, 45]
                 });
 
                 const marker = L.marker([region.lat, region.lng], { icon: bossIcon, zIndexOffset: 1100 }).addTo(map);
@@ -943,26 +1003,19 @@
             });
         }
 
-        // Tự động quét cập nhật trạng thái Boss từ server định kỳ mỗi 20 giây
+        // Đồng bộ trạng thái Boss từ Server mỗi 10 giây cho mọi người chơi
         setInterval(() => {
-            syncWorldBossStateFromServer();
-            if (typeof map !== 'undefined' && map) renderWorldBossMarkersOnMap();
-        }, 20000);
-
-        // Đồng bộ ngay khi tải trang
-        if (typeof window !== 'undefined') {
-            window.addEventListener('load', () => {
-                setTimeout(() => syncWorldBossStateFromServer(true), 1500);
-            });
-        }
+            fetchWorldBossServerState(true);
+        }, 10000);
+        setTimeout(() => fetchWorldBossServerState(true), 1500);
 
         async function openWorldBossMenu() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
 
-            // Hiển thị khung chờ và đồng bộ mới nhất từ Server
-            await syncWorldBossStateFromServer(true);
+            content.innerHTML = `<div class="text-center py-8 text-amber-300 font-bold animate-pulse">🔥 Đang đồng bộ trạng thái Boss 3 Miền từ Server...</div>`;
+            await fetchWorldBossServerState(true);
 
             const isOpen = isWorldBossActiveNow();
             const statusHtml = isOpen
@@ -975,20 +1028,32 @@
                    </div>`;
 
             let regionsHtml = WORLD_BOSS_REGIONS.map(r => {
-                const isRegionOpen = isRegionBossActive(r.id);
+                const regionOpen = isWorldBossRegionOpen(r.id);
+                const row = getServerBossRegionState(r.id);
+                const bName = (row && row.boss_name) ? row.boss_name : r.bossName;
+                const hpInfo = (regionOpen && row && Number(row.max_hp) > 0)
+                    ? `<div class="text-[10px] text-rose-300 font-bold">❤️ HP: ${Number(row.hp).toLocaleString()} / ${Number(row.max_hp).toLocaleString()}</div>`
+                    : '';
+
                 return `
                 <div class="bg-zinc-800/90 border border-red-500/40 p-3 rounded-xl flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="text-3xl shrink-0">${r.emoji}</span>
                         <div class="min-w-0">
-                            <div class="text-xs font-black text-yellow-300 truncate">${r.bossName}</div>
+                            <div class="text-xs font-black text-yellow-300 truncate">${bName}</div>
                             <div class="text-[10px] text-zinc-300">📍 Khu vực: ${r.regionName}</div>
+                            ${hpInfo}
                         </div>
                     </div>
-                    ${isRegionOpen
-                        ? `<button onclick="closeModal(); focusWorldBossOnMap('${r.id}');" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer shrink-0 shadow">
-                               📍 Tới Vị Trí
-                           </button>`
+                    ${regionOpen
+                        ? `<div class="flex flex-col gap-1 shrink-0">
+                               <button onclick="closeModal(); enterRegionalWorldBoss('${r.id}');" class="bg-gradient-to-r from-red-600 to-amber-600 hover:brightness-110 text-white px-3 py-1.5 rounded-lg text-[11px] font-black cursor-pointer shadow">
+                                   ⚔️ Vào Sảnh
+                               </button>
+                               <button onclick="closeModal(); focusWorldBossOnMap('${r.id}');" class="bg-zinc-700 hover:bg-zinc-600 text-zinc-200 px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer">
+                                   📍 Xem Map
+                               </button>
+                           </div>`
                         : `<span class="text-[10px] font-bold text-zinc-500 px-2 py-1 bg-zinc-900 rounded-lg shrink-0">Đang ẩn</span>`
                     }
                 </div>`;
@@ -996,34 +1061,43 @@
 
             content.innerHTML = `
             <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-base text-red-400">👹 Lịch Boss Thế Giới 3 Miền</h3>
+                <h3 class="font-bold text-base text-red-400">👹 Boss Thế Giới 3 Miền</h3>
                 <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
             </div>
             ${statusHtml}
             <div class="space-y-2 mb-3">${regionsHtml}</div>
             <div class="text-[10px] text-zinc-400 text-center">
-                💡 Tới giờ Boss sẽ tự hiện trên bản đồ GPS (Bắc - Trung - Nam). Hãy chạm trực tiếp vào Boss trên bản đồ để vào Sảnh Boss!
+                💡 Bạn có thể bấm <b>Vào Sảnh</b> ngay tại đây hoặc chạm trực tiếp vào biểu tượng Boss trên bản đồ GPS!
             </div>`;
         }
 
         window.focusWorldBossOnMap = function(regionId) {
             const region = WORLD_BOSS_REGIONS.find(r => r.id === regionId);
-            if (!region || !map) return;
-            renderWorldBossMarkersOnMap();
-            map.setView([region.lat, region.lng], 17);
+            if (!region) return;
+            document.getElementById('home-screen')?.classList.add('hidden');
+            document.getElementById('map-screen')?.classList.remove('hidden');
+            if (typeof initMap === 'function') initMap();
+            setTimeout(() => {
+                if (map) {
+                    map.invalidateSize();
+                    renderWorldBossMarkersOnMap();
+                    map.setView([region.lat, region.lng], 17);
+                }
+            }, 120);
         };
 
         window.enterRegionalWorldBoss = async function(regionId) {
-            await syncWorldBossStateFromServer(true);
-            if (!isWorldBossActiveNow(regionId)) {
-                alert(`⏳ Boss Thế Giới đã hết giờ xuất hiện!\nKhung giờ kế tiếp: ${getNextWorldBossTimeText()}`);
+            await fetchWorldBossServerState(false);
+            if (!isWorldBossRegionOpen(regionId)) {
+                alert(`⏳ Boss Thế Giới khu vực này hiện chưa mở hoặc đã bị thu hồi!
+Khung giờ kế tiếp: ${getNextWorldBossTimeText()}`);
                 renderWorldBossMarkersOnMap();
                 return;
             }
             const region = WORLD_BOSS_REGIONS.find(r => r.id === regionId);
             if (!region) return;
             activeWorldBossRegion = region;
-            openWorldBossLobby(false, region);
+            openWorldBossLobby(region);
         };
 
         // ==========================================
@@ -1035,10 +1109,11 @@
         let wbState = {
             active: false,
             loopId: null,
-            hp: 5000000,
-            maxHp: 5000000,
+            hp: 35000,
+            maxHp: 35000,
+            myTotalDamage: 0,
             respawnEndTime: 0,
-            respawnDuration: 15000,
+            respawnDuration: 10000,
             playerX: 500,
             playerY: 880,
             targetX: 500,
@@ -1052,7 +1127,78 @@
             otherPlayers: []
         };
 
-        // Nạp hình nền Sảnh Boss (ưu tiên boss-lobby-bg.webp, dự phòng battle-bg.webp)
+        function reportDamageToWorldBoss(damageDealt) {
+            const dmg = Math.max(0, Math.floor(Number(damageDealt) || 0));
+            if (dmg <= 0) return;
+            wbState.myTotalDamage = (wbState.myTotalDamage || 0) + dmg;
+            wbState.hp = Math.max(0, (wbState.hp || 0) - dmg);
+
+            const dmgLabel = document.getElementById('wb-top-dmg-label');
+            if (dmgLabel) {
+                dmgLabel.innerText = `Sát thương của bạn: ${wbState.myTotalDamage.toLocaleString()}`;
+            }
+
+            // Gửi sát thương lên Server nếu backend có hỗ trợ action 'damage'
+            if (activeWorldBossRegion) {
+                fetch('/api/world-boss', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'damage',
+                        regionKey: activeWorldBossRegion.id,
+                        damage: dmg,
+                        username: localStorage.getItem('ar_cloud_user') || ''
+                    })
+                }).catch(() => {});
+            }
+        }
+        window.reportDamageToWorldBoss = reportDamageToWorldBoss;
+
+        // Nút [⚔️ ĐÁNH BOSS (3vs1)] & Chạm vào Boss trong Sảnh Boss
+        window.triggerWorldBossFight = function() {
+            if (Date.now() < wbState.respawnEndTime) {
+                const remain = Math.ceil((wbState.respawnEndTime - Date.now()) / 1000);
+                alert(`⏳ Đội hình đang hồi sức sau khi bị đánh gục! Chờ ${remain}s nữa để xuất kích.`);
+                return;
+            }
+            if (!team || team.length < 3) {
+                alert('⚠️ Boss Thế Giới yêu cầu đội hình đủ 3 linh thú (3vs1)!
+Hãy vào Túi / Trang Trại để xếp đủ 3 thú vào đội.');
+                return;
+            }
+            const alivePets = team.filter(p => p && p.hp > 0);
+            if (alivePets.length === 0) {
+                alert('⚠️ Tất cả linh thú trong đội đã cạn HP! Hãy hồi phục trước khi khiêu chiến Boss.');
+                return;
+            }
+            startBattle('boss', 0);
+        };
+        window.startWorldBossBattle = window.triggerWorldBossFight;
+
+        // Xử lý khi người chơi thua Boss Thế Giới: Đưa về vạch xuất phát chờ 10 giây, KHÔNG làm mất tim thú
+        window.onPlayerDefeatedByWorldBoss = function(damageDealt = 0) {
+            if (damageDealt > 0) {
+                reportDamageToWorldBoss(damageDealt);
+            }
+            // Giữ tối thiểu 1 HP cho thú trong đội để có thể tiếp tục đánh Boss sau 10s chờ hồi sinh tại Sảnh
+            team.forEach(p => {
+                if (p && p.hp <= 0) p.hp = Math.max(1, Math.floor((p.maxHp || 100) * 0.25));
+            });
+            saveGameData();
+
+            wbState.respawnDuration = 10000;
+            wbState.respawnEndTime = Date.now() + wbState.respawnDuration;
+            wbState.playerX = wbState.spawnX;
+            wbState.playerY = wbState.spawnY;
+            wbState.targetX = wbState.spawnX;
+            wbState.targetY = wbState.spawnY;
+
+            openWorldBossLobby(activeWorldBossRegion);
+            alert(`💀 Đội hình bị Boss đánh gục!
+Bạn đã gây ${Math.floor(damageDealt).toLocaleString()} sát thương. Chờ 10 giây tại vạch xuất phát để tiếp tục tấn công!`);
+        };
+
+        // Nạp hình nền Sảnh Boss
         const wbBgImg = new Image();
         wbBgImg.onerror = () => {
             if (!wbBgImg.dataset.fallback) {
@@ -1062,7 +1208,6 @@
         };
         wbBgImg.src = './boss-lobby-bg.webp';
 
-        // Nạp Sprite Thợ Săn Nam / Nữ (10 cột x 4 hàng)
         const wbHunterSheets = {
             Nam: { idle: new Image(), walk: new Image() },
             Nữ:  { idle: new Image(), walk: new Image() }
@@ -1105,6 +1250,11 @@
                             renderY: old && typeof old.renderY === 'number' ? old.renderY : p.y
                         };
                     });
+
+                    const onlineEl = document.getElementById('wb-online-count');
+                    if (onlineEl) {
+                        onlineEl.innerText = `👥 ${wbState.otherPlayers.length + 1}`;
+                    }
                 }
             } catch (e) {}
         }
@@ -1119,6 +1269,7 @@
                     return;
                 }
                 syncWorldBossLobbyPlayers();
+                fetchWorldBossServerState(false);
             }, 1500);
         }
 
@@ -1127,7 +1278,6 @@
             const stateKey = isWalking ? 'walk' : 'idle';
             const img = wbHunterSheets[gKey]?.[stateKey];
 
-            // Vòng sáng định vị dưới chân nhân vật
             ctx.save();
             ctx.beginPath();
             ctx.ellipse(x, y + 24, 15, 6, 0, 0, Math.PI * 2);
@@ -1138,7 +1288,6 @@
             ctx.stroke();
             ctx.restore();
 
-            // Vẽ Sprite 10 cột x 4 hàng của Thợ Săn Nam / Nữ
             if (img && img.complete && img.naturalWidth > 0) {
                 const cols = 10;
                 const rows = 4;
@@ -1161,7 +1310,6 @@
                 ctx.fillText(gKey === 'Nữ' ? '👧' : '👦', x, y);
             }
 
-            // Bảng tên nhân vật phía trên đầu
             ctx.save();
             ctx.font = 'bold 11px sans-serif';
             ctx.textAlign = 'center';
@@ -1178,9 +1326,11 @@
         }
 
         window.openWorldBossLobby = function(regionData) {
-            if (regionData) activeWorldBossRegion = regionData;
-            if (!activeWorldBossRegion && typeof worldBossRegions !== 'undefined' && worldBossRegions.length > 0) {
-                activeWorldBossRegion = worldBossRegions[0];
+            if (regionData && typeof regionData === 'object') {
+                activeWorldBossRegion = regionData;
+            }
+            if (!activeWorldBossRegion && WORLD_BOSS_REGIONS.length > 0) {
+                activeWorldBossRegion = WORLD_BOSS_REGIONS[0];
             }
 
             const screen = document.getElementById('world-boss-screen');
@@ -1190,17 +1340,26 @@
             document.getElementById('map-screen')?.classList.add('hidden');
             screen.classList.remove('hidden');
 
-            const titleEl = document.getElementById('wb-boss-title');
-            if (titleEl && activeWorldBossRegion) {
-                titleEl.innerText = `${activeWorldBossRegion.emoji || '🐉'} ${activeWorldBossRegion.bossName || 'BOSS THẾ GIỚI'}`;
+            const serverRow = activeWorldBossRegion ? getServerBossRegionState(activeWorldBossRegion.id) : null;
+            if (serverRow && Number(serverRow.active) === 1) {
+                if (Number(serverRow.max_hp) > 0) wbState.maxHp = Number(serverRow.max_hp);
+                if (Number(serverRow.hp) > 0) wbState.hp = Number(serverRow.hp);
+            } else if (!wbState.hp || wbState.hp <= 0) {
+                wbState.maxHp = 35000;
+                wbState.hp = 35000;
             }
 
-            if (activeWorldBossRegion && serverWorldBossState[activeWorldBossRegion.id]) {
-                const s = serverWorldBossState[activeWorldBossRegion.id];
-                if (s.max_hp > 0) {
-                    wbState.maxHp = s.max_hp;
-                    wbState.hp = s.hp > 0 ? s.hp : s.max_hp;
-                }
+            const bossDisplayName = (serverRow && serverRow.boss_name)
+                ? serverRow.boss_name
+                : (activeWorldBossRegion?.bossName || 'BOSS THẾ GIỚI');
+
+            const headerEl = document.getElementById('wb-header-title');
+            if (headerEl) {
+                headerEl.innerHTML = `${activeWorldBossRegion?.emoji || '🔥'} ${bossDisplayName.toUpperCase()} (CẤP <span id="wb-boss-lv">${bossLevel}</span>)`;
+            }
+            const dmgLabel = document.getElementById('wb-top-dmg-label');
+            if (dmgLabel) {
+                dmgLabel.innerText = `Sát thương của bạn: ${(wbState.myTotalDamage || 0).toLocaleString()}`;
             }
 
             wbState.active = true;
@@ -1227,10 +1386,14 @@
                         : Math.max(180, Math.min(950, ny));
 
                     const clickBossDist = Math.hypot(nx - wbState.bossX, ny - wbState.bossY);
-                    if (!isWaiting && clickBossDist <= 130 && typeof startWorldBossBattle === 'function') {
+                    if (!isWaiting && clickBossDist <= 140) {
                         const playerDist = Math.hypot(wbState.playerX - wbState.bossX, wbState.playerY - wbState.bossY);
-                        if (playerDist <= 185) {
-                            startWorldBossBattle();
+                        if (playerDist <= 220) {
+                            triggerWorldBossFight();
+                        } else {
+                            // Tự động chạy thẳng tới sát Boss rồi khiêu chiến
+                            wbState.targetX = wbState.bossX;
+                            wbState.targetY = wbState.bossY + 115;
                         }
                     }
                 });
@@ -1280,7 +1443,6 @@
             const tick = now / 95;
             const isWaiting = now < wbState.respawnEndTime;
 
-            // Cập nhật thông báo hồi sinh & thanh HP Boss
             const banner = document.getElementById('wb-respawn-banner');
             if (banner) {
                 if (isWaiting) {
@@ -1301,7 +1463,6 @@
             if (hpBarEl) hpBarEl.style.width = `${Math.max(0, (wbState.hp / wbState.maxHp) * 100)}%`;
             if (hpTxtEl) hpTxtEl.innerText = `${wbState.hp.toLocaleString()} / ${wbState.maxHp.toLocaleString()} HP`;
 
-            // Di chuyển nhân vật của bản thân & xác định hướng quay mặt
             const dx = wbState.targetX - wbState.playerX;
             const dy = wbState.targetY - wbState.playerY;
             const dist = Math.hypot(dx, dy);
@@ -1309,7 +1470,7 @@
 
             if (dist > 4) {
                 isPlayerWalking = true;
-                const speed = 6;
+                const speed = 6.5;
                 let nextY = wbState.playerY + (dy / dist) * speed;
                 if (isWaiting && nextY < wbState.gateLineY + 25) {
                     nextY = wbState.gateLineY + 25;
@@ -1329,7 +1490,7 @@
             const distToBoss = Math.hypot(wbState.playerX - wbState.bossX, wbState.playerY - wbState.bossY);
             const atkBtn = document.getElementById('wb-attack-btn');
             if (atkBtn) {
-                if (!isWaiting && distToBoss <= 185) atkBtn.classList.remove('hidden');
+                if (!isWaiting && distToBoss <= 220) atkBtn.classList.remove('hidden');
                 else atkBtn.classList.add('hidden');
             }
 
@@ -1415,7 +1576,9 @@
                 ctx.fillText(activeWorldBossRegion?.emoji || '🐉', bx, by);
             }
 
-            const bossTitle = `🔥 ${activeWorldBossRegion?.bossName || 'BOSS THẾ GIỚI'} (Chạm để đánh)`;
+            const serverRow = activeWorldBossRegion ? getServerBossRegionState(activeWorldBossRegion.id) : null;
+            const bNameDisplay = (serverRow && serverRow.boss_name) ? serverRow.boss_name : (activeWorldBossRegion?.bossName || 'BOSS THẾ GIỚI');
+            const bossTitle = `🔥 ${bNameDisplay} (Chạm để đánh)`;
             ctx.save();
             ctx.font = 'bold 12px sans-serif';
             ctx.textAlign = 'center';
@@ -1461,7 +1624,7 @@
                 );
             });
 
-            // 5. VẼ NHÂN VẬT CỦA ANH
+            // 5. VẼ NHÂN VẬT CỦA BẢN THÂN
             const myGender = localStorage.getItem('ar_cloud_gender') === 'Nữ' ? 'Nữ' : 'Nam';
             const myName = localStorage.getItem('ar_cloud_user') || 'BẠN';
             const px = toPxX(wbState.playerX);
@@ -1472,7 +1635,7 @@
         }
 
 
-// Gắn các hàm chiến đấu ra phạm vi toàn cục (window) để HTML & các module khác gọi trực tiếp
+// Gắn các hàm chiến đấu ra phạm vi toàn cục (window)
 window.openTowerMenu = openTowerMenu;
 window.closeTowerScreen = closeTowerScreen;
 window.openArenaMenu = openArenaMenu;

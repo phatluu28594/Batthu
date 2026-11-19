@@ -1,7 +1,7 @@
 // ============================================================================
 // BẮT THÚ VƯƠNG - MODULE QUẢN TRỊ VIÊN CAO CẤP (admin.js - Bản Đầy Đủ)
 // Bao gồm: Tạo Thú (tùy chọn kỹ năng Hồi Máu x2 Dame), Tạo Trứng, Cấp Tài Nguyên,
-// Gọi Boss Thế Giới 3 Miền & Hiển thị nhãn kỹ năng hồi máu trong hồ sơ thú.
+// Gọi / Thu hồi / Hồi Máu Boss Thế Giới 3 Miền đồng bộ 100% với arena.js & Server
 // ============================================================================
 
 (function () {
@@ -12,7 +12,6 @@
         return ADMIN_ACCOUNTS.some(id => id.toLowerCase() === u.toLowerCase());
     }
 
-    // Tự động gắn hoặc gỡ nút [👑 GM] tùy theo tài khoản đang đăng nhập
     function syncAdminUiButton() {
         const isAdmin = isCurrentUserAdmin();
         let homeBtn = document.getElementById('btn-admin-home');
@@ -48,7 +47,6 @@
     setInterval(syncAdminUiButton, 2000);
     window.addEventListener('load', syncAdminUiButton);
 
-    // Dựng đối tượng linh thú tùy chỉnh chuẩn dữ liệu game
     function buildAdminCustomPet(name, rarityIdx, level, customElement, customTraitType, forceHealSkill = false) {
         const monsters = (typeof allMonsters !== 'undefined') ? allMonsters : [];
         const rarityList = (typeof rarities !== 'undefined') ? rarities : [];
@@ -90,7 +88,6 @@
         return typeof sanitizePetsData === 'function' ? sanitizePetsData([raw])[0] : raw;
     }
 
-    // Gửi gói quà Admin qua API Cloudflare Worker (/api/admin) cho người chơi khác
     async function sendAdminGiftToRemotePlayer(targetUsername, giftPayload) {
         const adminUser = localStorage.getItem('ar_cloud_user');
         const adminPin = localStorage.getItem('ar_cloud_pin');
@@ -121,7 +118,6 @@
         }
     }
 
-    // Mở giao diện Bảng Điều Khiển Admin
     window.openAdminGmModal = function () {
         if (!isCurrentUserAdmin()) {
             alert('⛔ Bạn không có quyền truy cập Bảng Điều Khiển Admin!');
@@ -332,7 +328,7 @@
         }
     };
 
-    // Triệu hồi khẩn cấp Boss Thế Giới 3 Miền và đồng bộ lên Cloudflare Server
+    // Triệu hồi khẩn cấp Boss Thế Giới 3 Miền và đồng bộ ngay với arena.js + Server
     window.adminForceSpawnWorldBoss = async function () {
         const adminUser = localStorage.getItem('ar_cloud_user');
         const adminPin = localStorage.getItem('ar_cloud_pin');
@@ -341,10 +337,12 @@
             return;
         }
 
+        const lv = (typeof bossLevel !== 'undefined') ? bossLevel : 1;
+        const maxHp = 35000 + (lv - 1) * 5000;
         const regions = [
-            { regionKey: 'bac', active: 1, bossName: 'Hỏa Kỳ Lân Bắc Cực', hp: 35000, maxHp: 35000 },
-            { regionKey: 'trung', active: 1, bossName: 'Cửu Đầu Xà Hydra', hp: 35000, maxHp: 35000 },
-            { regionKey: 'nam', active: 1, bossName: 'Địa Ngục Khuyển Cerberus', hp: 35000, maxHp: 35000 }
+            { regionKey: 'bac', active: 1, bossName: 'Hỏa Kỳ Lân Bắc Cực', hp: maxHp, maxHp: maxHp },
+            { regionKey: 'trung', active: 1, bossName: 'Cửu Đầu Xà Hydra', hp: maxHp, maxHp: maxHp },
+            { regionKey: 'nam', active: 1, bossName: 'Địa Ngục Khuyển Cerberus', hp: maxHp, maxHp: maxHp }
         ];
 
         try {
@@ -360,11 +358,13 @@
             }
 
             window.serverWorldBossActive = true;
-            if (typeof isWorldBossActiveNow !== 'undefined') {
-                isWorldBossActiveNow = function () { return true; };
+            if (typeof wbState !== 'undefined') {
+                wbState.maxHp = maxHp;
+                wbState.hp = maxHp;
             }
-            window.isWorldBossActiveNow = function () { return true; };
-            if (typeof renderWorldBossMarkersOnMap === 'function') {
+            if (typeof fetchWorldBossServerState === 'function') {
+                await fetchWorldBossServerState(true);
+            } else if (typeof renderWorldBossMarkersOnMap === 'function') {
                 renderWorldBossMarkersOnMap();
             }
             if (typeof window.sendWorldChat === 'function') {
@@ -405,10 +405,9 @@
             }
 
             window.serverWorldBossActive = false;
-            if (typeof isWorldBossActiveNow !== 'undefined') {
-                delete window.isWorldBossActiveNow;
-            }
-            if (typeof renderWorldBossMarkersOnMap === 'function') {
+            if (typeof fetchWorldBossServerState === 'function') {
+                await fetchWorldBossServerState(true);
+            } else if (typeof renderWorldBossMarkersOnMap === 'function') {
                 renderWorldBossMarkersOnMap();
             }
             if (typeof window.sendWorldChat === 'function') {
@@ -425,7 +424,7 @@
         const adminUser = localStorage.getItem('ar_cloud_user');
         const adminPin = localStorage.getItem('ar_cloud_pin');
         const lv = (typeof bossLevel !== 'undefined') ? bossLevel : 1;
-        const maxHp = 5000 + lv * 3000;
+        const maxHp = 35000 + (lv - 1) * 5000;
         if (typeof wbState !== 'undefined') {
             wbState.maxHp = maxHp;
             wbState.hp = maxHp;
@@ -446,6 +445,9 @@
                         ]
                     })
                 });
+                if (typeof fetchWorldBossServerState === 'function') {
+                    await fetchWorldBossServerState(true);
+                }
             } catch (e) {}
         }
         alert(`⚡ Đã hồi đầy ${maxHp.toLocaleString()} HP cho Boss Thế Giới (đã đồng bộ Server)!`);
@@ -459,7 +461,7 @@
             const pet = (typeof team !== 'undefined') ? team[index] : null;
             if (!pet) return;
             if (pet.element === 'Moc' || pet.element === 'Thuy' || pet.hasHealSkill) {
-                const badgeContainer = document.querySelector('#modal-content .bg-amber-950\\/70');
+                const badgeContainer = document.querySelector('#modal-content .bg-amber-950\/70');
                 if (badgeContainer && !document.getElementById('pet-detail-heal-badge')) {
                     badgeContainer.insertAdjacentHTML(
                         'afterend',
