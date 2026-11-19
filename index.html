@@ -5420,132 +5420,40 @@
         // ==========================================
         // SẢNH BOSS THẾ GIỚI MMO (VẠCH NGANG & CHỜ XUẤT PHÁT)
         // ==========================================
-        const wbState = {
+        let activeWorldBossRegion = null;
+        let wbPresenceTimer = null;
+
+        let wbState = {
             active: false,
             loopId: null,
-            maxHp: 10000,
-            hp: 10000,
-            myDamage: 0,
-            bossX: 500,
-            bossY: 310,
-            gateLineY: 730,
-            spawnX: 500,
-            spawnY: 865,
-            playerX: 500,
-            playerY: 865,
-            targetX: 500,
-            targetY: 865,
+            hp: 5000000,
+            maxHp: 5000000,
             respawnEndTime: 0,
-            respawnDuration: 10000,
+            respawnDuration: 15000,
+            playerX: 500,
+            playerY: 880,
+            targetX: 500,
+            targetY: 880,
+            playerDir: 'up',
+            spawnX: 500,
+            spawnY: 880,
+            gateLineY: 740,
+            bossX: 500,
+            bossY: 360,
             otherPlayers: []
         };
 
-        window.openWorldBossLobby = function(resetBoss = false, region = activeWorldBossRegion) {
-            checkPetSurvival();
-            if (!team || team.length < 3) {
-                alert('⚠️ Cần đủ 3 linh thú trong đội hình để tham gia Boss Thế Giới!');
-                return;
-            }
-            if (region) activeWorldBossRegion = region;
-            if (resetBoss || wbState.hp <= 0) {
-                wbState.maxHp = 5000 + bossLevel * 3000;
-                wbState.hp = wbState.maxHp;
-            }
-
-            const titleEl = document.getElementById('wb-header-title');
-            if (titleEl && activeWorldBossRegion) {
-                titleEl.innerText = `🔥 ${activeWorldBossRegion.bossName} (${activeWorldBossRegion.regionName})`;
-            }
-
-            document.getElementById('world-boss-screen').classList.remove('hidden');
-            wbState.active = true;
-
-            if (wbState.otherPlayers.length === 0) {
-                const names = ['MinhKhang', 'LinhNhi99', 'ThợSănRồng', 'HảiĐăng', 'BảoTrâm', 'PhongVân'];
-                wbState.otherPlayers = names.map((n, i) => ({
-                    name: n,
-                    color: ['#38bdf8', '#f472b6', '#a78bfa', '#34d399', '#fbbf24', '#fb7185'][i % 6]
-                }));
-            }
-
-            const canvas = document.getElementById('world-boss-canvas');
-            canvas.onclick = function(e) {
-                const rect = canvas.getBoundingClientRect();
-                const clickX = ((e.clientX - rect.left) / rect.width) * 1000;
-                const clickY = ((e.clientY - rect.top) / rect.height) * 1000;
-                const isWaiting = Date.now() < wbState.respawnEndTime;
-
-                if (isWaiting) {
-                    wbState.targetX = Math.max(80, Math.min(920, clickX));
-                    wbState.targetY = Math.max(wbState.gateLineY + 30, Math.min(945, clickY));
-                    return;
-                }
-
-                const distClickBoss = Math.hypot(clickX - wbState.bossX, clickY - wbState.bossY);
-                const distPlayerBoss = Math.hypot(wbState.playerX - wbState.bossX, wbState.playerY - wbState.bossY);
-
-                if (distClickBoss <= 115 && distPlayerBoss <= 175) {
-                    triggerWorldBossFight();
-                    return;
-                }
-
-                if (distClickBoss <= 115) {
-                    wbState.targetX = wbState.bossX;
-                    wbState.targetY = wbState.bossY + 125;
-                } else {
-                    wbState.targetX = Math.max(80, Math.min(920, clickX));
-                    wbState.targetY = Math.max(140, Math.min(945, clickY));
-                }
-            };
-
-            if (wbState.loopId) cancelAnimationFrame(wbState.loopId);
-            renderWorldBossLoop();
-        };
-
-        window.exitWorldBossLobby = function() {
-            wbState.active = false;
-            if (wbState.loopId) cancelAnimationFrame(wbState.loopId);
-            document.getElementById('world-boss-screen').classList.add('hidden');
-        };
-
-        window.triggerWorldBossFight = function() {
-            if (Date.now() < wbState.respawnEndTime) return;
-            team.forEach(p => {
-                if (p) {
-                    ensurePetGears(p);
-                    p.hp = p.maxHp + getPetGearBonus(p).maxHp;
-                }
-            });
-            saveGameData();
-            wbState.active = false;
-            if (wbState.loopId) cancelAnimationFrame(wbState.loopId);
-            document.getElementById('world-boss-screen').classList.add('hidden');
-            startBattle('boss');
-        };
-
-        window.onPlayerDefeatedByWorldBoss = function(damageDealtThisRun = 0) {
-            wbState.myDamage += Math.max(0, Math.floor(damageDealtThisRun));
-            wbState.hp = Math.max(1, wbState.hp - Math.floor(damageDealtThisRun));
-            document.getElementById('wb-top-dmg-label').innerText = `Sát thương của bạn: ${wbState.myDamage.toLocaleString()}`;
-
-            wbState.playerX = wbState.spawnX;
-            wbState.playerY = wbState.spawnY;
-            wbState.targetX = wbState.spawnX;
-            wbState.targetY = wbState.spawnY;
-            wbState.respawnEndTime = Date.now() + wbState.respawnDuration;
-
-            document.getElementById('world-boss-screen').classList.remove('hidden');
-            wbState.active = true;
-            if (wbState.loopId) cancelAnimationFrame(wbState.loopId);
-            renderWorldBossLoop();
-        };
-
-        // ==========================================
-        // NẠP HÌNH NỀN SẢNH BOSS & SPRITE NHÂN VẬT THỢ SĂN (NAM / NỮ)
-        // ==========================================
+        // Nạp hình nền Sảnh Boss (ưu tiên boss-lobby-bg.webp, dự phòng battle-bg.webp)
         const wbBgImg = new Image();
-        wbBgImg.src = './boss-lobby-bg.webp'; // Anh có thể đổi thành './boss-lobby-bg.webp' nếu có ảnh nền sảnh riêng
+        wbBgImg.onerror = () => {
+            if (!wbBgImg.dataset.fallback) {
+                wbBgImg.dataset.fallback = '1';
+                wbBgImg.src = './battle-bg.webp';
+            }
+        };
+        wbBgImg.src = './boss-lobby-bg.webp';
 
+        // Nạp Sprite Thợ Săn Nam / Nữ (10 cột x 4 hàng)
         const wbHunterSheets = {
             Nam: { idle: new Image(), walk: new Image() },
             Nữ:  { idle: new Image(), walk: new Image() }
@@ -5556,6 +5464,54 @@
         wbHunterSheets.Nữ.walk.src  = 'assets/char_nu_walk.webp';
 
         const WB_DIR_ROW = { down: 0, left: 1, right: 2, up: 3 };
+
+        async function syncWorldBossLobbyPlayers() {
+            if (!wbState.active) return;
+            const myUser = (localStorage.getItem('ar_cloud_user') || '').trim();
+            if (!myUser) return;
+
+            try {
+                const res = await fetch('/api/presence', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'world_boss',
+                        username: myUser,
+                        gender: localStorage.getItem('ar_cloud_gender') === 'Nữ' ? 'Nữ' : 'Nam',
+                        bossId: activeWorldBossRegion?.id || activeWorldBossRegion?.bossName || 'default',
+                        x: wbState.playerX,
+                        y: wbState.playerY,
+                        dir: wbState.playerDir || 'up',
+                        leadPet: (typeof team !== 'undefined' && team[0]) ? team[0].name : ''
+                    })
+                });
+                const data = await res.json();
+                if (data.ok && Array.isArray(data.players)) {
+                    const prevMap = new Map(wbState.otherPlayers.map(p => [p.name, p]));
+                    wbState.otherPlayers = data.players.map(p => {
+                        const old = prevMap.get(p.name);
+                        return {
+                            ...p,
+                            renderX: old && typeof old.renderX === 'number' ? old.renderX : p.x,
+                            renderY: old && typeof old.renderY === 'number' ? old.renderY : p.y
+                        };
+                    });
+                }
+            } catch (e) {}
+        }
+
+        function startWorldBossLobbySync() {
+            if (wbPresenceTimer) clearInterval(wbPresenceTimer);
+            syncWorldBossLobbyPlayers();
+            wbPresenceTimer = setInterval(() => {
+                if (!wbState.active) {
+                    clearInterval(wbPresenceTimer);
+                    wbPresenceTimer = null;
+                    return;
+                }
+                syncWorldBossLobbyPlayers();
+            }, 1500);
+        }
 
         function drawWorldBossHunter(ctx, x, y, gender, isWalking, dir, labelText, isSelf, tick) {
             const gKey = gender === 'Nữ' ? 'Nữ' : 'Nam';
@@ -5590,7 +5546,6 @@
                     x - drawW / 2, y - drawH + 24, drawW, drawH
                 );
             } else {
-                // Dự phòng khi ảnh đang tải
                 ctx.font = '26px serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
@@ -5613,6 +5568,82 @@
             ctx.restore();
         }
 
+        window.openWorldBossLobby = function(regionData) {
+            if (regionData) activeWorldBossRegion = regionData;
+            if (!activeWorldBossRegion && typeof worldBossRegions !== 'undefined' && worldBossRegions.length > 0) {
+                activeWorldBossRegion = worldBossRegions[0];
+            }
+
+            const screen = document.getElementById('world-boss-screen');
+            if (!screen) return;
+
+            document.getElementById('home-screen')?.classList.add('hidden');
+            document.getElementById('map-screen')?.classList.add('hidden');
+            screen.classList.remove('hidden');
+
+            const titleEl = document.getElementById('wb-boss-title');
+            if (titleEl && activeWorldBossRegion) {
+                titleEl.innerText = `${activeWorldBossRegion.emoji || '🐉'} ${activeWorldBossRegion.bossName || 'BOSS THẾ GIỚI'}`;
+            }
+
+            wbState.active = true;
+            wbState.playerX = wbState.spawnX;
+            wbState.playerY = wbState.spawnY;
+            wbState.targetX = wbState.spawnX;
+            wbState.targetY = wbState.spawnY;
+            wbState.playerDir = 'up';
+            wbState.otherPlayers = [];
+
+            const canvas = document.getElementById('world-boss-canvas');
+            if (canvas && !canvas.dataset.boundTap) {
+                canvas.dataset.boundTap = '1';
+                canvas.addEventListener('pointerdown', (e) => {
+                    if (!wbState.active) return;
+                    const rect = canvas.getBoundingClientRect();
+                    const nx = ((e.clientX - rect.left) / rect.width) * 1000;
+                    const ny = ((e.clientY - rect.top) / rect.height) * 1000;
+
+                    const isWaiting = Date.now() < wbState.respawnEndTime;
+                    wbState.targetX = Math.max(60, Math.min(940, nx));
+                    wbState.targetY = isWaiting
+                        ? Math.max(wbState.gateLineY + 25, Math.min(950, ny))
+                        : Math.max(180, Math.min(950, ny));
+
+                    const clickBossDist = Math.hypot(nx - wbState.bossX, ny - wbState.bossY);
+                    if (!isWaiting && clickBossDist <= 130 && typeof startWorldBossBattle === 'function') {
+                        const playerDist = Math.hypot(wbState.playerX - wbState.bossX, wbState.playerY - wbState.bossY);
+                        if (playerDist <= 185) {
+                            startWorldBossBattle();
+                        }
+                    }
+                });
+            }
+
+            startWorldBossLobbySync();
+            if (wbState.loopId) cancelAnimationFrame(wbState.loopId);
+            renderWorldBossLoop();
+        };
+
+        window.exitWorldBossLobby = function() {
+            wbState.active = false;
+            if (wbState.loopId) {
+                cancelAnimationFrame(wbState.loopId);
+                wbState.loopId = null;
+            }
+            if (wbPresenceTimer) {
+                clearInterval(wbPresenceTimer);
+                wbPresenceTimer = null;
+            }
+            wbState.otherPlayers = [];
+
+            document.getElementById('world-boss-screen')?.classList.add('hidden');
+            const mapScreen = document.getElementById('map-screen');
+            if (mapScreen) {
+                mapScreen.classList.remove('hidden');
+                if (typeof map !== 'undefined' && map) setTimeout(() => map.invalidateSize(), 100);
+            }
+        };
+
         function renderWorldBossLoop() {
             if (!wbState.active) return;
             const canvas = document.getElementById('world-boss-canvas');
@@ -5634,20 +5665,26 @@
 
             // Cập nhật thông báo hồi sinh & thanh HP Boss
             const banner = document.getElementById('wb-respawn-banner');
-            if (isWaiting) {
-                const remainMs = wbState.respawnEndTime - now;
-                const pct = Math.min(100, ((wbState.respawnDuration - remainMs) / wbState.respawnDuration) * 100);
-                banner.classList.remove('hidden');
-                document.getElementById('wb-respawn-timer').innerText = `${Math.ceil(remainMs / 1000)}s`;
-                document.getElementById('wb-respawn-progress').style.width = `${pct}%`;
-            } else {
-                banner.classList.add('hidden');
+            if (banner) {
+                if (isWaiting) {
+                    const remainMs = wbState.respawnEndTime - now;
+                    const pct = Math.min(100, ((wbState.respawnDuration - remainMs) / wbState.respawnDuration) * 100);
+                    banner.classList.remove('hidden');
+                    const timerEl = document.getElementById('wb-respawn-timer');
+                    const progEl = document.getElementById('wb-respawn-progress');
+                    if (timerEl) timerEl.innerText = `${Math.ceil(remainMs / 1000)}s`;
+                    if (progEl) progEl.style.width = `${pct}%`;
+                } else {
+                    banner.classList.add('hidden');
+                }
             }
 
-            document.getElementById('wb-hp-bar').style.width = `${(wbState.hp / wbState.maxHp) * 100}%`;
-            document.getElementById('wb-hp-text').innerText = `${wbState.hp.toLocaleString()} / ${wbState.maxHp.toLocaleString()} HP`;
+            const hpBarEl = document.getElementById('wb-hp-bar');
+            const hpTxtEl = document.getElementById('wb-hp-text');
+            if (hpBarEl) hpBarEl.style.width = `${Math.max(0, (wbState.hp / wbState.maxHp) * 100)}%`;
+            if (hpTxtEl) hpTxtEl.innerText = `${wbState.hp.toLocaleString()} / ${wbState.maxHp.toLocaleString()} HP`;
 
-            // Di chuyển nhân vật của bản thân & xác định hướng quay mặt (up/down/left/right)
+            // Di chuyển nhân vật của bản thân & xác định hướng quay mặt
             const dx = wbState.targetX - wbState.playerX;
             const dy = wbState.targetY - wbState.playerY;
             const dist = Math.hypot(dx, dy);
@@ -5674,15 +5711,14 @@
 
             const distToBoss = Math.hypot(wbState.playerX - wbState.bossX, wbState.playerY - wbState.bossY);
             const atkBtn = document.getElementById('wb-attack-btn');
-            if (!isWaiting && distToBoss <= 175) {
-                atkBtn.classList.remove('hidden');
-            } else {
-                atkBtn.classList.add('hidden');
+            if (atkBtn) {
+                if (!isWaiting && distToBoss <= 185) atkBtn.classList.remove('hidden');
+                else atkBtn.classList.add('hidden');
             }
 
             ctx.clearRect(0, 0, W, H);
 
-            // 1. VẼ HÌNH NỀN BACKGROUND SẢNH BOSS (CĂN GIỮA TỶ LỆ CHUẨN)
+            // 1. VẼ HÌNH NỀN BACKGROUND SẢNH BOSS
             if (wbBgImg.complete && wbBgImg.naturalWidth > 0) {
                 const imgRatio = wbBgImg.naturalWidth / wbBgImg.naturalHeight;
                 const canvasRatio = W / H;
@@ -5695,8 +5731,7 @@
                     offsetX = (W - drawW) / 2;
                 }
                 ctx.drawImage(wbBgImg, offsetX, offsetY, drawW, drawH);
-                // Phủ lớp tối nhẹ để nổi bật Boss và nhân vật
-                ctx.fillStyle = 'rgba(9, 9, 11, 0.32)';
+                ctx.fillStyle = 'rgba(9, 9, 11, 0.25)';
                 ctx.fillRect(0, 0, W, H);
             } else {
                 const bgGrad = ctx.createRadialGradient(W / 2, H * 0.35, 30, W / 2, H * 0.5, H * 0.85);
@@ -5707,9 +5742,9 @@
                 ctx.fillRect(0, 0, W, H);
             }
 
-            // 2. VẼ VẠCH XUẤT PHÁT & VÒNG ĐIỂM XUẤT PHÁT PHÍA DƯỚI
+            // 2. VẼ VẠCH XUẤT PHÁT & ĐIỂM XUẤT PHÁT
             const gateY = toPxY(wbState.gateLineY);
-            ctx.fillStyle = isWaiting ? 'rgba(239, 68, 68, 0.16)' : 'rgba(16, 185, 129, 0.10)';
+            ctx.fillStyle = isWaiting ? 'rgba(239, 68, 68, 0.16)' : 'rgba(16, 185, 129, 0.08)';
             ctx.fillRect(0, gateY, W, H - gateY);
 
             ctx.save();
@@ -5717,7 +5752,7 @@
             ctx.setLineDash([14, 8]);
             ctx.moveTo(0, gateY);
             ctx.lineTo(W, gateY);
-            ctx.lineWidth = 3.5;
+            ctx.lineWidth = 3;
             ctx.strokeStyle = isWaiting ? '#ef4444' : '#10b981';
             ctx.stroke();
             ctx.restore();
@@ -5737,12 +5772,11 @@
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // 3. VẼ BOSS ĐỨNG Ở CHÍNH GIỮA SẢNH (SPRITE HOẠT HỌA ĐỘNG)
+            // 3. VẼ BOSS ĐỨNG Ở GIỮA SẢNH
             const bx = toPxX(wbState.bossX);
             const by = toPxY(wbState.bossY);
             const pulse = Math.sin(now / 240) * 6;
 
-            // Vòng địa trận lửa đỏ dưới chân Boss
             ctx.save();
             ctx.beginPath();
             ctx.ellipse(bx, by + 48, 86 + pulse, 28 + pulse * 0.3, 0, 0, Math.PI * 2);
@@ -5754,7 +5788,7 @@
             ctx.restore();
 
             const bossSpriteKey = activeWorldBossRegion?.spriteKey || 'Rồng Lửa';
-            if (typeof drawBossEntity === 'function' && bossSpriteConfigs?.[bossSpriteKey]) {
+            if (typeof drawBossEntity === 'function' && typeof bossSpriteConfigs !== 'undefined' && bossSpriteConfigs?.[bossSpriteKey]) {
                 const bossFrame = Math.floor(tick * 1.1);
                 drawBossEntity(ctx, { spriteKey: bossSpriteKey, emoji: activeWorldBossRegion?.emoji || '🐉' }, 'idle', bossFrame, bx, by, 105);
             } else {
@@ -5764,7 +5798,6 @@
                 ctx.fillText(activeWorldBossRegion?.emoji || '🐉', bx, by);
             }
 
-            // Bảng tên Boss nổi bật phía trên đầu
             const bossTitle = `🔥 ${activeWorldBossRegion?.bossName || 'BOSS THẾ GIỚI'} (Chạm để đánh)`;
             ctx.save();
             ctx.font = 'bold 12px sans-serif';
@@ -5779,26 +5812,39 @@
             ctx.fillText(bossTitle, bx, by - 74);
             ctx.restore();
 
-            // 4. VẼ CÁC NGƯỜI CHƠI KHÁC (CHAR_NAM / CHAR_NU DI CHUYỂN QUANH BOSS)
+            // 4. VẼ TẤT CẢ NGƯỜI CHƠI KHÁC ĐANG CÙNG TRONG SẢNH BOSS
             wbState.otherPlayers.forEach((op, idx) => {
-                if (!op.gender) op.gender = idx % 2 === 0 ? 'Nam' : 'Nữ';
-                const angle = (now / 2200) + idx * 1.05;
-                const nextAngle = angle + 0.05;
-                const ox = toPxX(wbState.bossX + Math.cos(angle) * 165);
-                const oy = toPxY(wbState.bossY + 35 + Math.sin(angle) * 115);
-                const nox = toPxX(wbState.bossX + Math.cos(nextAngle) * 165);
-                const noy = toPxY(wbState.bossY + 35 + Math.sin(nextAngle) * 115);
+                if (typeof op.renderX !== 'number') {
+                    op.renderX = op.x ?? 500;
+                    op.renderY = op.y ?? 700;
+                }
+                const targetX = op.x ?? op.renderX;
+                const targetY = op.y ?? op.renderY;
+                const moveDx = targetX - op.renderX;
+                const moveDy = targetY - op.renderY;
+                const isMoving = Math.hypot(moveDx, moveDy) > 2;
 
-                const odx = nox - ox;
-                const ody = noy - oy;
-                const oDir = Math.abs(odx) > Math.abs(ody)
-                    ? (odx >= 0 ? 'right' : 'left')
-                    : (ody >= 0 ? 'down' : 'up');
+                if (isMoving) {
+                    op.renderX += moveDx * 0.18;
+                    op.renderY += moveDy * 0.18;
+                }
 
-                drawWorldBossHunter(ctx, ox, oy, op.gender, true, oDir, op.name, false, tick + idx * 3);
+                const ox = toPxX(op.renderX);
+                const oy = toPxY(op.renderY);
+                drawWorldBossHunter(
+                    ctx,
+                    ox,
+                    oy,
+                    op.gender || 'Nam',
+                    isMoving,
+                    op.dir || 'up',
+                    op.name,
+                    false,
+                    tick + idx * 3
+                );
             });
 
-            // 5. VẼ NHÂN VẬT CỦA ANH (TỰ ĐỘNG LẤY GIỚI TÍNH NAM/NỮ CỦA TÀI KHOẢN)
+            // 5. VẼ NHÂN VẬT CỦA ANH
             const myGender = localStorage.getItem('ar_cloud_gender') === 'Nữ' ? 'Nữ' : 'Nam';
             const myName = localStorage.getItem('ar_cloud_user') || 'BẠN';
             const px = toPxX(wbState.playerX);
