@@ -6984,7 +6984,6 @@
             const incoming = data.incoming || [];
             window._myFriendsSet = new Set(friends.map(f => f.username));
 
-            // Cập nhật chấm đỏ báo lời mời kết bạn mới
             const hasReq = incoming.length > 0;
             const badge1 = document.getElementById('friend-req-badge');
             const badge2 = document.getElementById('home-friend-dot');
@@ -6997,7 +6996,6 @@
 
                 let html = '';
 
-                // 1. Lời mời kết bạn đang chờ duyệt
                 if (incoming.length > 0) {
                     html += `<div class="mb-3">
                         <div class="text-[11px] font-extrabold text-amber-300 mb-1.5">🔔 Lời mời kết bạn (${incoming.length}):</div>
@@ -7016,7 +7014,6 @@
                     html += `</div></div>`;
                 }
 
-                // 2. Danh sách bạn bè hiện có
                 html += `<div class="text-[11px] font-extrabold text-sky-300 mb-1.5">👥 Danh sách bạn bè (${friends.length}):</div>`;
                 if (friends.length === 0) {
                     html += `<div class="text-center text-zinc-400 text-xs py-6 bg-zinc-950/60 rounded-xl border border-zinc-800">
@@ -7045,7 +7042,6 @@
                         </div>`;
                     });
                     html += `</div>`;
-                }
                 }
 
                 bodyEl.innerHTML = html;
@@ -7078,7 +7074,6 @@
             <button onclick="sendFriendRequestFromInput()" class="bg-amber-600 hover:bg-amber-500 px-3.5 py-2 rounded-xl text-xs font-extrabold text-white cursor-pointer shrink-0">
                 ➕ Kết Bạn
             </button>
-
         </div>
 
         <div id="friends-modal-body">
@@ -7154,11 +7149,8 @@
         });
     };
 
-    // Tự động kiểm tra lời mời kết bạn mới mỗi 15 giây (chỉ chạy khi tab đang mở)
-    setInterval(() => {
-        if (!document.hidden) refreshFriendsState(false);
-    }, 15000);
-    setTimeout(() => refreshFriendsState(false), 3000);
+    setInterval(() => refreshFriendsState(false), 12000);
+    setTimeout(() => refreshFriendsState(false), 2500);
     </script>
         <script>
         // ==========================================
