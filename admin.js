@@ -228,13 +228,16 @@
 
             <!-- 4. ĐIỀU KHIỂN BOSS THẾ GIỚI -->
             <div class="bg-zinc-800/90 border border-red-500/50 rounded-xl p-3 space-y-2">
-                <div class="font-extrabold text-red-400">👹 4. Triệu Hồi & Chỉnh Boss Thế Giới</div>
-                <div class="grid grid-cols-2 gap-1.5">
-                    <button onclick="adminForceSpawnWorldBoss()" class="bg-red-600 hover:bg-red-500 py-2 rounded-lg font-extrabold text-white cursor-pointer">
+                <div class="font-extrabold text-red-400">👹 4. Triệu Hồi & Chỉnh Boss Thế Giới (Đồng bộ Server)</div>
+                <div class="grid grid-cols-3 gap-1.5 text-xs">
+                    <button onclick="adminForceSpawnWorldBoss()" class="bg-red-600 hover:bg-red-500 py-2 rounded-lg font-extrabold text-white cursor-pointer shadow">
                         🔥 Gọi Boss 3 Miền
                     </button>
-                    <button onclick="adminResetWorldBossHp()" class="bg-purple-600 hover:bg-purple-500 py-2 rounded-lg font-extrabold text-white cursor-pointer">
-                        ⚡ Hồi Đầy Máu Boss
+                    <button onclick="adminCloseWorldBoss()" class="bg-zinc-700 hover:bg-zinc-600 py-2 rounded-lg font-extrabold text-zinc-200 cursor-pointer shadow">
+                        🛑 Thu Hồi Boss
+                    </button>
+                    <button onclick="adminResetWorldBossHp()" class="bg-purple-600 hover:bg-purple-500 py-2 rounded-lg font-extrabold text-white cursor-pointer shadow">
+                        ⚡ Hồi Máu Boss
                     </button>
                 </div>
             </div>
@@ -329,27 +332,123 @@
         }
     };
 
-    window.adminForceSpawnWorldBoss = function () {
-        if (typeof isWorldBossActiveNow !== 'undefined') {
-            isWorldBossActiveNow = function () { return true; };
+    // Triệu hồi khẩn cấp Boss Thế Giới 3 Miền và đồng bộ lên Cloudflare Server
+    window.adminForceSpawnWorldBoss = async function () {
+        const adminUser = localStorage.getItem('ar_cloud_user');
+        const adminPin = localStorage.getItem('ar_cloud_pin');
+        if (!adminUser || !adminPin) {
+            alert('❌ Bạn chưa đăng nhập tài khoản Đám Mây của GM (thiếu username/pin)!');
+            return;
         }
-        window.isWorldBossActiveNow = function () { return true; };
-        if (typeof renderWorldBossMarkersOnMap === 'function') {
-            renderWorldBossMarkersOnMap();
+
+        const regions = [
+            { regionKey: 'bac', active: 1, bossName: 'Hỏa Kỳ Lân Bắc Cực', hp: 35000, maxHp: 35000 },
+            { regionKey: 'trung', active: 1, bossName: 'Cửu Đầu Xà Hydra', hp: 35000, maxHp: 35000 },
+            { regionKey: 'nam', active: 1, bossName: 'Địa Ngục Khuyển Cerberus', hp: 35000, maxHp: 35000 }
+        ];
+
+        try {
+            const res = await fetch('/api/world-boss', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adminUser, adminPin, regions })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                alert('❌ Lỗi triệu hồi Boss trên Server: ' + (data.error || res.statusText));
+                return;
+            }
+
+            window.serverWorldBossActive = true;
+            if (typeof isWorldBossActiveNow !== 'undefined') {
+                isWorldBossActiveNow = function () { return true; };
+            }
+            window.isWorldBossActiveNow = function () { return true; };
+            if (typeof renderWorldBossMarkersOnMap === 'function') {
+                renderWorldBossMarkersOnMap();
+            }
+            if (typeof window.sendWorldChat === 'function') {
+                window.sendWorldChat('🚨 [SỰ KIỆN ADMIN] Boss Thế Giới 3 Miền vừa được triệu hồi khẩn cấp trên toàn server!', true);
+            }
+            alert('🔥 Đã kích hoạt và đồng bộ Boss Thế Giới 3 Miền lên toàn Server thành công!');
+        } catch (err) {
+            alert('❌ Lỗi kết nối máy chủ: ' + err.message);
         }
-        if (typeof window.sendWorldChat === 'function') {
-            window.sendWorldChat('🚨 [SỰ KIỆN ADMIN] Boss Thế Giới 3 Miền vừa được triệu hồi khẩn cấp trên bản đồ!', true);
-        }
-        alert('🔥 Đã triệu hồi khẩn cấp 3 Boss Bắc - Trung - Nam lên bản đồ GPS!');
     };
 
-    window.adminResetWorldBossHp = function () {
-        if (typeof wbState !== 'undefined') {
-            const lv = (typeof bossLevel !== 'undefined') ? bossLevel : 1;
-            wbState.maxHp = 5000 + lv * 3000;
-            wbState.hp = wbState.maxHp;
-            alert(`⚡ Đã hồi đầy ${wbState.maxHp.toLocaleString()} HP cho Boss Thế Giới!`);
+    // Thu hồi / Đóng sự kiện Boss Thế Giới 3 Miền trên Cloudflare Server
+    window.adminCloseWorldBoss = async function () {
+        const adminUser = localStorage.getItem('ar_cloud_user');
+        const adminPin = localStorage.getItem('ar_cloud_pin');
+        if (!adminUser || !adminPin) {
+            alert('❌ Bạn chưa đăng nhập tài khoản Đám Mây của GM!');
+            return;
         }
+        if (!confirm('🛑 Bạn có chắc muốn thu hồi / đóng Boss Thế Giới 3 Miền trên toàn server?')) return;
+
+        const regions = [
+            { regionKey: 'bac', active: 0, bossName: 'Hỏa Kỳ Lân Bắc Cực', hp: 0, maxHp: 35000 },
+            { regionKey: 'trung', active: 0, bossName: 'Cửu Đầu Xà Hydra', hp: 0, maxHp: 35000 },
+            { regionKey: 'nam', active: 0, bossName: 'Địa Ngục Khuyển Cerberus', hp: 0, maxHp: 35000 }
+        ];
+
+        try {
+            const res = await fetch('/api/world-boss', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adminUser, adminPin, regions })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                alert('❌ Lỗi thu hồi Boss trên Server: ' + (data.error || res.statusText));
+                return;
+            }
+
+            window.serverWorldBossActive = false;
+            if (typeof isWorldBossActiveNow !== 'undefined') {
+                delete window.isWorldBossActiveNow;
+            }
+            if (typeof renderWorldBossMarkersOnMap === 'function') {
+                renderWorldBossMarkersOnMap();
+            }
+            if (typeof window.sendWorldChat === 'function') {
+                window.sendWorldChat('🛑 [SỰ KIỆN ADMIN] Sự kiện Boss Thế Giới đã kết thúc. Cảm ơn các Thợ Săn đã tham chiến!', true);
+            }
+            alert('🛑 Đã thu hồi Boss Thế Giới 3 Miền trên toàn Server thành công!');
+        } catch (err) {
+            alert('❌ Lỗi kết nối máy chủ: ' + err.message);
+        }
+    };
+
+    // Hồi đầy máu Boss Thế Giới và đồng bộ Server
+    window.adminResetWorldBossHp = async function () {
+        const adminUser = localStorage.getItem('ar_cloud_user');
+        const adminPin = localStorage.getItem('ar_cloud_pin');
+        const lv = (typeof bossLevel !== 'undefined') ? bossLevel : 1;
+        const maxHp = 5000 + lv * 3000;
+        if (typeof wbState !== 'undefined') {
+            wbState.maxHp = maxHp;
+            wbState.hp = maxHp;
+        }
+
+        if (adminUser && adminPin) {
+            try {
+                await fetch('/api/world-boss', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        adminUser,
+                        adminPin,
+                        regions: [
+                            { regionKey: 'bac', active: 1, bossName: 'Hỏa Kỳ Lân Bắc Cực', hp: maxHp, maxHp: maxHp },
+                            { regionKey: 'trung', active: 1, bossName: 'Cửu Đầu Xà Hydra', hp: maxHp, maxHp: maxHp },
+                            { regionKey: 'nam', active: 1, bossName: 'Địa Ngục Khuyển Cerberus', hp: maxHp, maxHp: maxHp }
+                        ]
+                    })
+                });
+            } catch (e) {}
+        }
+        alert(`⚡ Đã hồi đầy ${maxHp.toLocaleString()} HP cho Boss Thế Giới (đã đồng bộ Server)!`);
     };
 
     // Tự động bổ sung huy hiệu hiển thị Kỹ năng Hồi Máu trong hồ sơ thú ở Đội Hình (openPetDetail)

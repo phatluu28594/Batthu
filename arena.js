@@ -849,12 +849,58 @@
         ];
 
         let worldBossMapMarkers = [];
-      
 
-        function isWorldBossActiveNow() {
+        // ==========================================
+        // BỘ NHỚ TRẠNG THÁI BOSS THẾ GIỚI ĐỒNG BỘ TỪ SERVER CLOUDFLARE
+        // ==========================================
+        let serverWorldBossState = {};
+        let lastWorldBossSyncTime = 0;
+        window.serverWorldBossActive = false;
+
+        async function syncWorldBossStateFromServer(force = false) {
+            const now = Date.now();
+            if (!force && now - lastWorldBossSyncTime < 10000) return;
+            lastWorldBossSyncTime = now;
+
+            try {
+                const res = await fetch('/api/world-boss');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.ok && Array.isArray(data.bosses)) {
+                    let anyActive = false;
+                    data.bosses.forEach(b => {
+                        serverWorldBossState[b.region_key] = b;
+                        if (b.active === 1) anyActive = true;
+                    });
+                    window.serverWorldBossActive = anyActive;
+
+                    if (typeof map !== 'undefined' && map) {
+                        renderWorldBossMarkersOnMap();
+                    }
+                }
+            } catch (e) {}
+        }
+        window.syncWorldBossStateFromServer = syncWorldBossStateFromServer;
+
+        function isDefaultBossHour() {
             const h = new Date().getHours();
             return WORLD_BOSS_HOURS.some(slot => h >= slot.startHour && h < slot.endHour);
         }
+
+        function isRegionBossActive(regionId) {
+            if (regionId && serverWorldBossState[regionId]) {
+                if (serverWorldBossState[regionId].active === 1) return true;
+                if (serverWorldBossState[regionId].active === 0 && !isDefaultBossHour()) return false;
+            }
+            if (window.serverWorldBossActive) return true;
+            return isDefaultBossHour();
+        }
+
+        function isWorldBossActiveNow(regionId) {
+            if (regionId) return isRegionBossActive(regionId);
+            return WORLD_BOSS_REGIONS.some(r => isRegionBossActive(r.id));
+        }
+        window.isWorldBossActiveNow = isWorldBossActiveNow;
 
         function getNextWorldBossTimeText() {
             const h = new Date().getHours();
@@ -870,6 +916,8 @@
             if (!isWorldBossActiveNow()) return;
 
             WORLD_BOSS_REGIONS.forEach(region => {
+                if (!isRegionBossActive(region.id)) return;
+
                 const bossIcon = L.divIcon({
                     className: 'leaflet-div-icon',
                     html: `
@@ -895,14 +943,26 @@
             });
         }
 
+        // Tự động quét cập nhật trạng thái Boss từ server định kỳ mỗi 20 giây
         setInterval(() => {
+            syncWorldBossStateFromServer();
             if (typeof map !== 'undefined' && map) renderWorldBossMarkersOnMap();
-        }, 30000);
+        }, 20000);
 
-        function openWorldBossMenu() {
+        // Đồng bộ ngay khi tải trang
+        if (typeof window !== 'undefined') {
+            window.addEventListener('load', () => {
+                setTimeout(() => syncWorldBossStateFromServer(true), 1500);
+            });
+        }
+
+        async function openWorldBossMenu() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
+
+            // Hiển thị khung chờ và đồng bộ mới nhất từ Server
+            await syncWorldBossStateFromServer(true);
 
             const isOpen = isWorldBossActiveNow();
             const statusHtml = isOpen
@@ -914,7 +974,9 @@
                        <span class="text-[11px] text-zinc-300">Khung giờ kế tiếp: <b class="text-yellow-300">${getNextWorldBossTimeText()}</b> (12:00 & 20:00)</span>
                    </div>`;
 
-            let regionsHtml = WORLD_BOSS_REGIONS.map(r => `
+            let regionsHtml = WORLD_BOSS_REGIONS.map(r => {
+                const isRegionOpen = isRegionBossActive(r.id);
+                return `
                 <div class="bg-zinc-800/90 border border-red-500/40 p-3 rounded-xl flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="text-3xl shrink-0">${r.emoji}</span>
@@ -923,14 +985,14 @@
                             <div class="text-[10px] text-zinc-300">📍 Khu vực: ${r.regionName}</div>
                         </div>
                     </div>
-                    ${isOpen
+                    ${isRegionOpen
                         ? `<button onclick="closeModal(); focusWorldBossOnMap('${r.id}');" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer shrink-0 shadow">
                                📍 Tới Vị Trí
                            </button>`
                         : `<span class="text-[10px] font-bold text-zinc-500 px-2 py-1 bg-zinc-900 rounded-lg shrink-0">Đang ẩn</span>`
                     }
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
 
             content.innerHTML = `
             <div class="flex justify-between items-center mb-3">
@@ -951,8 +1013,9 @@
             map.setView([region.lat, region.lng], 17);
         };
 
-        window.enterRegionalWorldBoss = function(regionId) {
-            if (!isWorldBossActiveNow()) {
+        window.enterRegionalWorldBoss = async function(regionId) {
+            await syncWorldBossStateFromServer(true);
+            if (!isWorldBossActiveNow(regionId)) {
                 alert(`⏳ Boss Thế Giới đã hết giờ xuất hiện!\nKhung giờ kế tiếp: ${getNextWorldBossTimeText()}`);
                 renderWorldBossMarkersOnMap();
                 return;
@@ -1130,6 +1193,14 @@
             const titleEl = document.getElementById('wb-boss-title');
             if (titleEl && activeWorldBossRegion) {
                 titleEl.innerText = `${activeWorldBossRegion.emoji || '🐉'} ${activeWorldBossRegion.bossName || 'BOSS THẾ GIỚI'}`;
+            }
+
+            if (activeWorldBossRegion && serverWorldBossState[activeWorldBossRegion.id]) {
+                const s = serverWorldBossState[activeWorldBossRegion.id];
+                if (s.max_hp > 0) {
+                    wbState.maxHp = s.max_hp;
+                    wbState.hp = s.hp > 0 ? s.hp : s.max_hp;
+                }
             }
 
             wbState.active = true;
