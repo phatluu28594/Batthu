@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bắt Thú Vương">
+    <meta name="theme-color" content="#09090b">
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Bắt Thú Vương","short_name":"Bắt Thú","display":"standalone","orientation":"any","background_color":"#09090b","theme_color":"#09090b","start_url":"/"}' />
     <title>Batthu - v1.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -294,20 +300,26 @@
         <source id="bg-music-source" src="./nhac_cho.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- BẢNG YÊU CẦU MỞ TOÀN MÀN HÌNH (FULLSCREEN / F11) -->
+    <!-- BẢNG YÊU CẦU MỞ TOÀN MÀN HÌNH (FULLSCREEN / PWA IOS) -->
     <div id="fullscreen-prompt-overlay" class="hidden absolute inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
         <div class="bg-zinc-900 border-2 border-amber-400/70 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
             <div class="text-5xl animate-bounce">🖥️📱</div>
             <h2 class="text-xl font-black text-yellow-300 tracking-wide">TRẢI NGHIỆM TOÀN MÀN HÌNH</h2>
-            <p class="text-xs text-zinc-300 leading-relaxed">
+            <p id="fullscreen-prompt-desc" class="text-xs text-zinc-300 leading-relaxed">
                 Hãy bật chế độ <span class="text-amber-300 font-bold">Toàn màn hình (F11)</span> để có góc nhìn rộng và trải nghiệm săn bắt linh thú tốt nhất!
             </p>
+            <div id="ios-pwa-guide" class="hidden bg-zinc-950/90 border border-sky-400/50 rounded-2xl p-3 text-left text-[11px] text-zinc-200 space-y-1.5">
+                <div class="font-extrabold text-sky-300">🍎 Cách bật Full màn hình chuẩn 100% trên iPhone / iPad:</div>
+                <div>1. Bấm nút <span class="text-amber-300 font-bold">Chia sẻ (⬆️)</span> ở thanh công cụ Safari.</div>
+                <div>2. Chọn <span class="text-emerald-300 font-bold">Thêm vào MH chính (Add to Home Screen)</span>.</div>
+                <div>3. Mở biểu tượng <span class="text-yellow-300 font-bold">Bắt Thú Vương</span> ngoài màn hình chính để ẩn hoàn toàn thanh địa chỉ!</div>
+            </div>
             <div class="flex flex-col gap-2 pt-2">
-                <button onclick="enterGameFullscreen()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black py-3 rounded-xl text-sm shadow-lg cursor-pointer transition active:scale-95">
+                <button id="btn-enter-fullscreen" onclick="enterGameFullscreen()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black py-3 rounded-xl text-sm shadow-lg cursor-pointer transition active:scale-95">
                     ⛶ Bật Toàn Màn Hình Ngay
                 </button>
                 <button onclick="dismissFullscreenPrompt()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-bold py-2 rounded-xl text-xs cursor-pointer">
-                    Để sau
+                    Tiếp tục chơi ngay
                 </button>
             </div>
         </div>
@@ -3665,8 +3677,41 @@
             saveGameData();
         }
 
+        function isIosDevice() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
+        function isStandalonePwa() {
+            return window.navigator.standalone === true ||
+                   window.matchMedia('(display-mode: standalone)').matches ||
+                   window.matchMedia('(display-mode: fullscreen)').matches;
+        }
+
+        function canUseFullscreenApi() {
+            const elem = document.documentElement;
+            return !!(
+                (document.fullscreenEnabled && elem.requestFullscreen) ||
+                (document.webkitFullscreenEnabled && elem.webkitRequestFullscreen) ||
+                elem.msRequestFullscreen
+            );
+        }
+
         function enterGameFullscreen() {
             const elem = document.documentElement;
+            if (isIosDevice() && !canUseFullscreenApi()) {
+                // iPhone Safari không hỗ trợ requestFullscreen() trên trang web thường:
+                // Thử ẩn thanh địa chỉ bằng scroll nhẹ & hiển thị hướng dẫn Thêm vào MH chính
+                window.scrollTo(0, 1);
+                const iosGuide = document.getElementById('ios-pwa-guide');
+                if (iosGuide && iosGuide.classList.contains('hidden')) {
+                    iosGuide.classList.remove('hidden');
+                    return;
+                }
+                dismissFullscreenPrompt();
+                return;
+            }
+
             if (elem.requestFullscreen) {
                 elem.requestFullscreen().catch(() => {});
             } else if (elem.webkitRequestFullscreen) {
@@ -3680,6 +3725,7 @@
         function dismissFullscreenPrompt() {
             const overlay = document.getElementById('fullscreen-prompt-overlay');
             if (overlay) overlay.classList.add('hidden');
+            window.scrollTo(0, 1);
             setTimeout(() => {
                 centerPanorama('home-scroller');
                 if (typeof map !== 'undefined' && map) map.invalidateSize();
@@ -3687,9 +3733,22 @@
         }
 
         function checkFullscreenOnStart() {
-            const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || (window.innerHeight >= screen.height - 5);
+            const isFullscreen = isStandalonePwa() ||
+                                 !!document.fullscreenElement ||
+                                 !!document.webkitFullscreenElement ||
+                                 (window.innerHeight >= screen.height - 5);
             const overlay = document.getElementById('fullscreen-prompt-overlay');
             if (!isFullscreen && overlay) {
+                if (isIosDevice() && !canUseFullscreenApi()) {
+                    const desc = document.getElementById('fullscreen-prompt-desc');
+                    const iosGuide = document.getElementById('ios-pwa-guide');
+                    const btn = document.getElementById('btn-enter-fullscreen');
+                    if (desc) {
+                        desc.innerHTML = 'Trình duyệt <span class="text-amber-300 font-bold">iOS Safari</span> khóa chức năng tự phóng to trang web, bạn hãy thêm game ra Màn hình chính để chơi Full 100% nhé!';
+                    }
+                    if (iosGuide) iosGuide.classList.remove('hidden');
+                    if (btn) btn.innerText = '✅ Đã Hiểu & Vào Game';
+                }
                 overlay.classList.remove('hidden');
             }
         }
@@ -3698,12 +3757,14 @@
 
         const _origEnterFullscreen = enterGameFullscreen;
         enterGameFullscreen = function() {
-            wantKeepFullscreen = true;
+            if (canUseFullscreenApi()) {
+                wantKeepFullscreen = true;
+            }
             _origEnterFullscreen();
         };
 
         document.addEventListener('click', () => {
-            if (wantKeepFullscreen && !document.fullscreenElement && !document.webkitFullscreenElement) {
+            if (wantKeepFullscreen && canUseFullscreenApi() && !document.fullscreenElement && !document.webkitFullscreenElement) {
                 const elem = document.documentElement;
                 if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
                 else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
