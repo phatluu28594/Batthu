@@ -791,8 +791,8 @@
         let currentMusicTrack = '';
 
         const gameMusicTracks = {
-            map: './nhac_cho.mp3',
-            battle: './nhac_cho.mp3'
+            map: '/nhac_cho.mp3',
+            battle: '/nhac_chien_dau.mp3'
         };
 
         function switchGameMusic(scene = 'map') {
@@ -803,13 +803,20 @@
             const targetSrc = gameMusicTracks[scene] || gameMusicTracks.map;
             if (currentMusicTrack !== targetSrc) {
                 currentMusicTrack = targetSrc;
+                player.pause();
                 source.src = targetSrc;
+                player.src = targetSrc;
                 player.load();
             }
 
-            player.volume = 0.55;
+            player.volume = 0.6;
             if (!isMusicMuted) {
-                player.play().catch(() => {});
+                const playPromise = player.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch((err) => {
+                        console.warn('Trình duyệt tạm chặn phát nhạc hoặc sai đường dẫn file:', targetSrc, err);
+                    });
+                }
             }
         }
 
@@ -822,7 +829,8 @@
             if (isMusicMuted) {
                 player.pause();
             } else {
-                player.play().catch(() => {});
+                if (!currentMusicTrack) switchGameMusic('map');
+                else player.play().catch(() => {});
             }
             const btn = document.getElementById('btn-toggle-music');
             if (btn) btn.innerText = isMusicMuted ? '🔇' : '🔊';
