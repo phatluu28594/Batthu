@@ -2372,9 +2372,10 @@
                 <button onclick="farmPetAction(${farmIndex}, 'feed')" class="bg-emerald-600 hover:bg-emerald-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🍖 Ăn (${inventory.food})</button>
                 <button onclick="farmPetAction(${farmIndex}, 'play')" class="bg-amber-600 hover:bg-amber-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🎾 Chơi (${inventory.toy})</button>
             </div>
-            <div class="grid grid-cols-2 gap-2 text-center">
-                <button onclick="moveToTeamFromFarm(${farmIndex}); showFarmSection('storage');" class="bg-blue-600 hover:bg-blue-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">⚔️ Đưa Vào Đội</button>
-                <button onclick="sellFarmPet(${farmIndex})" class="bg-amber-700 hover:bg-amber-600 p-2 rounded-xl font-extrabold text-xs cursor-pointer transition">💰 Bán (${sellPrice}🪙)</button>
+            <div class="grid grid-cols-3 gap-1.5 text-center">
+                <button onclick="moveToTeamFromFarm(${farmIndex}); showFarmSection('storage');" class="bg-blue-600 hover:bg-blue-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">⚔️ Vào Đội</button>
+                <button onclick="showcasePetToWorldChat('farm', ${farmIndex})" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:brightness-110 p-2 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow transition">📢 Khoe</button>
+                <button onclick="sellFarmPet(${farmIndex})" class="bg-amber-700 hover:bg-amber-600 p-2 rounded-xl font-extrabold text-xs cursor-pointer transition">💰 Bán (${sellPrice})</button>
             </div>`;
         };
 
@@ -3432,9 +3433,10 @@
                     <div>🔥 Liên kích: <span class="font-bold text-orange-400">${pet.comboRate ?? 20}%</span></div>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-2 text-center">
+            <div class="grid grid-cols-3 gap-1.5 text-center">
                 <button onclick="petAction(${index}, 'feed')" class="bg-emerald-600 hover:bg-emerald-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🍖 Ăn (${inventory.food})</button>
                 <button onclick="petAction(${index}, 'play')" class="bg-amber-600 hover:bg-amber-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🎾 Chơi (${inventory.toy})</button>
+                <button onclick="showcasePetToWorldChat('team', ${index})" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:brightness-110 p-2 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow transition">📢 Khoe</button>
             </div>
             <button onclick="confirmReleasePet(${index})" class="w-full mt-2 bg-red-950/90 hover:bg-red-800 border border-red-500/40 text-red-200 p-2 rounded-xl font-bold text-xs cursor-pointer transition flex items-center justify-center gap-1.5">
                 <span>🕊️</span>
@@ -6380,7 +6382,25 @@
                         if (hasNewMessage) {
                             const isAtBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 35;
             
+                            window._worldShowcasedPets = window._worldShowcasedPets || {};
                             box.innerHTML = msgs.map(m => {
+                                if (m.pet_info && String(m.pet_info).startsWith('SHOWCASE|')) {
+                                    try {
+                                        const petObj = JSON.parse(decodeURIComponent(m.pet_info.slice(9)));
+                                        const showcaseKey = 'sc_' + m.id;
+                                        window._worldShowcasedPets[showcaseKey] = { owner: m.sender, pet: petObj };
+                                        const rColor = petObj.rarity?.color || 'text-yellow-300';
+                                        const rBorder = petObj.rarity?.bg || 'border-purple-400/70';
+                                        return `
+                                        <div onclick="openShowcasedPetModal('${showcaseKey}')" class="cursor-pointer bg-gradient-to-r from-purple-950/90 to-indigo-950/90 hover:brightness-125 border ${rBorder} rounded-lg px-2 py-1 my-0.5 shadow transition">
+                                            <div class="text-[10px] text-amber-200 font-bold">📢 <span class="text-sky-300">${m.sender}</span> khoe linh thú:</div>
+                                            <div class="flex items-center justify-between text-[11px] font-black ${rColor}">
+                                                <span>${petObj.emoji || '🐾'} ${petObj.name} (Lv.${Math.floor(petObj.level || 1)})</span>
+                                                <span class="bg-amber-500 text-black text-[9px] px-1.5 py-0.2 rounded font-black">Xem 🔍</span>
+                                            </div>
+                                        </div>`;
+                                    } catch (e) {}
+                                }
                                 if (m.is_system) {
                                     return `<div class="text-amber-300 font-bold bg-amber-950/50 border border-amber-500/30 rounded px-1.5 py-0.5 text-[10px]">${m.text}</div>`;
                                 }
@@ -7124,6 +7144,165 @@
         if (!document.hidden) refreshFriendsState(false);
     }, 15000);
     setTimeout(() => refreshFriendsState(false), 3000);
+    </script>
+        <script>
+        // ==========================================
+        // HỆ THỐNG KHOE LINH THÚ LÊN KÊNH THẾ GIỚI
+        // ==========================================
+        let lastPetShowcaseAt = 0;
+    
+        window.showcasePetToWorldChat = async function(source, idx) {
+            const myUser = (localStorage.getItem('ar_cloud_user') || '').trim();
+            if (!myUser) {
+                alert('⚠️ Bạn cần đăng nhập Tài Khoản Mây (☁️ Nick) để khoe thú lên Kênh Thế Giới!');
+                return;
+            }
+            if (Date.now() - lastPetShowcaseAt < 8000) {
+                alert('⏳ Vui lòng chờ 8 giây giữa mỗi lần khoe linh thú!');
+                return;
+            }
+    
+            const pet = source === 'team' ? team[idx] : farm[idx];
+            if (!pet) return;
+            ensurePetGears(pet);
+    
+            // Đóng gói gọn dữ liệu linh thú để gửi lên kênh thế giới
+            const compactPet = {
+                name: pet.name,
+                emoji: pet.emoji || '🐾',
+                element: pet.element,
+                gender: pet.gender || 'Đực',
+                level: Math.floor(pet.level || 1),
+                hearts: pet.hearts || 3,
+                rarity: pet.rarity,
+                hp: Math.floor(pet.hp || pet.maxHp),
+                maxHp: pet.maxHp,
+                atk: Math.floor(pet.atk),
+                speed: pet.speed || 50,
+                critRate: pet.critRate ?? 20,
+                blockRate: pet.blockRate ?? 15,
+                armorBreak: pet.armorBreak ?? 15,
+                dodgeRate: pet.dodgeRate ?? 15,
+                accuracy: pet.accuracy ?? 90,
+                comboRate: pet.comboRate ?? 20,
+                trait: pet.trait,
+                hasHealSkill: !!pet.hasHealSkill,
+                gears: { ...pet.gears },
+                gearTier: pet.gearTier || 0
+            };
+    
+            const encodedPet = 'SHOWCASE|' + encodeURIComponent(JSON.stringify(compactPet));
+            lastPetShowcaseAt = Date.now();
+    
+            try {
+                const senderGender = localStorage.getItem('ar_cloud_gender') || 'Nam';
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sender: myUser,
+                        gender: senderGender,
+                        petInfo: encodedPet,
+                        text: `Khoe linh thú ${pet.rarity?.badge || ''} ${pet.name} (Lv.${compactPet.level})`,
+                        isSystem: false
+                    })
+                });
+                const json = await res.json();
+                if (!json.ok) {
+                    alert('❌ Không thể khoe thú: ' + (json.error || 'Lỗi máy chủ'));
+                    return;
+                }
+                closeModal();
+                if (typeof toggleFloatingChat === 'function') toggleFloatingChat(true);
+                if (typeof fetchWorldChatMessages === 'function') fetchWorldChatMessages();
+                alert(`📢 Đã khoe [${pet.name}] lên Kênh Thế Giới thành công!`);
+            } catch (err) {
+                alert('❌ Lỗi kết nối khi khoe thú: ' + err.message);
+            }
+        };
+    
+        window.openShowcasedPetModal = function(showcaseKey) {
+            const entry = window._worldShowcasedPets?.[showcaseKey];
+            if (!entry || !entry.pet) return;
+            const pet = entry.pet;
+            ensurePetGears(pet);
+    
+            const bonus = getPetGearBonus(pet);
+            const currentTier = pet.gearTier || 0;
+            const tierCapLv = currentTier < 10 ? (currentTier + 1) * 10 : 100;
+            const heartsStr = '❤️'.repeat(pet.hearts || 3);
+            const rarity = pet.rarity || { badge: '⚪ Trắng', color: 'text-zinc-300', bg: 'border-zinc-600' };
+            const elemInfo = elementNames[pet.element] || { label: pet.element, color: 'text-zinc-300' };
+    
+            const hasHealTag = (pet.trait?.type === 'heal' || pet.hasHealSkill)
+                ? `<div class="mt-1 inline-flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-400/50 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-emerald-300">💚 Đặc kỹ: Hồi Phục Linh Hồn (Hồi x2 Dame)</div>`
+                : '';
+    
+            const gearsHtml = ['claw', 'armor', 'orb'].map(slotKey => {
+                const lv = pet.gears?.[slotKey] || 0;
+                const info = getGearTierInfo(slotKey, currentTier);
+                const statDesc = slotKey === 'claw'
+                    ? `+${lv * 6 + currentTier * 15} Công`
+                    : slotKey === 'armor'
+                    ? `+${lv * 25 + currentTier * 60} Máu`
+                    : `+${Math.floor(lv * 1.2) + currentTier * 3} Tốc`;
+    
+                return `
+                <div class="flex flex-col items-center justify-between p-2 rounded-xl border border-zinc-600 bg-zinc-900/90 text-center">
+                    <div class="text-[10px] font-extrabold text-amber-300 mb-1">Cấp ${lv}/${tierCapLv}</div>
+                    <div class="w-11 h-11 rounded-xl bg-black/60 border border-white/15 flex items-center justify-center overflow-hidden mb-1 relative">
+                        <div class="w-9 h-9" style="${info.bgStyle}"></div>
+                        <span class="absolute bottom-0 right-0 bg-black/80 text-[8px] font-black text-yellow-300 px-1 rounded-tl">Bậc ${currentTier}</span>
+                    </div>
+                    <div class="text-[10px] font-bold text-white leading-tight line-clamp-1">${info.name}</div>
+                    <div class="text-[9px] text-emerald-300 mt-0.5">${statDesc}</div>
+                </div>`;
+            }).join('');
+    
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            if (!modal || !content) return;
+            modal.classList.remove('hidden');
+    
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-purple-500/40">
+                <div>
+                    <h3 class="font-black text-sm text-purple-300">✨ CHIÊM NGƯỠNG LINH THÚ</h3>
+                    <div class="text-[11px] text-zinc-400">Chủ sở hữu: <span class="font-extrabold text-sky-300">${entry.owner}</span></div>
+                </div>
+                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+            </div>
+    
+            <div class="flex flex-col items-center bg-zinc-800 p-3.5 rounded-2xl border ${rarity.bg} mb-3 text-center">
+                <div class="mb-1 flex justify-center">${getPetSpriteHtml(pet, 'walk', 96)}</div>
+                <div class="text-sm font-black text-yellow-300">${pet.name} (${pet.gender}) - <span class="${rarity.color}">${rarity.badge}</span> <span class="text-xs text-white">Lv.${pet.level}</span></div>
+                <div class="text-[11px] font-bold ${elemInfo.color}">Hệ: ${elemInfo.label} • Tim: ${heartsStr}</div>
+                ${pet.trait ? `
+                <div class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
+                    <span class="w-5 h-5 inline-block rounded-full bg-black" style="background-image:url('assets/magic.webp'); background-size:800% 500%; background-position:0% ${(statusFxRowMap[pet.trait.type] || 0) * 25}%; mix-blend-mode:screen;"></span>
+                    <span class="text-[11px] font-extrabold text-amber-300">Đặc kỹ: ${pet.trait.name} (${Math.max(30, pet.trait.chance || 30)}%)</span>
+                </div>` : ''}
+                ${hasHealTag}
+    
+                <div class="w-full mt-3 text-left">
+                    <div class="text-xs font-extrabold text-cyan-300 mb-1.5">⚜️ Bảo Vật Bản Mệnh (Bậc ${currentTier}/10)</div>
+                    <div class="grid grid-cols-3 gap-1.5">${gearsHtml}</div>
+                </div>
+    
+                <div class="w-full grid grid-cols-2 gap-1.5 mt-3 text-[11px] bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-700 text-left">
+                    <div>❤️ Máu (HP): <span class="font-bold text-emerald-400">${pet.maxHp + bonus.maxHp}</span></div>
+                    <div>⚔️ ATK: <span class="font-bold text-red-400">${Math.floor(pet.atk + bonus.atk)}</span></div>
+                    <div>💥 Chí mạng: <span class="font-bold text-blue-400">${(pet.critRate ?? 20) + bonus.critRate}%</span></div>
+                    <div>🛡️ Đỡ đòn: <span class="font-bold text-purple-400">${(pet.blockRate ?? 15) + bonus.blockRate}%</span></div>
+                    <div>🗡️ Phá giáp: <span class="font-bold text-rose-400">${(pet.armorBreak ?? 15) + bonus.armorBreak}%</span></div>
+                    <div>🏃 Né tránh: <span class="font-bold text-emerald-400">${pet.dodgeRate ?? 15}%</span></div>
+                    <div>🎯 Chính xác: <span class="font-bold text-amber-400">${pet.accuracy ?? 90}%</span></div>
+                    <div>⚡ Tốc độ: <span class="font-bold text-cyan-400">${(pet.speed ?? 50) + bonus.speed}</span></div>
+                </div>
+            </div>
+    
+            <button onclick="closeModal()" class="w-full bg-purple-600 hover:bg-purple-500 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">Đóng</button>`;
+        };
     </script>
     <script src="./admin.js"></script>
     <script src="pvp.js"></script>
