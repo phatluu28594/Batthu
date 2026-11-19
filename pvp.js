@@ -1,4 +1,4 @@
-pvp_js_canvas = """// ============================================================================
+
 // BẮT THÚ VƯƠNG - MODULE PVP 1VS1 (pvp.js)
 // 1. Đấu Trường Danh Vọng 1vs1 (Auto-Battle trên Sân Đấu Canvas battle-bg.webp)
 // 2. Khiêu Chiến Sinh Tử qua Avatar GPS / Bạn Bè (Thua mất vĩnh viễn thú!)
