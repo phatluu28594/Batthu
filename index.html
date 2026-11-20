@@ -407,9 +407,7 @@
                     <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi bệnh viện</div>
                 </div>
 
-                <div onclick="openHomeStorageBagModal()" class="hotspot flex flex-col items-center justify-center" style="top: 63%; left: 26%; width: 18%; height: 18%;">
-                    <div class="home-label" style="border-color: #38bdf8; color: #bae6fd;">🎒 Rương Túi Đồ</div>
-                </div>
+
             </div>
         </div>
 
@@ -5836,31 +5834,65 @@
     // ============================================================================
     // LINH THÚ TRONG ĐỘI HÌNH ĐI DẠO TRONG NHÀ CHÍNH (HOME) VỚI PHỐI CẢNH XA/GẦN
     // - Dựa trực tiếp vào mảng `team` (0..3 linh thú trong túi đội hình)
-    // - Phối cảnh 3D thực tế: Đi lại gần cửa đi săn (x ≈ 50%, y ≈ 48% - 54%) sẽ thu nhỏ lại;
-    //   đi xuống phía gần màn hình (y ≈ 72% - 88%) sẽ phóng to ra, z-index tự sắp xếp theo chiều sâu!
+    // - Phối cảnh 3D thực tế: Đi lại gần cửa đi săn (x ≈ 50%, y ≈ 49%..54%) sẽ thu nhỏ lại;
+    //   đi xuống phía gần màn hình (y ≈ 65%..90%) sẽ phóng to ra, z-index tự sắp xếp theo chiều sâu!
+    // - Bản đồ vật cản sàn nhà: Không leo lên giường xanh (trái giữa), không leo lên đệm thú
+    //   (trái dưới), không leo lên bàn ăn caro xanh (phải dưới) và tủ/chậu hoa sát mép!
+    // - Trạng thái động: `walk` (khi di chuyển), `idle` (khi đứng nghỉ), `hit` (khi chạm/click vào thú)
     // ============================================================================
     (function initHomeRoamingPetsEngine() {
-        const HUNT_DOOR = { x: 50, y: 49 }; // Tâm cửa "🚪 Đi săn thú" (left:40%..60%, top:26%..50%)
+        const HUNT_DOOR = { x: 50, y: 49 };
         let homePetActors = [];
         let homeRoamAnimId = null;
         let lastTeamSignature = '';
 
-        function computePerspectiveScale(xPct, yPct) {
-            // 1. Theo trục chiều sâu Y (từ sàn gần cửa y=50% xuống tiền cảnh gần camera y=88%)
-            const depthRatio = Math.max(0, Math.min(1, (yPct - 49) / (87 - 49)));
-            const depthScale = 0.44 + depthRatio * 0.78; // 0.44 ở sát cửa -> 1.22 ở tiền cảnh gần nhất
+        // Các vùng vật cản trên sàn nhà (tọa độ % theo ảnh nền căn phòng)
+        const FLOOR_OBSTACLES = [
+            // Giường xanh lớn phía bên trái
+            { xMin: 5,  xMax: 36, yMin: 44, yMax: 63 },
+            // Đệm nằm tròn xanh có thú ngủ phía trái dưới
+            { xMin: 8,  xMax: 37, yMin: 61, yMax: 73 },
+            // Bàn ăn khăn caro xanh & ghế phía phải
+            { xMin: 61, xMax: 89, yMin: 62, yMax: 81 },
+            // Tủ gỗ & chậu hoa góc phải dưới
+            { xMin: 71, xMax: 98, yMin: 81, yMax: 98 },
+            // Kệ TV & khu vực sát tường trái / phải
+            { xMin: 0,  xMax: 12, yMin: 45, yMax: 98 },
+            { xMin: 89, xMax: 100,yMin: 45, yMax: 98 }
+        ];
 
-            // 2. Khoảng cách trực tiếp tới cửa đi săn (càng sát cửa càng nhỏ thêm một chút để tạo hút chiều sâu)
+        function isBlockedByFurniture(xPct, yPct) {
+            return FLOOR_OBSTACLES.some(box =>
+                xPct >= box.xMin && xPct <= box.xMax &&
+                yPct >= box.yMin && yPct <= box.yMax
+            );
+        }
+
+        function computePerspectiveScale(xPct, yPct) {
+            const depthRatio = Math.max(0, Math.min(1, (yPct - 49) / (90 - 49)));
+            const depthScale = 0.42 + depthRatio * 0.84;
+
             const distToDoor = Math.hypot((xPct - HUNT_DOOR.x) * 0.75, yPct - HUNT_DOOR.y);
             const doorPull = Math.max(0, Math.min(1, distToDoor / 36));
-            const finalScale = depthScale * (0.82 + 0.18 * doorPull);
+            const finalScale = depthScale * (0.80 + 0.20 * doorPull);
 
-            return Math.max(0.38, Math.min(1.28, finalScale));
+            return Math.max(0.36, Math.min(1.30, finalScale));
         }
 
         function getHomePetSignature() {
             if (!Array.isArray(team) || team.length === 0) return '';
             return team.map((p, i) => `${p.id || i}:${p.name}:${Math.floor(p.level || 1)}:${p.hasAura ? 1 : 0}`).join('|');
+        }
+
+        function setActorAnimState(actor, stateName) {
+            if (!actor || !actor.petData || actor.animState === stateName) return;
+            actor.animState = stateName;
+            const slot = actor.el?.querySelector('.home-pet-sprite-slot');
+            if (slot && typeof getPetSpriteHtml === 'function') {
+                slot.innerHTML = getPetSpriteHtml(actor.petData, stateName, 78);
+                const box = slot.querySelector('.home-pet-flip-box');
+                if (box) actor.flipBox = box;
+            }
         }
 
         window.syncHomeRoamingPets = function (forceRebuild = false) {
@@ -5879,14 +5911,15 @@
 
             if (squad.length === 0) return;
 
+            // Các điểm xuất phát trên sàn trống (không trùng giường, đệm, bàn ăn)
             const startSpots = [
-                { x: 47, y: 66 },
-                { x: 58, y: 74 },
-                { x: 38, y: 76 }
+                { x: 48, y: 66 },
+                { x: 53, y: 78 },
+                { x: 41, y: 84 }
             ];
 
             squad.forEach((pet, idx) => {
-                const spot = startSpots[idx] || { x: 48 + idx * 6, y: 70 };
+                const spot = startSpots[idx] || { x: 48 + idx * 4, y: 72 };
                 const baseName = String(pet.name || '').replace(/^F1_/i, '');
                 const cfg = (typeof spriteConfigs !== 'undefined' && spriteConfigs[baseName]) ? spriteConfigs[baseName] : null;
                 const spriteHtml = typeof getPetSpriteHtml === 'function'
@@ -5903,9 +5936,34 @@
                 actorEl.style.top = `${spot.y}%`;
                 actorEl.style.transformOrigin = 'center bottom';
                 actorEl.title = `${pet.name} (Lv.${Math.floor(pet.level || 1)}) — Chạm để xem hồ sơ`;
+
+                const actorObj = {
+                    el: actorEl,
+                    petData: pet,
+                    petIndex: idx,
+                    animState: 'walk',
+                    hitTimer: 0,
+                    flipBox: null,
+                    facingDefault: cfg?.facing || 'right',
+                    x: spot.x,
+                    y: spot.y,
+                    tx: spot.x,
+                    ty: spot.y,
+                    speed: 5.5 + idx * 0.9,
+                    waitTimer: 0.4 + idx * 0.7
+                };
+
                 actorEl.onclick = (e) => {
                     e.stopPropagation();
-                    if (typeof openPetDetail === 'function') openPetDetail(idx);
+                    // Kích hoạt trạng thái `hit` phản ứng khi bấm vào thú rồi mở trang thông tin chi tiết
+                    actorObj.hitTimer = 0.45;
+                    setActorAnimState(actorObj, 'hit');
+                    setTimeout(() => {
+                        if (typeof openPetDetail === 'function') {
+                            const curIdx = Array.isArray(team) ? team.findIndex(p => p === pet || (p.id && p.id === pet.id)) : idx;
+                            openPetDetail(curIdx >= 0 ? curIdx : idx);
+                        }
+                    }, 180);
                 };
 
                 actorEl.innerHTML = `
@@ -5914,36 +5972,40 @@
                     </div>
                     <div class="relative flex items-center justify-center">
                         ${auraRingHtml}
-                        <div class="home-pet-flip-box transition-transform duration-300">${spriteHtml}</div>
+                        <div class="home-pet-sprite-slot">
+                            <div class="home-pet-flip-box transition-transform duration-300">${spriteHtml}</div>
+                        </div>
                         <div class="absolute -bottom-1 w-14 h-3.5 rounded-full bg-black/55 blur-[2px] -z-10"></div>
                     </div>
                 `;
 
+                actorObj.flipBox = actorEl.querySelector('.home-pet-flip-box');
                 layer.appendChild(actorEl);
-
-                homePetActors.push({
-                    el: actorEl,
-                    flipBox: actorEl.querySelector('.home-pet-flip-box'),
-                    facingDefault: cfg?.facing || 'right',
-                    x: spot.x,
-                    y: spot.y,
-                    tx: spot.x,
-                    ty: spot.y,
-                    speed: 5.5 + idx * 0.9, // % tọa độ / giây
-                    waitTimer: 0.4 + idx * 0.7
-                });
+                homePetActors.push(actorObj);
             });
         };
 
         function pickNextHomeTarget(actor) {
-            // 35% cơ hội tiến lại gần khu vực cửa đi săn (xa -> nhỏ lại), 65% đi dạo tiền cảnh & hai bên phòng (gần -> to ra)
-            if (Math.random() < 0.35) {
-                actor.tx = 42 + Math.random() * 16; // 42% -> 58% quanh cửa đi săn
-                actor.ty = 50 + Math.random() * 9;  // 50% -> 59% sát cửa -> thu nhỏ tự nhiên
-            } else {
-                actor.tx = 22 + Math.random() * 56; // 22% -> 78% khắp nền nhà
-                actor.ty = 63 + Math.random() * 21; // 63% -> 84% tiền cảnh -> phóng to tự nhiên
+            // Tìm ngẫu nhiên 1 điểm trên sàn nhà không chạm giường/đệm/bàn ăn
+            for (let attempt = 0; attempt < 25; attempt++) {
+                let candX, candY;
+                if (Math.random() < 0.30) {
+                    // Khu vực gần cửa đi săn (thu nhỏ theo phối cảnh xa)
+                    candX = 41 + Math.random() * 18;
+                    candY = 50 + Math.random() * 9;
+                } else {
+                    // Khắp không gian sàn nhà từ sát cửa xuống sát mép dưới (phóng to theo phối cảnh gần)
+                    candX = 14 + Math.random() * 72;
+                    candY = 51 + Math.random() * 41;
+                }
+                if (!isBlockedByFurniture(candX, candY)) {
+                    actor.tx = candX;
+                    actor.ty = candY;
+                    return;
+                }
             }
+            actor.tx = 48;
+            actor.ty = 74;
         }
 
         let lastStepTime = performance.now();
@@ -5958,8 +6020,12 @@
                 }
 
                 homePetActors.forEach(actor => {
-                    if (actor.waitTimer > 0) {
+                    if (actor.hitTimer > 0) {
+                        actor.hitTimer = Math.max(0, actor.hitTimer - dt);
+                        setActorAnimState(actor, 'hit');
+                    } else if (actor.waitTimer > 0) {
                         actor.waitTimer -= dt;
+                        setActorAnimState(actor, 'idle');
                         if (actor.waitTimer <= 0) {
                             pickNextHomeTarget(actor);
                         }
@@ -5969,13 +6035,24 @@
                         const dist = Math.hypot(dx, dy);
 
                         if (dist < 1.2) {
-                            actor.waitTimer = 1.2 + Math.random() * 2.2;
+                            actor.waitTimer = 1.4 + Math.random() * 2.4;
+                            setActorAnimState(actor, 'idle');
                         } else {
-                            // Tốc độ di chuyển cũng tỉ lệ thuận với phối cảnh (ở xa bước chậm hơn, ở gần bước nhanh hơn)
+                            setActorAnimState(actor, 'walk');
                             const pScale = computePerspectiveScale(actor.x, actor.y);
                             const effSpeed = actor.speed * (0.65 + pScale * 0.45);
-                            actor.x += (dx / dist) * effSpeed * dt;
-                            actor.y += (dy / dist) * effSpeed * dt;
+                            const stepX = (dx / dist) * effSpeed * dt;
+                            const stepY = (dy / dist) * effSpeed * dt;
+                            const nextX = actor.x + stepX;
+                            const nextY = actor.y + stepY;
+
+                            if (!isBlockedByFurniture(nextX, nextY)) {
+                                actor.x = nextX;
+                                actor.y = nextY;
+                            } else {
+                                // Nếu gặp vật cản bàn/giường thì đổi hướng ngay thay vì leo lên
+                                pickNextHomeTarget(actor);
+                            }
 
                             if (actor.flipBox && Math.abs(dx) > 0.15) {
                                 const movingLeft = dx < 0;
@@ -5991,7 +6068,6 @@
                     actor.el.style.left = `${actor.x.toFixed(2)}%`;
                     actor.el.style.top = `${actor.y.toFixed(2)}%`;
                     actor.el.style.transform = `translate(-50%, -100%) scale(${scale.toFixed(3)})`;
-                    // Thú ở gần màn hình hơn (y lớn hơn) tự động đè lớp lên thú ở xa gần cửa
                     actor.el.style.zIndex = String(10 + Math.round(actor.y));
                 });
             }
