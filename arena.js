@@ -784,10 +784,13 @@
                                 let clearedFloor = towerFloor;
                                 towerFloor++;
                                 localStorage.setItem('ar_tower_floor', towerFloor);
+                                if (typeof window.addLuckyTicket === 'function') {
+                                    window.addLuckyTicket(1);
+                                }
                                 saveGameData();
 
                                 showInGameConfirm(
-                                    `🏆 Chúc mừng! Bạn đã vượt qua Tầng ${clearedFloor} và nhận +${rewardGold}🪙${diamondNote}!\n\n🗼 Bạn có muốn tiếp tục khiêu chiến Tầng ${towerFloor} ngay bây giờ không?`,
+                                    `🏆 Chúc mừng! Bạn đã vượt qua Tầng ${clearedFloor} và nhận +${rewardGold}🪙${diamondNote} + 1🎟️ Vé Quay May Mắn!\n\n🗼 Bạn có muốn tiếp tục khiêu chiến Tầng ${towerFloor} ngay bây giờ không?`,
                                     () => {
                                         startBattle('tower', selectedIndex);
                                     },

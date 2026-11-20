@@ -1,0 +1,24 @@
+{
+  "name": "Bắt Thú Vương - AR Monster GPS",
+  "short_name": "Bắt Thú",
+  "description": "Game Bắt Thú Thực Tế Ảo GPS, Ấp Trứng Biến Dị & Đấu Trường PvP Thời Gian Thực",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "icons": [
+    {
+      "src": "./favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "./ronglua.webp",
+      "sizes": "192x192 512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    }
+  ]
+}
