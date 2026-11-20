@@ -207,11 +207,13 @@
         if (isFree) {
             useFreeSpin();
         } else if (tickets > 0) {
-            if (typeof inventory !== 'undefined') inventory.luckyTicket = tickets - 1;
-            if (window.inventory) window.inventory.luckyTicket = tickets - 1;
+            const nextTickets = tickets - 1;
+            if (window.inventory) window.inventory.luckyTicket = nextTickets;
+            else if (typeof inventory !== 'undefined') inventory.luckyTicket = nextTickets;
         } else if (curDiamonds >= 50) {
-            if (typeof playerDiamonds !== 'undefined') playerDiamonds -= 50;
-            if (window.playerDiamonds !== undefined) window.playerDiamonds = curDiamonds - 50;
+            const nextDiamonds = curDiamonds - 50;
+            if (window.playerDiamonds !== undefined) window.playerDiamonds = nextDiamonds;
+            else if (typeof playerDiamonds !== 'undefined') playerDiamonds = nextDiamonds;
         } else {
             alert('⚠️ Bạn không đủ Vé Quay hoặc 50 Kim Cương!\nHãy đi bắt thú ngoài map hoặc vượt Tháp Vô Tận để săn vé nhé.');
             return;
@@ -277,25 +279,23 @@
 
     function applyGachaReward(sector) {
         if (sector.type === 'diamond') {
-            if (typeof playerDiamonds !== 'undefined') playerDiamonds += sector.value;
-            window.playerDiamonds = ((typeof playerDiamonds !== 'undefined' ? playerDiamonds : window.playerDiamonds) || 0) + sector.value;
+            window.playerDiamonds = (Number(window.playerDiamonds) || 0) + sector.value;
         } else if (sector.type === 'coin') {
-            if (typeof playerCoins !== 'undefined') playerCoins += sector.value;
-            window.playerCoins = ((typeof playerCoins !== 'undefined' ? playerCoins : window.playerCoins) || 0) + sector.value;
+            window.playerCoins = (Number(window.playerCoins) || 0) + sector.value;
         } else if (sector.type === 'ticket') {
-            if (typeof inventory !== 'undefined') inventory.luckyTicket = (inventory.luckyTicket || 0) + sector.value;
-            if (window.inventory) window.inventory.luckyTicket = (window.inventory.luckyTicket || 0) + sector.value;
+            const inv = window.inventory || (typeof inventory !== 'undefined' ? inventory : null);
+            if (inv) inv.luckyTicket = (Number(inv.luckyTicket) || 0) + sector.value;
         } else if (sector.type === 'food') {
-            if (typeof inventory !== 'undefined') inventory.food = (inventory.food || 0) + sector.value;
-            if (window.inventory) window.inventory.food = (window.inventory.food || 0) + sector.value;
+            const inv = window.inventory || (typeof inventory !== 'undefined' ? inventory : null);
+            if (inv) inv.food = (Number(inv.food) || 0) + sector.value;
         } else if (sector.type === 'aura') {
             // Lưu Cuộn Hào Quang Ngũ Sắc vào Túi Đồ 5x10 để người chơi chọn thú gắn
-            if (typeof inventory !== 'undefined') inventory.rainbowAuraScroll = (inventory.rainbowAuraScroll || 0) + 1;
-            if (window.inventory) window.inventory.rainbowAuraScroll = (window.inventory.rainbowAuraScroll || 0) + 1;
+            const inv = window.inventory || (typeof inventory !== 'undefined' ? inventory : null);
+            if (inv) inv.rainbowAuraScroll = (Number(inv.rainbowAuraScroll) || 0) + 1;
         } else if (sector.type === 'chest') {
             // Lưu Rương Ấn Ký Tím vào Túi Đồ 5x10 để người chơi mở cho thú tùy chọn
-            if (typeof inventory !== 'undefined') inventory.purpleSealChest = (inventory.purpleSealChest || 0) + 1;
-            if (window.inventory) window.inventory.purpleSealChest = (window.inventory.purpleSealChest || 0) + 1;
+            const inv = window.inventory || (typeof inventory !== 'undefined' ? inventory : null);
+            if (inv) inv.purpleSealChest = (Number(inv.purpleSealChest) || 0) + 1;
         } else if (sector.type === 'egg') {
             // Trứng Thần Thoại May Mắn (hiển thị cả trong Túi Đồ 5x10 & Lồng Ấp Trứng)
             const targetEggs = (typeof eggs !== 'undefined' && Array.isArray(eggs)) ? eggs : (window.eggs = window.eggs || []);
@@ -324,8 +324,8 @@
             });
         } else if (sector.type === 'shards') {
             // Cộng +5 Mảnh Thú Thần Thoại vào Túi Đồ 5x10 (đủ 20 mảnh ghép thú Thần Thánh)
-            if (typeof inventory !== 'undefined') inventory.mythicShards = (inventory.mythicShards || 0) + (sector.value || 5);
-            if (window.inventory) window.inventory.mythicShards = (window.inventory.mythicShards || 0) + (sector.value || 5);
+            const inv = window.inventory || (typeof inventory !== 'undefined' ? inventory : null);
+            if (inv) inv.mythicShards = (Number(inv.mythicShards) || 0) + (sector.value || 5);
         }
 
         if (typeof window.saveGameData === 'function') window.saveGameData();

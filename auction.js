@@ -44,8 +44,8 @@
             });
 
             if (ids.length > 0) {
-                if (typeof playerCoins !== 'undefined') playerCoins += totalCoins;
-                if (typeof playerDiamonds !== 'undefined') playerDiamonds += totalDiamonds;
+                window.playerCoins = (Number(window.playerCoins) || 0) + totalCoins;
+                window.playerDiamonds = (Number(window.playerDiamonds) || 0) + totalDiamonds;
                 if (typeof saveGameData === 'function') saveGameData();
 
                 await fetch('/api/market-p2p', {
@@ -100,11 +100,13 @@ ${notes.join('\n')}`);
             cachedListings = [];
         }
 
+        const curCoins = (typeof playerCoins !== 'undefined' ? playerCoins : window.playerCoins) || 0;
+        const curDiamonds = (typeof playerDiamonds !== 'undefined' ? playerDiamonds : window.playerDiamonds) || 0;
         const tabHeader = `
         <div class="flex justify-between items-center mb-2.5 pb-2 border-b border-amber-500/40">
             <div>
                 <h3 class="font-black text-base text-amber-300">🏪 CHỢ GIAO DỊCH NGƯỜI CHƠI</h3>
-                <div class="text-[10px] text-zinc-400">Phí sàn giao dịch: <b class="text-rose-300">10%</b> • Vàng: <b class="text-yellow-300">${playerCoins}🪙</b> • KC: <b class="text-sky-300">${playerDiamonds}💎</b></div>
+                <div class="text-[10px] text-zinc-400">Phí sàn giao dịch: <b class="text-rose-300">10%</b> • Vàng: <b class="text-yellow-300">${Number(curCoins).toLocaleString()}🪙</b> • KC: <b class="text-sky-300">${Number(curDiamonds).toLocaleString()}💎</b></div>
             </div>
             <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
         </div>

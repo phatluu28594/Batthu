@@ -564,4 +564,7 @@ Bạn đã triệu hồi được Linh Thú Thần Thánh: ${summoned.rarity.bad
             return;
         }
     };
+
+    // Đồng bộ alias để gọi từ mọi nơi (Home dropdown, Map dropdown, Team menu)
+    window.openInventoryBagModal = window.openHomeStorageBagModal;
 })();

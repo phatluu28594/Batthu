@@ -257,7 +257,7 @@
                 hearts: 3,
                 gender: 'Cái',
                 rarity: { name: 'Hiếm', color: 'text-emerald-400', bg: 'border-emerald-500', badge: '🟢 Xanh', statMultiplier: 1.3 },
-                trait: 'Băng Giáp Tự Nhiên'
+                trait: { name: 'Hộ thân Buff Giáp', icon: '🛡️ Buff', type: 'shield', chance: 35 }
             };
             addPetToTeamOrFarm(petHaicau);
             finalizeClaim(day, 'Linh Thú Hiếm [Hải Cẩu]');
@@ -298,7 +298,7 @@
                 speed: 60,
                 hearts: 3,
                 rarity: { name: 'Cực Hiếm', color: 'text-yellow-400', bg: 'border-yellow-500', badge: '🟡 Vàng', statMultiplier: 1.6 },
-                trait: 'Hơi Thở Băng Giá Đột Biến'
+                trait: { name: 'Làm chậm đối thủ', icon: '❄️ Chậm', type: 'slow', chance: 35 }
             };
             if (!Array.isArray(window.eggs)) window.eggs = [];
             window.eggs.push({
@@ -415,7 +415,7 @@
                 speed: 68,
                 hearts: 3,
                 rarity: { name: 'Huyền Thoại', color: 'text-red-500', bg: 'border-red-500', badge: '🔴 Đỏ', statMultiplier: 2.0 },
-                trait: 'Cuồng Nộ Hỏa Long'
+                trait: { name: 'Thiêu đốt diện rộng', icon: '🔥 Cháy', type: 'burn', chance: 40 }
             };
         } else if (type === 'cerberus') {
             petData = {
@@ -430,7 +430,7 @@
                 speed: 55,
                 hearts: 3,
                 rarity: { name: 'Huyền Thoại', color: 'text-red-500', bg: 'border-red-500', badge: '🔴 Đỏ', statMultiplier: 2.0 },
-                trait: 'Ba Đầu Bất Tử'
+                trait: { name: 'Khả năng Làm choáng', icon: '💫 Choáng', type: 'stun', chance: 35 }
             };
         } else {
             petData = {
@@ -445,7 +445,7 @@
                 speed: 62,
                 hearts: 3,
                 rarity: { name: 'Huyền Thoại', color: 'text-red-500', bg: 'border-red-500', badge: '🔴 Đỏ', statMultiplier: 2.0 },
-                trait: 'Tái Sinh 9 Đầu'
+                trait: { name: 'Hồi Phục Linh Hồn', icon: '💚 Hồi Máu', type: 'heal', chance: 40 }
             };
         }
 

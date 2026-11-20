@@ -585,16 +585,21 @@
     if (typeof _origOpenPetDetail === 'function') {
         window.openPetDetail = function (index) {
             _origOpenPetDetail.apply(this, arguments);
-            const pet = (typeof team !== 'undefined') ? team[index] : null;
-            if (!pet) return;
-            if (pet.element === 'Moc' || pet.element === 'Thuy' || pet.hasHealSkill) {
-                const badgeContainer = document.querySelector('#modal-content .bg-amber-950\/70');
-                if (badgeContainer && !document.getElementById('pet-detail-heal-badge')) {
-                    badgeContainer.insertAdjacentHTML(
-                        'afterend',
-                        `<div id="pet-detail-heal-badge" class="mt-1 inline-flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-400/50 px-3 py-0.5 rounded-full text-[11px] font-extrabold text-emerald-300">💚 Kỹ năng: Hồi Phục Linh Hồn (Hồi x2 Dame)</div>`
-                    );
+            try {
+                const pet = (typeof team !== 'undefined') ? team[index] : null;
+                if (!pet) return;
+                if (pet.element === 'Moc' || pet.element === 'Thuy' || pet.hasHealSkill) {
+                    const badgeContainer = document.getElementById('pet-detail-trait-badge')
+                        || document.querySelector('#modal-content [class*="bg-amber-950"]');
+                    if (badgeContainer && !document.getElementById('pet-detail-heal-badge')) {
+                        badgeContainer.insertAdjacentHTML(
+                            'afterend',
+                            `<div id="pet-detail-heal-badge" class="mt-1 inline-flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-400/50 px-3 py-0.5 rounded-full text-[11px] font-extrabold text-emerald-300">💚 Kỹ năng: Hồi Phục Linh Hồn (Hồi x2 Dame)</div>`
+                        );
+                    }
                 }
+            } catch (e) {
+                console.warn('[Admin] openPetDetail heal badge check:', e);
             }
         };
     }
