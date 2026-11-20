@@ -408,10 +408,8 @@
                 if (data.defeated) playerDiamonds += 15;
                 if (typeof saveGameData === 'function') saveGameData();
                 alert(data.defeated
-                    ? `🏆 KẾT LIỄU BOSS BANG HỘI!
-Gây ${dmg.toLocaleString()} sát thương, nhận +${goldGain}🪙 & +15💎!`
-                    : `⚔️ Đội hình xuất kích gây ${dmg.toLocaleString()} sát thương lên Boss Bang Hội!
-Nhận thưởng tham chiến +${goldGain}🪙!`);
+                    ? `🏆 KẾT LIỄU BOSS BANG HỘI!\nGây ${dmg.toLocaleString()} sát thương, nhận +${goldGain}🪙 & +15💎!`
+                    : `⚔️ Đội hình xuất kích gây ${dmg.toLocaleString()} sát thương lên Boss Bang Hội!\nNhận thưởng tham chiến +${goldGain}🪙!`);
                 refreshGuildModalData();
             }
         } catch (e) {}

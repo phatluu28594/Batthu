@@ -54,8 +54,7 @@
                 alert(`💰 DOANH THU CHỢ GIAO DỊCH!
 Bạn nhận được ${gainParts.join(' & ')}:
 
-${notes.join('
-')}`);
+${notes.join('\n')}`);
             }
         } catch (e) {
         } finally {
