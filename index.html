@@ -8,8 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Bắt Thú Vương">
     <meta name="theme-color" content="#09090b">
-    <link rel="manifest" href='data:application/manifest+json,{"name":"Bắt Thú Vương","short_name":"Bắt Thú","display":"standalone","orientation":"any","background_color":"#09090b","theme_color":"#09090b","start_url":"/"}' />
-    <title>Batthu - v1.2</title>
+    <link rel="manifest" href="./manifest.json">
+    <title>Bắt Thú Vương - AR Monster GPS</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script>
@@ -335,6 +336,16 @@
             </div>
             <div class="flex items-center gap-1.5 pointer-events-auto">
                 <button id="btn-toggle-music" onclick="toggleGameMusic()" class="bg-black/85 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🔊</button>
+                <button onclick="openCarnivalModal()" title="Chuỗi Sự Kiện Tân Thủ 7 Ngày" class="relative bg-gradient-to-r from-amber-600 to-yellow-600 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold cursor-pointer">
+                    🎁 7N
+                    <span class="carnival-notify-badge hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping"></span>
+                </button>
+                <button onclick="openLuckyWheelModal()" title="Vòng Quay May Mắn" class="bg-gradient-to-r from-teal-600 to-emerald-600 px-2.5 py-1.5 rounded-full border border-emerald-300 text-xs font-bold cursor-pointer">
+                    🎡 Quay
+                </button>
+                <button onclick="installPwaApp()" title="Cài đặt App" class="pwa-install-btn hidden bg-zinc-800 hover:bg-zinc-700 px-2 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">
+                    📲 App
+                </button>
                 <button onclick="openCloudAccountModal()" class="bg-indigo-600/95 px-2.5 py-1.5 rounded-full border border-indigo-300 text-xs font-bold cursor-pointer">☁️ Nick</button>
                 <button onclick="openFriendsModal()" title="Bạn bè" class="relative bg-sky-600/95 px-2.5 py-1.5 rounded-full border border-sky-300 text-xs font-bold cursor-pointer">
                     👥
@@ -469,6 +480,17 @@
                 </button>
                 <button onclick="selectMapDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-orange-700/90 hover:bg-orange-600 px-3 py-2 rounded-xl border border-orange-400/60 text-xs font-bold cursor-pointer">
                     🏪 Chợ Người Chơi
+                </button>
+                <div class="border-t border-white/10 my-0.5"></div>
+                <button onclick="selectMapDropdownTab(() => openCarnivalModal())" class="w-full text-left bg-gradient-to-r from-amber-800/90 to-yellow-800/90 hover:brightness-110 px-3 py-2 rounded-xl border border-amber-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                    <span>🎁 Tân Thủ 7 Ngày</span>
+                    <span class="carnival-notify-badge hidden bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black animate-ping">!</span>
+                </button>
+                <button onclick="selectMapDropdownTab(() => openLuckyWheelModal())" class="w-full text-left bg-gradient-to-r from-teal-800/90 to-emerald-800/90 hover:brightness-110 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-bold cursor-pointer">
+                    🎡 Vòng Quay May Mắn
+                </button>
+                <button onclick="selectMapDropdownTab(() => installPwaApp())" class="pwa-install-btn hidden w-full text-left bg-zinc-800 hover:bg-zinc-700 px-3 py-2 rounded-xl border border-white/20 text-xs font-bold cursor-pointer">
+                    📲 Cài Đặt App (PWA)
                 </button>
             </div>
         </div>
@@ -633,6 +655,12 @@
         <!-- Sân đấu Sảnh Boss: Boss đứng giữa, Vạch ngang & Điểm xuất phát phía dưới -->
         <div class="relative flex-grow overflow-hidden">
             <canvas id="world-boss-canvas" class="w-full h-full block cursor-pointer"></canvas>
+
+            <!-- BẢNG XẾP HẠNG TOP SÁT THƯƠNG & RƯƠNG THƯỞNG LAST HIT (GÓC PHẢI) -->
+            <div id="wb-top-rank-panel" class="absolute top-3 right-3 z-20 bg-black/85 backdrop-blur-md border border-yellow-500/50 rounded-xl p-2.5 w-44 shadow-2xl pointer-events-auto">
+                <div class="text-[10px] font-black text-yellow-300 border-b border-white/15 pb-0.5 mb-1">🏆 TOP SÁT THƯƠNG</div>
+                <div class="text-[10px] text-zinc-400 italic">Đang tải xếp hạng...</div>
+            </div>
 
             <!-- Thông báo chờ xuất phát sau khi bị Boss đánh gục -->
             <div id="wb-respawn-banner" class="hidden absolute bottom-20 left-1/2 -translate-x-1/2 bg-zinc-900/95 border-2 border-red-500/80 px-4 py-2.5 rounded-2xl shadow-2xl text-center z-20 w-72">
@@ -2655,10 +2683,11 @@
                     <div>🔥 Liên kích: <span class="font-bold text-orange-400">${pet.comboRate ?? 20}%</span></div>
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-1.5 text-center">
+            <div class="grid grid-cols-4 gap-1.5 text-center">
                 <button onclick="petAction(${index}, 'feed')" class="bg-emerald-600 hover:bg-emerald-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🍖 Ăn (${inventory.food})</button>
                 <button onclick="petAction(${index}, 'play')" class="bg-amber-600 hover:bg-amber-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🎾 Chơi (${inventory.toy})</button>
                 <button onclick="showcasePetToWorldChat('team', ${index})" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:brightness-110 p-2 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow transition">📢 Khoe</button>
+                <button onclick="openArShareModal('team', ${index})" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:brightness-110 p-2 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow transition">📸 AR</button>
             </div>
             <button onclick="confirmReleasePet(${index})" class="w-full mt-2 bg-red-950/90 hover:bg-red-800 border border-red-500/40 text-red-200 p-2 rounded-xl font-bold text-xs cursor-pointer transition flex items-center justify-center gap-1.5">
                 <span>🕊️</span>
@@ -3626,6 +3655,14 @@
                 }
 
                 addQuestProgress(1, 1);
+                let gotTicket = false;
+                if (Math.random() < 0.3) {
+                    if (typeof window.addLuckyTicket === 'function') {
+                        window.addLuckyTicket(1);
+                        gotTicket = true;
+                    }
+                }
+
                 saveGameData();
                 updateTeamCount();
                 if (window.sendWorldChat && caughtPet.rarity && (caughtPet.rarity.name === 'Huyền Thoại' || caughtPet.rarity.name === 'Thần Thánh')) {
@@ -3633,7 +3670,17 @@
                     window.sendWorldChat(`📢 Chúc mừng [${hunter}] vừa thu phục thành công Viễn Thú ${caughtPet.rarity.badge} ${caughtPet.name}!`, true);
                 }
 
-                alert(`🎉 Thu phục thành công ${caughtPet.name} (${caughtPet.rarity?.badge || '⚪ Trắng'})!`);
+                let catchMsg = `🎉 Thu phục thành công ${caughtPet.name} (${caughtPet.rarity?.badge || '⚪ Trắng'})!`;
+                if (gotTicket) catchMsg += `\n🎟️ Nhận được 1x Vé Quay May Mắn!`;
+                catchMsg += `\n\n📸 Bạn có muốn mở Camera AR Flex để chụp ảnh khoe ngay không?`;
+
+                if (confirm(catchMsg)) {
+                    exitARScreen();
+                    if (typeof openArShareModal === 'function') {
+                        setTimeout(() => openArShareModal('team', 0, caughtPet), 300);
+                    }
+                    return;
+                }
             }
 
             exitARScreen();
@@ -4851,8 +4898,10 @@
                 if (selfSprite.style.backgroundImage.includes('_walk.webp')) myState = 'walk';
             }
 
+            const lastPmId = parseInt(localStorage.getItem('ar_last_pm_id') || '0', 10);
             try {
-                const res = await fetch('/api/presence', {
+                // SỬ DỤNG HEARTBEAT TỔNG HỢP: Gộp Presence + PvP Duel + Chợ P2P + Quà Admin + PM trong 1 request
+                const res = await fetch('/api/heartbeat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4863,11 +4912,41 @@
                         dir: myDir,
                         state: myState,
                         leadPet: leadPet,
-                        radius: nearbyScanRadius
+                        radius: nearbyScanRadius,
+                        lastPmId: lastPmId
                     })
                 });
                 const data = await res.json();
                 if (!data.ok) return;
+
+                // 1. Phân phối tín hiệu Khiêu Chiến Sinh Tử tới pvp.js
+                if (data.pvp && typeof window.handleHeartbeatPvP === 'function') {
+                    window.handleHeartbeatPvP(data.pvp);
+                }
+
+                // 2. Tự động nhận doanh thu Chợ P2P nếu có người vừa mua vật phẩm
+                if (Array.isArray(data.marketPayouts) && data.marketPayouts.length > 0) {
+                    if (typeof window.checkAndClaimMarketPayouts === 'function') {
+                        window.checkAndClaimMarketPayouts();
+                    }
+                }
+
+                // 3. Tự động nhận quà Admin nếu có
+                if (Array.isArray(data.adminGifts) && data.adminGifts.length > 0) {
+                    if (typeof window.checkAndClaimAdminGifts === 'function') {
+                        window.checkAndClaimAdminGifts();
+                    }
+                }
+
+                // 4. Đồng bộ cờ Boss Thế Giới
+                if (data.worldBoss) {
+                    window.serverWorldBossActive = !!data.worldBoss.active;
+                }
+
+                // 5. Kiểm tra tin nhắn riêng chưa đọc
+                if (data.pm && data.pm.hasNew && typeof checkIncomingPrivateMessages === 'function') {
+                    checkIncomingPrivateMessages(false);
+                }
 
                 if (window.playerRadarCircle && typeof window.playerRadarCircle.setRadius === 'function') {
                     window.playerRadarCircle.setRadius(nearbyScanRadius);
@@ -5318,12 +5397,19 @@
             setTimeout(() => banner.remove(), 7000);
         }
 
-        // Kiểm tra hộp thư đến mỗi 6 giây
-        setInterval(() => checkIncomingPrivateMessages(false), 6000);
+        // Heartbeat đã gộp kiểm tra PM, đặt timer dự phòng 35s
+        setInterval(() => checkIncomingPrivateMessages(false), 35000);
         
-        // Tự động bật đồng bộ vị trí người chơi mỗi 8 giây
-        presenceTimer = setInterval(syncMapPlayersPresence, 8000);
+        // Tự động bật Heartbeat tổng hợp mỗi 12 giây (tiết kiệm 90% quota Cloudflare)
+        presenceTimer = setInterval(syncMapPlayersPresence, 12000);
         setTimeout(syncMapPlayersPresence, 2000);
+
+        // Kích hoạt ngay khi người dùng chuyển lại tab game
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && typeof syncMapPlayersPresence === 'function') {
+                syncMapPlayersPresence();
+            }
+        });
     })();
     </script>
     <script>
@@ -5673,5 +5759,9 @@
     <script src="./admin.js?v=20261120"></script>
     <script src="arena.js?v=20261120"></script>
     <script src="pvp.js?v=20261120"></script>
+    <script src="pwa_tma.js?v=20261120"></script>
+    <script src="carnival.js?v=20261120"></script>
+    <script src="gacha.js?v=20261120"></script>
+    <script src="ar_share.js?v=20261120"></script>
 </body>
 </html>
