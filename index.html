@@ -942,6 +942,7 @@
             document.getElementById('home-screen').classList.remove('hidden');
             setTimeout(() => centerPanorama('home-scroller'), 50);
             updateTeamCount();
+            if (typeof renderHomeVisualPets === 'function') renderHomeVisualPets();
             saveGameData();
         }
 
@@ -5375,42 +5376,125 @@
     <script>
 
         // ==========================================
-        // THÚ ĐỘI HÌNH TẠI NHÀ CHÍNH: CLICK -> HIT, ĐÈ 3 GIÂY -> XEM THÔNG TIN CÁ NHÂN
+        // THÚ ĐỘI HÌNH TỰ DO ĐI DẠO (WALK) TRONG NHÀ CHÍNH (TRÁNH GIƯỜNG & BÀN ĂN)
+        // CLICK -> ĐỨNG YÊN & HIT | ĐÈ GIỮ 3 GIÂY -> MỞ THÔNG TIN CÁ NHÂN
         // ==========================================
         const homeHoldTimers = {};
         const homeLongPressFired = {};
+        const homePointerStart = {};
+        const homeHitResetTimers = {};
+        let homePetWalkers = [];
+        let homeRoamAnimId = null;
+
+        // Vùng vật cản trong nhà (tọa độ % theo ảnh nền background.webp):
+        // 1. Giường ngủ bên trái: x = 6%..35%, y = 44%..72%
+        // 2. Bàn ăn & ghế bên phải (khu vực gọi bệnh viện): x = 70%..94%, y = 55%..82%
+        // 3. Kệ tivi: x = 60%..80%, y = 44%..56%
+        const HOME_OBSTACLES = [
+            { xMin: 6,  xMax: 35, yMin: 44, yMax: 72 }, // Giường ngủ
+            { xMin: 70, xMax: 94, yMin: 55, yMax: 82 }, // Bàn ăn & ghế
+            { xMin: 60, xMax: 80, yMin: 44, yMax: 56 }  // Kệ tivi
+        ];
+
+        // Vùng sàn đi bộ hợp lệ trong phòng khách
+        const HOME_WALK_BOUNDS = { xMin: 12, xMax: 88, yMin: 56, yMax: 84 };
+
+        function isHomePointBlocked(x, y) {
+            if (x < HOME_WALK_BOUNDS.xMin || x > HOME_WALK_BOUNDS.xMax || y < HOME_WALK_BOUNDS.yMin || y > HOME_WALK_BOUNDS.yMax) {
+                return true;
+            }
+            return HOME_OBSTACLES.some(obs => x >= obs.xMin && x <= obs.xMax && y >= obs.yMin && y <= obs.yMax);
+        }
+
+        function pickValidHomeFloorPoint(fallbackX = 48, fallbackY = 72) {
+            for (let attempt = 0; attempt < 25; attempt++) {
+                const rx = HOME_WALK_BOUNDS.xMin + Math.random() * (HOME_WALK_BOUNDS.xMax - HOME_WALK_BOUNDS.xMin);
+                const ry = HOME_WALK_BOUNDS.yMin + Math.random() * (HOME_WALK_BOUNDS.yMax - HOME_WALK_BOUNDS.yMin);
+                if (!isHomePointBlocked(rx, ry)) {
+                    return { x: rx, y: ry };
+                }
+            }
+            return { x: fallbackX, y: fallbackY };
+        }
+
+        function setHomePetSpriteState(idx, stateName, facingLeft = null) {
+            const wrap = document.getElementById(`home-pet-sprite-wrap-${idx}`);
+            const pet = (typeof team !== 'undefined') ? team[idx] : null;
+            if (!wrap || !pet) return;
+            const spriteBox = wrap.querySelector('.animated-sprite-box');
+            const flipWrap = wrap.querySelector('.home-pet-flip');
+
+            const baseName = String(pet.name || '').replace(/^F1_/i, '');
+            const cfg = (typeof spriteConfigs !== 'undefined') ? spriteConfigs[baseName] : null;
+
+            if (spriteBox) {
+                const row = (cfg && cfg.rowMap && cfg.rowMap[stateName] !== undefined)
+                    ? cfg.rowMap[stateName]
+                    : (stateName === 'hit' ? 3 : (stateName === 'walk' ? 1 : 0));
+                spriteBox.dataset.fixedRow = String(row);
+            }
+
+            if (flipWrap && facingLeft !== null) {
+                const shouldFlip = cfg ? (facingLeft ? (cfg.facing !== 'left') : (cfg.facing === 'left')) : facingLeft;
+                flipWrap.style.transform = shouldFlip ? 'scaleX(-1)' : 'scaleX(1)';
+            }
+        }
 
         function renderHomeVisualPets() {
             const container = document.getElementById('home-visual-pets');
             if (!container || typeof team === 'undefined' || !Array.isArray(team)) return;
 
-            const spots = [
-                { left: '34%', top: '66%' },
-                { left: '48%', top: '70%' },
-                { left: '62%', top: '66%' }
+            const safeStarts = [
+                { x: 42, y: 66 },
+                { x: 52, y: 74 },
+                { x: 60, y: 64 }
             ];
 
-            container.innerHTML = team.slice(0, 3).map((pet, idx) => {
-                const pos = spots[idx] || { left: '48%', top: '68%' };
+            const prevWalkers = [...homePetWalkers];
+            homePetWalkers = team.slice(0, 3).map((pet, idx) => {
+                const old = prevWalkers[idx];
+                const startPos = (old && !isHomePointBlocked(old.x, old.y))
+                    ? { x: old.x, y: old.y }
+                    : safeStarts[idx] || pickValidHomeFloorPoint(48, 72);
+                const nextTarget = pickValidHomeFloorPoint(startPos.x, startPos.y);
+
+                return {
+                    idx,
+                    x: startPos.x,
+                    y: startPos.y,
+                    tx: nextTarget.x,
+                    ty: nextTarget.y,
+                    facingLeft: nextTarget.x < startPos.x,
+                    state: 'walk', // 'walk' | 'idle' | 'hit' | 'holding'
+                    pauseTimer: 0
+                };
+            });
+
+            container.innerHTML = homePetWalkers.map((w) => {
+                const pet = team[w.idx];
                 const spriteHtml = (typeof getPetSpriteHtml === 'function')
-                    ? getPetSpriteHtml(pet, 'idle', 58, 'home-pet-sprite')
+                    ? getPetSpriteHtml(pet, 'walk', 62, 'home-pet-sprite')
                     : `<span class="text-4xl">${pet.emoji || '🐾'}</span>`;
 
                 return `
-                <div id="home-pet-slot-${idx}"
-                     onpointerdown="startHomePetHold(${idx}, event)"
-                     onpointerup="endHomePetHold(${idx}, event)"
-                     onpointerleave="cancelHomePetHold(${idx})"
-                     onpointercancel="cancelHomePetHold(${idx})"
-                     style="position:absolute; left:${pos.left}; top:${pos.top}; transform:translate(-50%, -50%); touch-action:none;"
+                <div id="home-pet-slot-${w.idx}"
+                     oncontextmenu="return false;"
+                     onpointerdown="startHomePetHold(${w.idx}, event)"
+                     onpointermove="moveHomePetHold(${w.idx}, event)"
+                     onpointerup="endHomePetHold(${w.idx}, event)"
+                     onpointerleave="cancelHomePetHold(${w.idx})"
+                     onpointercancel="cancelHomePetHold(${w.idx})"
+                     style="position:absolute; left:${w.x}%; top:${w.y}%; transform:translate(-50%, -50%); touch-action:pan-x; -webkit-touch-callout:none; z-index:${Math.round(w.y)};"
                      class="pointer-events-auto cursor-pointer flex flex-col items-center select-none">
-                    <div class="relative flex items-center justify-center">
-                        ${spriteHtml}
-                        <div id="home-pet-fx-${idx}" class="hidden -top-7 absolute px-2 py-0.5 rounded-full bg-red-600/95 border border-yellow-300 text-[10px] font-black text-white shadow-lg whitespace-nowrap pointer-events-none">
+                    <div id="home-pet-sprite-wrap-${w.idx}" class="relative flex items-center justify-center">
+                        <div class="home-pet-flip inline-block transition-transform duration-200">
+                            ${spriteHtml}
+                        </div>
+                        <div id="home-pet-fx-${w.idx}" class="hidden -top-7 absolute px-2 py-0.5 rounded-full bg-red-600/95 border border-yellow-300 text-[10px] font-black text-white shadow-lg whitespace-nowrap pointer-events-none">
                             💥 HIT!
                         </div>
-                        <div id="home-pet-ring-${idx}" class="hidden -bottom-3 absolute h-1.5 w-14 bg-zinc-900/90 rounded-full overflow-hidden border border-amber-300/60 pointer-events-none">
-                            <div id="home-pet-bar-${idx}" class="h-full bg-gradient-to-r from-amber-400 to-emerald-400 transition-all duration-75" style="width:0%"></div>
+                        <div id="home-pet-ring-${w.idx}" class="hidden -bottom-2.5 absolute h-1.5 w-14 bg-zinc-900/95 rounded-full overflow-hidden border border-amber-300/80 shadow pointer-events-none">
+                            <div id="home-pet-bar-${w.idx}" class="h-full bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-400" style="width:0%"></div>
                         </div>
                     </div>
                     <span class="mt-1 bg-black/80 text-yellow-200 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 whitespace-nowrap pointer-events-none">
@@ -5418,36 +5502,143 @@
                     </span>
                 </div>`;
             }).join('');
+
+            homePetWalkers.forEach(w => setHomePetSpriteState(w.idx, 'walk', w.facingLeft));
+            startHomePetRoamingLoop();
+        }
+
+        function startHomePetRoamingLoop() {
+            if (homeRoamAnimId) {
+                cancelAnimationFrame(homeRoamAnimId);
+                homeRoamAnimId = null;
+            }
+
+            let lastTime = performance.now();
+
+            function stepHomePets(now) {
+                const dt = Math.min((now - lastTime) / 1000, 0.1);
+                lastTime = now;
+
+                const homeScreen = document.getElementById('home-screen');
+                if (homeScreen && !homeScreen.classList.contains('hidden') && homePetWalkers.length > 0) {
+                    homePetWalkers.forEach((w) => {
+                        const slot = document.getElementById(`home-pet-slot-${w.idx}`);
+                        if (!slot) return;
+
+                        // Khi đang bị click (HIT) hoặc đang đè giữ 3s (holding) -> Đứng yên tại chỗ
+                        if (w.state === 'hit' || w.state === 'holding') {
+                            return;
+                        }
+
+                        // Nếu đang tạm nghỉ ngắn giữa 2 chặng đi bộ
+                        if (w.pauseTimer > 0) {
+                            w.pauseTimer -= dt;
+                            if (w.pauseTimer <= 0) {
+                                const nextPt = pickValidHomeFloorPoint(w.x, w.y);
+                                w.tx = nextPt.x;
+                                w.ty = nextPt.y;
+                                w.facingLeft = w.tx < w.x;
+                                w.state = 'walk';
+                                setHomePetSpriteState(w.idx, 'walk', w.facingLeft);
+                            }
+                            return;
+                        }
+
+                        const dx = w.tx - w.x;
+                        const dy = w.ty - w.y;
+                        const dist = Math.hypot(dx, dy);
+
+                        if (dist < 0.8) {
+                            // Đã tới điểm đích -> đứng nghỉ 1.2 - 2.6 giây (idle) rồi đi tiếp
+                            w.state = 'idle';
+                            w.pauseTimer = 1.2 + Math.random() * 1.4;
+                            setHomePetSpriteState(w.idx, 'idle', w.facingLeft);
+                            return;
+                        }
+
+                        const speedPctPerSec = 4.2; // Tốc độ đi bộ thong thả quanh phòng (% chiều rộng / giây)
+                        const stepX = (dx / dist) * speedPctPerSec * dt;
+                        const stepY = (dy / dist) * speedPctPerSec * dt;
+                        const nextX = w.x + stepX;
+                        const nextY = w.y + stepY;
+
+                        // Kiểm tra va chạm giường ngủ / bàn ăn trước khi bước tới
+                        if (isHomePointBlocked(nextX, nextY)) {
+                            const altPt = pickValidHomeFloorPoint(w.x, w.y);
+                            w.tx = altPt.x;
+                            w.ty = altPt.y;
+                            w.facingLeft = w.tx < w.x;
+                            setHomePetSpriteState(w.idx, 'walk', w.facingLeft);
+                        } else {
+                            w.x = nextX;
+                            w.y = nextY;
+                            slot.style.left = `${w.x}%`;
+                            slot.style.top = `${w.y}%`;
+                            slot.style.zIndex = String(Math.round(w.y));
+                        }
+                    });
+                }
+
+                homeRoamAnimId = requestAnimationFrame(stepHomePets);
+            }
+
+            homeRoamAnimId = requestAnimationFrame(stepHomePets);
         }
 
         function triggerHomePetHitReaction(idx) {
             const slot = document.getElementById(`home-pet-slot-${idx}`);
             const fx = document.getElementById(`home-pet-fx-${idx}`);
+            const walker = homePetWalkers[idx];
             if (!slot) return;
 
-            slot.classList.remove('animate-bounce');
-            slot.style.transform = 'translate(-50%, -50%) scale(0.86) rotate(-6deg)';
+            if (homeHitResetTimers[idx]) clearTimeout(homeHitResetTimers[idx]);
+
+            // Dừng đi bộ & chuyển sprite sang động tác HIT
+            if (walker) walker.state = 'hit';
+            setHomePetSpriteState(idx, 'hit', walker ? walker.facingLeft : null);
+
+            slot.style.transition = 'transform 0.12s ease-out';
+            slot.style.transform = 'translate(-50%, -50%) scale(0.88) rotate(-7deg)';
             if (fx) {
-                fx.classList.remove('hidden');
+                fx.classList.remove('hidden', 'damage-popup');
+                void fx.offsetWidth;
                 fx.classList.add('damage-popup');
             }
 
             setTimeout(() => {
                 if (slot) slot.style.transform = 'translate(-50%, -50%) scale(1.06) rotate(4deg)';
-            }, 90);
-            setTimeout(() => {
+            }, 110);
+
+            homeHitResetTimers[idx] = setTimeout(() => {
                 if (slot) slot.style.transform = 'translate(-50%, -50%) scale(1) rotate(0deg)';
                 if (fx) {
                     fx.classList.add('hidden');
                     fx.classList.remove('damage-popup');
                 }
-            }, 420);
+                // Hết hiệu ứng HIT -> Tiếp tục đi bộ (walk) quanh nhà
+                if (walker) {
+                    const nextPt = pickValidHomeFloorPoint(walker.x, walker.y);
+                    walker.tx = nextPt.x;
+                    walker.ty = nextPt.y;
+                    walker.facingLeft = walker.tx < walker.x;
+                    walker.pauseTimer = 0;
+                    walker.state = 'walk';
+                    setHomePetSpriteState(idx, 'walk', walker.facingLeft);
+                }
+            }, 700);
         }
 
         function startHomePetHold(idx, e) {
             if (e) e.stopPropagation();
-            cancelHomePetHold(idx);
+            cancelHomePetHold(idx, true);
             homeLongPressFired[idx] = false;
+            homePointerStart[idx] = e ? { x: e.clientX, y: e.clientY, moved: false } : { x: 0, y: 0, moved: false };
+
+            const walker = homePetWalkers[idx];
+            if (walker) {
+                walker.state = 'holding';
+                setHomePetSpriteState(idx, 'idle', walker.facingLeft);
+            }
 
             const startTs = Date.now();
             const duration = 3000; // Đè đủ 3 giây (3000ms)
@@ -5462,8 +5653,13 @@
                 if (bar) bar.style.width = pct + '%';
 
                 if (elapsed >= duration) {
-                    cancelHomePetHold(idx, false);
+                    cancelHomePetHold(idx, true);
                     homeLongPressFired[idx] = true;
+                    if (walker) {
+                        walker.state = 'walk';
+                        setHomePetSpriteState(idx, 'walk', walker.facingLeft);
+                    }
+                    if (navigator.vibrate) navigator.vibrate(45);
                     if (typeof openPetDetail === 'function') {
                         openPetDetail(idx);
                     }
@@ -5471,15 +5667,37 @@
             }, 50);
         }
 
+        function moveHomePetHold(idx, e) {
+            const st = homePointerStart[idx];
+            if (!st || !e) return;
+            if (Math.hypot(e.clientX - st.x, e.clientY - st.y) > 14) {
+                st.moved = true;
+                cancelHomePetHold(idx, true);
+                const walker = homePetWalkers[idx];
+                if (walker && walker.state === 'holding') {
+                    walker.state = 'walk';
+                    setHomePetSpriteState(idx, 'walk', walker.facingLeft);
+                }
+            }
+        }
+
         function endHomePetHold(idx, e) {
             if (e) e.stopPropagation();
             const wasLongPress = !!homeLongPressFired[idx];
+            const wasDragged = !!homePointerStart[idx]?.moved;
             cancelHomePetHold(idx, true);
             homeLongPressFired[idx] = false;
+            delete homePointerStart[idx];
 
-            // Nếu thả tay trước 3 giây -> Coi là click thường, thực hiện phản ứng HIT
-            if (!wasLongPress) {
+            // Nếu thả tay trước 3 giây và không phải vuốt ngang màn hình -> Click thường -> Dừng yên & chạy HIT
+            if (!wasLongPress && !wasDragged) {
                 triggerHomePetHitReaction(idx);
+            } else {
+                const walker = homePetWalkers[idx];
+                if (walker && walker.state === 'holding') {
+                    walker.state = 'walk';
+                    setHomePetSpriteState(idx, 'walk', walker.facingLeft);
+                }
             }
         }
 
@@ -5487,6 +5705,11 @@
             if (homeHoldTimers[idx]) {
                 clearInterval(homeHoldTimers[idx]);
                 delete homeHoldTimers[idx];
+            }
+            const walker = homePetWalkers[idx];
+            if (walker && walker.state === 'holding') {
+                walker.state = 'walk';
+                setHomePetSpriteState(idx, 'walk', walker.facingLeft);
             }
             if (resetBar) {
                 const ring = document.getElementById(`home-pet-ring-${idx}`);
@@ -5497,7 +5720,6 @@
         }
 
         window.addEventListener('load', () => setTimeout(renderHomeVisualPets, 250));
-
     </script>
     <script src="dex.js"></script>
     <script src="guild.js"></script>
