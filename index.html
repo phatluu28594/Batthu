@@ -319,25 +319,45 @@
     
     <!-- MÀN HÌNH SẢNH CHÍNH ĐẦU GAME (background.png) -->
     <div id="home-screen" class="absolute inset-0 z-30 bg-zinc-950 overflow-hidden">
-        <div class="fixed top-0 left-0 right-0 z-30 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/85 to-transparent pointer-events-none">
-            <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold pointer-events-auto">
+        <div id="home-top-nav" class="fixed top-0 left-0 right-0 z-30 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/85 to-transparent pointer-events-none">
+            <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold pointer-events-auto shrink-0">
                 <span>🏠 Nhà Chính</span>
                 <span class="text-yellow-400 ml-1"><span class="ui-coins-val">1500</span>🪙</span>
                 <span class="text-cyan-300 ml-1"><span class="ui-diamonds-val">50</span>💎</span>
             </div>
-            <div class="flex items-center gap-1.5 pointer-events-auto">
-                <button id="btn-toggle-music" onclick="toggleGameMusic()" class="bg-black/85 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🔊</button>
-                <button onclick="openCloudAccountModal()" class="bg-indigo-600/95 px-2.5 py-1.5 rounded-full border border-indigo-300 text-xs font-bold cursor-pointer">☁️ Nick</button>
-                <button onclick="openFriendsModal()" title="Bạn bè" class="relative bg-sky-600/95 px-2.5 py-1.5 rounded-full border border-sky-300 text-xs font-bold cursor-pointer">
-                    👥
-                    <span id="home-friend-dot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping"></span>
-                </button>
-                <button onclick="openMonsterDexModal()" title="Bách Khoa Linh Thú" class="bg-emerald-700/95 px-2.5 py-1.5 rounded-full border border-emerald-300 text-xs font-bold cursor-pointer">📖</button>
-                <button onclick="openGuildModal()" title="Bang Hội" class="bg-purple-700/95 px-2.5 py-1.5 rounded-full border border-purple-300 text-xs font-bold cursor-pointer">🏰</button>
-                <button onclick="openTeamMenu()" class="bg-black/85 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🎒(<span id="home-team-count">0</span>/3)</button>
-                <button onclick="openMarketMenu()" class="bg-amber-600/95 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold cursor-pointer">🛒 Chợ</button>
-                <button onclick="openP2pMarketModal()" title="Chợ Người Chơi" class="bg-rose-700/95 px-2.5 py-1.5 rounded-full border border-rose-300 text-xs font-bold cursor-pointer">🏪</button>
-                <button onclick="openQuestMenu()" class="bg-yellow-600/95 px-2.5 py-1.5 rounded-full border border-yellow-300 text-xs font-bold cursor-pointer">📜 NV</button>
+            <div class="relative flex flex-col items-end pointer-events-auto">
+                <div class="flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-2 py-1 rounded-full border border-white/15 shadow-xl">
+                    <button id="btn-toggle-music" onclick="toggleGameMusic()" class="bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🔊</button>
+                    <button onclick="openCloudAccountModal()" class="bg-indigo-600/95 hover:bg-indigo-500 px-2.5 py-1.5 rounded-full border border-indigo-300 text-xs font-bold cursor-pointer">☁️</button>
+                    <button onclick="openTeamMenu()" class="bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🎒(<span id="home-team-count">0</span>/3)</button>
+                    <button id="home-nav-toggle" onclick="toggleHomeMoreTabs()" class="relative bg-sky-600/95 hover:bg-sky-500 w-7 h-7 rounded-full border border-sky-300 text-xs font-black text-white flex items-center justify-center shadow cursor-pointer transition-transform" title="Mở rộng menu">
+                        ▼
+                        <span id="home-friend-dot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping"></span>
+                    </button>
+                </div>
+
+                <!-- Menu xổ xuống ở Nhà Chính giống bản đồ GPS -->
+                <div id="home-nav-dropdown" class="hidden absolute top-11 right-0 z-50 flex-col gap-1.5 min-w-[175px] bg-zinc-900/95 backdrop-blur-md p-2 rounded-2xl border border-sky-400/40 shadow-2xl">
+                    <button onclick="selectHomeDropdownTab(() => openMarketMenu())" class="w-full text-left bg-amber-600/90 hover:bg-amber-500 px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold cursor-pointer">
+                        🛒 Chợ Hệ Thống
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-rose-700/90 hover:bg-rose-600 px-3 py-2 rounded-xl border border-rose-400 text-xs font-bold cursor-pointer">
+                        🏪 Chợ Cá Nhân (P2P)
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openQuestMenu())" class="w-full text-left bg-yellow-600/90 hover:bg-yellow-500 px-3 py-2 rounded-xl border border-yellow-400 text-xs font-bold cursor-pointer">
+                        📜 Nhiệm Vụ
+                    </button>
+                    <div class="border-t border-white/10 my-0.5"></div>
+                    <button onclick="selectHomeDropdownTab(() => openMonsterDexModal())" class="w-full text-left bg-emerald-700/90 hover:bg-emerald-600 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-bold cursor-pointer">
+                        📖 Bách Khoa Thú (Buff)
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openGuildModal())" class="w-full text-left bg-purple-700/90 hover:bg-purple-600 px-3 py-2 rounded-xl border border-purple-400/60 text-xs font-bold cursor-pointer">
+                        🏰 Bang Hội Thợ Săn
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openFriendsModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                        <span>👥 Bạn Bè</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -3814,10 +3834,39 @@
             if (typeof actionFn === 'function') actionFn();
         }
 
+        function toggleHomeMoreTabs(forceState) {
+            const dropdown = document.getElementById('home-nav-dropdown');
+            const toggleBtn = document.getElementById('home-nav-toggle');
+            if (!dropdown || !toggleBtn) return;
+
+            const shouldOpen = typeof forceState === 'boolean'
+                ? forceState
+                : dropdown.classList.contains('hidden');
+
+            if (shouldOpen) {
+                dropdown.classList.remove('hidden');
+                dropdown.classList.add('flex');
+                toggleBtn.childNodes[0].nodeValue = '▲';
+            } else {
+                dropdown.classList.add('hidden');
+                dropdown.classList.remove('flex');
+                toggleBtn.childNodes[0].nodeValue = '▼';
+            }
+        }
+
+        function selectHomeDropdownTab(actionFn) {
+            toggleHomeMoreTabs(false);
+            if (typeof actionFn === 'function') actionFn();
+        }
+
         document.addEventListener('click', (e) => {
             const navWrap = document.getElementById('map-top-nav');
             if (navWrap && !navWrap.contains(e.target)) {
                 toggleMapMoreTabs(false);
+            }
+            const homeNavWrap = document.getElementById('home-top-nav');
+            if (homeNavWrap && !homeNavWrap.contains(e.target)) {
+                toggleHomeMoreTabs(false);
             }
         });
 
