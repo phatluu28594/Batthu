@@ -1066,24 +1066,49 @@ export default {
                         `).bind(me, now - 60000).all();
                         incomingDuels = inc || [];
 
-                        // Trận khiêu chiến sinh tử vừa được chấp nhận (dành cho bên thách đấu nhận tín hiệu vào trận)
+                        // Trận khiêu chiến sinh tử vừa được chấp nhận hoặc vừa kết thúc trong 45s (để bên A không bao giờ bị lỡ nhịp)
                         const acc = await db.prepare(`
-                            SELECT id, challenger, defender, challenger_pet, defender_pet, status, seed, updated_at
+                            SELECT id, challenger, defender, challenger_pet, defender_pet, status, seed, winner, updated_at
                             FROM pvp_duels
                             WHERE (LOWER(challenger) = LOWER(?) OR LOWER(defender) = LOWER(?))
-                              AND status = 'accepted' AND updated_at >= ?
+                              AND status IN ('accepted', 'finished') AND updated_at >= ?
                             ORDER BY id DESC LIMIT 1
-                        `).bind(me, me, now - 30000).first();
+                        `).bind(me, me, now - 45000).first();
                         if (acc) activeDuel = acc;
+
+                        // Kiểm tra nếu đối thủ vừa từ chối lời mời trong 20s gần nhất
+                        const dec = await db.prepare(`
+                            SELECT id, defender, status, updated_at
+                            FROM pvp_duels
+                            WHERE LOWER(challenger) = LOWER(?) AND status = 'declined' AND updated_at >= ?
+                            ORDER BY id DESC LIMIT 1
+                        `).bind(me, now - 20000).first();
+                        if (dec) {
+                            return new Response(JSON.stringify({
+                                ok: true,
+                                weekKey,
+                                leaderboard: topRows || [],
+                                myRank,
+                                incomingDuels,
+                                activeDuel,
+                                declinedDuel: dec
+                            }), {
+                                status: 200,
+                                headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, no-cache, must-revalidate" }
+                            });
+                        }
                     }
 
-                    return jsonResponse({
+                    return new Response(JSON.stringify({
                         ok: true,
                         weekKey,
                         leaderboard: topRows || [],
                         myRank,
                         incomingDuels,
                         activeDuel
+                    }), {
+                        status: 200,
+                        headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, no-cache, must-revalidate" }
                     });
                 }
 

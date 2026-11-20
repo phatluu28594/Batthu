@@ -101,8 +101,9 @@
                         <!-- Hào quang nếu có -->
                         <div id="ar-pet-aura-glow" class="hidden absolute inset-0 rounded-full bg-gradient-to-r from-amber-400 via-pink-500 to-cyan-400 blur-xl opacity-60 animate-spin" style="animation-duration: 6s;"></div>
                         
-                        <!-- Sprite Con Thú -->
-                        <img id="ar-pet-img" src="assets_boss/ronglua.webp" alt="AR Pet" class="w-44 h-44 object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
+                        <!-- Sprite Con Thú Động Từng Frame (Không hiện cả tấm sheet) -->
+                        <div id="ar-pet-sprite-box" class="w-44 h-44 flex items-center justify-center filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"></div>
+                        <img id="ar-pet-img" src="assets_boss/ronglua.webp" alt="AR Pet" crossorigin="anonymous" class="hidden">
 
                         <!-- Huy Hiệu Tên Linh Thú -->
                         <div class="bg-black/85 backdrop-blur-md px-3 py-1 rounded-full border border-amber-400/60 shadow-xl flex items-center gap-1.5 mt-2">
@@ -251,17 +252,19 @@
         const dateEl = document.getElementById('ar-share-date');
         const auraEl = document.getElementById('ar-pet-aura-glow');
 
+        const baseName = String(currentPet.name || '').replace(/^F1_/i, '').trim();
+        const pCfg = (typeof spriteConfigs !== 'undefined' && spriteConfigs[baseName]) ? spriteConfigs[baseName] : null;
+        const bCfg = (!pCfg && typeof bossSpriteConfigs !== 'undefined' && bossSpriteConfigs[baseName]) ? bossSpriteConfigs[baseName] : null;
+        const activeCfg = pCfg || bCfg;
+
         // Tìm ảnh sprite chuẩn xác theo cấu hình hệ thống
         let petSprite = 'assets_boss/ronglua.webp';
-        if (currentPet.sheet) {
+        if (activeCfg && activeCfg.sheet) {
+            petSprite = activeCfg.sheet;
+        } else if (currentPet.sheet) {
             petSprite = currentPet.sheet;
-        } else if (typeof spriteConfigs !== 'undefined' && spriteConfigs[currentPet.name]) {
-            const cfg = spriteConfigs[currentPet.name];
-            petSprite = cfg.singleSheet ? cfg.sheet : (cfg.walk || cfg.idle || cfg.sheet);
-        } else if (typeof bossConfigs !== 'undefined' && bossConfigs[currentPet.name]) {
-            petSprite = bossConfigs[currentPet.name].sheet;
         } else {
-            const petKey = (currentPet.name || '').toLowerCase();
+            const petKey = baseName.toLowerCase();
             if (petKey.includes('hải cẩu')) petSprite = 'assets/haicau.webp';
             else if (petKey.includes('rồng')) petSprite = 'assets_boss/ronglua.webp';
             else if (petKey.includes('hydra')) petSprite = 'assets_boss/Hydra.webp';
@@ -269,7 +272,7 @@
             else if (petKey.includes('golem')) petSprite = 'assets_boss/golem.webp';
             else if (petKey.includes('chupacabra')) petSprite = 'assets_boss/Chupacabra.webp';
             else if (petKey.includes('chó')) petSprite = 'assets/cho.webp';
-            else if (petKey.includes('mèo')) petSprite = 'assets/meo.webp';
+            else if (petKey.includes('mèo') || petKey.includes('sói')) petSprite = 'assets/meo.webp';
             else if (petKey.includes('cáo')) petSprite = 'assets/caosamac.webp';
             else if (petKey.includes('gà')) petSprite = 'assets/ga.webp';
             else if (petKey.includes('heo')) petSprite = 'assets/heo.webp';
@@ -278,7 +281,39 @@
             else if (petKey.includes('rùa')) petSprite = 'assets/rua.webp';
             else if (petKey.includes('đại bàng')) petSprite = 'assets/daibang.webp';
             else if (petKey.includes('hồ ly')) petSprite = 'assets/holy.webp';
+            else if (petKey.includes('capybara')) petSprite = 'assets/capypara.webp';
+            else if (petKey.includes('dơi')) petSprite = 'assets/doi.webp';
+            else if (petKey.includes('gấu trúc')) petSprite = 'assets/gautruc.webp';
+            else if (petKey.includes('hà mã')) petSprite = 'assets/hama.webp';
+            else if (petKey.includes('koala')) petSprite = 'assets/koala.webp';
+            else if (petKey.includes('khỉ')) petSprite = 'assets/khi.webp';
+            else if (petKey.includes('rái cá')) petSprite = 'assets/raica.webp';
+            else if (petKey.includes('thỏ')) petSprite = 'assets/tho.webp';
+            else if (petKey.includes('vịt')) petSprite = 'assets/vit.webp';
+            else if (petKey.includes('voi')) petSprite = 'assets/voi.webp';
             else if (petKey.includes('trứng')) petSprite = 'assets/trung.webp';
+        }
+
+        // Lưu thông số cắt frame để Canvas xuất ảnh chỉ vẽ đúng 1 con thú (1 frame)
+        window._arActiveSheetMeta = {
+            sheetUrl: petSprite,
+            cols: activeCfg?.cols || 10,
+            rows: activeCfg?.totalRows || 5,
+            walkRow: activeCfg?.rowMap?.walk ?? 1
+        };
+
+        // Render hộp sprite chạy từng frame mượt mà (dùng getPetSpriteHtml của monster.js)
+        const spriteBox = document.getElementById('ar-pet-sprite-box');
+        if (spriteBox) {
+            if (typeof getPetSpriteHtml === 'function' && (pCfg || currentPet.emoji)) {
+                spriteBox.innerHTML = getPetSpriteHtml(currentPet, 'walk', 165);
+            } else {
+                const cols = window._arActiveSheetMeta.cols;
+                const rows = window._arActiveSheetMeta.rows;
+                const row = window._arActiveSheetMeta.walkRow;
+                const posY = rows > 1 ? (row / (rows - 1)) * 100 : 0;
+                spriteBox.innerHTML = `<div class="animated-sprite-box" data-cols="${cols}" data-rows="${rows}" data-total="${cols}" data-fixed-row="${row}" style="width:165px; height:165px; display:inline-block; background-image:url('${petSprite}'); background-size:${cols * 100}% ${rows * 100}%; background-position:0% ${posY}%; background-repeat:no-repeat;"></div>`;
+            }
         }
 
         if (imgEl) {
@@ -376,7 +411,23 @@
 
         if (img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
             try {
-                ctx.drawImage(img, petX, petY, petW, petH);
+                const meta = window._arActiveSheetMeta || { cols: 10, rows: 5, walkRow: 1 };
+                const cols = meta.cols || 10;
+                const rows = meta.rows || 5;
+                const row = Math.min(rows - 1, meta.walkRow ?? 1);
+                const col = (typeof globalSpriteFrame !== 'undefined' ? globalSpriteFrame : 1) % cols;
+
+                const fw = img.naturalWidth / cols;
+                const fh = img.naturalHeight / rows;
+                const padX = fw * 0.03;
+                const padY = fh * 0.03;
+
+                // Cắt đúng 1 khung hình (1 con thú duy nhất), tuyệt đối không vẽ cả tấm sheet
+                ctx.drawImage(
+                    img,
+                    col * fw + padX, row * fh + padY, fw - padX * 2, fh - padY * 2,
+                    petX, petY, petW, petH
+                );
             } catch (e) {
                 console.warn('[AR] Không thể vẽ ảnh pet lên canvas:', e);
             }

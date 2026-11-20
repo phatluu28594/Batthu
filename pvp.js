@@ -6,6 +6,8 @@
 
 (function () {
     let activeDuelPollingTimer = null;
+    let fastWaitDuelTimer = null;
+    let pendingOutgoingDuelId = null;
     let handledDuelIds = new Set();
     let currentPvpMatch = null;
     let pvpBattleInterval = null;
@@ -288,7 +290,23 @@
             if (!data.ok) {
                 alert('❌ ' + (data.error || 'Không gửi được lời khiêu chiến!'));
                 if (typeof closeModal === 'function') closeModal();
+                return;
             }
+
+            // Bật chế độ kiểm tra siêu tốc 1 giây/lần trong lúc đợi đối thủ chấp nhận
+            pendingOutgoingDuelId = data.duelId || null;
+            if (fastWaitDuelTimer) clearInterval(fastWaitDuelTimer);
+            let waitTicks = 0;
+            fastWaitDuelTimer = setInterval(() => {
+                waitTicks++;
+                if (currentPvpMatch || waitTicks > 65) {
+                    clearInterval(fastWaitDuelTimer);
+                    fastWaitDuelTimer = null;
+                    pendingOutgoingDuelId = null;
+                    return;
+                }
+                pollDuelStateNow();
+            }, 1000);
         } catch (err) {
             alert('❌ Lỗi gửi chiến thư: ' + err.message);
         }
@@ -397,55 +415,67 @@
         }
     };
 
-    function processDuelIncomingAndActive(data) {
-        if (!data) return;
+    async function pollDuelStateNow() {
         const me = getMyUser();
         if (!me || currentPvpMatch) return;
+        try {
+            const res = await fetch('/api/pvp?u=' + encodeURIComponent(me) + '&t=' + Date.now(), { cache: 'no-store' });
+            const data = await res.json();
+            if (!data.ok) return;
 
-        if (data.activeDuel && !handledDuelIds.has('acc_' + data.activeDuel.id)) {
-            handledDuelIds.add('acc_' + data.activeDuel.id);
-            const d = data.activeDuel;
-            let cPet = null, dPet = null;
-            try { cPet = typeof d.challenger_pet === 'string' ? JSON.parse(d.challenger_pet) : d.challenger_pet; } catch (e) {}
-            try { dPet = typeof d.defender_pet === 'string' ? JSON.parse(d.defender_pet) : d.defender_pet; } catch (e) {}
-            if (!cPet || !dPet) return;
-            const amChallenger = d.challenger.toLowerCase() === me.toLowerCase();
+            // 1. Đối thủ đã chấp nhận (hoặc vừa đánh xong) -> Vào trận đồng bộ tức thì!
+            if (data.activeDuel && !handledDuelIds.has('acc_' + data.activeDuel.id)) {
+                handledDuelIds.add('acc_' + data.activeDuel.id);
+                if (fastWaitDuelTimer) {
+                    clearInterval(fastWaitDuelTimer);
+                    fastWaitDuelTimer = null;
+                }
+                pendingOutgoingDuelId = null;
 
-            launchPvp1v1CanvasArena({
-                mode: 'deathmatch',
-                duelId: d.id,
-                seed: d.seed,
-                challengerName: d.challenger,
-                challengerPet: cPet,
-                defenderName: d.defender,
-                defenderPet: dPet,
-                myName: me,
-                myPet: amChallenger ? cPet : dPet,
-                enemyName: amChallenger ? d.defender : d.challenger,
-                enemyPet: amChallenger ? dPet : cPet
-            });
-            return;
-        }
+                const d = data.activeDuel;
+                const cPet = JSON.parse(d.challenger_pet);
+                const dPet = JSON.parse(d.defender_pet);
+                const amChallenger = d.challenger.toLowerCase() === me.toLowerCase();
 
-        if (Array.isArray(data.incomingDuels) && data.incomingDuels.length > 0) {
-            showIncomingDuelPopup(data.incomingDuels[0]);
-        }
+                launchPvp1v1CanvasArena({
+                    mode: 'deathmatch',
+                    duelId: d.id,
+                    seed: d.seed,
+                    challengerName: d.challenger,
+                    challengerPet: cPet,
+                    defenderName: d.defender,
+                    defenderPet: dPet,
+                    myName: me,
+                    myPet: amChallenger ? cPet : dPet,
+                    enemyName: amChallenger ? d.defender : d.challenger,
+                    enemyPet: amChallenger ? dPet : cPet
+                });
+                return;
+            }
+
+            // 2. Đối thủ từ chối lời khiêu chiến
+            if (data.declinedDuel && !handledDuelIds.has('dec_' + data.declinedDuel.id)) {
+                handledDuelIds.add('dec_' + data.declinedDuel.id);
+                if (fastWaitDuelTimer) {
+                    clearInterval(fastWaitDuelTimer);
+                    fastWaitDuelTimer = null;
+                }
+                pendingOutgoingDuelId = null;
+                if (typeof closeModal === 'function') closeModal();
+                alert(`🏳️ Thợ săn [${data.declinedDuel.defender}] đã từ chối lời khiêu chiến Sinh Tử của bạn.`);
+                return;
+            }
+
+            // 3. Có lời mời khiêu chiến mới gửi tới mình
+            if (Array.isArray(data.incomingDuels) && data.incomingDuels.length > 0) {
+                showIncomingDuelPopup(data.incomingDuels[0]);
+            }
+        } catch (e) {}
     }
-    window.handleHeartbeatPvP = processDuelIncomingAndActive;
 
     function startDuelPoller() {
         if (activeDuelPollingTimer) clearInterval(activeDuelPollingTimer);
-        // Tần suất dự phòng 30s (Heartbeat tổng hợp 12s đã xử lý chính)
-        activeDuelPollingTimer = setInterval(async () => {
-            const me = getMyUser();
-            if (!me || currentPvpMatch || document.hidden) return;
-            try {
-                const res = await fetch('/api/pvp?u=' + encodeURIComponent(me));
-                const data = await res.json();
-                if (!data.ok) return;
-                processDuelIncomingAndActive(data);
-            } catch (e) {}
-        }, 30000);
+        activeDuelPollingTimer = setInterval(pollDuelStateNow, 2000);
     }
 
     window.addEventListener('load', startDuelPoller);

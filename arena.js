@@ -784,13 +784,38 @@
                                 let clearedFloor = towerFloor;
                                 towerFloor++;
                                 localStorage.setItem('ar_tower_floor', towerFloor);
-                                if (typeof window.addLuckyTicket === 'function') {
-                                    window.addLuckyTicket(1);
+
+                                // Chu kỳ phần thưởng 10 tầng luân phiên từng loại vật phẩm
+                                const cycle = Math.floor((clearedFloor - 1) / 10);
+                                const bonusScale = 1 + Math.floor(cycle / 2); // Tăng thêm số lượng ở các tầng cao
+                                const stepInCycle = ((clearedFloor - 1) % 10) + 1;
+                                const TOWER_FLOOR_ITEMS = [
+                                    { key: 'stoneKim',       qty: 1 * bonusScale, label: `${1 * bonusScale} ⚔️ Đá Kim` },
+                                    { key: 'stoneMoc',       qty: 1 * bonusScale, label: `${1 * bonusScale} 🌿 Đá Mộc` },
+                                    { key: 'stoneThuy',      qty: 1 * bonusScale, label: `${1 * bonusScale} 💧 Đá Thủy` },
+                                    { key: 'stoneHoa',       qty: 1 * bonusScale, label: `${1 * bonusScale} 🔥 Đá Hỏa` },
+                                    { key: 'stoneTho',       qty: 1 * bonusScale, label: `${1 * bonusScale} 🪨 Đá Thổ` },
+                                    { key: 'luckyTicket',    qty: 1,              label: `1 🎟️ Vé Quay May Mắn` },
+                                    { key: 'trainer',        qty: 1 * bonusScale, label: `${1 * bonusScale} 🎫 Vé Tập Luyện` },
+                                    { key: 'food',           qty: 2 * bonusScale, label: `${2 * bonusScale} 🍖 Thức Ăn` },
+                                    { key: 'toy',            qty: 2 * bonusScale, label: `${2 * bonusScale} 🎾 Đồ Chơi` },
+                                    { key: 'gearShardChest', qty: 1,              label: `1 🧰 Rương Mảnh Trang Bị` }
+                                ];
+                                const floorDrop = TOWER_FLOOR_ITEMS[stepInCycle - 1];
+                                if (floorDrop && typeof inventory !== 'undefined') {
+                                    inventory[floorDrop.key] = (inventory[floorDrop.key] || 0) + floorDrop.qty;
+                                    localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+                                    if (floorDrop.key === 'luckyTicket' && typeof window.addLuckyTicket === 'function') {
+                                        // Đồng bộ HUD vé quay
+                                        if (typeof updateGachaHud === 'function') updateGachaHud();
+                                    }
                                 }
                                 saveGameData();
+                                if (typeof silentCloudSync === 'function') silentCloudSync(true);
 
+                                const itemRewardText = floorDrop ? ` + ${floorDrop.label}` : '';
                                 showInGameConfirm(
-                                    `🏆 Chúc mừng! Bạn đã vượt qua Tầng ${clearedFloor} và nhận +${rewardGold}🪙${diamondNote} + 1🎟️ Vé Quay May Mắn!\n\n🗼 Bạn có muốn tiếp tục khiêu chiến Tầng ${towerFloor} ngay bây giờ không?`,
+                                    `🏆 Chúc mừng! Bạn đã vượt qua Tầng ${clearedFloor} và nhận:\n• +${rewardGold}🪙 Vàng${diamondNote}${itemRewardText}!\n\n🗼 Bạn có muốn tiếp tục khiêu chiến Tầng ${towerFloor} ngay bây giờ không?`,
                                     () => {
                                         startBattle('tower', selectedIndex);
                                     },
