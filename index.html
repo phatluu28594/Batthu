@@ -7,6 +7,8 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Bắt Thú Vương">
+    <meta name="theme-color" content="#09090b">
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Bắt Thú Vương","short_name":"Bắt Thú","display":"standalone","orientation":"any","background_color":"#09090b","theme_color":"#09090b","start_url":"/"}' />
     <title>Batthu - v1.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -298,20 +300,26 @@
         <source id="bg-music-source" src="./nhac_cho.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- BẢNG YÊU CẦU MỞ TOÀN MÀN HÌNH (FULLSCREEN / F11) -->
+    <!-- BẢNG YÊU CẦU MỞ TOÀN MÀN HÌNH (FULLSCREEN / PWA IOS) -->
     <div id="fullscreen-prompt-overlay" class="hidden absolute inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
         <div class="bg-zinc-900 border-2 border-amber-400/70 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
             <div class="text-5xl animate-bounce">🖥️📱</div>
             <h2 class="text-xl font-black text-yellow-300 tracking-wide">TRẢI NGHIỆM TOÀN MÀN HÌNH</h2>
-            <p class="text-xs text-zinc-300 leading-relaxed">
+            <p id="fullscreen-prompt-desc" class="text-xs text-zinc-300 leading-relaxed">
                 Hãy bật chế độ <span class="text-amber-300 font-bold">Toàn màn hình (F11)</span> để có góc nhìn rộng và trải nghiệm săn bắt linh thú tốt nhất!
             </p>
+            <div id="ios-pwa-guide" class="hidden bg-zinc-950/90 border border-sky-400/50 rounded-2xl p-3 text-left text-[11px] text-zinc-200 space-y-1.5">
+                <div class="font-extrabold text-sky-300">🍎 Cách bật Full màn hình chuẩn 100% trên iPhone / iPad:</div>
+                <div>1. Bấm nút <span class="text-amber-300 font-bold">Chia sẻ (⬆️)</span> ở thanh công cụ Safari.</div>
+                <div>2. Chọn <span class="text-emerald-300 font-bold">Thêm vào MH chính (Add to Home Screen)</span>.</div>
+                <div>3. Mở biểu tượng <span class="text-yellow-300 font-bold">Bắt Thú Vương</span> ngoài màn hình chính để ẩn hoàn toàn thanh địa chỉ!</div>
+            </div>
             <div class="flex flex-col gap-2 pt-2">
-                <button onclick="enterGameFullscreen()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black py-3 rounded-xl text-sm shadow-lg cursor-pointer transition active:scale-95">
+                <button id="btn-enter-fullscreen" onclick="enterGameFullscreen()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black py-3 rounded-xl text-sm shadow-lg cursor-pointer transition active:scale-95">
                     ⛶ Bật Toàn Màn Hình Ngay
                 </button>
                 <button onclick="dismissFullscreenPrompt()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-bold py-2 rounded-xl text-xs cursor-pointer">
-                    Để sau
+                    Tiếp tục chơi ngay
                 </button>
             </div>
         </div>
@@ -319,43 +327,56 @@
     
     <!-- MÀN HÌNH SẢNH CHÍNH ĐẦU GAME (background.png) -->
     <div id="home-screen" class="absolute inset-0 z-30 bg-zinc-950 overflow-hidden">
-        <div id="home-top-nav" class="fixed top-0 left-0 right-0 z-30 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/85 to-transparent pointer-events-none">
-            <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold pointer-events-auto shrink-0">
-                <span>🏠 Nhà Chính</span>
-                <span class="text-yellow-400 ml-1"><span class="ui-coins-val">1500</span>🪙</span>
-                <span class="text-cyan-300 ml-1"><span class="ui-diamonds-val">50</span>💎</span>
+        <div id="home-top-nav" class="fixed top-0 left-0 right-0 z-30 flex items-center justify-between gap-1.5 px-2 py-2 bg-gradient-to-b from-black/90 via-black/60 to-transparent pointer-events-none" style="padding-top: max(8px, env(safe-area-inset-top));">
+            <!-- Cụm thông tin tài nguyên bên trái (tự co giãn gọn gàng trên màn hình nhỏ) -->
+            <div class="flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-amber-400/40 text-[11px] sm:text-xs font-bold pointer-events-auto shrink-0 shadow-lg">
+                <span class="hidden sm:inline">🏠 Nhà Chính</span>
+                <span class="sm:hidden">🏠</span>
+                <span class="text-yellow-400"><span class="ui-coins-val">1500</span>🪙</span>
+                <span class="text-cyan-300"><span class="ui-diamonds-val">50</span>💎</span>
             </div>
-            <div class="relative flex flex-col items-end pointer-events-auto">
-                <div class="flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-2 py-1 rounded-full border border-white/15 shadow-xl">
-                    <button id="btn-toggle-music" onclick="toggleGameMusic()" class="bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🔊</button>
-                    <button onclick="openCloudAccountModal()" class="bg-indigo-600/95 hover:bg-indigo-500 px-2.5 py-1.5 rounded-full border border-indigo-300 text-xs font-bold cursor-pointer">☁️</button>
-                    <button onclick="openTeamMenu()" class="bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🎒(<span id="home-team-count">0</span>/3)</button>
-                    <button id="home-nav-toggle" onclick="toggleHomeMoreTabs()" class="relative bg-sky-600/95 hover:bg-sky-500 w-7 h-7 rounded-full border border-sky-300 text-xs font-black text-white flex items-center justify-center shadow cursor-pointer transition-transform" title="Mở rộng menu">
-                        ▼
-                        <span id="home-friend-dot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping"></span>
-                    </button>
-                </div>
 
-                <!-- Menu xổ xuống ở Nhà Chính giống bản đồ GPS -->
-                <div id="home-nav-dropdown" class="hidden absolute top-11 right-0 z-50 flex-col gap-1.5 min-w-[175px] bg-zinc-900/95 backdrop-blur-md p-2 rounded-2xl border border-sky-400/40 shadow-2xl">
-                    <button onclick="selectHomeDropdownTab(() => openMarketMenu())" class="w-full text-left bg-amber-600/90 hover:bg-amber-500 px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold cursor-pointer">
-                        🛒 Chợ Hệ Thống
+            <!-- Cụm nút chức năng bên phải: Luôn vừa khít mọi kích thước màn hình + Nút mở rộng ▼ -->
+            <div class="relative flex items-center gap-1 bg-black/85 backdrop-blur-md px-1.5 py-1 rounded-full border border-white/15 pointer-events-auto shadow-xl">
+                <button id="btn-toggle-music" onclick="toggleGameMusic()" title="Bật/Tắt nhạc" class="bg-zinc-800/90 hover:bg-zinc-700 w-7 h-7 sm:w-auto sm:px-2.5 sm:py-1 rounded-full border border-white/20 text-xs font-bold cursor-pointer flex items-center justify-center shrink-0">🔊</button>
+                <button onclick="openCloudAccountModal()" title="Tài khoản Cloud" class="bg-indigo-600/95 hover:bg-indigo-500 px-2 py-1 rounded-full border border-indigo-300 text-[11px] sm:text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">☁️<span class="hidden md:inline"> Nick</span></button>
+                <button onclick="openTeamMenu()" title="Đội hình" class="bg-zinc-800/95 hover:bg-zinc-700 px-2 py-1 rounded-full border border-white/25 text-[11px] sm:text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">🎒<span id="home-team-count">0</span>/3</button>
+                <button onclick="openCarnivalModal()" title="Tân Thủ 7 Ngày" class="relative bg-rose-600/95 hover:bg-rose-500 w-7 h-7 sm:w-auto sm:px-2.5 sm:py-1 rounded-full border border-amber-300 text-xs font-bold cursor-pointer flex items-center justify-center shrink-0">
+                    🎁
+                    <span class="carnival-notify-badge hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-yellow-300 border border-black animate-ping"></span>
+                </button>
+                <button onclick="openMarketMenu()" title="Chợ" class="bg-amber-600/95 hover:bg-amber-500 px-2 py-1 rounded-full border border-amber-300 text-[11px] sm:text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">🛒<span class="hidden md:inline"> Chợ</span></button>
+                <button id="home-nav-toggle" onclick="toggleHomeMoreTabs()" title="Thêm tính năng" class="relative bg-sky-600/95 hover:bg-sky-500 w-7 h-7 rounded-full border border-sky-300 text-xs font-black text-white flex items-center justify-center cursor-pointer shrink-0">
+                    ▼
+                    <span id="home-friend-dot" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping"></span>
+                </button>
+
+                <!-- Menu xổ xuống gọn gàng trên mọi màn hình -->
+                <div id="home-nav-dropdown" class="hidden absolute top-10 right-0 z-50 flex-col gap-1.5 min-w-[175px] bg-zinc-900/95 backdrop-blur-md p-2 rounded-2xl border border-amber-400/40 shadow-2xl">
+                    <button onclick="selectHomeDropdownTab(() => openHomeStorageBagModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-300/60 text-xs font-extrabold cursor-pointer">
+                        🎒 Túi Đồ Nhà (5x10)
                     </button>
-                    <button onclick="selectHomeDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-rose-700/90 hover:bg-rose-600 px-3 py-2 rounded-xl border border-rose-400 text-xs font-bold cursor-pointer">
-                        🏪 Chợ Cá Nhân (P2P)
+                    <button onclick="selectHomeDropdownTab(() => openQuestMenu())" class="w-full text-left bg-yellow-600/90 hover:bg-yellow-500 px-3 py-2 rounded-xl border border-yellow-300/60 text-xs font-bold cursor-pointer">
+                        📜 Nhiệm Vụ Ngày
                     </button>
-                    <button onclick="selectHomeDropdownTab(() => openQuestMenu())" class="w-full text-left bg-yellow-600/90 hover:bg-yellow-500 px-3 py-2 rounded-xl border border-yellow-400 text-xs font-bold cursor-pointer">
-                        📜 Nhiệm Vụ
-                    </button>
-                    <div class="border-t border-white/10 my-0.5"></div>
-                    <button onclick="selectHomeDropdownTab(() => openMonsterDexModal())" class="w-full text-left bg-emerald-700/90 hover:bg-emerald-600 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-bold cursor-pointer">
-                        📖 Bách Khoa Thú (Buff)
-                    </button>
-                    <button onclick="selectHomeDropdownTab(() => openGuildModal())" class="w-full text-left bg-purple-700/90 hover:bg-purple-600 px-3 py-2 rounded-xl border border-purple-400/60 text-xs font-bold cursor-pointer">
-                        🏰 Bang Hội Thợ Săn
+                    <button onclick="selectHomeDropdownTab(() => openLuckyWheelModal())" class="w-full text-left bg-pink-700/90 hover:bg-pink-600 px-3 py-2 rounded-xl border border-pink-400/60 text-xs font-bold cursor-pointer">
+                        🎡 Vòng Quay May Mắn
                     </button>
                     <button onclick="selectHomeDropdownTab(() => openFriendsModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
                         <span>👥 Bạn Bè</span>
+                        <span id="home-friend-badge-txt" class="text-[10px] text-sky-200">Mở</span>
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openGuildModal())" class="w-full text-left bg-purple-800/90 hover:bg-purple-700 px-3 py-2 rounded-xl border border-purple-400/60 text-xs font-bold cursor-pointer">
+                        🏰 Bang Hội
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openMonsterDexModal())" class="w-full text-left bg-emerald-800/90 hover:bg-emerald-700 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-bold cursor-pointer">
+                        📖 Bách Khoa Thú
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-orange-700/90 hover:bg-orange-600 px-3 py-2 rounded-xl border border-orange-400/60 text-xs font-bold cursor-pointer">
+                        🏪 Chợ Người Chơi
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openArShareModal('team', 0))" class="w-full text-left bg-indigo-700/90 hover:bg-indigo-600 px-3 py-2 rounded-xl border border-cyan-400/60 text-xs font-bold cursor-pointer">
+                        📸 Chụp Ảnh AR Flex
                     </button>
                 </div>
             </div>
@@ -363,8 +384,8 @@
 
         <div id="home-scroller" class="panorama-scroller no-scrollbar">
             <div class="panorama-canvas">
-                <img src="./background.webp" alt="Sảnh Chính" class="panorama-img" onload="centerPanorama('home-scroller'); if(typeof renderHomeVisualPets==='function') renderHomeVisualPets();">
-                <div id="home-visual-pets" class="absolute inset-0 z-20 pointer-events-none"></div>
+                <img src="./background.webp" alt="Sảnh Chính" class="panorama-img" onload="centerPanorama('home-scroller')">
+                <div id="home-roaming-pets-layer" class="absolute inset-0 pointer-events-none z-10 overflow-hidden"></div>
 
                 <div onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 46%; left: 9%; width: 25%; height: 22%;">
                     <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ</div>
@@ -385,6 +406,8 @@
                 <div onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 58%; left: 75%; width: 19%; height: 18%;">
                     <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi bệnh viện</div>
                 </div>
+
+
             </div>
         </div>
 
@@ -444,14 +467,14 @@
             <!-- Menu xổ xuống khi bấm mũi tên ▼ -->
             <div id="map-nav-dropdown" class="hidden absolute top-11 right-0 z-50 flex-col gap-1.5 min-w-[165px] bg-zinc-900/95 backdrop-blur-md p-2 rounded-2xl border border-sky-400/40 shadow-2xl">
                 <button onclick="selectMapDropdownTab(() => openTeamMenu())" class="w-full text-left bg-zinc-800 hover:bg-zinc-700 px-3 py-2 rounded-xl border border-white/15 text-xs font-bold cursor-pointer flex items-center justify-between">
-                    <span>🎒 Túi / Đội hình</span>
+                    <span>🐾 Đội Hình Xuất Chiến</span>
                     <span class="text-amber-300">(<span id="team-count">0</span>/3)</span>
                 </button>
-                <button onclick="selectMapDropdownTab(() => openMarketMenu())" class="w-full text-left bg-amber-600/90 hover:bg-amber-500 px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold cursor-pointer">
-                    🛒 Chợ Hệ Thống
+                <button onclick="selectMapDropdownTab(() => openHomeStorageBagModal())" class="w-full text-left bg-sky-800/90 hover:bg-sky-700 px-3 py-2 rounded-xl border border-sky-400/60 text-xs font-extrabold cursor-pointer">
+                    🎒 Túi Chứa Đồ (5x10)
                 </button>
-                <button onclick="selectMapDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-rose-700/90 hover:bg-rose-600 px-3 py-2 rounded-xl border border-rose-400 text-xs font-bold cursor-pointer">
-                    🏪 Chợ Người Chơi (P2P)
+                <button onclick="selectMapDropdownTab(() => openMarketMenu())" class="w-full text-left bg-amber-600/90 hover:bg-amber-500 px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold cursor-pointer">
+                    🛒 Chợ
                 </button>
                 <button onclick="selectMapDropdownTab(() => openFarmMenu())" class="w-full text-left bg-emerald-600/90 hover:bg-emerald-500 px-3 py-2 rounded-xl border border-emerald-400 text-xs font-bold cursor-pointer">
                     🏡 Trang trại
@@ -470,15 +493,32 @@
                <button onclick="selectMapDropdownTab(() => openPvpArenaHub())" class="w-full text-left bg-red-600/90 hover:bg-red-500 px-3 py-2 rounded-xl border border-red-400 text-xs font-bold cursor-pointer">
                     ⚔️ Đấu PvP (BXH)
                 </button>
-                <button onclick="selectMapDropdownTab(() => openMonsterDexModal())" class="w-full text-left bg-emerald-700/90 hover:bg-emerald-600 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-bold cursor-pointer">
-                    📖 Bách Khoa Thú (Buff)
-                </button>
-                <button onclick="selectMapDropdownTab(() => openGuildModal())" class="w-full text-left bg-purple-700/90 hover:bg-purple-600 px-3 py-2 rounded-xl border border-purple-400/60 text-xs font-bold cursor-pointer">
-                    🏰 Bang Hội Thợ Săn
+                <button onclick="selectMapDropdownTab(() => openNearbyHuntersModal())" class="w-full text-left bg-cyan-800/90 hover:bg-cyan-700 px-3 py-2 rounded-xl border border-cyan-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                    <span>🧭 Thợ Săn Quanh Đây</span>
+                    <span id="nearby-hunters-badge" class="bg-emerald-500 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black">0</span>
                 </button>
                 <button onclick="selectMapDropdownTab(() => openFriendsModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
                     <span>👥 Bạn Bè</span>
                     <span id="friend-req-badge" class="hidden bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black">MỚI</span>
+                </button>
+                <button onclick="selectMapDropdownTab(() => openGuildModal())" class="w-full text-left bg-purple-800/90 hover:bg-purple-700 px-3 py-2 rounded-xl border border-purple-400/60 text-xs font-bold cursor-pointer">
+                    🏰 Bang Hội
+                </button>
+                <button onclick="selectMapDropdownTab(() => openMonsterDexModal())" class="w-full text-left bg-teal-800/90 hover:bg-teal-700 px-3 py-2 rounded-xl border border-teal-400/60 text-xs font-bold cursor-pointer">
+                    📖 Bách Khoa Thú
+                </button>
+                <button onclick="selectMapDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-orange-700/90 hover:bg-orange-600 px-3 py-2 rounded-xl border border-orange-400/60 text-xs font-bold cursor-pointer">
+                    🏪 Chợ Người Chơi
+                </button>
+                <button onclick="selectMapDropdownTab(() => openCarnivalModal())" class="w-full text-left bg-rose-700/90 hover:bg-rose-600 px-3 py-2 rounded-xl border border-amber-300/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                    <span>🎁 Tân Thủ 7 Ngày</span>
+                    <span class="carnival-notify-badge hidden bg-yellow-300 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black">QUÀ</span>
+                </button>
+                <button onclick="selectMapDropdownTab(() => openLuckyWheelModal())" class="w-full text-left bg-pink-700/90 hover:bg-pink-600 px-3 py-2 rounded-xl border border-pink-400/60 text-xs font-bold cursor-pointer">
+                    🎡 Vòng Quay May Mắn
+                </button>
+                <button onclick="selectMapDropdownTab(() => openArShareModal('team', 0))" class="w-full text-left bg-indigo-700/90 hover:bg-indigo-600 px-3 py-2 rounded-xl border border-cyan-400/60 text-xs font-bold cursor-pointer">
+                    📸 Chụp Ảnh AR Flex
                 </button>
             </div>
         </div>
@@ -486,15 +526,9 @@
         <div id="map-container-wrap" class="my-1 rounded-xl overflow-hidden border border-zinc-800 relative grow">
             <div id="map"></div>
 
-            <div class="absolute top-2.5 left-2.5 z-30 flex items-center gap-1.5">
-                <div class="bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 flex items-center gap-1.5 shadow-lg pointer-events-none">
-                    <span id="weather-icon" class="text-xs">☀️</span>
-                    <span id="weather-status" class="text-[10px] font-medium text-zinc-200">Trời quang</span>
-                </div>
-                <button onclick="openNearbyHuntersModal()" class="bg-sky-950/90 hover:bg-sky-900 backdrop-blur-md px-2.5 py-1 rounded-full border border-sky-400/60 flex items-center gap-1 shadow-lg cursor-pointer text-[10px] font-extrabold text-sky-200">
-                    <span>🧭 Quanh đây:</span>
-                    <span id="nearby-hunters-count" class="text-amber-300">0</span>
-                </button>
+            <div class="absolute top-2.5 left-2.5 z-30 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 flex items-center gap-1.5 shadow-lg pointer-events-none">
+                <span id="weather-icon" class="text-xs">☀️</span>
+                <span id="weather-status" class="text-[10px] font-medium text-zinc-200">Trời quang</span>
             </div>
 
             <div class="absolute bottom-3 right-3 z-30 flex items-center gap-2">
@@ -891,7 +925,6 @@
         
 
         function saveGameData() {
-            if (typeof syncMonsterDexFromOwned === 'function') syncMonsterDexFromOwned();
             try {
                 localStorage.setItem('ar_team', JSON.stringify(team));
                 localStorage.setItem('ar_farm', JSON.stringify(farm));
@@ -906,6 +939,7 @@
                 localStorage.setItem('ar_scan_stamina_time', lastScanStaminaTime);
                 localStorage.setItem('ar_training_poles', JSON.stringify(trainingPoles));
                 localStorage.setItem('ar_resting_pets', JSON.stringify(restingPets));
+                localStorage.setItem('ar_inventory', JSON.stringify(inventory));
             } catch(e){}
 
             // Cập nhật đồng bộ tất cả vị trí hiển thị ở cả Nhà Chính và Bản Đồ GPS
@@ -918,6 +952,13 @@
             if (eggBadge) eggBadge.innerText = eggs.length;
             let gateTag = document.getElementById('tower-gate-floor');
             if (gateTag) gateTag.innerText = towerFloor;
+
+            window.team = team;
+            window.farm = farm;
+            window.eggs = eggs;
+            window.inventory = inventory;
+            window.playerCoins = playerCoins;
+            window.playerDiamonds = playerDiamonds;
         }
 
         function goFromHomeToMap() {
@@ -927,8 +968,12 @@
             
             setTimeout(() => {
                 initMap();
-                if (typeof window.syncMapPlayersPresence === 'function') window.syncMapPlayersPresence();
-                if (typeof window.fetchWorldBossServerState === 'function') window.fetchWorldBossServerState(true);
+                if (typeof fetchWorldBossServerState === 'function') {
+                    fetchWorldBossServerState(true);
+                }
+                if (typeof window.syncMapPlayersPresence === 'function') {
+                    window.syncMapPlayersPresence();
+                }
                 if (map) {
                     map.invalidateSize();
                     setTimeout(() => map.invalidateSize(), 300);
@@ -942,7 +987,6 @@
             document.getElementById('home-screen').classList.remove('hidden');
             setTimeout(() => centerPanorama('home-scroller'), 50);
             updateTeamCount();
-            if (typeof renderHomeVisualPets === 'function') renderHomeVisualPets();
             saveGameData();
         }
 
@@ -970,6 +1014,10 @@
 
         function closeModal() { 
             let modal = document.getElementById('modal-container');
+            let content = document.getElementById('modal-content');
+            if (content) {
+                content.className = 'bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto relative';
+            }
             if (modal) modal.classList.add('hidden'); 
         }
 
@@ -1596,10 +1644,11 @@
                 <button onclick="farmPetAction(${farmIndex}, 'feed')" class="bg-emerald-600 hover:bg-emerald-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🍖 Ăn (${inventory.food})</button>
                 <button onclick="farmPetAction(${farmIndex}, 'play')" class="bg-amber-600 hover:bg-amber-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🎾 Chơi (${inventory.toy})</button>
             </div>
-            <div class="grid grid-cols-3 gap-1.5 text-center">
-                <button onclick="moveToTeamFromFarm(${farmIndex}); showFarmSection('storage');" class="bg-blue-600 hover:bg-blue-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">⚔️ Vào Đội</button>
+            <div class="grid grid-cols-4 gap-1.5 text-center">
+                <button onclick="moveToTeamFromFarm(${farmIndex}); showFarmSection('storage');" class="bg-blue-600 hover:bg-blue-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">⚔️ Đội</button>
                 <button onclick="showcasePetToWorldChat('farm', ${farmIndex})" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:brightness-110 p-2 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow transition">📢 Khoe</button>
-                <button onclick="sellFarmPet(${farmIndex})" class="bg-amber-700 hover:bg-amber-600 p-2 rounded-xl font-extrabold text-xs cursor-pointer transition">💰 Bán (${sellPrice})</button>
+                <button onclick="openArShareModal('farm', ${farmIndex})" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:brightness-110 p-2 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow transition">📸 AR</button>
+                <button onclick="sellFarmPet(${farmIndex})" class="bg-amber-700 hover:bg-amber-600 p-2 rounded-xl font-extrabold text-xs cursor-pointer transition">💰 Bán</button>
             </div>`;
         };
 
@@ -2336,6 +2385,7 @@
             );
         }
 
+        
 
         function openMarketMenu() {
             const modal = document.getElementById('modal-container');
@@ -2346,9 +2396,17 @@
                 <h3 class="font-bold text-lg text-amber-300">🛒 Chợ Đen & Vật Phẩm</h3>
                 <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
             </div>
-            <div class="flex items-center justify-between text-xs font-bold mb-3 bg-zinc-950/70 px-3 py-2 rounded-xl border border-white/10">
+            <div class="flex items-center justify-between text-xs font-bold mb-2 bg-zinc-950/70 px-3 py-2 rounded-xl border border-white/10">
                 <span class="text-yellow-400">💰 Vàng: ${playerCoins} 🪙</span>
                 <span class="text-cyan-300">💎 Kim Cương: ${playerDiamonds} 💎</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5 mb-3">
+                <button onclick="openP2pMarketModal()" class="bg-gradient-to-r from-orange-600 to-amber-600 hover:brightness-110 py-2 px-2.5 rounded-xl text-[11px] font-black text-white cursor-pointer shadow">
+                    🏪 Chợ Người Chơi
+                </button>
+                <button onclick="openGearShardChest()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 py-2 px-2.5 rounded-xl text-[11px] font-black text-white cursor-pointer shadow">
+                    🧰 Mở Rương Mảnh (${inventory.gearShardChest || 0})
+                </button>
             </div>
             <div class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
                 <div class="bg-cyan-950/50 p-2.5 rounded-xl flex items-center justify-between border border-cyan-400/50">
@@ -2387,6 +2445,29 @@
                 <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🪨 Đá Thổ [Kho: ${inventory.stoneTho}]</div><button onclick="buyShopItem('stoneTho', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
             </div>`;
         }
+
+        window.openGearShardChest = function() {
+            const count = Number(inventory.gearShardChest) || 0;
+            if (count <= 0) {
+                alert('⚠️ Bạn chưa có 🧰 Rương Mảnh Trang Bị nào! Hãy tham gia đánh Boss Thế Giới 3 Miền để nhận rương.');
+                return;
+            }
+            inventory.gearShardChest = count - 1;
+            const stoneKeys = ['stoneKim', 'stoneMoc', 'stoneThuy', 'stoneHoa', 'stoneTho'];
+            const stoneNames = { stoneKim: 'Đá Kim', stoneMoc: 'Đá Mộc', stoneThuy: 'Đá Thủy', stoneHoa: 'Đá Hỏa', stoneTho: 'Đá Thổ' };
+            const pickedKey = stoneKeys[Math.floor(Math.random() * stoneKeys.length)];
+            const stoneQty = 2 + Math.floor(Math.random() * 3);
+            const bonusGold = 300 + Math.floor(Math.random() * 401);
+
+            inventory[pickedKey] = (inventory[pickedKey] || 0) + stoneQty;
+            playerCoins += bonusGold;
+            localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+            saveGameData();
+            if (typeof silentCloudSync === 'function') silentCloudSync(true);
+
+            alert(`🧰 MỞ RƯƠNG MẢNH TRANG BỊ THÀNH CÔNG!\n\n• +${stoneQty} viên ${stoneNames[pickedKey]}\n• +${bonusGold}🪙 Vàng cường hóa bảo vật!`);
+            openMarketMenu();
+        };
 
         function exchangeDiamondForGold(diamondCost, goldGain) {
             if (playerDiamonds < diamondCost) {
@@ -2637,10 +2718,11 @@
                     <div>🔥 Liên kích: <span class="font-bold text-orange-400">${pet.comboRate ?? 20}%</span></div>
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-1.5 text-center">
+            <div class="grid grid-cols-4 gap-1.5 text-center">
                 <button onclick="petAction(${index}, 'feed')" class="bg-emerald-600 hover:bg-emerald-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🍖 Ăn (${inventory.food})</button>
                 <button onclick="petAction(${index}, 'play')" class="bg-amber-600 hover:bg-amber-500 p-2 rounded-xl font-bold text-xs cursor-pointer transition">🎾 Chơi (${inventory.toy})</button>
                 <button onclick="showcasePetToWorldChat('team', ${index})" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:brightness-110 p-2 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow transition">📢 Khoe</button>
+                <button onclick="openArShareModal('team', ${index})" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:brightness-110 p-2 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow transition">📸 AR</button>
             </div>
             <button onclick="confirmReleasePet(${index})" class="w-full mt-2 bg-red-950/90 hover:bg-red-800 border border-red-500/40 text-red-200 p-2 rounded-xl font-bold text-xs cursor-pointer transition flex items-center justify-center gap-1.5">
                 <span>🕊️</span>
@@ -2741,7 +2823,7 @@
             saveGameData(); openPetDetail(index);
         }
 
-
+        
         // ==========================================
         // KHỞI TẠO BẢN ĐỒ & THÚ ĐI DẠO PNG ĐỘNG
         // ==========================================
@@ -2831,7 +2913,7 @@
                     userMarker.setLatLng(nextPos);
                     if (!window.playerRadarCircle && map) {
                         window.playerRadarCircle = L.circle([lat, lng], {
-                            radius: 500, color: '#38bdf8', weight: 1, fillColor: '#38bdf8', fillOpacity: 0.05, interactive: false
+                            radius: 200, color: '#38bdf8', weight: 1, fillColor: '#38bdf8', fillOpacity: 0.05, interactive: false
                         }).addTo(map);
                     } else if (window.playerRadarCircle) {
                         window.playerRadarCircle.setLatLng([lat, lng]);
@@ -3615,13 +3697,19 @@
                     window.sendWorldChat(`📢 Chúc mừng [${hunter}] vừa thu phục thành công Viễn Thú ${caughtPet.rarity.badge} ${caughtPet.name}!`, true);
                 }
 
-                alert(`🎉 Thu phục thành công ${caughtPet.name} (${caughtPet.rarity?.badge || '⚪ Trắng'})!`);
+                let ticketBonusNote = '';
+                if (Math.random() < 0.30 && typeof window.addLuckyTicket === 'function') {
+                    window.addLuckyTicket(1);
+                    ticketBonusNote = '\n🎟️ May mắn rơi thêm +1 Vé Quay May Mắn!';
+                }
+                alert(`🎉 Thu phục thành công ${caughtPet.name} (${caughtPet.rarity?.badge || '⚪ Trắng'})!${ticketBonusNote}`);
             }
 
             exitARScreen();
         }
 
 
+        
 
         const fallenPets = team.filter(p => p.hp <= 0 && !p.inHospital);
         if (fallenPets.length > 0) {
@@ -3633,7 +3721,9 @@
                 let countEl = document.getElementById(id);
                 if (countEl) countEl.innerText = team.length;
             });
-            if (typeof renderHomeVisualPets === 'function') renderHomeVisualPets();
+            if (typeof window.syncHomeRoamingPets === 'function') {
+                window.syncHomeRoamingPets();
+            }
         }
 
         function openQuestMenu() {
@@ -3649,9 +3739,56 @@
             html += `</div>`; content.innerHTML = html;
         }
 
-        function claimQuest(idx) {
+        async function claimQuest(idx) {
             let q = dailyQuests[idx];
-            if (q.claimed || q.progress < q.target) return;
+            if (!q || q.claimed || q.progress < q.target) return;
+
+            const username = localStorage.getItem('ar_cloud_user');
+            const pin = localStorage.getItem('ar_cloud_pin');
+            const sessionToken = localStorage.getItem('ar_cloud_session');
+
+            if (username && pin) {
+                try {
+                    const res = await fetch('/api/auth', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'claim_quest',
+                            username,
+                            pin,
+                            sessionToken,
+                            questId: q.id
+                        })
+                    });
+                    const data = await res.json();
+                    if (!data.ok) {
+                        if (data.code === 'SESSION_EXPIRED' && typeof handleSessionExpired === 'function') {
+                            handleSessionExpired();
+                            return;
+                        }
+                        if (res.status === 409) {
+                            q.claimed = true;
+                            localStorage.setItem('ar_quests', JSON.stringify(dailyQuests));
+                            openQuestMenu();
+                        }
+                        alert('❌ ' + (data.error || 'Không thể nhận thưởng nhiệm vụ!'));
+                        return;
+                    }
+                    q.claimed = true;
+                    playerCoins = Number(data.totalCoins ?? (playerCoins + (data.coinsAdded || q.reward)));
+                    playerDiamonds = Number(data.totalDiamonds ?? (playerDiamonds + (data.diamondsAdded || 5)));
+                    localStorage.setItem('ar_quests', JSON.stringify(dailyQuests));
+                    saveGameData();
+                    if (typeof lastSyncedSnapshotStr !== 'undefined') {
+                        lastSyncedSnapshotStr = JSON.stringify(packCurrentGameState());
+                    }
+                    alert(`🎉 Đã xác thực & nhận +${data.coinsAdded || q.reward}🪙 và +${data.diamondsAdded || 5}💎!`);
+                    openQuestMenu();
+                    return;
+                } catch (e) {}
+            }
+
+            // Chế độ chơi thử offline (chưa đăng nhập Cloud)
             q.claimed = true;
             playerCoins += q.reward;
             playerDiamonds += 5;
@@ -3669,6 +3806,7 @@
             }
         }
 
+       
 
         function initDualStaminaSystem() {
             setInterval(() => {
@@ -3707,8 +3845,41 @@
             saveGameData();
         }
 
+        function isIosDevice() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
+        function isStandalonePwa() {
+            return window.navigator.standalone === true ||
+                   window.matchMedia('(display-mode: standalone)').matches ||
+                   window.matchMedia('(display-mode: fullscreen)').matches;
+        }
+
+        function canUseFullscreenApi() {
+            const elem = document.documentElement;
+            return !!(
+                (document.fullscreenEnabled && elem.requestFullscreen) ||
+                (document.webkitFullscreenEnabled && elem.webkitRequestFullscreen) ||
+                elem.msRequestFullscreen
+            );
+        }
+
         function enterGameFullscreen() {
             const elem = document.documentElement;
+            if (isIosDevice() && !canUseFullscreenApi()) {
+                // iPhone Safari không hỗ trợ requestFullscreen() trên trang web thường:
+                // Thử ẩn thanh địa chỉ bằng scroll nhẹ & hiển thị hướng dẫn Thêm vào MH chính
+                window.scrollTo(0, 1);
+                const iosGuide = document.getElementById('ios-pwa-guide');
+                if (iosGuide && iosGuide.classList.contains('hidden')) {
+                    iosGuide.classList.remove('hidden');
+                    return;
+                }
+                dismissFullscreenPrompt();
+                return;
+            }
+
             if (elem.requestFullscreen) {
                 elem.requestFullscreen().catch(() => {});
             } else if (elem.webkitRequestFullscreen) {
@@ -3722,6 +3893,7 @@
         function dismissFullscreenPrompt() {
             const overlay = document.getElementById('fullscreen-prompt-overlay');
             if (overlay) overlay.classList.add('hidden');
+            window.scrollTo(0, 1);
             setTimeout(() => {
                 centerPanorama('home-scroller');
                 if (typeof map !== 'undefined' && map) map.invalidateSize();
@@ -3729,9 +3901,22 @@
         }
 
         function checkFullscreenOnStart() {
-            const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || (window.innerHeight >= screen.height - 5);
+            const isFullscreen = isStandalonePwa() ||
+                                 !!document.fullscreenElement ||
+                                 !!document.webkitFullscreenElement ||
+                                 (window.innerHeight >= screen.height - 5);
             const overlay = document.getElementById('fullscreen-prompt-overlay');
             if (!isFullscreen && overlay) {
+                if (isIosDevice() && !canUseFullscreenApi()) {
+                    const desc = document.getElementById('fullscreen-prompt-desc');
+                    const iosGuide = document.getElementById('ios-pwa-guide');
+                    const btn = document.getElementById('btn-enter-fullscreen');
+                    if (desc) {
+                        desc.innerHTML = 'Trình duyệt <span class="text-amber-300 font-bold">iOS Safari</span> khóa chức năng tự phóng to trang web, bạn hãy thêm game ra Màn hình chính để chơi Full 100% nhé!';
+                    }
+                    if (iosGuide) iosGuide.classList.remove('hidden');
+                    if (btn) btn.innerText = '✅ Đã Hiểu & Vào Game';
+                }
                 overlay.classList.remove('hidden');
             }
         }
@@ -3740,12 +3925,14 @@
 
         const _origEnterFullscreen = enterGameFullscreen;
         enterGameFullscreen = function() {
-            wantKeepFullscreen = true;
+            if (canUseFullscreenApi()) {
+                wantKeepFullscreen = true;
+            }
             _origEnterFullscreen();
         };
 
         document.addEventListener('click', () => {
-            if (wantKeepFullscreen && !document.fullscreenElement && !document.webkitFullscreenElement) {
+            if (wantKeepFullscreen && canUseFullscreenApi() && !document.fullscreenElement && !document.webkitFullscreenElement) {
                 const elem = document.documentElement;
                 if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
                 else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
@@ -3820,6 +4007,29 @@
             setTimeout(() => centerPanorama('home-scroller'), 150);
         };
 
+        function toggleHomeMoreTabs(forceState) {
+            const dropdown = document.getElementById('home-nav-dropdown');
+            const toggleBtn = document.getElementById('home-nav-toggle');
+            if (!dropdown || !toggleBtn) return;
+            const shouldOpen = typeof forceState === 'boolean'
+                ? forceState
+                : dropdown.classList.contains('hidden');
+            if (shouldOpen) {
+                dropdown.classList.remove('hidden');
+                dropdown.classList.add('flex');
+                toggleBtn.childNodes[0].nodeValue = '▲';
+            } else {
+                dropdown.classList.add('hidden');
+                dropdown.classList.remove('flex');
+                toggleBtn.childNodes[0].nodeValue = '▼';
+            }
+        }
+
+        function selectHomeDropdownTab(actionFn) {
+            toggleHomeMoreTabs(false);
+            if (typeof actionFn === 'function') actionFn();
+        }
+
         function toggleMapMoreTabs(forceState) {
             const dropdown = document.getElementById('map-nav-dropdown');
             const toggleBtn = document.getElementById('map-nav-toggle');
@@ -3842,31 +4052,6 @@
 
         function selectMapDropdownTab(actionFn) {
             toggleMapMoreTabs(false);
-            if (typeof actionFn === 'function') actionFn();
-        }
-
-        function toggleHomeMoreTabs(forceState) {
-            const dropdown = document.getElementById('home-nav-dropdown');
-            const toggleBtn = document.getElementById('home-nav-toggle');
-            if (!dropdown || !toggleBtn) return;
-
-            const shouldOpen = typeof forceState === 'boolean'
-                ? forceState
-                : dropdown.classList.contains('hidden');
-
-            if (shouldOpen) {
-                dropdown.classList.remove('hidden');
-                dropdown.classList.add('flex');
-                toggleBtn.childNodes[0].nodeValue = '▲';
-            } else {
-                dropdown.classList.add('hidden');
-                dropdown.classList.remove('flex');
-                toggleBtn.childNodes[0].nodeValue = '▼';
-            }
-        }
-
-        function selectHomeDropdownTab(actionFn) {
-            toggleHomeMoreTabs(false);
             if (typeof actionFn === 'function') actionFn();
         }
 
@@ -4055,22 +4240,136 @@
                 let sessionCheckTimer = null;
                 let selectedGender = localStorage.getItem("ar_cloud_gender") || "Nam";
             
+                function resetLocalGameStateToDefault() {
+                    const GAME_DATA_KEYS = [
+                        'ar_team', 'ar_farm', 'ar_eggs', 'ar_coins', 'ar_diamonds',
+                        'ar_max_pet_capacity', 'ar_tower_floor', 'ar_boss_level', 'ar_steps',
+                        'ar_catch_stamina', 'ar_catch_stamina_time', 'ar_scan_stamina', 'ar_scan_stamina_time',
+                        'ar_training_poles', 'ar_resting_pets', 'ar_inventory', 'ar_quests', 'ar_last_pm_id'
+                    ];
+                    GAME_DATA_KEYS.forEach(k => localStorage.removeItem(k));
+
+                    team = [];
+                    farm = [];
+                    eggs = [];
+                    restingPets = [];
+                    trainingPoles = [null, null, null, null];
+                    playerCoins = 1500;
+                    playerDiamonds = 50;
+                    maxPetCapacity = 10;
+                    towerFloor = 1;
+                    bossLevel = 1;
+                    totalSteps = 0;
+                    catchStamina = 15;
+                    lastCatchStaminaTime = Date.now();
+                    scanStamina = 5;
+                    lastScanStaminaTime = Date.now();
+                    inventory = {
+                        food: 15, toy: 15, trainer: 10,
+                        stoneKim: 5, stoneMoc: 5, stoneThuy: 5, stoneHoa: 5, stoneTho: 5
+                    };
+                    dailyQuests = [
+                        { id: 1, title: 'Bắt 3 linh thú bất kỳ', target: 3, progress: 0, reward: 200, claimed: false },
+                        { id: 2, title: 'Thắng 2 trận đấu trường', target: 2, progress: 0, reward: 300, claimed: false },
+                        { id: 3, title: 'Cho linh thú ăn 2 lần', target: 2, progress: 0, reward: 150, claimed: false }
+                    ];
+
+                    localStorage.setItem('ar_max_pet_capacity', maxPetCapacity);
+                    localStorage.setItem('ar_tower_floor', towerFloor);
+                    localStorage.setItem('ar_boss_level', bossLevel);
+                    localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+                    localStorage.setItem('ar_quests', JSON.stringify(dailyQuests));
+
+                    saveGameData();
+                    updateTeamCount();
+                    if (typeof renderFarmVisualPets === 'function') renderFarmVisualPets();
+                    if (window.updateHunterGpsAppearance) window.updateHunterGpsAppearance();
+                }
+
                 function handleSessionExpired() {
                     if (sessionCheckTimer) {
                         clearInterval(sessionCheckTimer);
                         sessionCheckTimer = null;
                     }
-                    if (chatPollTimer) {
-                        clearInterval(chatPollTimer);
-                        chatPollTimer = null;
+                    if (autoCloudSyncTimer) {
+                        clearInterval(autoCloudSyncTimer);
+                        autoCloudSyncTimer = null;
                     }
                     localStorage.removeItem("ar_cloud_user");
                     localStorage.removeItem("ar_cloud_pin");
                     localStorage.removeItem("ar_cloud_gender");
                     localStorage.removeItem("ar_cloud_session");
-            
-                    alert("⚠️ Tài khoản của bạn vừa được đăng nhập trên một thiết bị khác!\nThiết bị này sẽ tự động đăng xuất để bảo vệ dữ liệu.");
+
+                    // Xóa sạch dữ liệu tài khoản cũ trên thiết bị bị đá văng
+                    resetLocalGameStateToDefault();
+
+                    alert("⚠️ Tài khoản của bạn vừa được đăng nhập trên một thiết bị khác!\nThiết bị này đã tự động đăng xuất và xóa dữ liệu phiên cũ.");
                     openCloudAccountModal(true);
+                }
+
+                let autoCloudSyncTimer = null;
+                let lastSyncedSnapshotStr = "";
+
+                async function silentCloudSync(force = false) {
+                    const username = localStorage.getItem("ar_cloud_user");
+                    const pin = localStorage.getItem("ar_cloud_pin");
+                    const currentToken = localStorage.getItem("ar_cloud_session");
+                    if (!username || !pin || !currentToken) return;
+
+                    const stateObj = packCurrentGameState();
+                    const snapStr = JSON.stringify(stateObj);
+                    if (!force && snapStr === lastSyncedSnapshotStr) return;
+
+                    try {
+                        const res = await fetch("/api/auth", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                action: "sync",
+                                username: username,
+                                pin: pin,
+                                sessionToken: currentToken,
+                                gameData: stateObj
+                            })
+                        });
+                        const result = await res.json();
+                        if (result.code === "SESSION_EXPIRED") {
+                            handleSessionExpired();
+                            return;
+                        }
+                        if (result.ok) {
+                            lastSyncedSnapshotStr = snapStr;
+                        }
+                    } catch (e) {}
+                }
+
+                async function pullLatestCloudStateOnBoot() {
+                    const username = localStorage.getItem("ar_cloud_user");
+                    const pin = localStorage.getItem("ar_cloud_pin");
+                    const currentToken = localStorage.getItem("ar_cloud_session");
+                    if (!username || !pin || !currentToken) return;
+
+                    try {
+                        const res = await fetch("/api/auth", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                action: "pull",
+                                username: username,
+                                pin: pin,
+                                sessionToken: currentToken
+                            })
+                        });
+                        const result = await res.json();
+                        if (result.code === "SESSION_EXPIRED") {
+                            handleSessionExpired();
+                            return;
+                        }
+                        if (result.ok && result.gameData) {
+                            applyCloudGameState(result.gameData);
+                            lastSyncedSnapshotStr = JSON.stringify(packCurrentGameState());
+                        }
+                    } catch (e) {}
                 }
             
                 // Kiểm tra định kỳ phiên đăng nhập để đá văng máy cũ nếu có máy mới đăng nhập
@@ -4078,6 +4377,10 @@
                     if (sessionCheckTimer) {
                         clearInterval(sessionCheckTimer);
                         sessionCheckTimer = null;
+                    }
+                    if (autoCloudSyncTimer) {
+                        clearInterval(autoCloudSyncTimer);
+                        autoCloudSyncTimer = null;
                     }
                     if (!username) return;
             
@@ -4103,7 +4406,12 @@
                         } catch (e) {
                             // Bỏ qua lỗi mạng tạm thời
                         }
-                    }, 12000); // Kiểm tra mỗi 12 giây
+                    }, 10000); // Kiểm tra mỗi 10 giây
+
+                    // Tự động đồng bộ tiến trình lên Cloud mỗi 20 giây để dữ liệu 2 máy luôn thống nhất
+                    autoCloudSyncTimer = setInterval(() => {
+                        silentCloudSync(false);
+                    }, 20000);
                 };
             
                 window.selectAccountGender = function(gender) {
@@ -4189,7 +4497,7 @@
             
                     ${savedUser ? `
                     <button onclick="logoutCloudAccount()" class="w-full mt-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 py-2 rounded-xl font-bold text-[11px] text-red-300 cursor-pointer">
-                        🚪 Đăng Xuất / Đổi Tài Khoản Khác
+                        🚪 Đăng Xuất & Xóa Dữ Liệu Trên Máy Này
                     </button>` : ''}`;
             
                     if (savedUser) selectAccountGender(selectedGender);
@@ -4246,6 +4554,10 @@
                     if (!/^\d{8}$/.test(pin)) return alert("⚠️ Mã PIN bắt buộc phải gồm đúng 8 chữ số (0-9)!");
             
                     try {
+                        // Reset sạch dữ liệu cũ trên máy trước khi tạo tài khoản mới
+                        resetLocalGameStateToDefault();
+                        const initialGameData = packCurrentGameState();
+
                         const res = await fetch("/api/auth", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -4254,7 +4566,7 @@
                                 username: username,
                                 pin: pin,
                                 gender: selectedGender,
-                                gameData: packCurrentGameState()
+                                gameData: initialGameData
                             })
                         });
                         const result = await res.json();
@@ -4265,6 +4577,7 @@
                         localStorage.setItem("ar_cloud_gender", result.gender);
                         if (window.updateHunterGpsAppearance) window.updateHunterGpsAppearance();
                         localStorage.setItem("ar_cloud_session", result.sessionToken);
+                        lastSyncedSnapshotStr = JSON.stringify(initialGameData);
             
                         startSessionGuard(result.username);
                         closeModal();
@@ -4274,7 +4587,7 @@
                     }
                 };
             
-                // ĐĂNG NHẬP TÀI KHOẢN ĐÃ CÓ (TỰ ĐỘNG ĐÁ MÁY CŨ)
+                // ĐĂNG NHẬP TÀI KHOẢN ĐÃ CÓ (TỰ ĐỘNG ĐÁ MÁY CŨ & GHI ĐÈ SẠCH DỮ LIỆU LOCAL)
                 window.loginCloudAccount = async function() {
                     const username = document.getElementById("cloud-username-input")?.value.trim();
                     const pin = document.getElementById("cloud-pin-input")?.value.trim();
@@ -4294,7 +4607,9 @@
                         });
                         const result = await res.json();
                         if (!result.ok) return alert("❌ " + (result.error || "Sai thông tin đăng nhập!"));
-            
+
+                        // Xóa sạch dữ liệu cũ trên máy rồi nạp chuẩn 100% dữ liệu từ Cloud
+                        resetLocalGameStateToDefault();
                         applyCloudGameState(result.gameData);
             
                         localStorage.setItem("ar_cloud_user", result.username);
@@ -4302,10 +4617,14 @@
                         localStorage.setItem("ar_cloud_gender", result.gender || "Nam");
                         if (window.updateHunterGpsAppearance) window.updateHunterGpsAppearance();
                         localStorage.setItem("ar_cloud_session", result.sessionToken);
+                        lastSyncedSnapshotStr = JSON.stringify(packCurrentGameState());
             
                         startSessionGuard(result.username);
                         closeModal();
                         alert(`🎉 Chào mừng ${result.gender === 'Nữ' ? 'Nữ' : 'Nam'} Thợ Săn [${result.username}] trở lại!`);
+                        if (typeof window.checkAndClaimAdminGifts === 'function') {
+                            setTimeout(() => window.checkAndClaimAdminGifts(), 600);
+                        }
                     } catch (err) {
                         alert("❌ Lỗi đăng nhập: " + err.message);
                     }
@@ -4319,6 +4638,7 @@
                     if (!username || !pin) return openCloudAccountModal();
             
                     try {
+                        const stateObj = packCurrentGameState();
                         const res = await fetch("/api/auth", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -4327,30 +4647,56 @@
                                 username: username,
                                 pin: pin,
                                 sessionToken: currentToken,
-                                gameData: packCurrentGameState()
+                                gameData: stateObj
                             })
                         });
                         const result = await res.json();
                         if (result.code === "SESSION_EXPIRED") return handleSessionExpired();
                         if (!result.ok) return alert("❌ " + (result.error || "Lỗi đồng bộ!"));
-            
-                        alert(`☁️ Đã sao lưu toàn bộ tiến trình của [${username}] lên Cloudflare!`);
+
+                        lastSyncedSnapshotStr = JSON.stringify(stateObj);
                     } catch (err) {
                         alert("❌ Lỗi lưu dữ liệu: " + err.message);
                     }
                 };
             
                 window.logoutCloudAccount = function() {
-                    if (!confirm("Bạn có chắc muốn đăng xuất khỏi thiết bị này? (Dữ liệu trên mây vẫn được giữ nguyên)")) return;
-                    if (sessionCheckTimer) {
-                        clearInterval(sessionCheckTimer);
-                        sessionCheckTimer = null;
+                    const doLogout = async () => {
+                        const u = localStorage.getItem("ar_cloud_user");
+                        // Lưu dữ liệu lần cuối lên Cloud trước khi dọn sạch máy
+                        await silentCloudSync(true);
+
+                        if (sessionCheckTimer) {
+                            clearInterval(sessionCheckTimer);
+                            sessionCheckTimer = null;
+                        }
+                        if (autoCloudSyncTimer) {
+                            clearInterval(autoCloudSyncTimer);
+                            autoCloudSyncTimer = null;
+                        }
+                        if (typeof window.notifyPlayerOffline === 'function' && u) {
+                            window.notifyPlayerOffline(u);
+                        }
+
+                        localStorage.removeItem("ar_cloud_user");
+                        localStorage.removeItem("ar_cloud_pin");
+                        localStorage.removeItem("ar_cloud_gender");
+                        localStorage.removeItem("ar_cloud_session");
+                        lastSyncedSnapshotStr = "";
+
+                        // Xóa toàn bộ dữ liệu thú/túi/vàng của tài khoản vừa đăng xuất khỏi máy này
+                        resetLocalGameStateToDefault();
+                        openCloudAccountModal(true);
+                    };
+
+                    if (typeof showInGameConfirm === 'function') {
+                        showInGameConfirm(
+                            "🚪 Đăng xuất khỏi thiết bị này?\n(Dữ liệu đã được lưu trên mây, bộ nhớ trên máy này sẽ được làm sạch về mặc định)",
+                            doLogout
+                        );
+                    } else {
+                        doLogout();
                     }
-                    localStorage.removeItem("ar_cloud_user");
-                    localStorage.removeItem("ar_cloud_pin");
-                    localStorage.removeItem("ar_cloud_gender");
-                    localStorage.removeItem("ar_cloud_session");
-                    openCloudAccountModal(true);
                 };
             
                 // ==========================================
@@ -4520,6 +4866,7 @@
                     if (!existingUser) {
                         setTimeout(() => openCloudAccountModal(true), 500);
                     } else {
+                        pullLatestCloudStateOnBoot();
                         startSessionGuard(existingUser);
                     }
                     initFloatingWorldChat();
@@ -4580,9 +4927,11 @@
             </div>`;
         }
 
+        let nearbyScanRadius = parseInt(localStorage.getItem('ar_nearby_radius') || '1000', 10);
+
         async function syncMapPlayersPresence() {
-            if (document.hidden) return;
-            const myUser = (localStorage.getItem('ar_cloud_user') || '').trim();
+            if (document.hidden || typeof map === 'undefined' || !map) return;
+            const myUser = localStorage.getItem('ar_cloud_user');
             if (!myUser) return;
 
             const myGender = localStorage.getItem('ar_cloud_gender') === 'Nữ' ? 'Nữ' : 'Nam';
@@ -4607,97 +4956,140 @@
                     body: JSON.stringify({
                         username: myUser,
                         gender: myGender,
-                        lat: Number(userLat) || 10.0452,
-                        lng: Number(userLng) || 105.7469,
+                        lat: userLat,
+                        lng: userLng,
                         dir: myDir,
                         state: myState,
-                        leadPet: leadPet
+                        leadPet: leadPet,
+                        radius: nearbyScanRadius
                     })
                 });
                 const data = await res.json();
                 if (!data.ok) return;
 
+                if (window.playerRadarCircle && typeof window.playerRadarCircle.setRadius === 'function') {
+                    window.playerRadarCircle.setRadius(nearbyScanRadius);
+                }
+
                 const seenUsers = new Set();
-                (data.players || []).forEach(p => {
-                    if (!p || !p.username || typeof p.lat !== 'number' || typeof p.lng !== 'number') return;
-                    const distMeters = (typeof map !== 'undefined' && map)
-                        ? map.distance([userLat, userLng], [p.lat, p.lng])
-                        : 0;
-                    if (distMeters > 500) return;
+                const listPlayers = data.players || [];
+                listPlayers.forEach(p => {
+                    const distMeters = typeof p.distance === 'number'
+                        ? p.distance
+                        : Math.round(map.distance([userLat, userLng], [p.lat, p.lng]));
+                    if (distMeters > nearbyScanRadius) return;
 
+                    p.distance = distMeters;
                     seenUsers.add(p.username);
-                    otherPlayersCache[p.username] = { ...p, distMeters: Math.round(distMeters) };
+                    otherPlayersCache[p.username] = p;
 
-                    if (typeof map !== 'undefined' && map) {
-                        if (otherPlayerMarkers[p.username]) {
-                            otherPlayerMarkers[p.username].setLatLng([p.lat, p.lng]);
-                            const el = otherPlayerMarkers[p.username].getElement();
-                            if (el) el.innerHTML = getOtherHunterHtml(p);
-                        } else {
-                            const icon = L.divIcon({
-                                className: 'leaflet-div-icon',
-                                html: getOtherHunterHtml(p),
-                                iconSize: [30, 50],
-                                iconAnchor: [15, 46]
-                            });
-                            const mk = L.marker([p.lat, p.lng], { icon: icon, zIndexOffset: 900 }).addTo(map);
-                            mk.on('click', (e) => {
-                                if (e && e.originalEvent) L.DomEvent.stopPropagation(e);
-                                openOtherPlayerCard(p.username);
-                            });
-                            otherPlayerMarkers[p.username] = mk;
-                        }
+                    if (otherPlayerMarkers[p.username]) {
+                        otherPlayerMarkers[p.username].setLatLng([p.lat, p.lng]);
+                        const el = otherPlayerMarkers[p.username].getElement();
+                        if (el) el.innerHTML = getOtherHunterHtml(p);
+                    } else {
+                        const icon = L.divIcon({
+                            className: 'leaflet-div-icon',
+                            html: getOtherHunterHtml(p),
+                            iconSize: [30, 50],
+                            iconAnchor: [15, 46]
+                        });
+                        const mk = L.marker([p.lat, p.lng], { icon: icon, zIndexOffset: 900 }).addTo(map);
+                        mk.on('click', (e) => {
+                            if (e && e.originalEvent) L.DomEvent.stopPropagation(e);
+                            openOtherPlayerCard(p.username);
+                        });
+                        otherPlayerMarkers[p.username] = mk;
                     }
                 });
 
                 Object.keys(otherPlayerMarkers).forEach(uname => {
                     if (!seenUsers.has(uname)) {
-                        if (typeof map !== 'undefined' && map) map.removeLayer(otherPlayerMarkers[uname]);
+                        map.removeLayer(otherPlayerMarkers[uname]);
                         delete otherPlayerMarkers[uname];
                         delete otherPlayersCache[uname];
                     }
                 });
 
-                const countBadge = document.getElementById('nearby-hunters-count');
-                if (countBadge) countBadge.innerText = seenUsers.size;
+                const nbBadge = document.getElementById('nearby-hunters-badge');
+                if (nbBadge) nbBadge.innerText = String(seenUsers.size);
+
+                if (document.getElementById('nearby-hunters-list')) {
+                    renderNearbyHuntersModalBody();
+                }
             } catch (e) {}
         }
-
         window.syncMapPlayersPresence = syncMapPlayersPresence;
 
-        window.openNearbyHuntersModal = function() {
-            const modal = document.getElementById('modal-container');
-            const content = document.getElementById('modal-content');
-            if (!modal || !content) return;
-            modal.classList.remove('hidden');
+        window.setNearbyScanRadius = function(rad) {
+            nearbyScanRadius = Number(rad) || 1000;
+            localStorage.setItem('ar_nearby_radius', String(nearbyScanRadius));
+            syncMapPlayersPresence();
+            renderNearbyHuntersModalBody();
+        };
 
-            const list = Object.values(otherPlayersCache).sort((a, b) => (a.distMeters || 0) - (b.distMeters || 0));
-            const rowsHtml = list.map(p => {
+        function renderNearbyHuntersModalBody() {
+            const listEl = document.getElementById('nearby-hunters-list');
+            if (!listEl) return;
+            const players = Object.values(otherPlayersCache).sort((a, b) => (a.distance || 0) - (b.distance || 0));
+
+            if (players.length === 0) {
+                listEl.innerHTML = `<div class="text-center text-zinc-400 text-xs py-8 bg-zinc-950/60 rounded-xl border border-zinc-800">
+                    Chưa phát hiện Thợ Săn nào trong bán kính <b>${nearbyScanRadius}m</b>.<br>
+                    <span class="text-[10px] text-zinc-500">Bạn có thể mở rộng bán kính quét lên 3000m ở phía trên!</span>
+                </div>`;
+                return;
+            }
+
+            listEl.innerHTML = players.map(p => {
                 const safeName = p.username.replace(/'/g, "\'");
                 const gIcon = p.gender === 'Nữ' ? '👧' : '👦';
+                const isFriend = window._myFriendsSet && window._myFriendsSet.has(p.username);
                 return `
-                <div class="bg-zinc-800/95 border border-sky-500/30 p-2.5 rounded-xl flex items-center justify-between gap-2">
+                <div class="bg-zinc-800/90 border border-cyan-500/40 p-2.5 rounded-xl flex items-center justify-between gap-2">
                     <div class="min-w-0">
-                        <div class="text-xs font-black text-white truncate">${gIcon} ${p.username} <span class="text-emerald-400 text-[10px] font-bold">(${p.distMeters ?? 0}m)</span></div>
-                        <div class="text-[10px] text-amber-300 truncate">${p.lead_pet || 'Tân Thủ'}</div>
+                        <div class="text-xs font-extrabold text-white truncate">${gIcon} ${p.username} <span class="text-emerald-400 text-[10px]">• ~${p.distance || 0}m</span></div>
+                        <div class="text-[10px] text-yellow-300 truncate">${p.lead_pet || 'Tân Thủ'}</div>
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
-                        <button onclick="closeModal(); if(map){ map.setView([${p.lat}, ${p.lng}], 18); }" class="bg-zinc-700 hover:bg-zinc-600 px-2 py-1 rounded-lg text-[10px] font-bold text-white cursor-pointer">📍</button>
-                        <button onclick="openOtherPlayerCard('${safeName}')" class="bg-sky-600 hover:bg-sky-500 px-2.5 py-1 rounded-lg text-[10px] font-extrabold text-white cursor-pointer">Tương tác</button>
+                        ${!isFriend ? `<button onclick="sendFriendRequest('${safeName}')" class="bg-amber-600 hover:bg-amber-500 px-2 py-1 rounded-lg text-[10px] font-bold text-white cursor-pointer">➕</button>` : ''}
+                        <button onclick="openPrivateChatWith('${safeName}')" class="bg-sky-600 hover:bg-sky-500 px-2 py-1 rounded-lg text-[10px] font-bold text-white cursor-pointer">💬</button>
+                        <button onclick="openDeathmatchChallengeModal('${safeName}')" class="bg-red-700 hover:bg-red-600 px-2 py-1 rounded-lg text-[10px] font-black text-white cursor-pointer">⚔️</button>
                     </div>
                 </div>`;
-            }).join('') || `<div class="text-center text-zinc-400 text-xs py-6">Chưa phát hiện Thợ Săn nào trong bán kính 500m quanh bạn!</div>`;
+            }).join('');
+        }
+
+        window.openNearbyHuntersModal = function() {
+            const myUser = localStorage.getItem('ar_cloud_user');
+            if (!myUser) {
+                alert('⚠️ Bạn cần đăng nhập Tài Khoản Mây (☁️ Nick) để quét Thợ Săn xung quanh!');
+                return;
+            }
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            const radii = [500, 1000, 3000];
+            const radBtns = radii.map(r => `
+                <button onclick="setNearbyScanRadius(${r})" class="flex-1 py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer ${nearbyScanRadius === r ? 'bg-cyan-500 text-black' : 'bg-zinc-900 text-zinc-400'}">
+                    ${r >= 1000 ? (r / 1000) + ' km' : r + 'm'}
+                </button>
+            `).join('');
 
             content.innerHTML = `
-            <div class="flex justify-between items-center mb-3 pb-2 border-b border-sky-500/40">
-                <div>
-                    <h3 class="font-black text-sm text-sky-300">🧭 THỢ SĂN QUANH ĐÂY (500M)</h3>
-                    <div class="text-[10px] text-zinc-400">Đang hoạt động quanh vị trí GPS của bạn: <b class="text-amber-300">${list.length}</b> người</div>
-                </div>
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-cyan-500/40">
+                <h3 class="font-black text-sm text-cyan-300">🧭 THỢ SĂN QUANH ĐÂY</h3>
                 <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
             </div>
-            <div class="space-y-2 max-h-72 overflow-y-auto pr-1">${rowsHtml}</div>
-            <button onclick="syncMapPlayersPresence(); openNearbyHuntersModal();" class="mt-3 w-full bg-sky-700 hover:bg-sky-600 py-2 rounded-xl text-xs font-extrabold text-white cursor-pointer">🔄 Quét Lại Radar</button>`;
+            <div class="mb-2.5">
+                <div class="text-[10px] text-zinc-400 font-bold mb-1">Bán kính quét radar GPS:</div>
+                <div class="flex gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">${radBtns}</div>
+            </div>
+            <div id="nearby-hunters-list" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>`;
+
+            renderNearbyHuntersModalBody();
+            syncMapPlayersPresence();
         };
 
         // Mở bảng tương tác khi chạm vào người chơi khác trên bản đồ
@@ -5028,7 +5420,7 @@
         setInterval(() => checkIncomingPrivateMessages(false), 6000);
         
         // Tự động bật đồng bộ vị trí người chơi mỗi 8 giây
-        presenceTimer = setInterval(syncMapPlayersPresence, 5000);
+        presenceTimer = setInterval(syncMapPlayersPresence, 8000);
         setTimeout(syncMapPlayersPresence, 2000);
     })();
     </script>
@@ -5374,358 +5766,322 @@
         };
     </script>
     <script>
+    // ==========================================
+    // HEARTBEAT TỔNG HỢP 12S (/api/heartbeat) - TỐI ƯU REQUEST D1
+    // ==========================================
+    (function initUnifiedHeartbeat() {
+        async function runUnifiedHeartbeat() {
+            if (document.hidden) return;
+            const myUser = (localStorage.getItem('ar_cloud_user') || '').trim();
+            if (!myUser) return;
 
-        // ==========================================
-        // THÚ ĐỘI HÌNH TỰ DO ĐI DẠO (WALK) TRONG NHÀ CHÍNH (TRÁNH GIƯỜNG & BÀN ĂN)
-        // CLICK -> ĐỨNG YÊN & HIT | ĐÈ GIỮ 3 GIÂY -> MỞ THÔNG TIN CÁ NHÂN
-        // ==========================================
-        const homeHoldTimers = {};
-        const homeLongPressFired = {};
-        const homePointerStart = {};
-        const homeHitResetTimers = {};
-        let homePetWalkers = [];
+            const myGender = localStorage.getItem('ar_cloud_gender') === 'Nữ' ? 'Nữ' : 'Nam';
+            const leadPet = (typeof team !== 'undefined' && team[0])
+                ? `${team[0].rarity?.badge || ''} ${team[0].name} (Lv.${Math.floor(team[0].level || 1)})`
+                : 'Chưa xuất chiến thú';
+            const lastPmId = parseInt(localStorage.getItem('ar_last_pm_id') || '0', 10);
+            const isOnMap = typeof map !== 'undefined' && map && !document.getElementById('map-screen')?.classList.contains('hidden');
+
+            try {
+                const res = await fetch('/api/heartbeat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: myUser,
+                        gender: myGender,
+                        lat: isOnMap ? userLat : undefined,
+                        lng: isOnMap ? userLng : undefined,
+                        dir: 'down',
+                        state: 'idle',
+                        leadPet,
+                        radius: Number(localStorage.getItem('ar_nearby_radius') || 1000),
+                        lastPmId
+                    })
+                });
+                const data = await res.json();
+                if (!data.ok) return;
+
+                if (data.pm?.hasNew) {
+                    document.getElementById('pm-unread-dot')?.classList.remove('hidden');
+                }
+                if (Array.isArray(data.marketPayouts) && data.marketPayouts.length > 0 && typeof window.checkAndClaimMarketPayouts === 'function') {
+                    window.checkAndClaimMarketPayouts();
+                }
+                if (Array.isArray(data.adminGifts) && data.adminGifts.length > 0 && typeof window.checkAndClaimAdminGifts === 'function') {
+                    window.checkAndClaimAdminGifts();
+                }
+                if (data.worldBoss && Array.isArray(data.worldBoss.bosses)) {
+                    window.serverWorldBossActive = !!data.worldBoss.active;
+                }
+            } catch (e) {}
+        }
+
+        setInterval(runUnifiedHeartbeat, 4000);
+        setTimeout(runUnifiedHeartbeat, 4000);
+    })();
+    </script>
+    <script src="bag.js?v=20261120c"></script>
+    <script src="dex.js?v=20261120b"></script>
+    <script src="guild.js?v=20261120b"></script>
+    <script src="auction.js?v=20261120b"></script>
+    <script src="carnival.js?v=20261120b"></script>
+    <script src="gacha.js?v=20261120b"></script>
+    <script src="ar_share.js?v=20261120b"></script>
+    <script src="./admin.js?v=20261120b"></script>
+    <script src="arena.js?v=20261120b"></script>
+    <script src="pvp.js?v=20261120b"></script>
+    <script>
+    // ============================================================================
+    // LINH THÚ TRONG ĐỘI HÌNH ĐI DẠO TRONG NHÀ CHÍNH (HOME) VỚI PHỐI CẢNH XA/GẦN
+    // - Dựa trực tiếp vào mảng `team` (0..3 linh thú trong túi đội hình)
+    // - Phối cảnh 3D thực tế: Đi lại gần cửa đi săn (x ≈ 50%, y ≈ 49%..54%) sẽ thu nhỏ lại;
+    //   đi xuống phía gần màn hình (y ≈ 65%..90%) sẽ phóng to ra, z-index tự sắp xếp theo chiều sâu!
+    // - Bản đồ vật cản sàn nhà: Không leo lên giường xanh (trái giữa), không leo lên đệm thú
+    //   (trái dưới), không leo lên bàn ăn caro xanh (phải dưới) và tủ/chậu hoa sát mép!
+    // - Trạng thái động: `walk` (khi di chuyển), `idle` (khi đứng nghỉ), `hit` (khi chạm/click vào thú)
+    // ============================================================================
+    (function initHomeRoamingPetsEngine() {
+        const HUNT_DOOR = { x: 50, y: 49 };
+        let homePetActors = [];
         let homeRoamAnimId = null;
+        let lastTeamSignature = '';
 
-        // Vùng vật cản trong nhà (tọa độ % theo ảnh nền background.webp):
-        // 1. Giường ngủ bên trái: x = 6%..35%, y = 44%..72%
-        // 2. Bàn ăn & ghế bên phải (khu vực gọi bệnh viện): x = 70%..94%, y = 55%..82%
-        // 3. Kệ tivi: x = 60%..80%, y = 44%..56%
-        const HOME_OBSTACLES = [
-            { xMin: 6,  xMax: 35, yMin: 44, yMax: 72 }, // Giường ngủ
-            { xMin: 70, xMax: 94, yMin: 55, yMax: 82 }, // Bàn ăn & ghế
-            { xMin: 60, xMax: 80, yMin: 44, yMax: 56 }  // Kệ tivi
+        // Các vùng vật cản trên sàn nhà (tọa độ % theo ảnh nền căn phòng)
+        const FLOOR_OBSTACLES = [
+            // Giường xanh lớn phía bên trái
+            { xMin: 5,  xMax: 36, yMin: 44, yMax: 63 },
+            // Đệm nằm tròn xanh có thú ngủ phía trái dưới
+            { xMin: 8,  xMax: 37, yMin: 61, yMax: 73 },
+            // Bàn ăn khăn caro xanh & ghế phía phải
+            { xMin: 61, xMax: 89, yMin: 62, yMax: 81 },
+            // Tủ gỗ & chậu hoa góc phải dưới
+            { xMin: 71, xMax: 98, yMin: 81, yMax: 98 },
+            // Kệ TV & khu vực sát tường trái / phải
+            { xMin: 0,  xMax: 12, yMin: 45, yMax: 98 },
+            { xMin: 89, xMax: 100,yMin: 45, yMax: 98 }
         ];
 
-        // Vùng sàn đi bộ hợp lệ trong phòng khách
-        const HOME_WALK_BOUNDS = { xMin: 12, xMax: 88, yMin: 56, yMax: 84 };
-
-        function isHomePointBlocked(x, y) {
-            if (x < HOME_WALK_BOUNDS.xMin || x > HOME_WALK_BOUNDS.xMax || y < HOME_WALK_BOUNDS.yMin || y > HOME_WALK_BOUNDS.yMax) {
-                return true;
-            }
-            return HOME_OBSTACLES.some(obs => x >= obs.xMin && x <= obs.xMax && y >= obs.yMin && y <= obs.yMax);
+        function isBlockedByFurniture(xPct, yPct) {
+            return FLOOR_OBSTACLES.some(box =>
+                xPct >= box.xMin && xPct <= box.xMax &&
+                yPct >= box.yMin && yPct <= box.yMax
+            );
         }
 
-        function pickValidHomeFloorPoint(fallbackX = 48, fallbackY = 72) {
-            for (let attempt = 0; attempt < 25; attempt++) {
-                const rx = HOME_WALK_BOUNDS.xMin + Math.random() * (HOME_WALK_BOUNDS.xMax - HOME_WALK_BOUNDS.xMin);
-                const ry = HOME_WALK_BOUNDS.yMin + Math.random() * (HOME_WALK_BOUNDS.yMax - HOME_WALK_BOUNDS.yMin);
-                if (!isHomePointBlocked(rx, ry)) {
-                    return { x: rx, y: ry };
-                }
-            }
-            return { x: fallbackX, y: fallbackY };
+        function computePerspectiveScale(xPct, yPct) {
+            const depthRatio = Math.max(0, Math.min(1, (yPct - 49) / (90 - 49)));
+            const depthScale = 0.42 + depthRatio * 0.84;
+
+            const distToDoor = Math.hypot((xPct - HUNT_DOOR.x) * 0.75, yPct - HUNT_DOOR.y);
+            const doorPull = Math.max(0, Math.min(1, distToDoor / 36));
+            const finalScale = depthScale * (0.80 + 0.20 * doorPull);
+
+            return Math.max(0.36, Math.min(1.30, finalScale));
         }
 
-        function setHomePetSpriteState(idx, stateName, facingLeft = null) {
-            const wrap = document.getElementById(`home-pet-sprite-wrap-${idx}`);
-            const pet = (typeof team !== 'undefined') ? team[idx] : null;
-            if (!wrap || !pet) return;
-            const spriteBox = wrap.querySelector('.animated-sprite-box');
-            const flipWrap = wrap.querySelector('.home-pet-flip');
+        function getHomePetSignature() {
+            if (!Array.isArray(team) || team.length === 0) return '';
+            return team.map((p, i) => `${p.id || i}:${p.name}:${Math.floor(p.level || 1)}:${p.hasAura ? 1 : 0}`).join('|');
+        }
 
-            const baseName = String(pet.name || '').replace(/^F1_/i, '');
-            const cfg = (typeof spriteConfigs !== 'undefined') ? spriteConfigs[baseName] : null;
-
-            if (spriteBox) {
-                const row = (cfg && cfg.rowMap && cfg.rowMap[stateName] !== undefined)
-                    ? cfg.rowMap[stateName]
-                    : (stateName === 'hit' ? 3 : (stateName === 'walk' ? 1 : 0));
-                spriteBox.dataset.fixedRow = String(row);
-            }
-
-            if (flipWrap && facingLeft !== null) {
-                const shouldFlip = cfg ? (facingLeft ? (cfg.facing !== 'left') : (cfg.facing === 'left')) : facingLeft;
-                flipWrap.style.transform = shouldFlip ? 'scaleX(-1)' : 'scaleX(1)';
+        function setActorAnimState(actor, stateName) {
+            if (!actor || !actor.petData || actor.animState === stateName) return;
+            actor.animState = stateName;
+            const slot = actor.el?.querySelector('.home-pet-sprite-slot');
+            if (slot && typeof getPetSpriteHtml === 'function') {
+                slot.innerHTML = getPetSpriteHtml(actor.petData, stateName, 78);
+                const box = slot.querySelector('.home-pet-flip-box');
+                if (box) actor.flipBox = box;
             }
         }
 
-        function renderHomeVisualPets() {
-            const container = document.getElementById('home-visual-pets');
-            if (!container || typeof team === 'undefined' || !Array.isArray(team)) return;
+        window.syncHomeRoamingPets = function (forceRebuild = false) {
+            const layer = document.getElementById('home-roaming-pets-layer');
+            if (!layer) return;
 
-            const safeStarts = [
-                { x: 42, y: 66 },
-                { x: 52, y: 74 },
-                { x: 60, y: 64 }
+            const squad = Array.isArray(team) ? team.slice(0, 3) : [];
+            const sig = getHomePetSignature();
+
+            if (!forceRebuild && sig === lastTeamSignature && homePetActors.length === squad.length) {
+                return;
+            }
+            lastTeamSignature = sig;
+            layer.innerHTML = '';
+            homePetActors = [];
+
+            if (squad.length === 0) return;
+
+            // Các điểm xuất phát trên sàn trống (không trùng giường, đệm, bàn ăn)
+            const startSpots = [
+                { x: 48, y: 66 },
+                { x: 53, y: 78 },
+                { x: 41, y: 84 }
             ];
 
-            const prevWalkers = [...homePetWalkers];
-            homePetWalkers = team.slice(0, 3).map((pet, idx) => {
-                const old = prevWalkers[idx];
-                const startPos = (old && !isHomePointBlocked(old.x, old.y))
-                    ? { x: old.x, y: old.y }
-                    : safeStarts[idx] || pickValidHomeFloorPoint(48, 72);
-                const nextTarget = pickValidHomeFloorPoint(startPos.x, startPos.y);
+            squad.forEach((pet, idx) => {
+                const spot = startSpots[idx] || { x: 48 + idx * 4, y: 72 };
+                const baseName = String(pet.name || '').replace(/^F1_/i, '');
+                const cfg = (typeof spriteConfigs !== 'undefined' && spriteConfigs[baseName]) ? spriteConfigs[baseName] : null;
+                const spriteHtml = typeof getPetSpriteHtml === 'function'
+                    ? getPetSpriteHtml(pet, 'walk', 78)
+                    : `<span class="pet-walk-anim" style="font-size:52px;">${pet.emoji || '🐾'}</span>`;
 
-                return {
-                    idx,
-                    x: startPos.x,
-                    y: startPos.y,
-                    tx: nextTarget.x,
-                    ty: nextTarget.y,
-                    facingLeft: nextTarget.x < startPos.x,
-                    state: 'walk', // 'walk' | 'idle' | 'hit' | 'holding'
-                    pauseTimer: 0
+                const auraRingHtml = pet.hasAura
+                    ? `<div class="absolute -bottom-1 w-16 h-5 rounded-full border-2 border-fuchsia-400/90 bg-gradient-to-r from-amber-400/30 via-pink-500/30 to-cyan-400/30 blur-[1px] animate-pulse pointer-events-none"></div>`
+                    : '';
+
+                const actorEl = document.createElement('div');
+                actorEl.className = 'absolute flex flex-col items-center pointer-events-auto cursor-pointer select-none';
+                actorEl.style.left = `${spot.x}%`;
+                actorEl.style.top = `${spot.y}%`;
+                actorEl.style.transformOrigin = 'center bottom';
+                actorEl.title = `${pet.name} (Lv.${Math.floor(pet.level || 1)}) — Chạm để xem hồ sơ`;
+
+                const actorObj = {
+                    el: actorEl,
+                    petData: pet,
+                    petIndex: idx,
+                    animState: 'walk',
+                    hitTimer: 0,
+                    flipBox: null,
+                    facingDefault: cfg?.facing || 'right',
+                    x: spot.x,
+                    y: spot.y,
+                    tx: spot.x,
+                    ty: spot.y,
+                    speed: 5.5 + idx * 0.9,
+                    waitTimer: 0.4 + idx * 0.7
                 };
-            });
 
-            container.innerHTML = homePetWalkers.map((w) => {
-                const pet = team[w.idx];
-                const spriteHtml = (typeof getPetSpriteHtml === 'function')
-                    ? getPetSpriteHtml(pet, 'walk', 62, 'home-pet-sprite')
-                    : `<span class="text-4xl">${pet.emoji || '🐾'}</span>`;
+                actorEl.onclick = (e) => {
+                    e.stopPropagation();
+                    // Kích hoạt trạng thái `hit` phản ứng khi bấm vào thú rồi mở trang thông tin chi tiết
+                    actorObj.hitTimer = 0.45;
+                    setActorAnimState(actorObj, 'hit');
+                    setTimeout(() => {
+                        if (typeof openPetDetail === 'function') {
+                            const curIdx = Array.isArray(team) ? team.findIndex(p => p === pet || (p.id && p.id === pet.id)) : idx;
+                            openPetDetail(curIdx >= 0 ? curIdx : idx);
+                        }
+                    }, 180);
+                };
 
-                return `
-                <div id="home-pet-slot-${w.idx}"
-                     oncontextmenu="return false;"
-                     onpointerdown="startHomePetHold(${w.idx}, event)"
-                     onpointermove="moveHomePetHold(${w.idx}, event)"
-                     onpointerup="endHomePetHold(${w.idx}, event)"
-                     onpointerleave="cancelHomePetHold(${w.idx})"
-                     onpointercancel="cancelHomePetHold(${w.idx})"
-                     style="position:absolute; left:${w.x}%; top:${w.y}%; transform:translate(-50%, -50%); touch-action:pan-x; -webkit-touch-callout:none; z-index:${Math.round(w.y)};"
-                     class="pointer-events-auto cursor-pointer flex flex-col items-center select-none">
-                    <div id="home-pet-sprite-wrap-${w.idx}" class="relative flex items-center justify-center">
-                        <div class="home-pet-flip inline-block transition-transform duration-200">
-                            ${spriteHtml}
-                        </div>
-                        <div id="home-pet-fx-${w.idx}" class="hidden -top-7 absolute px-2 py-0.5 rounded-full bg-red-600/95 border border-yellow-300 text-[10px] font-black text-white shadow-lg whitespace-nowrap pointer-events-none">
-                            💥 HIT!
-                        </div>
-                        <div id="home-pet-ring-${w.idx}" class="hidden -bottom-2.5 absolute h-1.5 w-14 bg-zinc-900/95 rounded-full overflow-hidden border border-amber-300/80 shadow pointer-events-none">
-                            <div id="home-pet-bar-${w.idx}" class="h-full bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-400" style="width:0%"></div>
-                        </div>
+                actorEl.innerHTML = `
+                    <div class="bg-black/75 backdrop-blur-xs px-2 py-0.5 rounded-full border border-amber-300/60 text-[9px] font-extrabold text-yellow-200 whitespace-nowrap shadow mb-0.5">
+                        ${pet.rarity?.badge || ''} ${pet.name} <span class="text-cyan-300">Lv.${Math.floor(pet.level || 1)}</span>
                     </div>
-                    <span class="mt-1 bg-black/80 text-yellow-200 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 whitespace-nowrap pointer-events-none">
-                        ${pet.name} Lv.${Math.floor(pet.level || 1)}
-                    </span>
-                </div>`;
-            }).join('');
+                    <div class="relative flex items-center justify-center">
+                        ${auraRingHtml}
+                        <div class="home-pet-sprite-slot">
+                            <div class="home-pet-flip-box transition-transform duration-300">${spriteHtml}</div>
+                        </div>
+                        <div class="absolute -bottom-1 w-14 h-3.5 rounded-full bg-black/55 blur-[2px] -z-10"></div>
+                    </div>
+                `;
 
-            homePetWalkers.forEach(w => setHomePetSpriteState(w.idx, 'walk', w.facingLeft));
-            startHomePetRoamingLoop();
+                actorObj.flipBox = actorEl.querySelector('.home-pet-flip-box');
+                layer.appendChild(actorEl);
+                homePetActors.push(actorObj);
+            });
+        };
+
+        function pickNextHomeTarget(actor) {
+            // Tìm ngẫu nhiên 1 điểm trên sàn nhà không chạm giường/đệm/bàn ăn
+            for (let attempt = 0; attempt < 25; attempt++) {
+                let candX, candY;
+                if (Math.random() < 0.30) {
+                    // Khu vực gần cửa đi săn (thu nhỏ theo phối cảnh xa)
+                    candX = 41 + Math.random() * 18;
+                    candY = 50 + Math.random() * 9;
+                } else {
+                    // Khắp không gian sàn nhà từ sát cửa xuống sát mép dưới (phóng to theo phối cảnh gần)
+                    candX = 14 + Math.random() * 72;
+                    candY = 51 + Math.random() * 41;
+                }
+                if (!isBlockedByFurniture(candX, candY)) {
+                    actor.tx = candX;
+                    actor.ty = candY;
+                    return;
+                }
+            }
+            actor.tx = 48;
+            actor.ty = 74;
         }
 
-        function startHomePetRoamingLoop() {
-            if (homeRoamAnimId) {
-                cancelAnimationFrame(homeRoamAnimId);
-                homeRoamAnimId = null;
-            }
+        let lastStepTime = performance.now();
+        function stepHomeRoamingPets(now) {
+            const dt = Math.min((now - lastStepTime) / 1000, 0.1);
+            lastStepTime = now;
 
-            let lastTime = performance.now();
+            const homeScreen = document.getElementById('home-screen');
+            if (homeScreen && !homeScreen.classList.contains('hidden')) {
+                if (homePetActors.length !== (Array.isArray(team) ? Math.min(3, team.length) : 0)) {
+                    window.syncHomeRoamingPets();
+                }
 
-            function stepHomePets(now) {
-                const dt = Math.min((now - lastTime) / 1000, 0.1);
-                lastTime = now;
-
-                const homeScreen = document.getElementById('home-screen');
-                if (homeScreen && !homeScreen.classList.contains('hidden') && homePetWalkers.length > 0) {
-                    homePetWalkers.forEach((w) => {
-                        const slot = document.getElementById(`home-pet-slot-${w.idx}`);
-                        if (!slot) return;
-
-                        // Khi đang bị click (HIT) hoặc đang đè giữ 3s (holding) -> Đứng yên tại chỗ
-                        if (w.state === 'hit' || w.state === 'holding') {
-                            return;
+                homePetActors.forEach(actor => {
+                    if (actor.hitTimer > 0) {
+                        actor.hitTimer = Math.max(0, actor.hitTimer - dt);
+                        setActorAnimState(actor, 'hit');
+                    } else if (actor.waitTimer > 0) {
+                        actor.waitTimer -= dt;
+                        setActorAnimState(actor, 'idle');
+                        if (actor.waitTimer <= 0) {
+                            pickNextHomeTarget(actor);
                         }
-
-                        // Nếu đang tạm nghỉ ngắn giữa 2 chặng đi bộ
-                        if (w.pauseTimer > 0) {
-                            w.pauseTimer -= dt;
-                            if (w.pauseTimer <= 0) {
-                                const nextPt = pickValidHomeFloorPoint(w.x, w.y);
-                                w.tx = nextPt.x;
-                                w.ty = nextPt.y;
-                                w.facingLeft = w.tx < w.x;
-                                w.state = 'walk';
-                                setHomePetSpriteState(w.idx, 'walk', w.facingLeft);
-                            }
-                            return;
-                        }
-
-                        const dx = w.tx - w.x;
-                        const dy = w.ty - w.y;
+                    } else {
+                        const dx = actor.tx - actor.x;
+                        const dy = actor.ty - actor.y;
                         const dist = Math.hypot(dx, dy);
 
-                        if (dist < 0.8) {
-                            // Đã tới điểm đích -> đứng nghỉ 1.2 - 2.6 giây (idle) rồi đi tiếp
-                            w.state = 'idle';
-                            w.pauseTimer = 1.2 + Math.random() * 1.4;
-                            setHomePetSpriteState(w.idx, 'idle', w.facingLeft);
-                            return;
-                        }
-
-                        const speedPctPerSec = 4.2; // Tốc độ đi bộ thong thả quanh phòng (% chiều rộng / giây)
-                        const stepX = (dx / dist) * speedPctPerSec * dt;
-                        const stepY = (dy / dist) * speedPctPerSec * dt;
-                        const nextX = w.x + stepX;
-                        const nextY = w.y + stepY;
-
-                        // Kiểm tra va chạm giường ngủ / bàn ăn trước khi bước tới
-                        if (isHomePointBlocked(nextX, nextY)) {
-                            const altPt = pickValidHomeFloorPoint(w.x, w.y);
-                            w.tx = altPt.x;
-                            w.ty = altPt.y;
-                            w.facingLeft = w.tx < w.x;
-                            setHomePetSpriteState(w.idx, 'walk', w.facingLeft);
+                        if (dist < 1.2) {
+                            actor.waitTimer = 1.4 + Math.random() * 2.4;
+                            setActorAnimState(actor, 'idle');
                         } else {
-                            w.x = nextX;
-                            w.y = nextY;
-                            slot.style.left = `${w.x}%`;
-                            slot.style.top = `${w.y}%`;
-                            slot.style.zIndex = String(Math.round(w.y));
+                            setActorAnimState(actor, 'walk');
+                            const pScale = computePerspectiveScale(actor.x, actor.y);
+                            const effSpeed = actor.speed * (0.65 + pScale * 0.45);
+                            const stepX = (dx / dist) * effSpeed * dt;
+                            const stepY = (dy / dist) * effSpeed * dt;
+                            const nextX = actor.x + stepX;
+                            const nextY = actor.y + stepY;
+
+                            if (!isBlockedByFurniture(nextX, nextY)) {
+                                actor.x = nextX;
+                                actor.y = nextY;
+                            } else {
+                                // Nếu gặp vật cản bàn/giường thì đổi hướng ngay thay vì leo lên
+                                pickNextHomeTarget(actor);
+                            }
+
+                            if (actor.flipBox && Math.abs(dx) > 0.15) {
+                                const movingLeft = dx < 0;
+                                const shouldFlip = movingLeft
+                                    ? (actor.facingDefault !== 'left')
+                                    : (actor.facingDefault === 'left');
+                                actor.flipBox.style.transform = shouldFlip ? 'scaleX(-1)' : 'scaleX(1)';
+                            }
                         }
-                    });
-                }
-
-                homeRoamAnimId = requestAnimationFrame(stepHomePets);
-            }
-
-            homeRoamAnimId = requestAnimationFrame(stepHomePets);
-        }
-
-        function triggerHomePetHitReaction(idx) {
-            const slot = document.getElementById(`home-pet-slot-${idx}`);
-            const fx = document.getElementById(`home-pet-fx-${idx}`);
-            const walker = homePetWalkers[idx];
-            if (!slot) return;
-
-            if (homeHitResetTimers[idx]) clearTimeout(homeHitResetTimers[idx]);
-
-            // Dừng đi bộ & chuyển sprite sang động tác HIT
-            if (walker) walker.state = 'hit';
-            setHomePetSpriteState(idx, 'hit', walker ? walker.facingLeft : null);
-
-            slot.style.transition = 'transform 0.12s ease-out';
-            slot.style.transform = 'translate(-50%, -50%) scale(0.88) rotate(-7deg)';
-            if (fx) {
-                fx.classList.remove('hidden', 'damage-popup');
-                void fx.offsetWidth;
-                fx.classList.add('damage-popup');
-            }
-
-            setTimeout(() => {
-                if (slot) slot.style.transform = 'translate(-50%, -50%) scale(1.06) rotate(4deg)';
-            }, 110);
-
-            homeHitResetTimers[idx] = setTimeout(() => {
-                if (slot) slot.style.transform = 'translate(-50%, -50%) scale(1) rotate(0deg)';
-                if (fx) {
-                    fx.classList.add('hidden');
-                    fx.classList.remove('damage-popup');
-                }
-                // Hết hiệu ứng HIT -> Tiếp tục đi bộ (walk) quanh nhà
-                if (walker) {
-                    const nextPt = pickValidHomeFloorPoint(walker.x, walker.y);
-                    walker.tx = nextPt.x;
-                    walker.ty = nextPt.y;
-                    walker.facingLeft = walker.tx < walker.x;
-                    walker.pauseTimer = 0;
-                    walker.state = 'walk';
-                    setHomePetSpriteState(idx, 'walk', walker.facingLeft);
-                }
-            }, 700);
-        }
-
-        function startHomePetHold(idx, e) {
-            if (e) e.stopPropagation();
-            cancelHomePetHold(idx, true);
-            homeLongPressFired[idx] = false;
-            homePointerStart[idx] = e ? { x: e.clientX, y: e.clientY, moved: false } : { x: 0, y: 0, moved: false };
-
-            const walker = homePetWalkers[idx];
-            if (walker) {
-                walker.state = 'holding';
-                setHomePetSpriteState(idx, 'idle', walker.facingLeft);
-            }
-
-            const startTs = Date.now();
-            const duration = 3000; // Đè đủ 3 giây (3000ms)
-            const ring = document.getElementById(`home-pet-ring-${idx}`);
-            const bar = document.getElementById(`home-pet-bar-${idx}`);
-            if (ring) ring.classList.remove('hidden');
-            if (bar) bar.style.width = '0%';
-
-            homeHoldTimers[idx] = setInterval(() => {
-                const elapsed = Date.now() - startTs;
-                const pct = Math.min(100, Math.floor((elapsed / duration) * 100));
-                if (bar) bar.style.width = pct + '%';
-
-                if (elapsed >= duration) {
-                    cancelHomePetHold(idx, true);
-                    homeLongPressFired[idx] = true;
-                    if (walker) {
-                        walker.state = 'walk';
-                        setHomePetSpriteState(idx, 'walk', walker.facingLeft);
                     }
-                    if (navigator.vibrate) navigator.vibrate(45);
-                    if (typeof openPetDetail === 'function') {
-                        openPetDetail(idx);
-                    }
-                }
-            }, 50);
+
+                    const scale = computePerspectiveScale(actor.x, actor.y);
+                    actor.el.style.left = `${actor.x.toFixed(2)}%`;
+                    actor.el.style.top = `${actor.y.toFixed(2)}%`;
+                    actor.el.style.transform = `translate(-50%, -100%) scale(${scale.toFixed(3)})`;
+                    actor.el.style.zIndex = String(10 + Math.round(actor.y));
+                });
+            }
+
+            homeRoamAnimId = requestAnimationFrame(stepHomeRoamingPets);
         }
 
-        function moveHomePetHold(idx, e) {
-            const st = homePointerStart[idx];
-            if (!st || !e) return;
-            if (Math.hypot(e.clientX - st.x, e.clientY - st.y) > 14) {
-                st.moved = true;
-                cancelHomePetHold(idx, true);
-                const walker = homePetWalkers[idx];
-                if (walker && walker.state === 'holding') {
-                    walker.state = 'walk';
-                    setHomePetSpriteState(idx, 'walk', walker.facingLeft);
-                }
-            }
-        }
-
-        function endHomePetHold(idx, e) {
-            if (e) e.stopPropagation();
-            const wasLongPress = !!homeLongPressFired[idx];
-            const wasDragged = !!homePointerStart[idx]?.moved;
-            cancelHomePetHold(idx, true);
-            homeLongPressFired[idx] = false;
-            delete homePointerStart[idx];
-
-            // Nếu thả tay trước 3 giây và không phải vuốt ngang màn hình -> Click thường -> Dừng yên & chạy HIT
-            if (!wasLongPress && !wasDragged) {
-                triggerHomePetHitReaction(idx);
-            } else {
-                const walker = homePetWalkers[idx];
-                if (walker && walker.state === 'holding') {
-                    walker.state = 'walk';
-                    setHomePetSpriteState(idx, 'walk', walker.facingLeft);
-                }
-            }
-        }
-
-        function cancelHomePetHold(idx, resetBar = true) {
-            if (homeHoldTimers[idx]) {
-                clearInterval(homeHoldTimers[idx]);
-                delete homeHoldTimers[idx];
-            }
-            const walker = homePetWalkers[idx];
-            if (walker && walker.state === 'holding') {
-                walker.state = 'walk';
-                setHomePetSpriteState(idx, 'walk', walker.facingLeft);
-            }
-            if (resetBar) {
-                const ring = document.getElementById(`home-pet-ring-${idx}`);
-                const bar = document.getElementById(`home-pet-bar-${idx}`);
-                if (ring) ring.classList.add('hidden');
-                if (bar) bar.style.width = '0%';
-            }
-        }
-
-        window.addEventListener('load', () => setTimeout(renderHomeVisualPets, 250));
+        window.addEventListener('load', () => {
+            window.syncHomeRoamingPets(true);
+            if (homeRoamAnimId) cancelAnimationFrame(homeRoamAnimId);
+            lastStepTime = performance.now();
+            homeRoamAnimId = requestAnimationFrame(stepHomeRoamingPets);
+        });
+    })();
     </script>
-    <script src="dex.js"></script>
-    <script src="guild.js"></script>
-    <script src="auction.js"></script>
-    <script src="./admin.js"></script>
-    <script src="arena.js"></script>
-    <script src="pvp.js"></script>
 </body>
 </html>
