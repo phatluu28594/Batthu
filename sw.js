@@ -1,5 +1,5 @@
 // Service Worker cơ bản cho AR Monster
-const CACHE_NAME = 'ar-monster-v3.5';
+const CACHE_NAME = 'ar-monster-v3.7';
 const urlsToCache = [
     './index.html',
     './manifest.json',
@@ -7,7 +7,11 @@ const urlsToCache = [
     './carnival.js',
     './gacha.js',
     './ar_share.js',
-    './bag.js'
+    './bag.js',
+    './expedition.js',
+    './zone_forest.webp',
+    './zone_volcano.webp',
+    './zone_swamp.webp'
 ];
 
 // Sự kiện cài đặt
