@@ -186,12 +186,16 @@
 
             const rawSquad = (mode === 'boss') ? [...team] : [chosenPet];
             const teamSynergy = getTeamSynergy(rawSquad);
+            const dexBuff = (typeof getMonsterDexBuffs === 'function')
+                ? getMonsterDexBuffs()
+                : { atkPct: 0, hpPct: 0, speedPct: 0, critBonus: 0, blockBonus: 0, dodgeBonus: 0 };
 
             let activeTeam = rawSquad.map(p => {
                 let b = getPetGearBonus(p);
-                let baseAtk = p.atk + b.atk;
-                let baseSpeed = (p.speed || 50) + b.speed;
-                let baseCrit = (p.critRate ?? 20) + b.critRate;
+                let baseMaxHp = Math.floor((p.maxHp + b.maxHp) * (1 + (dexBuff.hpPct || 0) / 100));
+                let baseAtk = Math.floor((p.atk + b.atk) * (1 + (dexBuff.atkPct || 0) / 100));
+                let baseSpeed = Math.floor(((p.speed || 50) + b.speed) * (1 + (dexBuff.speedPct || 0) / 100));
+                let baseCrit = (p.critRate ?? 20) + b.critRate + (dexBuff.critBonus || 0);
 
                 if (teamSynergy?.id === 'pure') baseAtk = Math.floor(baseAtk * 1.30);
                 if (teamSynergy?.id === 'triad') {
@@ -203,11 +207,12 @@
                     ...p,
                     _ref: p,
                     hp: p.hp,
-                    maxHp: p.maxHp + b.maxHp,
+                    maxHp: baseMaxHp,
                     atk: baseAtk,
                     speed: baseSpeed,
                     critRate: baseCrit,
-                    blockRate: (p.blockRate ?? 15) + b.blockRate,
+                    blockRate: (p.blockRate ?? 15) + b.blockRate + (dexBuff.blockBonus || 0),
+                    dodgeRate: (p.dodgeRate ?? 15) + (dexBuff.dodgeBonus || 0),
                     armorBreak: (p.armorBreak ?? 15) + b.armorBreak,
                     skill: (p.trait?.type === 'heal' || p.hasHealSkill) ? { ...HEAL_SKILL_CONFIG } : null,
                     skillCd: 0

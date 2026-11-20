@@ -449,18 +449,21 @@
             ? getPetGearBonus(p)
             : { atk: 0, maxHp: 0, speed: 0, critRate: 0, blockRate: 0, armorBreak: 0 };
 
-        const fullMaxHp = (p.maxHp || 150) + bonus.maxHp;
+        const dexBuff = (typeof getMonsterDexBuffs === 'function')
+            ? getMonsterDexBuffs()
+            : { atkPct: 0, hpPct: 0, speedPct: 0, critBonus: 0, blockBonus: 0, dodgeBonus: 0 };
+        const fullMaxHp = Math.floor(((p.maxHp || 150) + bonus.maxHp) * (1 + (dexBuff.hpPct || 0) / 100));
         return {
             ...p,
             owner: ownerName,
             maxHp: fullMaxHp,
             hp: fullMaxHp,
-            atk: (p.atk || 40) + bonus.atk,
-            speed: (p.speed || 50) + bonus.speed,
-            critRate: (p.critRate ?? 20) + bonus.critRate,
-            blockRate: (p.blockRate ?? 15) + bonus.blockRate,
+            atk: Math.floor(((p.atk || 40) + bonus.atk) * (1 + (dexBuff.atkPct || 0) / 100)),
+            speed: Math.floor(((p.speed || 50) + bonus.speed) * (1 + (dexBuff.speedPct || 0) / 100)),
+            critRate: (p.critRate ?? 20) + bonus.critRate + (dexBuff.critBonus || 0),
+            blockRate: (p.blockRate ?? 15) + bonus.blockRate + (dexBuff.blockBonus || 0),
             armorBreak: (p.armorBreak ?? 15) + bonus.armorBreak,
-            dodgeRate: p.dodgeRate ?? 15,
+            dodgeRate: (p.dodgeRate ?? 15) + (dexBuff.dodgeBonus || 0),
             accuracy: p.accuracy ?? 90,
             comboRate: p.comboRate ?? 20,
             hasHealSkill: !!(p.trait?.type === 'heal' || p.hasHealSkill),

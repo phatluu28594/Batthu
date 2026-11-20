@@ -1010,6 +1010,471 @@ export default {
             }
         }
 
+        // ==========================================
+        // API 9: BANG HỘI / GIA TỘC THỢ SĂN (/api/guild)
+        // ==========================================
+        if (url.pathname === "/api/guild") {
+            try {
+                if (!db) return jsonResponse({ ok: false, error: "Chưa kết nối D1!" }, 500);
+
+                await db.batch([
+                    db.prepare(`
+                        CREATE TABLE IF NOT EXISTS guilds (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            name TEXT NOT NULL UNIQUE,
+                            tag TEXT NOT NULL,
+                            leader TEXT NOT NULL,
+                            level INTEGER NOT NULL DEFAULT 1,
+                            exp INTEGER NOT NULL DEFAULT 0,
+                            coins_fund INTEGER NOT NULL DEFAULT 0,
+                            announcement TEXT DEFAULT 'Chào mừng các Thợ Săn gia nhập Bang Hội!',
+                            created_at INTEGER NOT NULL
+                        )
+                    `),
+                    db.prepare(`
+                        CREATE TABLE IF NOT EXISTS guild_members (
+                            username TEXT PRIMARY KEY,
+                            guild_id INTEGER NOT NULL,
+                            role TEXT NOT NULL DEFAULT 'member',
+                            contribution INTEGER NOT NULL DEFAULT 0,
+                            joined_at INTEGER NOT NULL
+                        )
+                    `),
+                    db.prepare(`
+                        CREATE TABLE IF NOT EXISTS guild_chat (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            guild_id INTEGER NOT NULL,
+                            sender TEXT NOT NULL,
+                            text TEXT NOT NULL,
+                            created_at INTEGER NOT NULL
+                        )
+                    `),
+                    db.prepare(`
+                        CREATE TABLE IF NOT EXISTS guild_boss (
+                            guild_id INTEGER PRIMARY KEY,
+                            week_key TEXT NOT NULL,
+                            boss_name TEXT NOT NULL,
+                            hp INTEGER NOT NULL,
+                            max_hp INTEGER NOT NULL,
+                            defeated INTEGER NOT NULL DEFAULT 0,
+                            updated_at INTEGER NOT NULL
+                        )
+                    `),
+                    db.prepare(`CREATE INDEX IF NOT EXISTS idx_guild_mem_gid ON guild_members(guild_id)`),
+                    db.prepare(`CREATE INDEX IF NOT EXISTS idx_guild_chat_gid ON guild_chat(guild_id, id)`)
+                ]);
+
+                const weekKey = getCurrentWeekKey();
+
+                if (request.method === "GET") {
+                    const me = String(url.searchParams.get("u") || "").trim();
+                    let myMembership = null;
+                    let myGuild = null;
+                    let members = [];
+                    let messages = [];
+                    let guildBoss = null;
+
+                    if (me) {
+                        myMembership = await db.prepare(
+                            "SELECT username, guild_id, role, contribution, joined_at FROM guild_members WHERE LOWER(username) = LOWER(?)"
+                        ).bind(me).first();
+
+                        if (myMembership) {
+                            myGuild = await db.prepare("SELECT * FROM guilds WHERE id = ?")
+                                .bind(myMembership.guild_id).first();
+
+                            if (myGuild) {
+                                const { results: memRows } = await db.prepare(
+                                    "SELECT username, role, contribution, joined_at FROM guild_members WHERE guild_id = ? ORDER BY contribution DESC, joined_at ASC"
+                                ).bind(myGuild.id).all();
+                                members = memRows || [];
+
+                                const { results: chatRows } = await db.prepare(
+                                    "SELECT id, sender, text, created_at FROM guild_chat WHERE guild_id = ? ORDER BY id DESC LIMIT 30"
+                                ).bind(myGuild.id).all();
+                                messages = (chatRows || []).reverse();
+
+                                const bossMaxHp = 25000 + (myGuild.level || 1) * 15000;
+                                guildBoss = await db.prepare("SELECT * FROM guild_boss WHERE guild_id = ?")
+                                    .bind(myGuild.id).first();
+
+                                if (!guildBoss || guildBoss.week_key !== weekKey) {
+                                    await db.prepare(`
+                                        INSERT INTO guild_boss (guild_id, week_key, boss_name, hp, max_hp, defeated, updated_at)
+                                        VALUES (?, ?, 'Thần Thú Hộ Mệnh Bang Hội', ?, ?, 0, ?)
+                                        ON CONFLICT(guild_id) DO UPDATE SET
+                                            week_key = excluded.week_key,
+                                            hp = excluded.hp,
+                                            max_hp = excluded.max_hp,
+                                            defeated = 0,
+                                            updated_at = excluded.updated_at
+                                    `).bind(myGuild.id, weekKey, bossMaxHp, bossMaxHp, Date.now()).run();
+                                    guildBoss = await db.prepare("SELECT * FROM guild_boss WHERE guild_id = ?")
+                                        .bind(myGuild.id).first();
+                                }
+                            }
+                        }
+                    }
+
+                    const { results: guildList } = await db.prepare(`
+                        SELECT g.id, g.name, g.tag, g.leader, g.level, g.exp, g.announcement,
+                               (SELECT COUNT(*) FROM guild_members gm WHERE gm.guild_id = g.id) AS member_count
+                        FROM guilds g
+                        ORDER BY g.level DESC, g.exp DESC, g.id ASC
+                        LIMIT 30
+                    `).all();
+
+                    return new Response(JSON.stringify({
+                        ok: true,
+                        myMembership,
+                        myGuild,
+                        members,
+                        messages,
+                        guildBoss,
+                        guilds: guildList || []
+                    }), {
+                        status: 200,
+                        headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }
+                    });
+                }
+
+                if (request.method === "POST") {
+                    const body = await request.json();
+                    const action = String(body.action || "");
+                    const me = String(body.username || "").trim();
+                    if (!me) return jsonResponse({ ok: false, error: "Thiếu tài khoản!" }, 400);
+
+                    if (action === "create") {
+                        const name = String(body.name || "").trim().slice(0, 20);
+                        const tag = String(body.tag || "").trim().toUpperCase().slice(0, 4);
+                        if (name.length < 3) return jsonResponse({ ok: false, error: "Tên Bang Hội phải từ 3-20 ký tự!" }, 400);
+                        if (tag.length < 2) return jsonResponse({ ok: false, error: "Huy hiệu Bang phải từ 2-4 ký tự!" }, 400);
+
+                        const already = await db.prepare("SELECT guild_id FROM guild_members WHERE LOWER(username) = LOWER(?)")
+                            .bind(me).first();
+                        if (already) return jsonResponse({ ok: false, error: "Bạn đã thuộc một Bang Hội khác rồi!" }, 400);
+
+                        const dupName = await db.prepare("SELECT id FROM guilds WHERE LOWER(name) = LOWER(?)")
+                            .bind(name).first();
+                        if (dupName) return jsonResponse({ ok: false, error: "Tên Bang Hội này đã tồn tại!" }, 409);
+
+                        const now = Date.now();
+                        const res = await db.prepare(
+                            "INSERT INTO guilds (name, tag, leader, level, exp, coins_fund, created_at) VALUES (?, ?, ?, 1, 0, 0, ?)"
+                        ).bind(name, tag, me, now).run();
+                        const guildId = res.meta?.last_row_id;
+
+                        await db.prepare(
+                            "INSERT INTO guild_members (username, guild_id, role, contribution, joined_at) VALUES (?, ?, 'leader', 500, ?)"
+                        ).bind(me, guildId, now).run();
+
+                        await db.prepare(
+                            "INSERT INTO guild_chat (guild_id, sender, text, created_at) VALUES (?, '📢 HỆ THỐNG', ?, ?)"
+                        ).bind(guildId, `Thợ Săn [${me}] đã sáng lập Bang Hội [${tag}] ${name}!`, now).run();
+
+                        return jsonResponse({ ok: true, guildId });
+                    }
+
+                    if (action === "join") {
+                        const guildId = Number(body.guildId);
+                        const already = await db.prepare("SELECT guild_id FROM guild_members WHERE LOWER(username) = LOWER(?)")
+                            .bind(me).first();
+                        if (already) return jsonResponse({ ok: false, error: "Bạn đã ở trong một Bang Hội rồi!" }, 400);
+
+                        const guild = await db.prepare("SELECT id, level FROM guilds WHERE id = ?").bind(guildId).first();
+                        if (!guild) return jsonResponse({ ok: false, error: "Không tìm thấy Bang Hội!" }, 404);
+
+                        const cntRow = await db.prepare("SELECT COUNT(*) as c FROM guild_members WHERE guild_id = ?")
+                            .bind(guildId).first();
+                        const maxMembers = 15 + ((guild.level || 1) - 1) * 5;
+                        if ((cntRow?.c || 0) >= maxMembers) {
+                            return jsonResponse({ ok: false, error: `Bang Hội đã đủ thành viên (${maxMembers}/${maxMembers})!` }, 400);
+                        }
+
+                        const now = Date.now();
+                        await db.prepare(
+                            "INSERT INTO guild_members (username, guild_id, role, contribution, joined_at) VALUES (?, ?, 'member', 0, ?)"
+                        ).bind(me, guildId, now).run();
+
+                        await db.prepare(
+                            "INSERT INTO guild_chat (guild_id, sender, text, created_at) VALUES (?, '📢 HỆ THỐNG', ?, ?)"
+                        ).bind(guildId, `Chào mừng [${me}] gia nhập Bang Hội!`, now).run();
+
+                        return jsonResponse({ ok: true });
+                    }
+
+                    if (action === "leave") {
+                        const mem = await db.prepare("SELECT guild_id, role FROM guild_members WHERE LOWER(username) = LOWER(?)")
+                            .bind(me).first();
+                        if (!mem) return jsonResponse({ ok: false, error: "Bạn chưa vào Bang Hội nào!" }, 400);
+
+                        if (mem.role === "leader") {
+                            const nextMember = await db.prepare(
+                                "SELECT username FROM guild_members WHERE guild_id = ? AND LOWER(username) != LOWER(?) ORDER BY contribution DESC LIMIT 1"
+                            ).bind(mem.guild_id, me).first();
+                            if (nextMember) {
+                                await db.prepare("UPDATE guilds SET leader = ? WHERE id = ?").bind(nextMember.username, mem.guild_id).run();
+                                await db.prepare("UPDATE guild_members SET role = 'leader' WHERE username = ?").bind(nextMember.username).run();
+                            } else {
+                                await db.prepare("DELETE FROM guilds WHERE id = ?").bind(mem.guild_id).run();
+                                await db.prepare("DELETE FROM guild_chat WHERE guild_id = ?").bind(mem.guild_id).run();
+                                await db.prepare("DELETE FROM guild_boss WHERE guild_id = ?").bind(mem.guild_id).run();
+                            }
+                        }
+                        await db.prepare("DELETE FROM guild_members WHERE LOWER(username) = LOWER(?)").bind(me).run();
+                        return jsonResponse({ ok: true });
+                    }
+
+                    if (action === "donate") {
+                        const mem = await db.prepare("SELECT guild_id FROM guild_members WHERE LOWER(username) = LOWER(?)")
+                            .bind(me).first();
+                        if (!mem) return jsonResponse({ ok: false, error: "Bạn chưa gia nhập Bang Hội!" }, 400);
+
+                        const expGain = Math.max(10, Number(body.expGain) || 100);
+                        const goldAdd = Math.max(0, Number(body.goldAdd) || 0);
+                        const guild = await db.prepare("SELECT level, exp, coins_fund FROM guilds WHERE id = ?")
+                            .bind(mem.guild_id).first();
+                        if (!guild) return jsonResponse({ ok: false, error: "Không tìm thấy Bang Hội!" }, 404);
+
+                        let newLevel = guild.level || 1;
+                        let newExp = (guild.exp || 0) + expGain;
+                        let reqExp = newLevel * 1000;
+                        while (newExp >= reqExp && newLevel < 10) {
+                            newExp -= reqExp;
+                            newLevel++;
+                            reqExp = newLevel * 1000;
+                        }
+
+                        await db.prepare("UPDATE guilds SET level = ?, exp = ?, coins_fund = ? WHERE id = ?")
+                            .bind(newLevel, newExp, (guild.coins_fund || 0) + goldAdd, mem.guild_id).run();
+                        await db.prepare("UPDATE guild_members SET contribution = contribution + ? WHERE LOWER(username) = LOWER(?)")
+                            .bind(expGain, me).run();
+
+                        return jsonResponse({ ok: true, level: newLevel, exp: newExp });
+                    }
+
+                    if (action === "chat") {
+                        const mem = await db.prepare("SELECT guild_id FROM guild_members WHERE LOWER(username) = LOWER(?)")
+                            .bind(me).first();
+                        if (!mem) return jsonResponse({ ok: false, error: "Bạn chưa gia nhập Bang Hội!" }, 400);
+
+                        const text = String(body.text || "").trim().slice(0, 160);
+                        if (!text) return jsonResponse({ ok: false, error: "Tin nhắn trống!" }, 400);
+
+                        await db.prepare(
+                            "INSERT INTO guild_chat (guild_id, sender, text, created_at) VALUES (?, ?, ?, ?)"
+                        ).bind(mem.guild_id, me, text, Date.now()).run();
+                        return jsonResponse({ ok: true });
+                    }
+
+                    if (action === "announcement") {
+                        const mem = await db.prepare("SELECT guild_id, role FROM guild_members WHERE LOWER(username) = LOWER(?)")
+                            .bind(me).first();
+                        if (!mem || mem.role !== "leader") {
+                            return jsonResponse({ ok: false, error: "Chỉ Bang Chủ mới có quyền sửa thông báo!" }, 403);
+                        }
+                        const text = String(body.text || "").trim().slice(0, 140);
+                        await db.prepare("UPDATE guilds SET announcement = ? WHERE id = ?").bind(text, mem.guild_id).run();
+                        return jsonResponse({ ok: true });
+                    }
+
+                    if (action === "boss_damage") {
+                        const mem = await db.prepare("SELECT guild_id FROM guild_members WHERE LOWER(username) = LOWER(?)")
+                            .bind(me).first();
+                        if (!mem) return jsonResponse({ ok: false, error: "Bạn chưa gia nhập Bang Hội!" }, 400);
+
+                        const dmg = Math.max(1, Math.floor(Number(body.damage) || 0));
+                        const boss = await db.prepare("SELECT * FROM guild_boss WHERE guild_id = ?")
+                            .bind(mem.guild_id).first();
+                        if (!boss || boss.defeated) {
+                            return jsonResponse({ ok: true, alreadyDefeated: true });
+                        }
+
+                        const nextHp = Math.max(0, (boss.hp || 0) - dmg);
+                        const isKilled = nextHp <= 0 ? 1 : 0;
+                        await db.prepare("UPDATE guild_boss SET hp = ?, defeated = ?, updated_at = ? WHERE guild_id = ?")
+                            .bind(nextHp, isKilled, Date.now(), mem.guild_id).run();
+
+                        await db.prepare("UPDATE guild_members SET contribution = contribution + ? WHERE LOWER(username) = LOWER(?)")
+                            .bind(Math.max(10, Math.floor(dmg / 10)), me).run();
+
+                        if (isKilled) {
+                            await db.prepare(
+                                "INSERT INTO guild_chat (guild_id, sender, text, created_at) VALUES (?, '🔥 BOSS BANG', ?, ?)"
+                            ).bind(mem.guild_id, `🎉 [${me}] đã tung đòn kết liễu hạ gục Boss Bang Hội tuần này!`, Date.now()).run();
+                        }
+
+                        return jsonResponse({ ok: true, hp: nextHp, defeated: !!isKilled });
+                    }
+
+                    return jsonResponse({ ok: false, error: "Lệnh Bang Hội không hợp lệ!" }, 400);
+                }
+            } catch (err) {
+                return jsonResponse({ ok: false, error: "Lỗi Guild API: " + err.message }, 500);
+            }
+        }
+
+        // ==========================================
+        // API 10: CHỢ GIAO DỊCH / ĐẤU GIÁ NGƯỜI CHƠI (/api/market-p2p)
+        // ==========================================
+        if (url.pathname === "/api/market-p2p") {
+            try {
+                if (!db) return jsonResponse({ ok: false, error: "Chưa kết nối D1!" }, 500);
+
+                await db.batch([
+                    db.prepare(`
+                        CREATE TABLE IF NOT EXISTS market_listings (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            seller TEXT NOT NULL,
+                            item_type TEXT NOT NULL,
+                            item_name TEXT NOT NULL,
+                            item_json TEXT NOT NULL,
+                            price INTEGER NOT NULL,
+                            currency TEXT NOT NULL DEFAULT 'diamonds',
+                            status TEXT NOT NULL DEFAULT 'active',
+                            buyer TEXT DEFAULT '',
+                            created_at INTEGER NOT NULL
+                        )
+                    `),
+                    db.prepare(`
+                        CREATE TABLE IF NOT EXISTS market_payouts (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            username TEXT NOT NULL,
+                            coins INTEGER NOT NULL DEFAULT 0,
+                            diamonds INTEGER NOT NULL DEFAULT 0,
+                            note TEXT DEFAULT '',
+                            claimed INTEGER NOT NULL DEFAULT 0,
+                            created_at INTEGER NOT NULL
+                        )
+                    `),
+                    db.prepare(`CREATE INDEX IF NOT EXISTS idx_mkt_status ON market_listings(status, id)`),
+                    db.prepare(`CREATE INDEX IF NOT EXISTS idx_mkt_payout ON market_payouts(username, claimed)`)
+                ]);
+
+                if (request.method === "GET") {
+                    const me = String(url.searchParams.get("u") || "").trim();
+                    const { results: activeRows } = await db.prepare(
+                        "SELECT id, seller, item_type, item_name, item_json, price, currency, created_at FROM market_listings WHERE status = 'active' ORDER BY id DESC LIMIT 50"
+                    ).all();
+
+                    let payouts = [];
+                    if (me) {
+                        const { results: payRows } = await db.prepare(
+                            "SELECT id, coins, diamonds, note, created_at FROM market_payouts WHERE LOWER(username) = LOWER(?) AND claimed = 0 ORDER BY id ASC LIMIT 30"
+                        ).bind(me).all();
+                        payouts = payRows || [];
+                    }
+
+                    return new Response(JSON.stringify({
+                        ok: true,
+                        listings: activeRows || [],
+                        payouts
+                    }), {
+                        status: 200,
+                        headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }
+                    });
+                }
+
+                if (request.method === "POST") {
+                    const body = await request.json();
+                    const action = String(body.action || "");
+                    const me = String(body.username || "").trim();
+                    if (!me) return jsonResponse({ ok: false, error: "Thiếu tài khoản!" }, 400);
+
+                    if (action === "list") {
+                        const itemType = String(body.itemType || "");
+                        const itemName = String(body.itemName || "").slice(0, 60);
+                        const itemJson = JSON.stringify(body.itemData || {});
+                        const currency = body.currency === "coins" ? "coins" : "diamonds";
+                        const price = Math.floor(Number(body.price) || 0);
+
+                        const minPrice = currency === "diamonds" ? 5 : 100;
+                        const maxPrice = currency === "diamonds" ? 50000 : 5000000;
+                        if (price < minPrice || price > maxPrice) {
+                            return jsonResponse({ ok: false, error: `Giá rao bán phải từ ${minPrice} đến ${maxPrice}!` }, 400);
+                        }
+
+                        const countRow = await db.prepare(
+                            "SELECT COUNT(*) as c FROM market_listings WHERE LOWER(seller) = LOWER(?) AND status = 'active'"
+                        ).bind(me).first();
+                        if ((countRow?.c || 0) >= 8) {
+                            return jsonResponse({ ok: false, error: "Bạn chỉ được treo tối đa 8 vật phẩm cùng lúc!" }, 400);
+                        }
+
+                        await db.prepare(`
+                            INSERT INTO market_listings (seller, item_type, item_name, item_json, price, currency, status, created_at)
+                            VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
+                        `).bind(me, itemType, itemName, itemJson, price, currency, Date.now()).run();
+
+                        return jsonResponse({ ok: true });
+                    }
+
+                    if (action === "buy") {
+                        const listingId = Number(body.listingId);
+                        const item = await db.prepare(
+                            "SELECT * FROM market_listings WHERE id = ? AND status = 'active'"
+                        ).bind(listingId).first();
+                        if (!item) {
+                            return jsonResponse({ ok: false, error: "Vật phẩm đã được người khác mua hoặc vừa bị gỡ!" }, 404);
+                        }
+                        if (item.seller.toLowerCase() === me.toLowerCase()) {
+                            return jsonResponse({ ok: false, error: "Không thể tự mua vật phẩm của chính mình!" }, 400);
+                        }
+
+                        const now = Date.now();
+                        await db.prepare(
+                            "UPDATE market_listings SET status = 'sold', buyer = ? WHERE id = ?"
+                        ).bind(me, listingId).run();
+
+                        // Thu phí sàn 10% chống lạm phát
+                        const netAmount = Math.max(1, Math.floor(item.price * 0.90));
+                        const gainCoins = item.currency === "coins" ? netAmount : 0;
+                        const gainDiamonds = item.currency === "diamonds" ? netAmount : 0;
+
+                        await db.prepare(`
+                            INSERT INTO market_payouts (username, coins, diamonds, note, claimed, created_at)
+                            VALUES (?, ?, ?, ?, 0, ?)
+                        `).bind(
+                            item.seller,
+                            gainCoins,
+                            gainDiamonds,
+                            `[${me}] đã mua [${item.item_name}] (Đã trừ 10% phí sàn)`,
+                            now
+                        ).run();
+
+                        return jsonResponse({ ok: true, listing: item });
+                    }
+
+                    if (action === "cancel") {
+                        const listingId = Number(body.listingId);
+                        const item = await db.prepare(
+                            "SELECT * FROM market_listings WHERE id = ? AND status = 'active' AND LOWER(seller) = LOWER(?)"
+                        ).bind(listingId, me).first();
+                        if (!item) {
+                            return jsonResponse({ ok: false, error: "Không thể hủy vật phẩm này!" }, 404);
+                        }
+                        await db.prepare("UPDATE market_listings SET status = 'cancelled' WHERE id = ?")
+                            .bind(listingId).run();
+                        return jsonResponse({ ok: true, listing: item });
+                    }
+
+                    if (action === "claim_payouts") {
+                        const ids = Array.isArray(body.payoutIds) ? body.payoutIds.map(Number).filter(n => n > 0) : [];
+                        for (const pid of ids) {
+                            await db.prepare(
+                                "UPDATE market_payouts SET claimed = 1 WHERE id = ? AND LOWER(username) = LOWER(?)"
+                            ).bind(pid, me).run();
+                        }
+                        return jsonResponse({ ok: true });
+                    }
+
+                    return jsonResponse({ ok: false, error: "Lệnh Chợ Người Chơi không hợp lệ!" }, 400);
+                }
+            } catch (err) {
+                return jsonResponse({ ok: false, error: "Lỗi Market P2P API: " + err.message }, 500);
+            }
+        }
+
         return env.ASSETS.fetch(request);
     }
 };
