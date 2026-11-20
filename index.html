@@ -4638,7 +4638,7 @@
                         if (!result.ok) return alert("❌ " + (result.error || "Lỗi đồng bộ!"));
 
                         lastSyncedSnapshotStr = JSON.stringify(stateObj);
-                        alert(`☁️ Đã sao lưu toàn bộ tiến trình của [${username}] lên Cloudflare!`);
+                        
                     } catch (err) {
                         alert("❌ Lỗi lưu dữ liệu: " + err.message);
                     }
