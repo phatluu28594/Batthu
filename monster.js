@@ -382,7 +382,7 @@
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.55
             },
-            'Vịt': {
+            'Vịt Vàng': {
                 facing: 'right',
                 singleSheet: true,
                 sheet: 'assets/vit.webp',
@@ -901,13 +901,19 @@
 
                     let fw = img.naturalWidth / cols;
                     let fh = img.naturalHeight / totalRows;
-                    let sx = col * fw;
-                    let sy = row * fh;
+                    let defaultPad = cols >= 10 ? 0.032 : 0.02;
+                    let padX = fw * (cfg.padX ?? defaultPad);
+                    let padY = fh * (cfg.padY ?? defaultPad);
+
+                    let sx = col * fw + padX;
+                    let sy = row * fh + padY;
+                    let sw = fw - padX * 2;
+                    let sh = fh - padY * 2;
 
                     ctx.save();
                     ctx.translate(x, y);
                     if (shouldFlip) ctx.scale(-1, 1);
-                    ctx.drawImage(img, sx, sy, fw, fh, -drawW / 2, -drawH / 2, drawW, drawH);
+                    ctx.drawImage(img, sx, sy, sw, sh, -drawW / 2, -drawH / 2, drawW, drawH);
                     ctx.restore();
                     return;
                 }

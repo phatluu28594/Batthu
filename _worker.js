@@ -119,7 +119,92 @@ export default {
                         return jsonResponse({ ok: false, code: "SESSION_EXPIRED", error: "Phiên đăng nhập đã hết hạn trên thiết bị này!" }, 401);
                     }
 
-                    const saveDataStr = JSON.stringify(gameData || {});
+                    const ADMIN_LIST = ["giaphat28594", "thuyhan171097"];
+                    const isGmAccount = ADMIN_LIST.includes(cleanUser.toLowerCase());
+
+                    let prevData = {};
+                    try { prevData = JSON.parse(existing.game_data || "{}"); } catch (e) {}
+
+                    // Hàm làm sạch & chặn gian lận chỉ số linh thú vượt trần cấp độ / phẩm chất
+                    const RARITY_MAX_MULT = {
+                        "Thường": 1.15,
+                        "Hiếm": 1.45,
+                        "Cực Hiếm": 1.8,
+                        "Huyền Thoại": 2.25,
+                        "Thần Thánh": 2.8
+                    };
+                    const clampPetObject = (p) => {
+                        if (!p || typeof p !== "object") return null;
+                        const maxLv = isGmAccount ? 999 : 200;
+                        const lv = Math.max(1, Math.min(maxLv, Math.floor(Number(p.level) || 1)));
+                        const rName = p.rarity?.name || "Thường";
+                        const mult = RARITY_MAX_MULT[rName] || 1.15;
+                        const tier = Math.max(0, Math.min(10, Math.floor(Number(p.gearTier) || 0)));
+                        const clawLv = Math.max(0, Math.min(100, Math.floor(Number(p.gears?.claw) || 0)));
+                        const armorLv = Math.max(0, Math.min(100, Math.floor(Number(p.gears?.armor) || 0)));
+                        const orbLv = Math.max(0, Math.min(100, Math.floor(Number(p.gears?.orb) || 0)));
+
+                        // Trần chỉ số gốc hợp lệ theo cấp độ & phẩm chất
+                        const ceilingHp = Math.floor((260 + lv * 35) * mult) + 500;
+                        const ceilingAtk = Math.floor((95 + lv * 14) * mult) + 250;
+                        const ceilingSpeed = Math.floor((110 + lv * 3) * (1 + (mult - 1) * 0.5)) + 150;
+
+                        const safeMaxHp = isGmAccount ? Math.max(50, Math.floor(Number(p.maxHp) || 150)) : Math.max(50, Math.min(ceilingHp, Math.floor(Number(p.maxHp) || 150)));
+                        const safeAtk = isGmAccount ? Math.max(10, Math.floor(Number(p.atk) || 40)) : Math.max(10, Math.min(ceilingAtk, Math.floor(Number(p.atk) || 40)));
+                        const safeSpeed = isGmAccount ? Math.max(10, Math.floor(Number(p.speed) || 50)) : Math.max(10, Math.min(ceilingSpeed, Math.floor(Number(p.speed) || 50)));
+
+                        return {
+                            ...p,
+                            level: lv,
+                            maxHp: safeMaxHp,
+                            hp: Math.max(0, Math.min(safeMaxHp + armorLv * 25 + tier * 60, Math.floor(Number(p.hp) ?? safeMaxHp))),
+                            atk: safeAtk,
+                            speed: safeSpeed,
+                            hearts: Math.max(0, Math.min(3, Math.floor(Number(p.hearts) ?? 3))),
+                            critRate: Math.max(0, Math.min(100, Number(p.critRate) || 20)),
+                            dodgeRate: Math.max(0, Math.min(85, Number(p.dodgeRate) || 15)),
+                            blockRate: Math.max(0, Math.min(90, Number(p.blockRate) || 15)),
+                            armorBreak: Math.max(0, Math.min(100, Number(p.armorBreak) || 15)),
+                            comboRate: Math.max(0, Math.min(80, Number(p.comboRate) || 20)),
+                            gearTier: tier,
+                            gears: { claw: clawLv, armor: armorLv, orb: orbLv }
+                        };
+                    };
+
+                    const incoming = (gameData && typeof gameData === "object") ? gameData : {};
+                    const prevCoins = Math.max(0, Math.floor(Number(prevData.coins) || 0));
+                    const prevDiamonds = Math.max(0, Math.floor(Number(prevData.diamonds) || 0));
+                    let nextCoins = Math.max(0, Math.floor(Number(incoming.coins) || 0));
+                    let nextDiamonds = Math.max(0, Math.floor(Number(incoming.diamonds) || 0));
+
+                    // Chống bơm tiền bất thường trong 1 lần đồng bộ (tối đa +25.000 vàng / +150 KC mỗi lần sync nếu không phải GM)
+                    if (!isGmAccount) {
+                        if (nextCoins - prevCoins > 25000) nextCoins = prevCoins + 25000;
+                        if (nextDiamonds - prevDiamonds > 150) nextDiamonds = prevDiamonds + 150;
+                    }
+
+                    const safeCap = Math.max(10, Math.min(60, Math.floor(Number(incoming.maxPetCapacity) || 10)));
+                    const sanitizeList = (arr, maxLen) => Array.isArray(arr)
+                        ? arr.slice(0, maxLen).map(clampPetObject).filter(Boolean)
+                        : [];
+
+                    const cleanState = {
+                        coins: nextCoins,
+                        diamonds: nextDiamonds,
+                        maxPetCapacity: safeCap,
+                        towerFloor: Math.max(1, Math.min(5000, Math.floor(Number(incoming.towerFloor) || 1))),
+                        bossLevel: Math.max(1, Math.min(1000, Math.floor(Number(incoming.bossLevel) || 1))),
+                        team: sanitizeList(incoming.team, 3),
+                        farm: sanitizeList(incoming.farm, safeCap),
+                        eggs: Array.isArray(incoming.eggs) ? incoming.eggs.slice(0, 12) : [],
+                        restingPets: sanitizeList(incoming.restingPets, 4),
+                        trainingPoles: Array.isArray(incoming.trainingPoles)
+                            ? incoming.trainingPoles.slice(0, 4).map(p => p ? clampPetObject(p) : null)
+                            : [null, null, null, null],
+                        inventory: (incoming.inventory && typeof incoming.inventory === "object") ? incoming.inventory : {}
+                    };
+
+                    const saveDataStr = JSON.stringify(cleanState);
                     if (existing.game_data === saveDataStr) {
                         return jsonResponse({ ok: true, skipped: true });
                     }
@@ -129,6 +214,67 @@ export default {
                     ).bind(saveDataStr, Date.now(), cleanUser, pin).run();
 
                     return jsonResponse({ ok: true });
+                }
+
+                // Xác thực nhận thưởng nhiệm vụ ngày phía Server (chống spam nhận nhiều lần)
+                if (action === "claim_quest") {
+                    const questId = Number(body.questId);
+                    const QUEST_REWARDS = {
+                        1: { coins: 200, diamonds: 5 },
+                        2: { coins: 300, diamonds: 5 },
+                        3: { coins: 150, diamonds: 5 }
+                    };
+                    const rewardCfg = QUEST_REWARDS[questId];
+                    if (!rewardCfg) return jsonResponse({ ok: false, error: "Nhiệm vụ không hợp lệ!" }, 400);
+
+                    const player = await db.prepare(
+                        "SELECT session_token, game_data FROM players WHERE LOWER(username) = LOWER(?) AND pin = ?"
+                    ).bind(cleanUser, pin).first();
+                    if (!player) return jsonResponse({ ok: false, error: "Sai thông tin tài khoản!" }, 401);
+                    if (sessionToken && player.session_token && player.session_token !== sessionToken) {
+                        return jsonResponse({ ok: false, code: "SESSION_EXPIRED" }, 401);
+                    }
+
+                    const nowVn = new Date(Date.now() + 7 * 3600 * 1000);
+                    const dayKey = `${nowVn.getUTCFullYear()}-${String(nowVn.getUTCMonth() + 1).padStart(2, "0")}-${String(nowVn.getUTCDate()).padStart(2, "0")}`;
+
+                    await db.prepare(`
+                        CREATE TABLE IF NOT EXISTS daily_quest_claims (
+                            username TEXT NOT NULL,
+                            day_key TEXT NOT NULL,
+                            quest_id INTEGER NOT NULL,
+                            claimed_at INTEGER NOT NULL,
+                            PRIMARY KEY (username, day_key, quest_id)
+                        )
+                    `).run();
+
+                    const already = await db.prepare(
+                        "SELECT quest_id FROM daily_quest_claims WHERE LOWER(username) = LOWER(?) AND day_key = ? AND quest_id = ?"
+                    ).bind(cleanUser, dayKey, questId).first();
+                    if (already) {
+                        return jsonResponse({ ok: false, error: "Bạn đã nhận thưởng nhiệm vụ này hôm nay rồi!" }, 409);
+                    }
+
+                    await db.prepare(
+                        "INSERT INTO daily_quest_claims (username, day_key, quest_id, claimed_at) VALUES (?, ?, ?, ?)"
+                    ).bind(cleanUser, dayKey, questId, Date.now()).run();
+
+                    let gd = {};
+                    try { gd = JSON.parse(player.game_data || "{}"); } catch (e) {}
+                    gd.coins = (Number(gd.coins) || 0) + rewardCfg.coins;
+                    gd.diamonds = (Number(gd.diamonds) || 0) + rewardCfg.diamonds;
+
+                    await db.prepare(
+                        "UPDATE players SET game_data = ?, updated_at = ? WHERE LOWER(username) = LOWER(?)"
+                    ).bind(JSON.stringify(gd), Date.now(), cleanUser).run();
+
+                    return jsonResponse({
+                        ok: true,
+                        coinsAdded: rewardCfg.coins,
+                        diamondsAdded: rewardCfg.diamonds,
+                        totalCoins: gd.coins,
+                        totalDiamonds: gd.diamonds
+                    });
                 }
 
                 if (action === "pull") {
@@ -326,12 +472,12 @@ export default {
                     ).run();
                 }
 
-                const activeThreshold = now - 25000;
+                const activeThreshold = now - 45000;
                 const { results } = await db.prepare(`
-                    SELECT username, gender, lat, lng, dir, state, lead_pet
+                    SELECT username, gender, lat, lng, dir, state, lead_pet, updated_at
                     FROM player_presence
                     WHERE LOWER(username) != LOWER(?) AND state NOT LIKE 'wb:%' AND updated_at >= ?
-                    LIMIT 100
+                    LIMIT 120
                 `).bind(username, activeThreshold).all();
 
                 const calcDistMeters = (lat1, lng1, lat2, lng2) => {
@@ -344,13 +490,19 @@ export default {
                     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                 };
 
-                const nearbyPlayers = (results || []).filter(p => {
-                    if (typeof body.lat !== "number" || typeof body.lng !== "number") return false;
-                    if (typeof p.lat !== "number" || typeof p.lng !== "number") return false;
-                    return calcDistMeters(body.lat, body.lng, p.lat, p.lng) <= 200;
-                });
+                const maxRadius = Math.max(200, Math.min(5000, Number(body.radius) || 1000));
+                const nearbyPlayers = [];
+                for (const p of (results || [])) {
+                    if (typeof body.lat !== "number" || typeof body.lng !== "number") continue;
+                    if (typeof p.lat !== "number" || typeof p.lng !== "number") continue;
+                    const dist = Math.round(calcDistMeters(body.lat, body.lng, p.lat, p.lng));
+                    if (dist <= maxRadius) {
+                        nearbyPlayers.push({ ...p, distance: dist });
+                    }
+                }
+                nearbyPlayers.sort((a, b) => a.distance - b.distance);
 
-                return jsonResponse({ ok: true, players: nearbyPlayers });
+                return jsonResponse({ ok: true, players: nearbyPlayers, radius: maxRadius });
             } catch (err) {
                 return jsonResponse({ ok: false, error: err.message }, 500);
             }
@@ -907,29 +1059,100 @@ export default {
         }
 
         // ==========================================
-        // API 8: ĐỒNG BỘ TRẠNG THÁI BOSS 3 MIỀN (/api/world-boss)
+        // API 8: ĐỒNG BỘ TRẠNG THÁI BOSS 3 MIỀN, TOP SÁT THƯƠNG & CHIA THƯỞNG (/api/world-boss)
         // ==========================================
         if (url.pathname === "/api/world-boss") {
             try {
                 if (!db) return jsonResponse({ ok: false, error: "Chưa kết nối D1!" }, 500);
 
-                await db.prepare(`
-                    CREATE TABLE IF NOT EXISTS world_boss_state (
-                        region_key TEXT PRIMARY KEY,
-                        active INTEGER NOT NULL DEFAULT 0,
-                        boss_name TEXT DEFAULT '',
-                        hp INTEGER DEFAULT 0,
-                        max_hp INTEGER DEFAULT 0,
-                        opened_by TEXT DEFAULT '',
-                        updated_at INTEGER NOT NULL
-                    )
-                `).run();
+                await db.batch([
+                    db.prepare(`
+                        CREATE TABLE IF NOT EXISTS world_boss_state (
+                            region_key TEXT PRIMARY KEY,
+                            active INTEGER NOT NULL DEFAULT 0,
+                            boss_name TEXT DEFAULT '',
+                            hp INTEGER DEFAULT 0,
+                            max_hp INTEGER DEFAULT 0,
+                            opened_by TEXT DEFAULT '',
+                            spawn_id TEXT DEFAULT '',
+                            killer TEXT DEFAULT '',
+                            updated_at INTEGER NOT NULL
+                        )
+                    `),
+                    db.prepare(`
+                        CREATE TABLE IF NOT EXISTS world_boss_damage (
+                            spawn_id TEXT NOT NULL,
+                            region_key TEXT NOT NULL,
+                            username TEXT NOT NULL,
+                            damage INTEGER NOT NULL DEFAULT 0,
+                            claimed INTEGER NOT NULL DEFAULT 0,
+                            updated_at INTEGER NOT NULL,
+                            PRIMARY KEY (spawn_id, region_key, username)
+                        )
+                    `),
+                    db.prepare(`CREATE INDEX IF NOT EXISTS idx_wb_dmg_rank ON world_boss_damage(spawn_id, region_key, damage DESC)`)
+                ]);
+
+                // Bổ sung cột spawn_id & killer nếu bảng đã tồn tại từ bản cũ
+                for (const alterSql of [
+                    "ALTER TABLE world_boss_state ADD COLUMN spawn_id TEXT DEFAULT ''",
+                    "ALTER TABLE world_boss_state ADD COLUMN killer TEXT DEFAULT ''"
+                ]) {
+                    try { await db.prepare(alterSql).run(); } catch (e) {}
+                }
 
                 if (request.method === "GET") {
+                    const regionFilter = String(url.searchParams.get("region") || "").trim();
+                    const me = String(url.searchParams.get("u") || "").trim();
+
                     const { results } = await db.prepare(
-                        "SELECT region_key, active, boss_name, hp, max_hp, opened_by, updated_at FROM world_boss_state"
+                        "SELECT region_key, active, boss_name, hp, max_hp, opened_by, spawn_id, killer, updated_at FROM world_boss_state"
                     ).all();
-                    return new Response(JSON.stringify({ ok: true, bosses: results || [] }), {
+                    const bosses = results || [];
+
+                    let leaderboard = [];
+                    let myDamage = 0;
+                    let canClaimReward = false;
+                    let myRank = 0;
+
+                    if (regionFilter) {
+                        const targetBoss = bosses.find(b => b.region_key === regionFilter);
+                        const sid = targetBoss?.spawn_id || "";
+                        if (sid) {
+                            const { results: dmgRows } = await db.prepare(`
+                                SELECT username, damage, claimed
+                                FROM world_boss_damage
+                                WHERE spawn_id = ? AND region_key = ? AND damage > 0
+                                ORDER BY damage DESC
+                                LIMIT 20
+                            `).bind(sid, regionFilter).all();
+                            leaderboard = dmgRows || [];
+
+                            if (me) {
+                                const mine = await db.prepare(`
+                                    SELECT damage, claimed FROM world_boss_damage
+                                    WHERE spawn_id = ? AND region_key = ? AND LOWER(username) = LOWER(?)
+                                `).bind(sid, regionFilter, me).first();
+                                if (mine) {
+                                    myDamage = Number(mine.damage) || 0;
+                                    const rankIdx = leaderboard.findIndex(r => r.username.toLowerCase() === me.toLowerCase());
+                                    myRank = rankIdx >= 0 ? (rankIdx + 1) : 0;
+                                    if (Number(targetBoss.hp) <= 0 && myDamage > 0 && Number(mine.claimed) === 0) {
+                                        canClaimReward = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    return new Response(JSON.stringify({
+                        ok: true,
+                        bosses,
+                        leaderboard,
+                        myDamage,
+                        myRank,
+                        canClaimReward
+                    }), {
                         status: 200,
                         headers: {
                             "Content-Type": "application/json; charset=utf-8",
@@ -941,26 +1164,134 @@ export default {
                 if (request.method === "POST") {
                     const body = await request.json();
 
-                    // Người chơi báo cáo sát thương lên Boss Thế Giới
+                    // 1. Người chơi báo cáo sát thương lên Boss Thế Giới (chống gửi vượt ngưỡng 1 lượt đánh)
                     if (body.action === "damage") {
                         const regionKey = String(body.regionKey || "").trim();
-                        const dmg = Math.max(0, Math.floor(Number(body.damage) || 0));
+                        const username = String(body.username || "").trim();
+                        const rawDmg = Math.max(0, Math.floor(Number(body.damage) || 0));
+                        // Trần sát thương tối đa hợp lệ trong 1 lần giao chiến (chống hack packet)
+                        const dmg = Math.min(rawDmg, 25000);
+
                         if (regionKey && dmg > 0) {
-                            const row = await db.prepare("SELECT active, hp FROM world_boss_state WHERE region_key = ?")
-                                .bind(regionKey).first();
-                            if (row && Number(row.active) === 1) {
-                                const nextHp = Math.max(0, (Number(row.hp) || 0) - dmg);
-                                const nextActive = nextHp > 0 ? 1 : 0;
-                                await db.prepare("UPDATE world_boss_state SET hp = ?, active = ?, updated_at = ? WHERE region_key = ?")
-                                    .bind(nextHp, nextActive, Date.now(), regionKey).run();
+                            const row = await db.prepare(
+                                "SELECT active, hp, max_hp, spawn_id, killer FROM world_boss_state WHERE region_key = ?"
+                            ).bind(regionKey).first();
+
+                            if (row && Number(row.active) === 1 && Number(row.hp) > 0) {
+                                const actualDmg = Math.min(Number(row.hp), dmg);
+                                const nextHp = Math.max(0, Number(row.hp) - actualDmg);
+                                const isKilled = nextHp <= 0;
+                                const nextActive = isKilled ? 0 : 1;
+                                const killerName = isKilled ? (username || "Thợ Săn") : (row.killer || "");
+
+                                await db.prepare(
+                                    "UPDATE world_boss_state SET hp = ?, active = ?, killer = ?, updated_at = ? WHERE region_key = ?"
+                                ).bind(nextHp, nextActive, killerName, Date.now(), regionKey).run();
+
+                                const sid = row.spawn_id || `legacy_${regionKey}`;
+                                if (username) {
+                                    await db.prepare(`
+                                        INSERT INTO world_boss_damage (spawn_id, region_key, username, damage, claimed, updated_at)
+                                        VALUES (?, ?, ?, ?, 0, ?)
+                                        ON CONFLICT(spawn_id, region_key, username) DO UPDATE SET
+                                            damage = world_boss_damage.damage + excluded.damage,
+                                            updated_at = excluded.updated_at
+                                    `).bind(sid, regionKey, username, actualDmg, Date.now()).run();
+                                }
                             }
                         }
+
                         const { results } = await db.prepare(
-                            "SELECT region_key, active, boss_name, hp, max_hp, opened_by, updated_at FROM world_boss_state"
+                            "SELECT region_key, active, boss_name, hp, max_hp, opened_by, spawn_id, killer, updated_at FROM world_boss_state"
                         ).all();
                         return jsonResponse({ ok: true, bosses: results || [] });
                     }
 
+                    // 2. Người chơi nhận thưởng Top Sát Thương sau khi Boss bị hạ gục (xác thực 1 lần duy nhất trên Server)
+                    if (body.action === "claim_reward") {
+                        const regionKey = String(body.regionKey || "").trim();
+                        const username = String(body.username || "").trim();
+                        if (!regionKey || !username) {
+                            return jsonResponse({ ok: false, error: "Thiếu thông tin nhận thưởng!" }, 400);
+                        }
+
+                        const bossRow = await db.prepare(
+                            "SELECT hp, max_hp, boss_name, spawn_id, killer FROM world_boss_state WHERE region_key = ?"
+                        ).bind(regionKey).first();
+                        if (!bossRow || !bossRow.spawn_id) {
+                            return jsonResponse({ ok: false, error: "Không tìm thấy dữ liệu Boss!" }, 404);
+                        }
+                        if (Number(bossRow.hp) > 0) {
+                            return jsonResponse({ ok: false, error: "Boss chưa bị hạ gục, chưa thể chia thưởng!" }, 400);
+                        }
+
+                        const sid = bossRow.spawn_id;
+                        const { results: rankRows } = await db.prepare(`
+                            SELECT username, damage, claimed
+                            FROM world_boss_damage
+                            WHERE spawn_id = ? AND region_key = ? AND damage > 0
+                            ORDER BY damage DESC
+                            LIMIT 50
+                        `).bind(sid, regionKey).all();
+
+                        const list = rankRows || [];
+                        const idx = list.findIndex(r => r.username.toLowerCase() === username.toLowerCase());
+                        if (idx === -1) {
+                            return jsonResponse({ ok: false, error: "Bạn chưa gây sát thương lên Boss này!" }, 403);
+                        }
+                        if (Number(list[idx].claimed) === 1) {
+                            return jsonResponse({ ok: false, error: "Bạn đã nhận thưởng Boss đợt này rồi!" }, 409);
+                        }
+
+                        const rank = idx + 1;
+                        const isKiller = bossRow.killer && bossRow.killer.toLowerCase() === username.toLowerCase();
+
+                        // Tính gói thưởng theo Top Sát Thương
+                        let rewardDiamonds = rank === 1 ? 40 : rank === 2 ? 25 : rank === 3 ? 18 : rank <= 10 ? 10 : 5;
+                        let rewardCoins = rank === 1 ? 3000 : rank === 2 ? 2000 : rank === 3 ? 1500 : 800;
+                        let stonesPerElem = rank === 1 ? 3 : rank <= 3 ? 2 : 1;
+                        let gearChestCount = rank === 1 ? 3 : rank <= 3 ? 2 : 1;
+                        if (isKiller) {
+                            rewardDiamonds += 10;
+                            rewardCoins += 1000;
+                        }
+
+                        await db.prepare(
+                            "UPDATE world_boss_damage SET claimed = 1, updated_at = ? WHERE spawn_id = ? AND region_key = ? AND LOWER(username) = LOWER(?)"
+                        ).bind(Date.now(), sid, regionKey, username).run();
+
+                        // Cộng thưởng trực tiếp vào tài khoản player trên D1
+                        const playerRow = await db.prepare("SELECT game_data FROM players WHERE LOWER(username) = LOWER(?)")
+                            .bind(username).first();
+                        let gd = {};
+                        try { gd = JSON.parse(playerRow?.game_data || "{}"); } catch (e) {}
+                        gd.coins = (Number(gd.coins) || 0) + rewardCoins;
+                        gd.diamonds = (Number(gd.diamonds) || 0) + rewardDiamonds;
+                        gd.inventory = (gd.inventory && typeof gd.inventory === "object") ? gd.inventory : {};
+                        for (const sk of ["stoneKim", "stoneMoc", "stoneThuy", "stoneHoa", "stoneTho"]) {
+                            gd.inventory[sk] = (Number(gd.inventory[sk]) || 0) + stonesPerElem;
+                        }
+                        gd.inventory.gearShardChest = (Number(gd.inventory.gearShardChest) || 0) + gearChestCount;
+
+                        if (playerRow) {
+                            await db.prepare("UPDATE players SET game_data = ?, updated_at = ? WHERE LOWER(username) = LOWER(?)")
+                                .bind(JSON.stringify(gd), Date.now(), username).run();
+                        }
+
+                        return jsonResponse({
+                            ok: true,
+                            rank,
+                            isKiller,
+                            rewards: {
+                                coins: rewardCoins,
+                                diamonds: rewardDiamonds,
+                                stonesPerElem,
+                                gearChestCount
+                            }
+                        });
+                    }
+
+                    // 3. GM Triệu hồi / Thu hồi / Hồi máu Boss 3 Miền
                     const adminUser = String(body.adminUser || "").trim();
                     const adminPin = String(body.adminPin || "").trim();
                     const ADMIN_LIST = ["GiaPhat28594", "ThuyHan171097"];
@@ -976,32 +1307,38 @@ export default {
 
                     const regions = Array.isArray(body.regions) ? body.regions : [];
                     const now = Date.now();
+                    const newSpawnId = `wb_${now}_${Math.floor(Math.random() * 1000)}`;
+
                     for (const r of regions) {
                         const key = String(r.regionKey || "").trim();
                         if (!key) continue;
+                        const isAct = r.active ? 1 : 0;
                         await db.prepare(`
-                            INSERT INTO world_boss_state (region_key, active, boss_name, hp, max_hp, opened_by, updated_at)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO world_boss_state (region_key, active, boss_name, hp, max_hp, opened_by, spawn_id, killer, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, '', ?)
                             ON CONFLICT(region_key) DO UPDATE SET
                                 active = excluded.active,
                                 boss_name = excluded.boss_name,
                                 hp = excluded.hp,
                                 max_hp = excluded.max_hp,
                                 opened_by = excluded.opened_by,
+                                spawn_id = CASE WHEN excluded.active = 1 THEN excluded.spawn_id ELSE world_boss_state.spawn_id END,
+                                killer = CASE WHEN excluded.active = 1 THEN '' ELSE world_boss_state.killer END,
                                 updated_at = excluded.updated_at
                         `).bind(
                             key,
-                            r.active ? 1 : 0,
+                            isAct,
                             String(r.bossName || ""),
                             Number(r.hp) || 0,
                             Number(r.maxHp) || 0,
                             adminUser,
+                            isAct ? newSpawnId : "",
                             now
                         ).run();
                     }
 
                     const { results } = await db.prepare(
-                        "SELECT region_key, active, boss_name, hp, max_hp, opened_by, updated_at FROM world_boss_state"
+                        "SELECT region_key, active, boss_name, hp, max_hp, opened_by, spawn_id, killer, updated_at FROM world_boss_state"
                     ).all();
                     return jsonResponse({ ok: true, bosses: results || [] });
                 }

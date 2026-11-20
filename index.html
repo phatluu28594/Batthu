@@ -7,6 +7,8 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Bắt Thú Vương">
+    <meta name="theme-color" content="#09090b">
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Bắt Thú Vương","short_name":"Bắt Thú","display":"standalone","orientation":"any","background_color":"#09090b","theme_color":"#09090b","start_url":"/"}' />
     <title>Batthu - v1.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -298,20 +300,26 @@
         <source id="bg-music-source" src="./nhac_cho.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- BẢNG YÊU CẦU MỞ TOÀN MÀN HÌNH (FULLSCREEN / F11) -->
+    <!-- BẢNG YÊU CẦU MỞ TOÀN MÀN HÌNH (FULLSCREEN / PWA IOS) -->
     <div id="fullscreen-prompt-overlay" class="hidden absolute inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
         <div class="bg-zinc-900 border-2 border-amber-400/70 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
             <div class="text-5xl animate-bounce">🖥️📱</div>
             <h2 class="text-xl font-black text-yellow-300 tracking-wide">TRẢI NGHIỆM TOÀN MÀN HÌNH</h2>
-            <p class="text-xs text-zinc-300 leading-relaxed">
+            <p id="fullscreen-prompt-desc" class="text-xs text-zinc-300 leading-relaxed">
                 Hãy bật chế độ <span class="text-amber-300 font-bold">Toàn màn hình (F11)</span> để có góc nhìn rộng và trải nghiệm săn bắt linh thú tốt nhất!
             </p>
+            <div id="ios-pwa-guide" class="hidden bg-zinc-950/90 border border-sky-400/50 rounded-2xl p-3 text-left text-[11px] text-zinc-200 space-y-1.5">
+                <div class="font-extrabold text-sky-300">🍎 Cách bật Full màn hình chuẩn 100% trên iPhone / iPad:</div>
+                <div>1. Bấm nút <span class="text-amber-300 font-bold">Chia sẻ (⬆️)</span> ở thanh công cụ Safari.</div>
+                <div>2. Chọn <span class="text-emerald-300 font-bold">Thêm vào MH chính (Add to Home Screen)</span>.</div>
+                <div>3. Mở biểu tượng <span class="text-yellow-300 font-bold">Bắt Thú Vương</span> ngoài màn hình chính để ẩn hoàn toàn thanh địa chỉ!</div>
+            </div>
             <div class="flex flex-col gap-2 pt-2">
-                <button onclick="enterGameFullscreen()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black py-3 rounded-xl text-sm shadow-lg cursor-pointer transition active:scale-95">
+                <button id="btn-enter-fullscreen" onclick="enterGameFullscreen()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black py-3 rounded-xl text-sm shadow-lg cursor-pointer transition active:scale-95">
                     ⛶ Bật Toàn Màn Hình Ngay
                 </button>
                 <button onclick="dismissFullscreenPrompt()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-bold py-2 rounded-xl text-xs cursor-pointer">
-                    Để sau
+                    Tiếp tục chơi ngay
                 </button>
             </div>
         </div>
@@ -319,45 +327,24 @@
     
     <!-- MÀN HÌNH SẢNH CHÍNH ĐẦU GAME (background.png) -->
     <div id="home-screen" class="absolute inset-0 z-30 bg-zinc-950 overflow-hidden">
-        <div id="home-top-nav" class="fixed top-0 left-0 right-0 z-30 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/85 to-transparent pointer-events-none">
-            <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold pointer-events-auto shrink-0">
+        <div class="fixed top-0 left-0 right-0 z-30 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/85 to-transparent pointer-events-none">
+            <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold pointer-events-auto">
                 <span>🏠 Nhà Chính</span>
                 <span class="text-yellow-400 ml-1"><span class="ui-coins-val">1500</span>🪙</span>
                 <span class="text-cyan-300 ml-1"><span class="ui-diamonds-val">50</span>💎</span>
             </div>
-            <div class="relative flex flex-col items-end pointer-events-auto">
-                <div class="flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-2 py-1 rounded-full border border-white/15 shadow-xl">
-                    <button id="btn-toggle-music" onclick="toggleGameMusic()" class="bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🔊</button>
-                    <button onclick="openCloudAccountModal()" class="bg-indigo-600/95 hover:bg-indigo-500 px-2.5 py-1.5 rounded-full border border-indigo-300 text-xs font-bold cursor-pointer">☁️</button>
-                    <button onclick="openTeamMenu()" class="bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🎒(<span id="home-team-count">0</span>/3)</button>
-                    <button id="home-nav-toggle" onclick="toggleHomeMoreTabs()" class="relative bg-sky-600/95 hover:bg-sky-500 w-7 h-7 rounded-full border border-sky-300 text-xs font-black text-white flex items-center justify-center shadow cursor-pointer transition-transform" title="Mở rộng menu">
-                        ▼
-                        <span id="home-friend-dot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping"></span>
-                    </button>
-                </div>
-
-                <!-- Menu xổ xuống ở Nhà Chính giống bản đồ GPS -->
-                <div id="home-nav-dropdown" class="hidden absolute top-11 right-0 z-50 flex-col gap-1.5 min-w-[175px] bg-zinc-900/95 backdrop-blur-md p-2 rounded-2xl border border-sky-400/40 shadow-2xl">
-                    <button onclick="selectHomeDropdownTab(() => openMarketMenu())" class="w-full text-left bg-amber-600/90 hover:bg-amber-500 px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold cursor-pointer">
-                        🛒 Chợ Hệ Thống
-                    </button>
-                    <button onclick="selectHomeDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-rose-700/90 hover:bg-rose-600 px-3 py-2 rounded-xl border border-rose-400 text-xs font-bold cursor-pointer">
-                        🏪 Chợ Cá Nhân (P2P)
-                    </button>
-                    <button onclick="selectHomeDropdownTab(() => openQuestMenu())" class="w-full text-left bg-yellow-600/90 hover:bg-yellow-500 px-3 py-2 rounded-xl border border-yellow-400 text-xs font-bold cursor-pointer">
-                        📜 Nhiệm Vụ
-                    </button>
-                    <div class="border-t border-white/10 my-0.5"></div>
-                    <button onclick="selectHomeDropdownTab(() => openMonsterDexModal())" class="w-full text-left bg-emerald-700/90 hover:bg-emerald-600 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-bold cursor-pointer">
-                        📖 Bách Khoa Thú (Buff)
-                    </button>
-                    <button onclick="selectHomeDropdownTab(() => openGuildModal())" class="w-full text-left bg-purple-700/90 hover:bg-purple-600 px-3 py-2 rounded-xl border border-purple-400/60 text-xs font-bold cursor-pointer">
-                        🏰 Bang Hội Thợ Săn
-                    </button>
-                    <button onclick="selectHomeDropdownTab(() => openFriendsModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
-                        <span>👥 Bạn Bè</span>
-                    </button>
-                </div>
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+                <button id="btn-toggle-music" onclick="toggleGameMusic()" class="bg-black/85 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🔊</button>
+                <button onclick="openCloudAccountModal()" class="bg-indigo-600/95 px-2.5 py-1.5 rounded-full border border-indigo-300 text-xs font-bold cursor-pointer">☁️ Nick</button>
+                <button onclick="openFriendsModal()" title="Bạn bè" class="relative bg-sky-600/95 px-2.5 py-1.5 rounded-full border border-sky-300 text-xs font-bold cursor-pointer">
+                    👥
+                    <span id="home-friend-dot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping"></span>
+                </button>
+                <button onclick="openTeamMenu()" class="bg-black/85 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🎒(<span id="home-team-count">0</span>/3)</button>
+                <button onclick="openMonsterDexModal()" title="Bách Khoa Linh Thú" class="bg-emerald-700/95 px-2.5 py-1.5 rounded-full border border-emerald-300 text-xs font-bold cursor-pointer">📖</button>
+                <button onclick="openGuildModal()" title="Bang Hội" class="bg-purple-700/95 px-2.5 py-1.5 rounded-full border border-purple-300 text-xs font-bold cursor-pointer">🏰</button>
+                <button onclick="openMarketMenu()" class="bg-amber-600/95 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold cursor-pointer">🛒 Chợ</button>
+                <button onclick="openQuestMenu()" class="bg-yellow-600/95 px-2.5 py-1.5 rounded-full border border-yellow-300 text-xs font-bold cursor-pointer">📜 NV</button>
             </div>
         </div>
 
@@ -447,10 +434,7 @@
                     <span class="text-amber-300">(<span id="team-count">0</span>/3)</span>
                 </button>
                 <button onclick="selectMapDropdownTab(() => openMarketMenu())" class="w-full text-left bg-amber-600/90 hover:bg-amber-500 px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold cursor-pointer">
-                    🛒 Chợ Hệ Thống
-                </button>
-                <button onclick="selectMapDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-rose-700/90 hover:bg-rose-600 px-3 py-2 rounded-xl border border-rose-400 text-xs font-bold cursor-pointer">
-                    🏪 Chợ Người Chơi (P2P)
+                    🛒 Chợ
                 </button>
                 <button onclick="selectMapDropdownTab(() => openFarmMenu())" class="w-full text-left bg-emerald-600/90 hover:bg-emerald-500 px-3 py-2 rounded-xl border border-emerald-400 text-xs font-bold cursor-pointer">
                     🏡 Trang trại
@@ -469,15 +453,22 @@
                <button onclick="selectMapDropdownTab(() => openPvpArenaHub())" class="w-full text-left bg-red-600/90 hover:bg-red-500 px-3 py-2 rounded-xl border border-red-400 text-xs font-bold cursor-pointer">
                     ⚔️ Đấu PvP (BXH)
                 </button>
-                <button onclick="selectMapDropdownTab(() => openMonsterDexModal())" class="w-full text-left bg-emerald-700/90 hover:bg-emerald-600 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-bold cursor-pointer">
-                    📖 Bách Khoa Thú (Buff)
-                </button>
-                <button onclick="selectMapDropdownTab(() => openGuildModal())" class="w-full text-left bg-purple-700/90 hover:bg-purple-600 px-3 py-2 rounded-xl border border-purple-400/60 text-xs font-bold cursor-pointer">
-                    🏰 Bang Hội Thợ Săn
+                <button onclick="selectMapDropdownTab(() => openNearbyHuntersModal())" class="w-full text-left bg-cyan-800/90 hover:bg-cyan-700 px-3 py-2 rounded-xl border border-cyan-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                    <span>🧭 Thợ Săn Quanh Đây</span>
+                    <span id="nearby-hunters-badge" class="bg-emerald-500 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black">0</span>
                 </button>
                 <button onclick="selectMapDropdownTab(() => openFriendsModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
                     <span>👥 Bạn Bè</span>
                     <span id="friend-req-badge" class="hidden bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black">MỚI</span>
+                </button>
+                <button onclick="selectMapDropdownTab(() => openGuildModal())" class="w-full text-left bg-purple-800/90 hover:bg-purple-700 px-3 py-2 rounded-xl border border-purple-400/60 text-xs font-bold cursor-pointer">
+                    🏰 Bang Hội
+                </button>
+                <button onclick="selectMapDropdownTab(() => openMonsterDexModal())" class="w-full text-left bg-teal-800/90 hover:bg-teal-700 px-3 py-2 rounded-xl border border-teal-400/60 text-xs font-bold cursor-pointer">
+                    📖 Bách Khoa Thú
+                </button>
+                <button onclick="selectMapDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-orange-700/90 hover:bg-orange-600 px-3 py-2 rounded-xl border border-orange-400/60 text-xs font-bold cursor-pointer">
+                    🏪 Chợ Người Chơi
                 </button>
             </div>
         </div>
@@ -884,7 +875,6 @@
         
 
         function saveGameData() {
-            if (typeof syncMonsterDexFromOwned === 'function') syncMonsterDexFromOwned();
             try {
                 localStorage.setItem('ar_team', JSON.stringify(team));
                 localStorage.setItem('ar_farm', JSON.stringify(farm));
@@ -920,6 +910,12 @@
             
             setTimeout(() => {
                 initMap();
+                if (typeof fetchWorldBossServerState === 'function') {
+                    fetchWorldBossServerState(true);
+                }
+                if (typeof window.syncMapPlayersPresence === 'function') {
+                    window.syncMapPlayersPresence();
+                }
                 if (map) {
                     map.invalidateSize();
                     setTimeout(() => map.invalidateSize(), 300);
@@ -2326,6 +2322,7 @@
             );
         }
 
+        
 
         function openMarketMenu() {
             const modal = document.getElementById('modal-container');
@@ -2336,9 +2333,17 @@
                 <h3 class="font-bold text-lg text-amber-300">🛒 Chợ Đen & Vật Phẩm</h3>
                 <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
             </div>
-            <div class="flex items-center justify-between text-xs font-bold mb-3 bg-zinc-950/70 px-3 py-2 rounded-xl border border-white/10">
+            <div class="flex items-center justify-between text-xs font-bold mb-2 bg-zinc-950/70 px-3 py-2 rounded-xl border border-white/10">
                 <span class="text-yellow-400">💰 Vàng: ${playerCoins} 🪙</span>
                 <span class="text-cyan-300">💎 Kim Cương: ${playerDiamonds} 💎</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5 mb-3">
+                <button onclick="openP2pMarketModal()" class="bg-gradient-to-r from-orange-600 to-amber-600 hover:brightness-110 py-2 px-2.5 rounded-xl text-[11px] font-black text-white cursor-pointer shadow">
+                    🏪 Chợ Người Chơi
+                </button>
+                <button onclick="openGearShardChest()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 py-2 px-2.5 rounded-xl text-[11px] font-black text-white cursor-pointer shadow">
+                    🧰 Mở Rương Mảnh (${inventory.gearShardChest || 0})
+                </button>
             </div>
             <div class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
                 <div class="bg-cyan-950/50 p-2.5 rounded-xl flex items-center justify-between border border-cyan-400/50">
@@ -2377,6 +2382,29 @@
                 <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🪨 Đá Thổ [Kho: ${inventory.stoneTho}]</div><button onclick="buyShopItem('stoneTho', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
             </div>`;
         }
+
+        window.openGearShardChest = function() {
+            const count = Number(inventory.gearShardChest) || 0;
+            if (count <= 0) {
+                alert('⚠️ Bạn chưa có 🧰 Rương Mảnh Trang Bị nào! Hãy tham gia đánh Boss Thế Giới 3 Miền để nhận rương.');
+                return;
+            }
+            inventory.gearShardChest = count - 1;
+            const stoneKeys = ['stoneKim', 'stoneMoc', 'stoneThuy', 'stoneHoa', 'stoneTho'];
+            const stoneNames = { stoneKim: 'Đá Kim', stoneMoc: 'Đá Mộc', stoneThuy: 'Đá Thủy', stoneHoa: 'Đá Hỏa', stoneTho: 'Đá Thổ' };
+            const pickedKey = stoneKeys[Math.floor(Math.random() * stoneKeys.length)];
+            const stoneQty = 2 + Math.floor(Math.random() * 3);
+            const bonusGold = 300 + Math.floor(Math.random() * 401);
+
+            inventory[pickedKey] = (inventory[pickedKey] || 0) + stoneQty;
+            playerCoins += bonusGold;
+            localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+            saveGameData();
+            if (typeof silentCloudSync === 'function') silentCloudSync(true);
+
+            alert(`🧰 MỞ RƯƠNG MẢNH TRANG BỊ THÀNH CÔNG!\n\n• +${stoneQty} viên ${stoneNames[pickedKey]}\n• +${bonusGold}🪙 Vàng cường hóa bảo vật!`);
+            openMarketMenu();
+        };
 
         function exchangeDiamondForGold(diamondCost, goldGain) {
             if (playerDiamonds < diamondCost) {
@@ -2731,7 +2759,7 @@
             saveGameData(); openPetDetail(index);
         }
 
-
+        
         // ==========================================
         // KHỞI TẠO BẢN ĐỒ & THÚ ĐI DẠO PNG ĐỘNG
         // ==========================================
@@ -3612,6 +3640,7 @@
         }
 
 
+        
 
         const fallenPets = team.filter(p => p.hp <= 0 && !p.inHospital);
         if (fallenPets.length > 0) {
@@ -3638,9 +3667,56 @@
             html += `</div>`; content.innerHTML = html;
         }
 
-        function claimQuest(idx) {
+        async function claimQuest(idx) {
             let q = dailyQuests[idx];
-            if (q.claimed || q.progress < q.target) return;
+            if (!q || q.claimed || q.progress < q.target) return;
+
+            const username = localStorage.getItem('ar_cloud_user');
+            const pin = localStorage.getItem('ar_cloud_pin');
+            const sessionToken = localStorage.getItem('ar_cloud_session');
+
+            if (username && pin) {
+                try {
+                    const res = await fetch('/api/auth', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'claim_quest',
+                            username,
+                            pin,
+                            sessionToken,
+                            questId: q.id
+                        })
+                    });
+                    const data = await res.json();
+                    if (!data.ok) {
+                        if (data.code === 'SESSION_EXPIRED' && typeof handleSessionExpired === 'function') {
+                            handleSessionExpired();
+                            return;
+                        }
+                        if (res.status === 409) {
+                            q.claimed = true;
+                            localStorage.setItem('ar_quests', JSON.stringify(dailyQuests));
+                            openQuestMenu();
+                        }
+                        alert('❌ ' + (data.error || 'Không thể nhận thưởng nhiệm vụ!'));
+                        return;
+                    }
+                    q.claimed = true;
+                    playerCoins = Number(data.totalCoins ?? (playerCoins + (data.coinsAdded || q.reward)));
+                    playerDiamonds = Number(data.totalDiamonds ?? (playerDiamonds + (data.diamondsAdded || 5)));
+                    localStorage.setItem('ar_quests', JSON.stringify(dailyQuests));
+                    saveGameData();
+                    if (typeof lastSyncedSnapshotStr !== 'undefined') {
+                        lastSyncedSnapshotStr = JSON.stringify(packCurrentGameState());
+                    }
+                    alert(`🎉 Đã xác thực & nhận +${data.coinsAdded || q.reward}🪙 và +${data.diamondsAdded || 5}💎!`);
+                    openQuestMenu();
+                    return;
+                } catch (e) {}
+            }
+
+            // Chế độ chơi thử offline (chưa đăng nhập Cloud)
             q.claimed = true;
             playerCoins += q.reward;
             playerDiamonds += 5;
@@ -3658,6 +3734,7 @@
             }
         }
 
+       
 
         function initDualStaminaSystem() {
             setInterval(() => {
@@ -3696,8 +3773,41 @@
             saveGameData();
         }
 
+        function isIosDevice() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
+        function isStandalonePwa() {
+            return window.navigator.standalone === true ||
+                   window.matchMedia('(display-mode: standalone)').matches ||
+                   window.matchMedia('(display-mode: fullscreen)').matches;
+        }
+
+        function canUseFullscreenApi() {
+            const elem = document.documentElement;
+            return !!(
+                (document.fullscreenEnabled && elem.requestFullscreen) ||
+                (document.webkitFullscreenEnabled && elem.webkitRequestFullscreen) ||
+                elem.msRequestFullscreen
+            );
+        }
+
         function enterGameFullscreen() {
             const elem = document.documentElement;
+            if (isIosDevice() && !canUseFullscreenApi()) {
+                // iPhone Safari không hỗ trợ requestFullscreen() trên trang web thường:
+                // Thử ẩn thanh địa chỉ bằng scroll nhẹ & hiển thị hướng dẫn Thêm vào MH chính
+                window.scrollTo(0, 1);
+                const iosGuide = document.getElementById('ios-pwa-guide');
+                if (iosGuide && iosGuide.classList.contains('hidden')) {
+                    iosGuide.classList.remove('hidden');
+                    return;
+                }
+                dismissFullscreenPrompt();
+                return;
+            }
+
             if (elem.requestFullscreen) {
                 elem.requestFullscreen().catch(() => {});
             } else if (elem.webkitRequestFullscreen) {
@@ -3711,6 +3821,7 @@
         function dismissFullscreenPrompt() {
             const overlay = document.getElementById('fullscreen-prompt-overlay');
             if (overlay) overlay.classList.add('hidden');
+            window.scrollTo(0, 1);
             setTimeout(() => {
                 centerPanorama('home-scroller');
                 if (typeof map !== 'undefined' && map) map.invalidateSize();
@@ -3718,9 +3829,22 @@
         }
 
         function checkFullscreenOnStart() {
-            const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || (window.innerHeight >= screen.height - 5);
+            const isFullscreen = isStandalonePwa() ||
+                                 !!document.fullscreenElement ||
+                                 !!document.webkitFullscreenElement ||
+                                 (window.innerHeight >= screen.height - 5);
             const overlay = document.getElementById('fullscreen-prompt-overlay');
             if (!isFullscreen && overlay) {
+                if (isIosDevice() && !canUseFullscreenApi()) {
+                    const desc = document.getElementById('fullscreen-prompt-desc');
+                    const iosGuide = document.getElementById('ios-pwa-guide');
+                    const btn = document.getElementById('btn-enter-fullscreen');
+                    if (desc) {
+                        desc.innerHTML = 'Trình duyệt <span class="text-amber-300 font-bold">iOS Safari</span> khóa chức năng tự phóng to trang web, bạn hãy thêm game ra Màn hình chính để chơi Full 100% nhé!';
+                    }
+                    if (iosGuide) iosGuide.classList.remove('hidden');
+                    if (btn) btn.innerText = '✅ Đã Hiểu & Vào Game';
+                }
                 overlay.classList.remove('hidden');
             }
         }
@@ -3729,12 +3853,14 @@
 
         const _origEnterFullscreen = enterGameFullscreen;
         enterGameFullscreen = function() {
-            wantKeepFullscreen = true;
+            if (canUseFullscreenApi()) {
+                wantKeepFullscreen = true;
+            }
             _origEnterFullscreen();
         };
 
         document.addEventListener('click', () => {
-            if (wantKeepFullscreen && !document.fullscreenElement && !document.webkitFullscreenElement) {
+            if (wantKeepFullscreen && canUseFullscreenApi() && !document.fullscreenElement && !document.webkitFullscreenElement) {
                 const elem = document.documentElement;
                 if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
                 else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
@@ -3834,39 +3960,10 @@
             if (typeof actionFn === 'function') actionFn();
         }
 
-        function toggleHomeMoreTabs(forceState) {
-            const dropdown = document.getElementById('home-nav-dropdown');
-            const toggleBtn = document.getElementById('home-nav-toggle');
-            if (!dropdown || !toggleBtn) return;
-
-            const shouldOpen = typeof forceState === 'boolean'
-                ? forceState
-                : dropdown.classList.contains('hidden');
-
-            if (shouldOpen) {
-                dropdown.classList.remove('hidden');
-                dropdown.classList.add('flex');
-                toggleBtn.childNodes[0].nodeValue = '▲';
-            } else {
-                dropdown.classList.add('hidden');
-                dropdown.classList.remove('flex');
-                toggleBtn.childNodes[0].nodeValue = '▼';
-            }
-        }
-
-        function selectHomeDropdownTab(actionFn) {
-            toggleHomeMoreTabs(false);
-            if (typeof actionFn === 'function') actionFn();
-        }
-
         document.addEventListener('click', (e) => {
             const navWrap = document.getElementById('map-top-nav');
             if (navWrap && !navWrap.contains(e.target)) {
                 toggleMapMoreTabs(false);
-            }
-            const homeNavWrap = document.getElementById('home-top-nav');
-            if (homeNavWrap && !homeNavWrap.contains(e.target)) {
-                toggleHomeMoreTabs(false);
             }
         });
 
@@ -4044,22 +4141,136 @@
                 let sessionCheckTimer = null;
                 let selectedGender = localStorage.getItem("ar_cloud_gender") || "Nam";
             
+                function resetLocalGameStateToDefault() {
+                    const GAME_DATA_KEYS = [
+                        'ar_team', 'ar_farm', 'ar_eggs', 'ar_coins', 'ar_diamonds',
+                        'ar_max_pet_capacity', 'ar_tower_floor', 'ar_boss_level', 'ar_steps',
+                        'ar_catch_stamina', 'ar_catch_stamina_time', 'ar_scan_stamina', 'ar_scan_stamina_time',
+                        'ar_training_poles', 'ar_resting_pets', 'ar_inventory', 'ar_quests', 'ar_last_pm_id'
+                    ];
+                    GAME_DATA_KEYS.forEach(k => localStorage.removeItem(k));
+
+                    team = [];
+                    farm = [];
+                    eggs = [];
+                    restingPets = [];
+                    trainingPoles = [null, null, null, null];
+                    playerCoins = 1500;
+                    playerDiamonds = 50;
+                    maxPetCapacity = 10;
+                    towerFloor = 1;
+                    bossLevel = 1;
+                    totalSteps = 0;
+                    catchStamina = 15;
+                    lastCatchStaminaTime = Date.now();
+                    scanStamina = 5;
+                    lastScanStaminaTime = Date.now();
+                    inventory = {
+                        food: 15, toy: 15, trainer: 10,
+                        stoneKim: 5, stoneMoc: 5, stoneThuy: 5, stoneHoa: 5, stoneTho: 5
+                    };
+                    dailyQuests = [
+                        { id: 1, title: 'Bắt 3 linh thú bất kỳ', target: 3, progress: 0, reward: 200, claimed: false },
+                        { id: 2, title: 'Thắng 2 trận đấu trường', target: 2, progress: 0, reward: 300, claimed: false },
+                        { id: 3, title: 'Cho linh thú ăn 2 lần', target: 2, progress: 0, reward: 150, claimed: false }
+                    ];
+
+                    localStorage.setItem('ar_max_pet_capacity', maxPetCapacity);
+                    localStorage.setItem('ar_tower_floor', towerFloor);
+                    localStorage.setItem('ar_boss_level', bossLevel);
+                    localStorage.setItem('ar_inventory', JSON.stringify(inventory));
+                    localStorage.setItem('ar_quests', JSON.stringify(dailyQuests));
+
+                    saveGameData();
+                    updateTeamCount();
+                    if (typeof renderFarmVisualPets === 'function') renderFarmVisualPets();
+                    if (window.updateHunterGpsAppearance) window.updateHunterGpsAppearance();
+                }
+
                 function handleSessionExpired() {
                     if (sessionCheckTimer) {
                         clearInterval(sessionCheckTimer);
                         sessionCheckTimer = null;
                     }
-                    if (chatPollTimer) {
-                        clearInterval(chatPollTimer);
-                        chatPollTimer = null;
+                    if (autoCloudSyncTimer) {
+                        clearInterval(autoCloudSyncTimer);
+                        autoCloudSyncTimer = null;
                     }
                     localStorage.removeItem("ar_cloud_user");
                     localStorage.removeItem("ar_cloud_pin");
                     localStorage.removeItem("ar_cloud_gender");
                     localStorage.removeItem("ar_cloud_session");
-            
-                    alert("⚠️ Tài khoản của bạn vừa được đăng nhập trên một thiết bị khác!\nThiết bị này sẽ tự động đăng xuất để bảo vệ dữ liệu.");
+
+                    // Xóa sạch dữ liệu tài khoản cũ trên thiết bị bị đá văng
+                    resetLocalGameStateToDefault();
+
+                    alert("⚠️ Tài khoản của bạn vừa được đăng nhập trên một thiết bị khác!\nThiết bị này đã tự động đăng xuất và xóa dữ liệu phiên cũ.");
                     openCloudAccountModal(true);
+                }
+
+                let autoCloudSyncTimer = null;
+                let lastSyncedSnapshotStr = "";
+
+                async function silentCloudSync(force = false) {
+                    const username = localStorage.getItem("ar_cloud_user");
+                    const pin = localStorage.getItem("ar_cloud_pin");
+                    const currentToken = localStorage.getItem("ar_cloud_session");
+                    if (!username || !pin || !currentToken) return;
+
+                    const stateObj = packCurrentGameState();
+                    const snapStr = JSON.stringify(stateObj);
+                    if (!force && snapStr === lastSyncedSnapshotStr) return;
+
+                    try {
+                        const res = await fetch("/api/auth", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                action: "sync",
+                                username: username,
+                                pin: pin,
+                                sessionToken: currentToken,
+                                gameData: stateObj
+                            })
+                        });
+                        const result = await res.json();
+                        if (result.code === "SESSION_EXPIRED") {
+                            handleSessionExpired();
+                            return;
+                        }
+                        if (result.ok) {
+                            lastSyncedSnapshotStr = snapStr;
+                        }
+                    } catch (e) {}
+                }
+
+                async function pullLatestCloudStateOnBoot() {
+                    const username = localStorage.getItem("ar_cloud_user");
+                    const pin = localStorage.getItem("ar_cloud_pin");
+                    const currentToken = localStorage.getItem("ar_cloud_session");
+                    if (!username || !pin || !currentToken) return;
+
+                    try {
+                        const res = await fetch("/api/auth", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                action: "pull",
+                                username: username,
+                                pin: pin,
+                                sessionToken: currentToken
+                            })
+                        });
+                        const result = await res.json();
+                        if (result.code === "SESSION_EXPIRED") {
+                            handleSessionExpired();
+                            return;
+                        }
+                        if (result.ok && result.gameData) {
+                            applyCloudGameState(result.gameData);
+                            lastSyncedSnapshotStr = JSON.stringify(packCurrentGameState());
+                        }
+                    } catch (e) {}
                 }
             
                 // Kiểm tra định kỳ phiên đăng nhập để đá văng máy cũ nếu có máy mới đăng nhập
@@ -4067,6 +4278,10 @@
                     if (sessionCheckTimer) {
                         clearInterval(sessionCheckTimer);
                         sessionCheckTimer = null;
+                    }
+                    if (autoCloudSyncTimer) {
+                        clearInterval(autoCloudSyncTimer);
+                        autoCloudSyncTimer = null;
                     }
                     if (!username) return;
             
@@ -4092,7 +4307,12 @@
                         } catch (e) {
                             // Bỏ qua lỗi mạng tạm thời
                         }
-                    }, 12000); // Kiểm tra mỗi 12 giây
+                    }, 10000); // Kiểm tra mỗi 10 giây
+
+                    // Tự động đồng bộ tiến trình lên Cloud mỗi 20 giây để dữ liệu 2 máy luôn thống nhất
+                    autoCloudSyncTimer = setInterval(() => {
+                        silentCloudSync(false);
+                    }, 20000);
                 };
             
                 window.selectAccountGender = function(gender) {
@@ -4178,7 +4398,7 @@
             
                     ${savedUser ? `
                     <button onclick="logoutCloudAccount()" class="w-full mt-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 py-2 rounded-xl font-bold text-[11px] text-red-300 cursor-pointer">
-                        🚪 Đăng Xuất / Đổi Tài Khoản Khác
+                        🚪 Đăng Xuất & Xóa Dữ Liệu Trên Máy Này
                     </button>` : ''}`;
             
                     if (savedUser) selectAccountGender(selectedGender);
@@ -4235,6 +4455,10 @@
                     if (!/^\d{8}$/.test(pin)) return alert("⚠️ Mã PIN bắt buộc phải gồm đúng 8 chữ số (0-9)!");
             
                     try {
+                        // Reset sạch dữ liệu cũ trên máy trước khi tạo tài khoản mới
+                        resetLocalGameStateToDefault();
+                        const initialGameData = packCurrentGameState();
+
                         const res = await fetch("/api/auth", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -4243,7 +4467,7 @@
                                 username: username,
                                 pin: pin,
                                 gender: selectedGender,
-                                gameData: packCurrentGameState()
+                                gameData: initialGameData
                             })
                         });
                         const result = await res.json();
@@ -4254,6 +4478,7 @@
                         localStorage.setItem("ar_cloud_gender", result.gender);
                         if (window.updateHunterGpsAppearance) window.updateHunterGpsAppearance();
                         localStorage.setItem("ar_cloud_session", result.sessionToken);
+                        lastSyncedSnapshotStr = JSON.stringify(initialGameData);
             
                         startSessionGuard(result.username);
                         closeModal();
@@ -4263,7 +4488,7 @@
                     }
                 };
             
-                // ĐĂNG NHẬP TÀI KHOẢN ĐÃ CÓ (TỰ ĐỘNG ĐÁ MÁY CŨ)
+                // ĐĂNG NHẬP TÀI KHOẢN ĐÃ CÓ (TỰ ĐỘNG ĐÁ MÁY CŨ & GHI ĐÈ SẠCH DỮ LIỆU LOCAL)
                 window.loginCloudAccount = async function() {
                     const username = document.getElementById("cloud-username-input")?.value.trim();
                     const pin = document.getElementById("cloud-pin-input")?.value.trim();
@@ -4283,7 +4508,9 @@
                         });
                         const result = await res.json();
                         if (!result.ok) return alert("❌ " + (result.error || "Sai thông tin đăng nhập!"));
-            
+
+                        // Xóa sạch dữ liệu cũ trên máy rồi nạp chuẩn 100% dữ liệu từ Cloud
+                        resetLocalGameStateToDefault();
                         applyCloudGameState(result.gameData);
             
                         localStorage.setItem("ar_cloud_user", result.username);
@@ -4291,10 +4518,14 @@
                         localStorage.setItem("ar_cloud_gender", result.gender || "Nam");
                         if (window.updateHunterGpsAppearance) window.updateHunterGpsAppearance();
                         localStorage.setItem("ar_cloud_session", result.sessionToken);
+                        lastSyncedSnapshotStr = JSON.stringify(packCurrentGameState());
             
                         startSessionGuard(result.username);
                         closeModal();
                         alert(`🎉 Chào mừng ${result.gender === 'Nữ' ? 'Nữ' : 'Nam'} Thợ Săn [${result.username}] trở lại!`);
+                        if (typeof window.checkAndClaimAdminGifts === 'function') {
+                            setTimeout(() => window.checkAndClaimAdminGifts(), 600);
+                        }
                     } catch (err) {
                         alert("❌ Lỗi đăng nhập: " + err.message);
                     }
@@ -4308,6 +4539,7 @@
                     if (!username || !pin) return openCloudAccountModal();
             
                     try {
+                        const stateObj = packCurrentGameState();
                         const res = await fetch("/api/auth", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -4316,13 +4548,14 @@
                                 username: username,
                                 pin: pin,
                                 sessionToken: currentToken,
-                                gameData: packCurrentGameState()
+                                gameData: stateObj
                             })
                         });
                         const result = await res.json();
                         if (result.code === "SESSION_EXPIRED") return handleSessionExpired();
                         if (!result.ok) return alert("❌ " + (result.error || "Lỗi đồng bộ!"));
-            
+
+                        lastSyncedSnapshotStr = JSON.stringify(stateObj);
                         alert(`☁️ Đã sao lưu toàn bộ tiến trình của [${username}] lên Cloudflare!`);
                     } catch (err) {
                         alert("❌ Lỗi lưu dữ liệu: " + err.message);
@@ -4330,16 +4563,42 @@
                 };
             
                 window.logoutCloudAccount = function() {
-                    if (!confirm("Bạn có chắc muốn đăng xuất khỏi thiết bị này? (Dữ liệu trên mây vẫn được giữ nguyên)")) return;
-                    if (sessionCheckTimer) {
-                        clearInterval(sessionCheckTimer);
-                        sessionCheckTimer = null;
+                    const doLogout = async () => {
+                        const u = localStorage.getItem("ar_cloud_user");
+                        // Lưu dữ liệu lần cuối lên Cloud trước khi dọn sạch máy
+                        await silentCloudSync(true);
+
+                        if (sessionCheckTimer) {
+                            clearInterval(sessionCheckTimer);
+                            sessionCheckTimer = null;
+                        }
+                        if (autoCloudSyncTimer) {
+                            clearInterval(autoCloudSyncTimer);
+                            autoCloudSyncTimer = null;
+                        }
+                        if (typeof window.notifyPlayerOffline === 'function' && u) {
+                            window.notifyPlayerOffline(u);
+                        }
+
+                        localStorage.removeItem("ar_cloud_user");
+                        localStorage.removeItem("ar_cloud_pin");
+                        localStorage.removeItem("ar_cloud_gender");
+                        localStorage.removeItem("ar_cloud_session");
+                        lastSyncedSnapshotStr = "";
+
+                        // Xóa toàn bộ dữ liệu thú/túi/vàng của tài khoản vừa đăng xuất khỏi máy này
+                        resetLocalGameStateToDefault();
+                        openCloudAccountModal(true);
+                    };
+
+                    if (typeof showInGameConfirm === 'function') {
+                        showInGameConfirm(
+                            "🚪 Đăng xuất khỏi thiết bị này?\n(Dữ liệu đã được lưu trên mây, bộ nhớ trên máy này sẽ được làm sạch về mặc định)",
+                            doLogout
+                        );
+                    } else {
+                        doLogout();
                     }
-                    localStorage.removeItem("ar_cloud_user");
-                    localStorage.removeItem("ar_cloud_pin");
-                    localStorage.removeItem("ar_cloud_gender");
-                    localStorage.removeItem("ar_cloud_session");
-                    openCloudAccountModal(true);
                 };
             
                 // ==========================================
@@ -4509,6 +4768,7 @@
                     if (!existingUser) {
                         setTimeout(() => openCloudAccountModal(true), 500);
                     } else {
+                        pullLatestCloudStateOnBoot();
                         startSessionGuard(existingUser);
                     }
                     initFloatingWorldChat();
@@ -4569,17 +4829,18 @@
             </div>`;
         }
 
+        let nearbyScanRadius = parseInt(localStorage.getItem('ar_nearby_radius') || '1000', 10);
+
         async function syncMapPlayersPresence() {
             if (document.hidden || typeof map === 'undefined' || !map) return;
             const myUser = localStorage.getItem('ar_cloud_user');
-            if (!myUser) return; // Chỉ tài khoản đã đăng ký/đăng nhập mới hiển thị & nhìn thấy người khác
+            if (!myUser) return;
 
             const myGender = localStorage.getItem('ar_cloud_gender') === 'Nữ' ? 'Nữ' : 'Nam';
             const leadPet = (typeof team !== 'undefined' && team[0])
                 ? `${team[0].rarity?.badge || ''} ${team[0].name} (Lv.${Math.floor(team[0].level || 1)})`
                 : 'Chưa xuất chiến thú';
 
-            // Lấy hướng & trạng thái hiện tại của nhân vật bản thân từ DOM
             const selfSprite = document.getElementById('gps-hunter-sprite');
             let myDir = 'down';
             let myState = 'idle';
@@ -4601,19 +4862,26 @@
                         lng: userLng,
                         dir: myDir,
                         state: myState,
-                        leadPet: leadPet
+                        leadPet: leadPet,
+                        radius: nearbyScanRadius
                     })
                 });
                 const data = await res.json();
                 if (!data.ok) return;
 
-                const seenUsers = new Set();
-                (data.players || []).forEach(p => {
-                    const distMeters = map.distance([userLat, userLng], [p.lat, p.lng]);
-                    if (distMeters > 200) return; // Bỏ qua nếu cách xa hơn 200m
+                if (window.playerRadarCircle && typeof window.playerRadarCircle.setRadius === 'function') {
+                    window.playerRadarCircle.setRadius(nearbyScanRadius);
+                }
 
-                    seenUsers.add(p.username);
-                    otherPlayersCache[p.username] = p;
+                const seenUsers = new Set();
+                const listPlayers = data.players || [];
+                listPlayers.forEach(p => {
+                    const distMeters = typeof p.distance === 'number'
+                        ? p.distance
+                        : Math.round(map.distance([userLat, userLng], [p.lat, p.lng]));
+                    if (distMeters > nearbyScanRadius) return;
+
+                    p.distance = distMeters;
                     seenUsers.add(p.username);
                     otherPlayersCache[p.username] = p;
 
@@ -4637,7 +4905,6 @@
                     }
                 });
 
-                // Xóa marker của người chơi đã thoát hoặc mất tín hiệu quá 45s
                 Object.keys(otherPlayerMarkers).forEach(uname => {
                     if (!seenUsers.has(uname)) {
                         map.removeLayer(otherPlayerMarkers[uname]);
@@ -4645,8 +4912,87 @@
                         delete otherPlayersCache[uname];
                     }
                 });
+
+                const nbBadge = document.getElementById('nearby-hunters-badge');
+                if (nbBadge) nbBadge.innerText = String(seenUsers.size);
+
+                if (document.getElementById('nearby-hunters-list')) {
+                    renderNearbyHuntersModalBody();
+                }
             } catch (e) {}
         }
+        window.syncMapPlayersPresence = syncMapPlayersPresence;
+
+        window.setNearbyScanRadius = function(rad) {
+            nearbyScanRadius = Number(rad) || 1000;
+            localStorage.setItem('ar_nearby_radius', String(nearbyScanRadius));
+            syncMapPlayersPresence();
+            renderNearbyHuntersModalBody();
+        };
+
+        function renderNearbyHuntersModalBody() {
+            const listEl = document.getElementById('nearby-hunters-list');
+            if (!listEl) return;
+            const players = Object.values(otherPlayersCache).sort((a, b) => (a.distance || 0) - (b.distance || 0));
+
+            if (players.length === 0) {
+                listEl.innerHTML = `<div class="text-center text-zinc-400 text-xs py-8 bg-zinc-950/60 rounded-xl border border-zinc-800">
+                    Chưa phát hiện Thợ Săn nào trong bán kính <b>${nearbyScanRadius}m</b>.<br>
+                    <span class="text-[10px] text-zinc-500">Bạn có thể mở rộng bán kính quét lên 3000m ở phía trên!</span>
+                </div>`;
+                return;
+            }
+
+            listEl.innerHTML = players.map(p => {
+                const safeName = p.username.replace(/'/g, "\'");
+                const gIcon = p.gender === 'Nữ' ? '👧' : '👦';
+                const isFriend = window._myFriendsSet && window._myFriendsSet.has(p.username);
+                return `
+                <div class="bg-zinc-800/90 border border-cyan-500/40 p-2.5 rounded-xl flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <div class="text-xs font-extrabold text-white truncate">${gIcon} ${p.username} <span class="text-emerald-400 text-[10px]">• ~${p.distance || 0}m</span></div>
+                        <div class="text-[10px] text-yellow-300 truncate">${p.lead_pet || 'Tân Thủ'}</div>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        ${!isFriend ? `<button onclick="sendFriendRequest('${safeName}')" class="bg-amber-600 hover:bg-amber-500 px-2 py-1 rounded-lg text-[10px] font-bold text-white cursor-pointer">➕</button>` : ''}
+                        <button onclick="openPrivateChatWith('${safeName}')" class="bg-sky-600 hover:bg-sky-500 px-2 py-1 rounded-lg text-[10px] font-bold text-white cursor-pointer">💬</button>
+                        <button onclick="openDeathmatchChallengeModal('${safeName}')" class="bg-red-700 hover:bg-red-600 px-2 py-1 rounded-lg text-[10px] font-black text-white cursor-pointer">⚔️</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.openNearbyHuntersModal = function() {
+            const myUser = localStorage.getItem('ar_cloud_user');
+            if (!myUser) {
+                alert('⚠️ Bạn cần đăng nhập Tài Khoản Mây (☁️ Nick) để quét Thợ Săn xung quanh!');
+                return;
+            }
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            const radii = [500, 1000, 3000];
+            const radBtns = radii.map(r => `
+                <button onclick="setNearbyScanRadius(${r})" class="flex-1 py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer ${nearbyScanRadius === r ? 'bg-cyan-500 text-black' : 'bg-zinc-900 text-zinc-400'}">
+                    ${r >= 1000 ? (r / 1000) + ' km' : r + 'm'}
+                </button>
+            `).join('');
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-cyan-500/40">
+                <h3 class="font-black text-sm text-cyan-300">🧭 THỢ SĂN QUANH ĐÂY</h3>
+                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+            </div>
+            <div class="mb-2.5">
+                <div class="text-[10px] text-zinc-400 font-bold mb-1">Bán kính quét radar GPS:</div>
+                <div class="flex gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">${radBtns}</div>
+            </div>
+            <div id="nearby-hunters-list" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>`;
+
+            renderNearbyHuntersModalBody();
+            syncMapPlayersPresence();
+        };
 
         // Mở bảng tương tác khi chạm vào người chơi khác trên bản đồ
         window.openOtherPlayerCard = function(targetUsername) {
@@ -5321,11 +5667,11 @@
             <button onclick="closeModal()" class="w-full bg-purple-600 hover:bg-purple-500 py-2.5 rounded-xl font-extrabold text-xs text-white cursor-pointer shadow-lg">Đóng</button>`;
         };
     </script>
-    <script src="dex.js"></script>
-    <script src="guild.js"></script>
-    <script src="auction.js"></script>
-    <script src="./admin.js"></script>
-    <script src="arena.js"></script>
-    <script src="pvp.js"></script>
+    <script src="dex.js?v=20261120"></script>
+    <script src="guild.js?v=20261120"></script>
+    <script src="auction.js?v=20261120"></script>
+    <script src="./admin.js?v=20261120"></script>
+    <script src="arena.js?v=20261120"></script>
+    <script src="pvp.js?v=20261120"></script>
 </body>
 </html>
