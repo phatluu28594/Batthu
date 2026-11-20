@@ -385,6 +385,7 @@
         <div id="home-scroller" class="panorama-scroller no-scrollbar">
             <div class="panorama-canvas">
                 <img src="./background.webp" alt="Sảnh Chính" class="panorama-img" onload="centerPanorama('home-scroller')">
+                <div id="home-roaming-pets-layer" class="absolute inset-0 pointer-events-none z-10 overflow-hidden"></div>
 
                 <div onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 46%; left: 9%; width: 25%; height: 22%;">
                     <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ</div>
@@ -3722,6 +3723,9 @@
                 let countEl = document.getElementById(id);
                 if (countEl) countEl.innerText = team.length;
             });
+            if (typeof window.syncHomeRoamingPets === 'function') {
+                window.syncHomeRoamingPets();
+            }
         }
 
         function openQuestMenu() {
@@ -4653,7 +4657,6 @@
                         if (!result.ok) return alert("❌ " + (result.error || "Lỗi đồng bộ!"));
 
                         lastSyncedSnapshotStr = JSON.stringify(stateObj);
-                        alert(`☁️ Đã sao lưu toàn bộ tiến trình của [${username}] lên Cloudflare!`);
                     } catch (err) {
                         alert("❌ Lỗi lưu dữ liệu: " + err.message);
                     }
@@ -5829,5 +5832,180 @@
     <script src="./admin.js?v=20261120b"></script>
     <script src="arena.js?v=20261120b"></script>
     <script src="pvp.js?v=20261120b"></script>
+    <script>
+    // ============================================================================
+    // LINH THÚ TRONG ĐỘI HÌNH ĐI DẠO TRONG NHÀ CHÍNH (HOME) VỚI PHỐI CẢNH XA/GẦN
+    // - Dựa trực tiếp vào mảng `team` (0..3 linh thú trong túi đội hình)
+    // - Phối cảnh 3D thực tế: Đi lại gần cửa đi săn (x ≈ 50%, y ≈ 48% - 54%) sẽ thu nhỏ lại;
+    //   đi xuống phía gần màn hình (y ≈ 72% - 88%) sẽ phóng to ra, z-index tự sắp xếp theo chiều sâu!
+    // ============================================================================
+    (function initHomeRoamingPetsEngine() {
+        const HUNT_DOOR = { x: 50, y: 49 }; // Tâm cửa "🚪 Đi săn thú" (left:40%..60%, top:26%..50%)
+        let homePetActors = [];
+        let homeRoamAnimId = null;
+        let lastTeamSignature = '';
+
+        function computePerspectiveScale(xPct, yPct) {
+            // 1. Theo trục chiều sâu Y (từ sàn gần cửa y=50% xuống tiền cảnh gần camera y=88%)
+            const depthRatio = Math.max(0, Math.min(1, (yPct - 49) / (87 - 49)));
+            const depthScale = 0.44 + depthRatio * 0.78; // 0.44 ở sát cửa -> 1.22 ở tiền cảnh gần nhất
+
+            // 2. Khoảng cách trực tiếp tới cửa đi săn (càng sát cửa càng nhỏ thêm một chút để tạo hút chiều sâu)
+            const distToDoor = Math.hypot((xPct - HUNT_DOOR.x) * 0.75, yPct - HUNT_DOOR.y);
+            const doorPull = Math.max(0, Math.min(1, distToDoor / 36));
+            const finalScale = depthScale * (0.82 + 0.18 * doorPull);
+
+            return Math.max(0.38, Math.min(1.28, finalScale));
+        }
+
+        function getHomePetSignature() {
+            if (!Array.isArray(team) || team.length === 0) return '';
+            return team.map((p, i) => `${p.id || i}:${p.name}:${Math.floor(p.level || 1)}:${p.hasAura ? 1 : 0}`).join('|');
+        }
+
+        window.syncHomeRoamingPets = function (forceRebuild = false) {
+            const layer = document.getElementById('home-roaming-pets-layer');
+            if (!layer) return;
+
+            const squad = Array.isArray(team) ? team.slice(0, 3) : [];
+            const sig = getHomePetSignature();
+
+            if (!forceRebuild && sig === lastTeamSignature && homePetActors.length === squad.length) {
+                return;
+            }
+            lastTeamSignature = sig;
+            layer.innerHTML = '';
+            homePetActors = [];
+
+            if (squad.length === 0) return;
+
+            const startSpots = [
+                { x: 47, y: 66 },
+                { x: 58, y: 74 },
+                { x: 38, y: 76 }
+            ];
+
+            squad.forEach((pet, idx) => {
+                const spot = startSpots[idx] || { x: 48 + idx * 6, y: 70 };
+                const baseName = String(pet.name || '').replace(/^F1_/i, '');
+                const cfg = (typeof spriteConfigs !== 'undefined' && spriteConfigs[baseName]) ? spriteConfigs[baseName] : null;
+                const spriteHtml = typeof getPetSpriteHtml === 'function'
+                    ? getPetSpriteHtml(pet, 'walk', 78)
+                    : `<span class="pet-walk-anim" style="font-size:52px;">${pet.emoji || '🐾'}</span>`;
+
+                const auraRingHtml = pet.hasAura
+                    ? `<div class="absolute -bottom-1 w-16 h-5 rounded-full border-2 border-fuchsia-400/90 bg-gradient-to-r from-amber-400/30 via-pink-500/30 to-cyan-400/30 blur-[1px] animate-pulse pointer-events-none"></div>`
+                    : '';
+
+                const actorEl = document.createElement('div');
+                actorEl.className = 'absolute flex flex-col items-center pointer-events-auto cursor-pointer select-none';
+                actorEl.style.left = `${spot.x}%`;
+                actorEl.style.top = `${spot.y}%`;
+                actorEl.style.transformOrigin = 'center bottom';
+                actorEl.title = `${pet.name} (Lv.${Math.floor(pet.level || 1)}) — Chạm để xem hồ sơ`;
+                actorEl.onclick = (e) => {
+                    e.stopPropagation();
+                    if (typeof openPetDetail === 'function') openPetDetail(idx);
+                };
+
+                actorEl.innerHTML = `
+                    <div class="bg-black/75 backdrop-blur-xs px-2 py-0.5 rounded-full border border-amber-300/60 text-[9px] font-extrabold text-yellow-200 whitespace-nowrap shadow mb-0.5">
+                        ${pet.rarity?.badge || ''} ${pet.name} <span class="text-cyan-300">Lv.${Math.floor(pet.level || 1)}</span>
+                    </div>
+                    <div class="relative flex items-center justify-center">
+                        ${auraRingHtml}
+                        <div class="home-pet-flip-box transition-transform duration-300">${spriteHtml}</div>
+                        <div class="absolute -bottom-1 w-14 h-3.5 rounded-full bg-black/55 blur-[2px] -z-10"></div>
+                    </div>
+                `;
+
+                layer.appendChild(actorEl);
+
+                homePetActors.push({
+                    el: actorEl,
+                    flipBox: actorEl.querySelector('.home-pet-flip-box'),
+                    facingDefault: cfg?.facing || 'right',
+                    x: spot.x,
+                    y: spot.y,
+                    tx: spot.x,
+                    ty: spot.y,
+                    speed: 5.5 + idx * 0.9, // % tọa độ / giây
+                    waitTimer: 0.4 + idx * 0.7
+                });
+            });
+        };
+
+        function pickNextHomeTarget(actor) {
+            // 35% cơ hội tiến lại gần khu vực cửa đi săn (xa -> nhỏ lại), 65% đi dạo tiền cảnh & hai bên phòng (gần -> to ra)
+            if (Math.random() < 0.35) {
+                actor.tx = 42 + Math.random() * 16; // 42% -> 58% quanh cửa đi săn
+                actor.ty = 50 + Math.random() * 9;  // 50% -> 59% sát cửa -> thu nhỏ tự nhiên
+            } else {
+                actor.tx = 22 + Math.random() * 56; // 22% -> 78% khắp nền nhà
+                actor.ty = 63 + Math.random() * 21; // 63% -> 84% tiền cảnh -> phóng to tự nhiên
+            }
+        }
+
+        let lastStepTime = performance.now();
+        function stepHomeRoamingPets(now) {
+            const dt = Math.min((now - lastStepTime) / 1000, 0.1);
+            lastStepTime = now;
+
+            const homeScreen = document.getElementById('home-screen');
+            if (homeScreen && !homeScreen.classList.contains('hidden')) {
+                if (homePetActors.length !== (Array.isArray(team) ? Math.min(3, team.length) : 0)) {
+                    window.syncHomeRoamingPets();
+                }
+
+                homePetActors.forEach(actor => {
+                    if (actor.waitTimer > 0) {
+                        actor.waitTimer -= dt;
+                        if (actor.waitTimer <= 0) {
+                            pickNextHomeTarget(actor);
+                        }
+                    } else {
+                        const dx = actor.tx - actor.x;
+                        const dy = actor.ty - actor.y;
+                        const dist = Math.hypot(dx, dy);
+
+                        if (dist < 1.2) {
+                            actor.waitTimer = 1.2 + Math.random() * 2.2;
+                        } else {
+                            // Tốc độ di chuyển cũng tỉ lệ thuận với phối cảnh (ở xa bước chậm hơn, ở gần bước nhanh hơn)
+                            const pScale = computePerspectiveScale(actor.x, actor.y);
+                            const effSpeed = actor.speed * (0.65 + pScale * 0.45);
+                            actor.x += (dx / dist) * effSpeed * dt;
+                            actor.y += (dy / dist) * effSpeed * dt;
+
+                            if (actor.flipBox && Math.abs(dx) > 0.15) {
+                                const movingLeft = dx < 0;
+                                const shouldFlip = movingLeft
+                                    ? (actor.facingDefault !== 'left')
+                                    : (actor.facingDefault === 'left');
+                                actor.flipBox.style.transform = shouldFlip ? 'scaleX(-1)' : 'scaleX(1)';
+                            }
+                        }
+                    }
+
+                    const scale = computePerspectiveScale(actor.x, actor.y);
+                    actor.el.style.left = `${actor.x.toFixed(2)}%`;
+                    actor.el.style.top = `${actor.y.toFixed(2)}%`;
+                    actor.el.style.transform = `translate(-50%, -100%) scale(${scale.toFixed(3)})`;
+                    // Thú ở gần màn hình hơn (y lớn hơn) tự động đè lớp lên thú ở xa gần cửa
+                    actor.el.style.zIndex = String(10 + Math.round(actor.y));
+                });
+            }
+
+            homeRoamAnimId = requestAnimationFrame(stepHomeRoamingPets);
+        }
+
+        window.addEventListener('load', () => {
+            window.syncHomeRoamingPets(true);
+            if (homeRoamAnimId) cancelAnimationFrame(homeRoamAnimId);
+            lastStepTime = performance.now();
+            homeRoamAnimId = requestAnimationFrame(stepHomeRoamingPets);
+        });
+    })();
+    </script>
 </body>
 </html>
