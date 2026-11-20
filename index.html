@@ -353,6 +353,9 @@
 
                 <!-- Menu xổ xuống gọn gàng trên mọi màn hình -->
                 <div id="home-nav-dropdown" class="hidden absolute top-10 right-0 z-50 flex-col gap-1.5 min-w-[175px] bg-zinc-900/95 backdrop-blur-md p-2 rounded-2xl border border-amber-400/40 shadow-2xl">
+                    <button onclick="selectHomeDropdownTab(() => openHomeStorageBagModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-300/60 text-xs font-extrabold cursor-pointer">
+                        🎒 Túi Đồ Nhà (5x10)
+                    </button>
                     <button onclick="selectHomeDropdownTab(() => openQuestMenu())" class="w-full text-left bg-yellow-600/90 hover:bg-yellow-500 px-3 py-2 rounded-xl border border-yellow-300/60 text-xs font-bold cursor-pointer">
                         📜 Nhiệm Vụ Ngày
                     </button>
@@ -401,6 +404,10 @@
 
                 <div onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 58%; left: 75%; width: 19%; height: 18%;">
                     <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi bệnh viện</div>
+                </div>
+
+                <div onclick="openHomeStorageBagModal()" class="hotspot flex flex-col items-center justify-center" style="top: 63%; left: 26%; width: 18%; height: 18%;">
+                    <div class="home-label" style="border-color: #38bdf8; color: #bae6fd;">🎒 Rương Túi Đồ</div>
                 </div>
             </div>
         </div>
@@ -461,8 +468,11 @@
             <!-- Menu xổ xuống khi bấm mũi tên ▼ -->
             <div id="map-nav-dropdown" class="hidden absolute top-11 right-0 z-50 flex-col gap-1.5 min-w-[165px] bg-zinc-900/95 backdrop-blur-md p-2 rounded-2xl border border-sky-400/40 shadow-2xl">
                 <button onclick="selectMapDropdownTab(() => openTeamMenu())" class="w-full text-left bg-zinc-800 hover:bg-zinc-700 px-3 py-2 rounded-xl border border-white/15 text-xs font-bold cursor-pointer flex items-center justify-between">
-                    <span>🎒 Túi / Đội hình</span>
+                    <span>🐾 Đội Hình Xuất Chiến</span>
                     <span class="text-amber-300">(<span id="team-count">0</span>/3)</span>
+                </button>
+                <button onclick="selectMapDropdownTab(() => openHomeStorageBagModal())" class="w-full text-left bg-sky-800/90 hover:bg-sky-700 px-3 py-2 rounded-xl border border-sky-400/60 text-xs font-extrabold cursor-pointer">
+                    🎒 Túi Chứa Đồ (5x10)
                 </button>
                 <button onclick="selectMapDropdownTab(() => openMarketMenu())" class="w-full text-left bg-amber-600/90 hover:bg-amber-500 px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold cursor-pointer">
                     🛒 Chợ
@@ -930,6 +940,7 @@
                 localStorage.setItem('ar_scan_stamina_time', lastScanStaminaTime);
                 localStorage.setItem('ar_training_poles', JSON.stringify(trainingPoles));
                 localStorage.setItem('ar_resting_pets', JSON.stringify(restingPets));
+                localStorage.setItem('ar_inventory', JSON.stringify(inventory));
             } catch(e){}
 
             // Cập nhật đồng bộ tất cả vị trí hiển thị ở cả Nhà Chính và Bản Đồ GPS
@@ -1004,6 +1015,10 @@
 
         function closeModal() { 
             let modal = document.getElementById('modal-container');
+            let content = document.getElementById('modal-content');
+            if (content) {
+                content.className = 'bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-5 flex flex-col max-h-[85vh] overflow-y-auto relative';
+            }
             if (modal) modal.classList.add('hidden'); 
         }
 
@@ -4638,7 +4653,7 @@
                         if (!result.ok) return alert("❌ " + (result.error || "Lỗi đồng bộ!"));
 
                         lastSyncedSnapshotStr = JSON.stringify(stateObj);
-                        
+                        alert(`☁️ Đã sao lưu toàn bộ tiến trình của [${username}] lên Cloudflare!`);
                     } catch (err) {
                         alert("❌ Lỗi lưu dữ liệu: " + err.message);
                     }
@@ -5804,6 +5819,7 @@
         setTimeout(runUnifiedHeartbeat, 4000);
     })();
     </script>
+    <script src="bag.js?v=20261120c"></script>
     <script src="dex.js?v=20261120b"></script>
     <script src="guild.js?v=20261120b"></script>
     <script src="auction.js?v=20261120b"></script>

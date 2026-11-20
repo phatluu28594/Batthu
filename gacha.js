@@ -289,61 +289,43 @@
             if (typeof inventory !== 'undefined') inventory.food = (inventory.food || 0) + sector.value;
             if (window.inventory) window.inventory.food = (window.inventory.food || 0) + sector.value;
         } else if (sector.type === 'aura') {
-            // Tặng hào quang cho pet trong đội hình
-            const pet = (window.team && window.team[0]) || (window.farm && window.farm[0]);
-            if (pet) {
-                pet.hasAura = true;
-                pet.auraName = 'Ngũ Sắc Huyền Bí';
-                pet.atk += 35;
-                pet.maxHp += 150;
-                pet.hp += 150;
-            } else {
-                if (typeof playerDiamonds !== 'undefined') playerDiamonds += 150;
-                window.playerDiamonds = ((typeof playerDiamonds !== 'undefined' ? playerDiamonds : window.playerDiamonds) || 0) + 150;
-            }
+            // Lưu Cuộn Hào Quang Ngũ Sắc vào Túi Đồ 5x10 để người chơi chọn thú gắn
+            if (typeof inventory !== 'undefined') inventory.rainbowAuraScroll = (inventory.rainbowAuraScroll || 0) + 1;
+            if (window.inventory) window.inventory.rainbowAuraScroll = (window.inventory.rainbowAuraScroll || 0) + 1;
         } else if (sector.type === 'chest') {
-            // Rương Ấn Ký Tím
-            const pet = (window.team && window.team[0]) || (window.farm && window.farm[0]);
-            if (pet) {
-                pet.gearTier = Math.max(pet.gearTier || 0, 2);
-                pet.gears = {
-                    claw: Math.max(pet.gears?.claw || 0, 20),
-                    armor: Math.max(pet.gears?.armor || 0, 20),
-                    orb: Math.max(pet.gears?.orb || 0, 20)
-                };
-            } else {
-                if (typeof playerCoins !== 'undefined') playerCoins += 2000;
-                window.playerCoins = ((typeof playerCoins !== 'undefined' ? playerCoins : window.playerCoins) || 0) + 2000;
-            }
+            // Lưu Rương Ấn Ký Tím vào Túi Đồ 5x10 để người chơi mở cho thú tùy chọn
+            if (typeof inventory !== 'undefined') inventory.purpleSealChest = (inventory.purpleSealChest || 0) + 1;
+            if (window.inventory) window.inventory.purpleSealChest = (window.inventory.purpleSealChest || 0) + 1;
         } else if (sector.type === 'egg') {
-            // Trứng Thần Thoại May Mắn
-            if (!Array.isArray(window.eggs)) window.eggs = [];
+            // Trứng Thần Thoại May Mắn (hiển thị cả trong Túi Đồ 5x10 & Lồng Ấp Trứng)
+            const targetEggs = (typeof eggs !== 'undefined' && Array.isArray(eggs)) ? eggs : (window.eggs = window.eggs || []);
+            const mythicRarity = { name: 'Thần Thánh', color: 'text-purple-400', bg: 'border-purple-500', badge: '🟣 Tím', statMultiplier: 2.5 };
             const mythicBaby = {
                 id: 'pet_gacha_egg_' + Date.now(),
                 name: 'Kỳ Lân May Mắn',
+                emoji: '🦄',
                 element: 'Kim',
                 level: 1,
                 hp: 450,
                 maxHp: 450,
                 atk: 95,
-                speed: 65,
+                speed: 88,
                 hearts: 3,
-                rarity: { name: 'Thần Thánh', color: 'text-purple-400', bg: 'border-purple-500', badge: '🟣 Tím', statMultiplier: 2.5 },
-                trait: 'Vận Khí Trời Ban'
+                rarity: mythicRarity,
+                trait: { name: 'Hộ thân Buff Giáp', icon: '🛡️ Buff', type: 'shield', chance: 35 }
             };
-            window.eggs.push({
+            targetEggs.push({
                 name: 'Trứng Kỳ Lân Thần Thánh',
                 element: 'Kim',
-                rarity: mythicBaby.rarity,
+                rarity: mythicRarity,
                 steps: 0,
                 requiredSteps: 50,
                 petData: mythicBaby
             });
         } else if (sector.type === 'shards') {
-            if (typeof playerCoins !== 'undefined') playerCoins += 1500;
-            window.playerCoins = ((typeof playerCoins !== 'undefined' ? playerCoins : window.playerCoins) || 0) + 1500;
-            if (typeof playerDiamonds !== 'undefined') playerDiamonds += 50;
-            window.playerDiamonds = ((typeof playerDiamonds !== 'undefined' ? playerDiamonds : window.playerDiamonds) || 0) + 50;
+            // Cộng +5 Mảnh Thú Thần Thoại vào Túi Đồ 5x10 (đủ 20 mảnh ghép thú Thần Thánh)
+            if (typeof inventory !== 'undefined') inventory.mythicShards = (inventory.mythicShards || 0) + (sector.value || 5);
+            if (window.inventory) window.inventory.mythicShards = (window.inventory.mythicShards || 0) + (sector.value || 5);
         }
 
         if (typeof window.saveGameData === 'function') window.saveGameData();
@@ -360,6 +342,9 @@
             }
         }
 
-        alert(`🎉 CHÚC MỪNG BẠN!\nBạn vừa quay trúng: ${sector.name} ${sector.icon}!`);
+        const bagHint = ['aura', 'chest', 'shards', 'egg', 'food', 'ticket'].includes(sector.type)
+            ? '\n🎒 Vật phẩm đã được cất vào Túi Chứa Đồ (5x10)!'
+            : '';
+        alert(`🎉 CHÚC MỪNG BẠN!\nBạn vừa quay trúng: ${sector.name} ${sector.icon}!${bagHint}`);
     }
 })();

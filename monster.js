@@ -397,6 +397,14 @@
                 cols: 10, totalRows: 5,
                 rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
                 scale: 1.8
+            },
+            'Kỳ Lân May Mắn': {
+                facing: 'right',
+                singleSheet: true,
+                sheet: 'assets/holy.webp',
+                cols: 8, totalRows: 5,
+                rowMap: { idle: 0, walk: 1, attack: 2, hit: 3, death: 4 },
+                scale: 1.75
             }
         };
 
@@ -802,6 +810,19 @@
                 ctx.ellipse(x, footY, radiusX * pulse, radiusX * 0.36 * pulse, 0, 0, Math.PI * 2);
                 ctx.strokeStyle = color;
                 ctx.lineWidth = 2.5;
+                ctx.stroke();
+            }
+
+            // Nếu linh thú sở hữu Hào Quang Ngũ Sắc từ Vòng Quay -> vẽ thêm vòng hào quang cầu vồng xoay quanh chân
+            if (pet.hasAura) {
+                const hue = Math.floor((tick * 45) % 360);
+                const pulseR = radiusX * (1.08 + Math.sin(tick * 3) * 0.08);
+                ctx.beginPath();
+                ctx.ellipse(x, footY, pulseR, pulseR * 0.38, 0, 0, Math.PI * 2);
+                ctx.strokeStyle = `hsla(${hue}, 95%, 62%, 0.9)`;
+                ctx.lineWidth = 3.5;
+                ctx.shadowColor = `hsla(${(hue + 120) % 360}, 100%, 60%, 0.95)`;
+                ctx.shadowBlur = 14;
                 ctx.stroke();
             }
 
