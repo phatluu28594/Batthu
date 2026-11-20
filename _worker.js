@@ -1976,6 +1976,27 @@ export default {
             }
         }
 
+        // Lớp bảo vệ tự động định tuyến an toàn cho tài nguyên WebP (Assets Fallback Routing)
+        if (url.pathname.endsWith('.webp') && !url.pathname.includes('/assets') && env.ASSETS) {
+            const filename = url.pathname.replace(/^\/+/, '');
+            const primaryRes = await env.ASSETS.fetch(request);
+            if (primaryRes.status === 200) return primaryRes;
+
+            const assetUrl = new URL(`/assets/${filename}`, request.url);
+            const assetRes = await env.ASSETS.fetch(new Request(assetUrl, request));
+            if (assetRes.status === 200) return assetRes;
+
+            const bossUrl = new URL(`/assets_boss/${filename}`, request.url);
+            const bossRes = await env.ASSETS.fetch(new Request(bossUrl, request));
+            if (bossRes.status === 200) return bossRes;
+
+            const gearUrl = new URL(`/assets_gear/${filename}`, request.url);
+            const gearRes = await env.ASSETS.fetch(new Request(gearUrl, request));
+            if (gearRes.status === 200) return gearRes;
+
+            return primaryRes;
+        }
+
         return env.ASSETS.fetch(request);
     }
 };

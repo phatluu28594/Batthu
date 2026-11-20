@@ -108,8 +108,11 @@
     // 3. Hệ thống Rung Haptic Feedback đa nền tảng
     window.triggerHaptic = function (type = 'light') {
         try {
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-                const haptic = window.Telegram.WebApp.HapticFeedback;
+            const tg = window.Telegram && window.Telegram.WebApp;
+            const isTgHapticAvailable = Boolean(tg && typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast('6.1') && tg.initData);
+
+            if (isTgHapticAvailable && tg.HapticFeedback) {
+                const haptic = tg.HapticFeedback;
                 if (type === 'light' || type === 'medium' || type === 'heavy') {
                     haptic.impactOccurred(type);
                 } else if (type === 'success' || type === 'warning' || type === 'error') {

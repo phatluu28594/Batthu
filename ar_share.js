@@ -102,7 +102,7 @@
                         <div id="ar-pet-aura-glow" class="hidden absolute inset-0 rounded-full bg-gradient-to-r from-amber-400 via-pink-500 to-cyan-400 blur-xl opacity-60 animate-spin" style="animation-duration: 6s;"></div>
                         
                         <!-- Sprite Con Thú -->
-                        <img id="ar-pet-img" src="./ronglua.webp" alt="AR Pet" class="w-44 h-44 object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
+                        <img id="ar-pet-img" src="assets_boss/ronglua.webp" alt="AR Pet" class="w-44 h-44 object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
 
                         <!-- Huy Hiệu Tên Linh Thú -->
                         <div class="bg-black/85 backdrop-blur-md px-3 py-1 rounded-full border border-amber-400/60 shadow-xl flex items-center gap-1.5 mt-2">
@@ -173,22 +173,38 @@
 
         try {
             stopArCamera();
-            const constraints = {
-                video: {
-                    facingMode: currentFacingMode,
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                },
-                audio: false
-            };
+            let stream = null;
 
-            currentVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
+            // 1. Thử mở Camera với facingMode yêu cầu (environment/user)
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: currentFacingMode,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                };
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (errFacing) {
+                // 2. Nếu không tìm thấy Camera sau (ví dụ chạy trên PC/Laptop chỉ có webcam trước), thử mở camera bất kỳ
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+                        audio: false
+                    });
+                } catch (errFallback) {
+                    throw errFallback;
+                }
+            }
+
+            currentVideoStream = stream;
             if (video) {
                 video.srcObject = currentVideoStream;
                 video.play();
             }
         } catch (err) {
-            console.warn('[AR] Không thể mở Camera thiết bị, chuyển sang bối cảnh 3D giả lập:', err);
+            // Thiết bị không có camera hoặc từ chối cấp quyền: Chuyển sang phông nền 3D Studio mượt mà
             currentSceneBg = 'cafe';
             if (video) video.classList.add('hidden');
             if (virtualBg) {
@@ -235,22 +251,43 @@
         const dateEl = document.getElementById('ar-share-date');
         const auraEl = document.getElementById('ar-pet-aura-glow');
 
-        // Tìm ảnh sprite
-        let petSprite = './ronglua.webp';
+        // Tìm ảnh sprite chuẩn xác theo cấu hình hệ thống
+        let petSprite = 'assets_boss/ronglua.webp';
         if (currentPet.sheet) {
-            petSprite = currentPet.sheet.replace('assets/', './');
-        } else if (currentPet.name) {
-            const petKey = currentPet.name.toLowerCase();
-            if (petKey.includes('rồng')) petSprite = './ronglua.webp';
-            else if (petKey.includes('hải cẩu')) petSprite = './haicau.webp';
-            else if (petKey.includes('hydra')) petSprite = './Hydra.webp';
-            else if (petKey.includes('cerberus')) petSprite = './Cerberus.webp';
-            else if (petKey.includes('chó')) petSprite = './cho.webp';
-            else if (petKey.includes('mèo')) petSprite = './meo.webp';
-            else if (petKey.includes('cáo')) petSprite = './caosamac.webp';
+            petSprite = currentPet.sheet;
+        } else if (typeof spriteConfigs !== 'undefined' && spriteConfigs[currentPet.name]) {
+            const cfg = spriteConfigs[currentPet.name];
+            petSprite = cfg.singleSheet ? cfg.sheet : (cfg.walk || cfg.idle || cfg.sheet);
+        } else if (typeof bossConfigs !== 'undefined' && bossConfigs[currentPet.name]) {
+            petSprite = bossConfigs[currentPet.name].sheet;
+        } else {
+            const petKey = (currentPet.name || '').toLowerCase();
+            if (petKey.includes('hải cẩu')) petSprite = 'assets/haicau.webp';
+            else if (petKey.includes('rồng')) petSprite = 'assets_boss/ronglua.webp';
+            else if (petKey.includes('hydra')) petSprite = 'assets_boss/Hydra.webp';
+            else if (petKey.includes('cerberus')) petSprite = 'assets_boss/Cerberus.webp';
+            else if (petKey.includes('golem')) petSprite = 'assets_boss/golem.webp';
+            else if (petKey.includes('chupacabra')) petSprite = 'assets_boss/Chupacabra.webp';
+            else if (petKey.includes('chó')) petSprite = 'assets/cho.webp';
+            else if (petKey.includes('mèo')) petSprite = 'assets/meo.webp';
+            else if (petKey.includes('cáo')) petSprite = 'assets/caosamac.webp';
+            else if (petKey.includes('gà')) petSprite = 'assets/ga.webp';
+            else if (petKey.includes('heo')) petSprite = 'assets/heo.webp';
+            else if (petKey.includes('chuột')) petSprite = 'assets/chuot.webp';
+            else if (petKey.includes('ong')) petSprite = 'assets/ong.webp';
+            else if (petKey.includes('rùa')) petSprite = 'assets/rua.webp';
+            else if (petKey.includes('đại bàng')) petSprite = 'assets/daibang.webp';
+            else if (petKey.includes('hồ ly')) petSprite = 'assets/holy.webp';
+            else if (petKey.includes('trứng')) petSprite = 'assets/trung.webp';
         }
 
-        if (imgEl) imgEl.src = petSprite;
+        if (imgEl) {
+            imgEl.onerror = function () {
+                this.onerror = null;
+                this.src = 'assets_boss/ronglua.webp';
+            };
+            imgEl.src = petSprite;
+        }
         if (badgeEl) badgeEl.innerText = currentPet.rarity?.badge || '🟢';
         if (nameEl) nameEl.innerText = currentPet.name || 'Linh Thú';
         if (lvEl) lvEl.innerText = `Lv.${currentPet.level || 1}`;
@@ -332,14 +369,38 @@
 
         // 3. Vẽ Sprite Con Thú
         const img = document.getElementById('ar-pet-img');
-        if (img && img.complete) {
+        const petW = 440;
+        const petH = 440;
+        const petX = (width - petW) / 2;
+        const petY = height * 0.38;
+
+        if (img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
             try {
-                const petW = 440;
-                const petH = 440;
-                ctx.drawImage(img, (width - petW) / 2, height * 0.38, petW, petH);
+                ctx.drawImage(img, petX, petY, petW, petH);
             } catch (e) {
                 console.warn('[AR] Không thể vẽ ảnh pet lên canvas:', e);
             }
+        } else {
+            // Fallback an toàn tuyệt đối: Vẽ huy hiệu thay thế, không bao giờ để crash Canvas
+            ctx.save();
+            ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
+            ctx.beginPath();
+            ctx.arc(width / 2, petY + petH / 2, 170, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#eab308';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            ctx.fillStyle = '#fde047';
+            ctx.font = 'bold 96px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(currentPet?.rarity?.badge || '✨', width / 2, petY + petH / 2 - 20);
+
+            ctx.font = 'bold 36px sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(currentPet?.name || 'Linh Thú', width / 2, petY + petH / 2 + 60);
+            ctx.restore();
         }
 
         // 4. Vẽ Khung Viền Thương Hiệu Gaming

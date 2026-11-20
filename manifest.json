@@ -15,7 +15,7 @@
       "type": "image/x-icon"
     },
     {
-      "src": "./ronglua.webp",
+      "src": "./assets_boss/ronglua.webp",
       "sizes": "192x192 512x512",
       "type": "image/webp",
       "purpose": "any maskable"

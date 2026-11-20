@@ -1,5 +1,5 @@
 // Service Worker cơ bản cho AR Monster
-const CACHE_NAME = 'ar-monster-v3.3';
+const CACHE_NAME = 'ar-monster-v3.4';
 const urlsToCache = [
     './index.html',
     './manifest.json',

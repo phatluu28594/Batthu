@@ -20,11 +20,11 @@
         {
             day: 2,
             title: 'Ngày 2: Đồng Đội Đầu Tiên',
-            desc: 'Linh Thú Hiếm Hệ Thủy (Hải Cẩu Tuyết)',
-            badge: '🟢 Hải Cẩu Tuyết',
+            desc: 'Linh Thú Hiếm Hệ Thủy (Hải Cẩu)',
+            badge: '🟢 Hải Cẩu',
             icon: '🦭',
-            previewImg: './haicau.webp',
-            claimText: 'Nhận Hải Cẩu Tuyết (Hiếm)'
+            previewImg: 'assets/haicau.webp',
+            claimText: 'Nhận Hải Cẩu (Hiếm)'
         },
         {
             day: 3,
@@ -32,7 +32,7 @@
             desc: 'Bộ Trang Bị Tím (Cấp 20)',
             badge: '🟣 Bộ Ấn Ký Cấp 20',
             icon: '🛡️',
-            previewImg: './gears.webp',
+            previewImg: 'assets_gear/gears.webp',
             claimText: 'Nâng Cấp Đồ Tím Cấp 20'
         },
         {
@@ -41,7 +41,7 @@
             desc: '2.000 Vàng + 5 Vé Quay + 5 Đá Mỗi Hệ',
             badge: '🎟️ x5 + 🪨 x25',
             icon: '🎁',
-            previewImg: './trung.webp',
+            previewImg: 'assets/trung.webp',
             claimText: 'Nhận Quà Tiếp Tế'
         },
         {
@@ -50,7 +50,7 @@
             desc: 'Trứng Biến Dị F1 (Đột Biến Quý Hiếm)',
             badge: '🥚 Trứng F1 Biến Dị',
             icon: '🥚',
-            previewImg: './trung.webp',
+            previewImg: 'assets/trung.webp',
             claimText: 'Nhận Trứng Biến Dị F1'
         },
         {
@@ -68,7 +68,7 @@
             desc: 'Danh Hiệu Độc Quyền + Linh Thú Huyền Thoại Tự Chọn',
             badge: '👑 Danh Hiệu + 🔴 Pet Đỏ',
             icon: '👑',
-            previewImg: './ronglua.webp',
+            previewImg: 'assets_boss/ronglua.webp',
             claimText: 'Chọn Linh Thú Huyền Thoại'
         }
     ];
@@ -243,10 +243,11 @@
             window.playerDiamonds = (window.playerDiamonds || 0) + 50;
             finalizeClaim(day, '1.000 Vàng & 50 Kim Cương');
         } else if (day === 2) {
-            // Linh Thú Hiếm Hệ Thủy Hải Cẩu Tuyết
+            // Linh Thú Hiếm Hệ Thủy Hải Cẩu
             const petHaicau = {
                 id: 'pet_carnival_haicau_' + Date.now(),
-                name: 'Hải Cẩu Tuyết',
+                name: 'Hải Cẩu',
+                sheet: 'assets/haicau.webp',
                 element: 'Thuy',
                 level: 10,
                 hp: 380,
@@ -259,7 +260,7 @@
                 trait: 'Băng Giáp Tự Nhiên'
             };
             addPetToTeamOrFarm(petHaicau);
-            finalizeClaim(day, 'Linh Thú Hiếm [Hải Cẩu Tuyết]');
+            finalizeClaim(day, 'Linh Thú Hiếm [Hải Cẩu]');
         } else if (day === 3) {
             // Bộ Trang Bị Tím Cấp 20 cho Pet đầu tiên
             const targetPet = (window.team && window.team[0]) || (window.farm && window.farm[0]);
@@ -404,7 +405,8 @@
         if (type === 'ronglua') {
             petData = {
                 id: 'pet_mythic_ronglua_' + Date.now(),
-                name: 'Rồng Lửa Viễn Cổ',
+                name: 'Rồng Lửa',
+                sheet: 'assets_boss/ronglua.webp',
                 element: 'Hoa',
                 level: 15,
                 hp: 600,
@@ -418,7 +420,8 @@
         } else if (type === 'cerberus') {
             petData = {
                 id: 'pet_mythic_cerberus_' + Date.now(),
-                name: 'Cerberus Địa Ngục',
+                name: 'Cerberus',
+                sheet: 'assets_boss/Cerberus.webp',
                 element: 'Tho',
                 level: 15,
                 hp: 750,
@@ -432,7 +435,8 @@
         } else {
             petData = {
                 id: 'pet_mythic_hydra_' + Date.now(),
-                name: 'Thần Xà Hydra',
+                name: 'Hydra',
+                sheet: 'assets_boss/Hydra.webp',
                 element: 'Moc',
                 level: 15,
                 hp: 680,
