@@ -356,6 +356,10 @@
                     <button onclick="selectHomeDropdownTab(() => openHomeStorageBagModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-300/60 text-xs font-extrabold cursor-pointer">
                         🎒 Túi Đồ Nhà (5x10)
                     </button>
+                    <button onclick="selectHomeDropdownTab(() => openExpeditionModal())" class="w-full text-left bg-gradient-to-r from-emerald-700/90 to-teal-700/90 hover:brightness-110 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-black cursor-pointer flex items-center justify-between">
+                        <span>🧭 Thám Hiểm (Tự Động)</span>
+                        <span class="expedition-notify-badge hidden bg-yellow-300 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black animate-pulse">QUÀ</span>
+                    </button>
                     <button onclick="selectHomeDropdownTab(() => openQuestMenu())" class="w-full text-left bg-yellow-600/90 hover:bg-yellow-500 px-3 py-2 rounded-xl border border-yellow-300/60 text-xs font-bold cursor-pointer">
                         📜 Nhiệm Vụ Ngày
                     </button>
@@ -510,6 +514,10 @@
                 <button onclick="selectMapDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-orange-700/90 hover:bg-orange-600 px-3 py-2 rounded-xl border border-orange-400/60 text-xs font-bold cursor-pointer">
                     🏪 Chợ Người Chơi
                 </button>
+                <button onclick="selectMapDropdownTab(() => openExpeditionModal())" class="w-full text-left bg-gradient-to-r from-emerald-700/90 to-teal-700/90 hover:brightness-110 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-black cursor-pointer flex items-center justify-between">
+                    <span>🧭 Thám Hiểm (Tự Động)</span>
+                    <span class="expedition-notify-badge hidden bg-yellow-300 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black animate-pulse">QUÀ</span>
+                </button>
                 <button onclick="selectMapDropdownTab(() => openCarnivalModal())" class="w-full text-left bg-rose-700/90 hover:bg-rose-600 px-3 py-2 rounded-xl border border-amber-300/60 text-xs font-bold cursor-pointer flex items-center justify-between">
                     <span>🎁 Tân Thủ 7 Ngày</span>
                     <span class="carnival-notify-badge hidden bg-yellow-300 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black">QUÀ</span>
@@ -552,6 +560,10 @@
 
     <!-- MÀN HÌNH TRANG TRẠI PANORAMA -->
     <div id="fullscreen-farm-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 overflow-hidden">
+        <button onclick="openExpeditionModal()" class="fixed top-3 left-3 z-50 bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white px-3.5 py-1.5 rounded-full font-black text-xs cursor-pointer border border-emerald-400/80 shadow-xl flex items-center gap-1.5">
+            <span>🧭 Thám Hiểm</span>
+            <span class="expedition-notify-badge hidden bg-yellow-300 text-black text-[9px] px-1 py-0.2 rounded-full font-black animate-pulse">QUÀ</span>
+        </button>
         <button onclick="closeFullscreenFarm()" class="fixed top-3 right-3 z-50 bg-black/80 hover:bg-black text-white px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/25 shadow-xl">✕ Thoát</button>
         <div class="fixed bottom-3 left-0 right-0 z-40 text-center pointer-events-none">
             <span class="bg-black/75 text-zinc-200 text-[10px] px-3 py-1 rounded-full border border-white/15">↔️ Vuốt ngang để xem toàn cảnh Trang Trại</span>
@@ -1562,7 +1574,7 @@
             let pet = farm[farmIndex];
             if (!pet) return;
             ensurePetGears(pet);
-            if (!pet.trait) {
+            if (!pet.trait || typeof pet.trait === 'string') {
                 pet.trait = possibleTraits[Math.floor(Math.random() * possibleTraits.length)];
                 saveGameData();
             }
@@ -1607,7 +1619,7 @@
                 <div class="mb-1 flex justify-center">${getPetSpriteHtml(pet, 'walk', 92)}</div>
                 <div class="text-sm font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${Math.floor(pet.level)}</span></div>
                 <div class="text-[11px] font-bold ${elementNames[pet.element]?.color}">Hệ: ${elementNames[pet.element]?.label} • Tim: ${heartsStr}</div>
-                <div class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
+                <div id="pet-detail-trait-badge" class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
                     <span class="w-5 h-5 inline-block rounded-full bg-black" style="background-image:url('assets/magic.webp'); background-size:800% 500%; background-position:0% ${(statusFxRowMap[pet.trait.type] || 0) * 25}%; mix-blend-mode:screen;"></span>
                     <span class="text-[11px] font-extrabold text-amber-300">Đặc kỹ: ${pet.trait.name} (${Math.max(30, pet.trait.chance || 30)}%)</span>
                 </div>
@@ -2588,7 +2600,7 @@
             let pet = team[index];
             if (!pet) return;
             ensurePetGears(pet);
-            if (!pet.trait) {
+            if (!pet.trait || typeof pet.trait === 'string') {
                 pet.trait = possibleTraits[Math.floor(Math.random() * possibleTraits.length)];
                 saveGameData();
             }
@@ -2679,7 +2691,7 @@
                 <div class="mb-1 flex justify-center">${getPetSpriteHtml(pet, 'walk', 92)}</div>
                 <div class="text-sm font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${Math.floor(pet.level)}</span></div>
                 <div class="text-[11px] font-bold ${elementNames[pet.element]?.color}">Hệ: ${elementNames[pet.element]?.label} • Tim: ${heartsStr}</div>
-                <div class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
+                <div id="pet-detail-trait-badge" class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
                     <span class="w-5 h-5 inline-block rounded-full bg-black" style="background-image:url('assets/magic.webp'); background-size:800% 500%; background-position:0% ${(statusFxRowMap[pet.trait.type] || 0) * 25}%; mix-blend-mode:screen;"></span>
                     <span class="text-[11px] font-extrabold text-amber-300">Đặc kỹ: ${pet.trait.name} (${Math.max(30, pet.trait.chance || 30)}%)</span>
                 </div>
@@ -3998,6 +4010,7 @@
             initStepCounter();
             saveGameData();
             checkFullscreenOnStart();
+            if (typeof updateExpeditionNotifyBadges === 'function') updateExpeditionNotifyBadges();
             const btnMusic = document.getElementById('btn-toggle-music');
             if (btnMusic) btnMusic.innerText = isMusicMuted ? '🔇' : '🔊';
             setTimeout(() => centerPanorama('home-scroller'), 100);
@@ -5740,7 +5753,7 @@
                 <div class="text-sm font-black text-yellow-300">${pet.name} (${pet.gender}) - <span class="${rarity.color}">${rarity.badge}</span> <span class="text-xs text-white">Lv.${pet.level}</span></div>
                 <div class="text-[11px] font-bold ${elemInfo.color}">Hệ: ${elemInfo.label} • Tim: ${heartsStr}</div>
                 ${pet.trait ? `
-                <div class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
+                <div id="pet-detail-trait-badge" class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
                     <span class="w-5 h-5 inline-block rounded-full bg-black" style="background-image:url('assets/magic.webp'); background-size:800% 500%; background-position:0% ${(statusFxRowMap[pet.trait.type] || 0) * 25}%; mix-blend-mode:screen;"></span>
                     <span class="text-[11px] font-extrabold text-amber-300">Đặc kỹ: ${pet.trait.name} (${Math.max(30, pet.trait.chance || 30)}%)</span>
                 </div>` : ''}
@@ -5813,6 +5826,9 @@
                 if (data.worldBoss && Array.isArray(data.worldBoss.bosses)) {
                     window.serverWorldBossActive = !!data.worldBoss.active;
                 }
+                if (typeof window.updateExpeditionNotifyBadges === 'function') {
+                    window.updateExpeditionNotifyBadges();
+                }
             } catch (e) {}
         }
 
@@ -5820,16 +5836,17 @@
         setTimeout(runUnifiedHeartbeat, 4000);
     })();
     </script>
-    <script src="bag.js?v=20261120c"></script>
-    <script src="dex.js?v=20261120b"></script>
-    <script src="guild.js?v=20261120b"></script>
-    <script src="auction.js?v=20261120b"></script>
-    <script src="carnival.js?v=20261120b"></script>
-    <script src="gacha.js?v=20261120b"></script>
-    <script src="ar_share.js?v=20261120b"></script>
-    <script src="./admin.js?v=20261120b"></script>
-    <script src="arena.js?v=20261120b"></script>
-    <script src="pvp.js?v=20261120b"></script>
+    <script src="bag.js?v=20261120d"></script>
+    <script src="expedition.js?v=20261120d"></script>
+    <script src="dex.js?v=20261120d"></script>
+    <script src="guild.js?v=20261120d"></script>
+    <script src="auction.js?v=20261120d"></script>
+    <script src="carnival.js?v=20261120d"></script>
+    <script src="gacha.js?v=20261120d"></script>
+    <script src="ar_share.js?v=20261120d"></script>
+    <script src="./admin.js?v=20261120d"></script>
+    <script src="arena.js?v=20261120d"></script>
+    <script src="pvp.js?v=20261120d"></script>
     <script>
     // ============================================================================
     // LINH THÚ TRONG ĐỘI HÌNH ĐI DẠO TRONG NHÀ CHÍNH (HOME) VỚI PHỐI CẢNH XA/GẦN
