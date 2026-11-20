@@ -509,6 +509,170 @@ export default {
         }
 
         // ==========================================
+        // API 3.5: HEARTBEAT TỔNG HỢP (TỐI ƯU 90% TÀI NGUYÊN CLOUDFLARE) (/api/heartbeat)
+        // Gộp vị trí Map, PvP duel, Tin nhắn mật, Payout Chợ P2P, Quà Admin & Boss Thế Giới trong 1 call
+        // ==========================================
+        if (url.pathname === "/api/heartbeat" && request.method === "POST") {
+            try {
+                if (!db) return jsonResponse({ ok: false, error: "Chưa kết nối D1!" }, 500);
+
+                const body = await request.json();
+                const now = Date.now();
+                const username = String(body.username || "").trim();
+
+                let nearbyPlayers = [];
+                let incomingDuels = [];
+                let activeDuel = null;
+                let marketPayouts = [];
+                let adminGifts = [];
+                let unreadPms = 0;
+
+                // 1. Cập nhật toạ độ GPS của người chơi
+                if (username && typeof body.lat === "number" && typeof body.lng === "number") {
+                    await db.prepare(`
+                        INSERT INTO player_presence (username, gender, lat, lng, dir, state, lead_pet, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(username) DO UPDATE SET
+                            gender = excluded.gender,
+                            lat = excluded.lat,
+                            lng = excluded.lng,
+                            dir = excluded.dir,
+                            state = excluded.state,
+                            lead_pet = excluded.lead_pet,
+                            updated_at = excluded.updated_at
+                    `).bind(
+                        username,
+                        body.gender === "Nữ" ? "Nữ" : "Nam",
+                        body.lat,
+                        body.lng,
+                        String(body.dir || "down"),
+                        String(body.state || "idle"),
+                        String(body.leadPet || ""),
+                        now
+                    ).run();
+                }
+
+                // 2. Quét người chơi xung quanh bán kính 1000m
+                if (typeof body.lat === "number" && typeof body.lng === "number") {
+                    const activeThreshold = now - 45000;
+                    const { results } = await db.prepare(`
+                        SELECT username, gender, lat, lng, dir, state, lead_pet, updated_at
+                        FROM player_presence
+                        WHERE LOWER(username) != LOWER(?) AND state NOT LIKE 'wb:%' AND updated_at >= ?
+                        LIMIT 60
+                    `).bind(username, activeThreshold).all();
+
+                    const calcDistMeters = (lat1, lng1, lat2, lng2) => {
+                        const R = 6371000;
+                        const toRad = (deg) => deg * Math.PI / 180;
+                        const dLat = toRad(lat2 - lat1);
+                        const dLng = toRad(lng2 - lng1);
+                        const a = Math.sin(dLat / 2) ** 2 +
+                                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+                        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                    };
+
+                    const maxRadius = Math.max(200, Math.min(5000, Number(body.radius) || 1000));
+                    for (const p of (results || [])) {
+                        if (typeof p.lat !== "number" || typeof p.lng !== "number") continue;
+                        const dist = Math.round(calcDistMeters(body.lat, body.lng, p.lat, p.lng));
+                        if (dist <= maxRadius) {
+                            nearbyPlayers.push({ ...p, distance: dist });
+                        }
+                    }
+                    nearbyPlayers.sort((a, b) => a.distance - b.distance);
+                }
+
+                // 3. Nếu đã đăng nhập: Kiểm tra PvP, Hộp thư, Payout Chợ P2P, Quà Admin
+                if (username) {
+                    // a. Kiểm tra lời mời và trận khiêu chiến sinh tử PvP
+                    try {
+                        const { results: inc } = await db.prepare(`
+                            SELECT id, challenger, defender, challenger_pet, status, seed, created_at
+                            FROM pvp_duels
+                            WHERE LOWER(defender) = LOWER(?) AND status = 'pending' AND created_at >= ?
+                            ORDER BY id DESC LIMIT 3
+                        `).bind(username, now - 60000).all();
+                        incomingDuels = inc || [];
+
+                        const acc = await db.prepare(`
+                            SELECT id, challenger, defender, challenger_pet, defender_pet, status, seed, updated_at
+                            FROM pvp_duels
+                            WHERE (LOWER(challenger) = LOWER(?) OR LOWER(defender) = LOWER(?))
+                              AND status = 'accepted' AND updated_at >= ?
+                            ORDER BY id DESC LIMIT 1
+                        `).bind(username, username, now - 30000).first();
+                        if (acc) activeDuel = acc;
+                    } catch (e) {}
+
+                    // b. Kiểm tra tin nhắn riêng chưa đọc
+                    try {
+                        const lastPmId = Number(body.lastPmId) || 0;
+                        const pmRow = await db.prepare(`
+                            SELECT COUNT(*) as c FROM private_messages
+                            WHERE LOWER(receiver) = LOWER(?) AND id > ?
+                        `).bind(username, lastPmId).first();
+                        unreadPms = Number(pmRow?.c) || 0;
+                    } catch (e) {}
+
+                    // c. Kiểm tra tiền bán hàng Chợ P2P chưa nhận
+                    try {
+                        const { results: payRows } = await db.prepare(`
+                            SELECT id, coins, diamonds, note, created_at
+                            FROM market_payouts
+                            WHERE LOWER(username) = LOWER(?) AND claimed = 0
+                            ORDER BY id ASC LIMIT 10
+                        `).bind(username).all();
+                        marketPayouts = payRows || [];
+                    } catch (e) {}
+
+                    // d. Kiểm tra quà tặng Admin chưa nhận
+                    try {
+                        const { results: giftRows } = await db.prepare(`
+                            SELECT id, sender_user, gift_json, created_at
+                            FROM admin_gifts
+                            WHERE LOWER(target_user) = LOWER(?) AND claimed = 0
+                            ORDER BY id ASC LIMIT 10
+                        `).bind(username).all();
+                        adminGifts = giftRows || [];
+                    } catch (e) {}
+                }
+
+                // 4. Kiểm tra trạng thái Boss Thế Giới
+                let worldBossActive = false;
+                let bosses = [];
+                try {
+                    const { results } = await db.prepare(
+                        "SELECT region_key, active, boss_name, hp, max_hp, opened_by, killer, updated_at FROM world_boss_state"
+                    ).all();
+                    bosses = results || [];
+                    worldBossActive = bosses.some(b => Number(b.active) === 1);
+                } catch (e) {}
+
+                return jsonResponse({
+                    ok: true,
+                    players: nearbyPlayers,
+                    pvp: {
+                        incomingDuels,
+                        activeDuel
+                    },
+                    pm: {
+                        unreadCount: unreadPms,
+                        hasNew: unreadPms > 0
+                    },
+                    marketPayouts,
+                    adminGifts,
+                    worldBoss: {
+                        active: worldBossActive,
+                        bosses
+                    }
+                });
+            } catch (err) {
+                return jsonResponse({ ok: false, error: "Lỗi Heartbeat: " + err.message }, 500);
+            }
+        }
+
+        // ==========================================
         // API 4: NHẮN TIN RIÊNG & HỘP THƯ ĐẾN (/api/pm)
         // ==========================================
         if (url.pathname === "/api/pm") {

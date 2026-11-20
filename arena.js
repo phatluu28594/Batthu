@@ -1392,6 +1392,7 @@
             if (activeWorldBossRegion) {
                 fetchWorldBossServerState(false, activeWorldBossRegion.id);
             }
+            let wbRankPollTick = 0;
             wbPresenceTimer = setInterval(() => {
                 if (!wbState.active) {
                     clearInterval(wbPresenceTimer);
@@ -1399,7 +1400,11 @@
                     return;
                 }
                 syncWorldBossLobbyPlayers();
-                fetchWorldBossServerState(false, activeWorldBossRegion?.id || null);
+                wbRankPollTick++;
+                // Tối ưu D1: Cập nhật BXH DPS và máu server mỗi 6 giây (4 nhịp x 1.5s) thay vì mỗi 1.5s
+                if (wbRankPollTick % 4 === 0) {
+                    fetchWorldBossServerState(false, activeWorldBossRegion?.id || null);
+                }
             }, 1500);
         }
 

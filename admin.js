@@ -227,9 +227,11 @@
         }
     };
 
-    // Kiểm tra hộp thư quà GM ngay khi tải trang và định kỳ mỗi 8 giây
+    // Kiểm tra hộp thư quà GM khi tải trang và định kỳ dự phòng 35s (Heartbeat tổng hợp xử lý chính)
     setTimeout(() => window.checkAndClaimAdminGifts(), 2000);
-    setInterval(() => window.checkAndClaimAdminGifts(), 8000);
+    setInterval(() => {
+        if (!document.hidden) window.checkAndClaimAdminGifts();
+    }, 35000);
 
     window.openAdminGmModal = function () {
         if (!isCurrentUserAdmin()) {

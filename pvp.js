@@ -397,44 +397,55 @@
         }
     };
 
+    function processDuelIncomingAndActive(data) {
+        if (!data) return;
+        const me = getMyUser();
+        if (!me || currentPvpMatch) return;
+
+        if (data.activeDuel && !handledDuelIds.has('acc_' + data.activeDuel.id)) {
+            handledDuelIds.add('acc_' + data.activeDuel.id);
+            const d = data.activeDuel;
+            let cPet = null, dPet = null;
+            try { cPet = typeof d.challenger_pet === 'string' ? JSON.parse(d.challenger_pet) : d.challenger_pet; } catch (e) {}
+            try { dPet = typeof d.defender_pet === 'string' ? JSON.parse(d.defender_pet) : d.defender_pet; } catch (e) {}
+            if (!cPet || !dPet) return;
+            const amChallenger = d.challenger.toLowerCase() === me.toLowerCase();
+
+            launchPvp1v1CanvasArena({
+                mode: 'deathmatch',
+                duelId: d.id,
+                seed: d.seed,
+                challengerName: d.challenger,
+                challengerPet: cPet,
+                defenderName: d.defender,
+                defenderPet: dPet,
+                myName: me,
+                myPet: amChallenger ? cPet : dPet,
+                enemyName: amChallenger ? d.defender : d.challenger,
+                enemyPet: amChallenger ? dPet : cPet
+            });
+            return;
+        }
+
+        if (Array.isArray(data.incomingDuels) && data.incomingDuels.length > 0) {
+            showIncomingDuelPopup(data.incomingDuels[0]);
+        }
+    }
+    window.handleHeartbeatPvP = processDuelIncomingAndActive;
+
     function startDuelPoller() {
         if (activeDuelPollingTimer) clearInterval(activeDuelPollingTimer);
+        // Tần suất dự phòng 30s (Heartbeat tổng hợp 12s đã xử lý chính)
         activeDuelPollingTimer = setInterval(async () => {
             const me = getMyUser();
-            if (!me || currentPvpMatch) return;
+            if (!me || currentPvpMatch || document.hidden) return;
             try {
                 const res = await fetch('/api/pvp?u=' + encodeURIComponent(me));
                 const data = await res.json();
                 if (!data.ok) return;
-
-                if (data.activeDuel && !handledDuelIds.has('acc_' + data.activeDuel.id)) {
-                    handledDuelIds.add('acc_' + data.activeDuel.id);
-                    const d = data.activeDuel;
-                    const cPet = JSON.parse(d.challenger_pet);
-                    const dPet = JSON.parse(d.defender_pet);
-                    const amChallenger = d.challenger.toLowerCase() === me.toLowerCase();
-
-                    launchPvp1v1CanvasArena({
-                        mode: 'deathmatch',
-                        duelId: d.id,
-                        seed: d.seed,
-                        challengerName: d.challenger,
-                        challengerPet: cPet,
-                        defenderName: d.defender,
-                        defenderPet: dPet,
-                        myName: me,
-                        myPet: amChallenger ? cPet : dPet,
-                        enemyName: amChallenger ? d.defender : d.challenger,
-                        enemyPet: amChallenger ? dPet : cPet
-                    });
-                    return;
-                }
-
-                if (Array.isArray(data.incomingDuels) && data.incomingDuels.length > 0) {
-                    showIncomingDuelPopup(data.incomingDuels[0]);
-                }
+                processDuelIncomingAndActive(data);
             } catch (e) {}
-        }, 4000);
+        }, 30000);
     }
 
     window.addEventListener('load', startDuelPoller);

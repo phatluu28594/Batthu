@@ -63,7 +63,10 @@ ${notes.join('\n')}`);
     };
 
     setTimeout(() => window.checkAndClaimMarketPayouts(), 3500);
-    setInterval(() => window.checkAndClaimMarketPayouts(), 15000);
+    // Tần suất dự phòng 35s (Heartbeat tổng hợp 12s đã đảm nhận xử lý chính)
+    setInterval(() => {
+        if (!document.hidden) window.checkAndClaimMarketPayouts();
+    }, 35000);
 
     window.openP2pMarketModal = async function (tab = activeP2pTab) {
         activeP2pTab = tab;
