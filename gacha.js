@@ -79,12 +79,11 @@
                 </div>
 
                 <!-- Thông tin tài nguyên -->
-                <div class="flex items-center gap-2 mb-3 text-xs bg-zinc-950/80 px-3 py-1.5 rounded-full border border-white/10">
-                    <span class="text-emerald-400 font-bold">🎟️ Vé: <span id="gacha-ticket-count">0</span></span>
-                    <span class="text-zinc-600">|</span>
-                    <span class="text-cyan-300 font-bold">💎 <span class="ui-diamonds-val">0</span></span>
-                    <span class="text-zinc-600">|</span>
-                    <span id="gacha-free-status" class="text-amber-300 font-bold">Lượt Free: 1/1</span>
+                <div class="flex items-center justify-between w-full mb-3 text-xs bg-zinc-950/80 px-3 py-1.5 rounded-full border border-white/10">
+                    <span class="text-amber-400 font-black">🪙 <span id="gacha-coin-count">0</span></span>
+                    <span class="text-cyan-300 font-black">💎 <span id="gacha-diamond-count">0</span></span>
+                    <span class="text-emerald-400 font-black">🎟️ <span id="gacha-ticket-count">0</span></span>
+                    <span id="gacha-free-status" class="text-amber-300 font-bold">Free: 1/1</span>
                 </div>
 
                 <!-- Bánh Xe Vòng Quay -->
@@ -117,17 +116,29 @@
 
     function updateGachaHud() {
         const ticketEl = document.getElementById('gacha-ticket-count');
+        const coinEl = document.getElementById('gacha-coin-count');
+        const diamondEl = document.getElementById('gacha-diamond-count');
         const freeStatusEl = document.getElementById('gacha-free-status');
         const btnSpin = document.getElementById('btn-spin-main');
 
-        const tickets = (window.inventory && window.inventory.luckyTicket) || 0;
+        const curCoins = (typeof playerCoins !== 'undefined' ? playerCoins : window.playerCoins) || 0;
+        const curDiamonds = (typeof playerDiamonds !== 'undefined' ? playerDiamonds : window.playerDiamonds) || 0;
+        const inv = (typeof inventory !== 'undefined' ? inventory : window.inventory) || {};
+        const tickets = inv.luckyTicket || 0;
         const isFree = hasFreeSpinToday();
 
         if (ticketEl) ticketEl.innerText = tickets;
+        if (coinEl) coinEl.innerText = Number(curCoins).toLocaleString();
+        if (diamondEl) diamondEl.innerText = Number(curDiamonds).toLocaleString();
+
         if (freeStatusEl) {
-            freeStatusEl.innerText = isFree ? 'Lượt Free: 1/1' : 'Hết Free Hôm Nay';
+            freeStatusEl.innerText = isFree ? 'Free: 1/1' : 'Hết Free';
             freeStatusEl.className = isFree ? 'text-amber-300 font-bold' : 'text-zinc-500 font-bold';
         }
+
+        // Cập nhật tất cả các vị trí hiển thị Vàng và Kim Cương trên toàn game
+        document.querySelectorAll('.ui-coins-val').forEach(el => el.innerText = curCoins);
+        document.querySelectorAll('.ui-diamonds-val').forEach(el => el.innerText = curDiamonds);
 
         if (btnSpin) {
             if (isFree) {
@@ -188,44 +199,41 @@
         if (isSpinning) return;
 
         const isFree = hasFreeSpinToday();
-        const tickets = (window.inventory && window.inventory.luckyTicket) || 0;
-        const diamonds = window.playerDiamonds || 0;
+        const inv = (typeof inventory !== 'undefined' ? inventory : window.inventory) || {};
+        const tickets = inv.luckyTicket || 0;
+        const curDiamonds = (typeof playerDiamonds !== 'undefined' ? playerDiamonds : window.playerDiamonds) || 0;
 
         // Trừ chi phí
         if (isFree) {
             useFreeSpin();
         } else if (tickets > 0) {
-            window.inventory.luckyTicket = tickets - 1;
-        } else if (diamonds >= 50) {
-            window.playerDiamonds = diamonds - 50;
+            if (typeof inventory !== 'undefined') inventory.luckyTicket = tickets - 1;
+            if (window.inventory) window.inventory.luckyTicket = tickets - 1;
+        } else if (curDiamonds >= 50) {
+            if (typeof playerDiamonds !== 'undefined') playerDiamonds -= 50;
+            if (window.playerDiamonds !== undefined) window.playerDiamonds = curDiamonds - 50;
         } else {
             alert('⚠️ Bạn không đủ Vé Quay hoặc 50 Kim Cương!\nHãy đi bắt thú ngoài map hoặc vượt Tháp Vô Tận để săn vé nhé.');
             return;
         }
 
         isSpinning = true;
-        updateGachaHud();
         if (typeof window.saveGameData === 'function') window.saveGameData();
+        else if (typeof saveGameData === 'function') saveGameData();
+        updateGachaHud();
 
         // Chọn ngẫu nhiên kết quả theo tỷ lệ
         const chosenIndex = rollGachaSector();
         const chosenSector = WHEEL_SECTORS[chosenIndex];
 
         // Tính góc dừng:
-        // Kim chỉ ở góc 270 độ (đỉnh trên cùng). Ô thứ i nằm trong khoảng [i * arc, (i+1) * arc].
-        // Khi quay, canvas xoay thuận chiều kim đồng hồ góc R.
-        // Đỉnh trên cùng tương ứng góc (3 * PI / 2 - R) % 2PI
         const numSectors = WHEEL_SECTORS.length;
         const sectorAngleDeg = 360 / numSectors;
         const targetSectorCenterDeg = chosenIndex * sectorAngleDeg + (sectorAngleDeg / 2);
 
-        // Góc xoay thêm để targetSectorCenter dừng đúng đỉnh 270 deg (top)
-        // Khi canvas xoay góc R, đỉnh top tương đương góc (270 - R) mod 360 = targetSectorCenterDeg
-        // => R = 270 - targetSectorCenterDeg
         let baseStopDeg = 270 - targetSectorCenterDeg;
         while (baseStopDeg < 0) baseStopDeg += 360;
 
-        // Thêm 5 vòng quay đầy đủ (1800 độ) để tạo độ mượt
         const totalSpinsDeg = 360 * 6 + baseStopDeg;
         const currentMod = currentRotation % 360;
         const finalDeg = currentRotation + (totalSpinsDeg - currentMod);
@@ -269,13 +277,17 @@
 
     function applyGachaReward(sector) {
         if (sector.type === 'diamond') {
-            window.playerDiamonds = (window.playerDiamonds || 0) + sector.value;
+            if (typeof playerDiamonds !== 'undefined') playerDiamonds += sector.value;
+            window.playerDiamonds = ((typeof playerDiamonds !== 'undefined' ? playerDiamonds : window.playerDiamonds) || 0) + sector.value;
         } else if (sector.type === 'coin') {
-            window.playerCoins = (window.playerCoins || 0) + sector.value;
+            if (typeof playerCoins !== 'undefined') playerCoins += sector.value;
+            window.playerCoins = ((typeof playerCoins !== 'undefined' ? playerCoins : window.playerCoins) || 0) + sector.value;
         } else if (sector.type === 'ticket') {
-            window.inventory.luckyTicket = (window.inventory.luckyTicket || 0) + sector.value;
+            if (typeof inventory !== 'undefined') inventory.luckyTicket = (inventory.luckyTicket || 0) + sector.value;
+            if (window.inventory) window.inventory.luckyTicket = (window.inventory.luckyTicket || 0) + sector.value;
         } else if (sector.type === 'food') {
-            window.inventory.food = (window.inventory.food || 0) + sector.value;
+            if (typeof inventory !== 'undefined') inventory.food = (inventory.food || 0) + sector.value;
+            if (window.inventory) window.inventory.food = (window.inventory.food || 0) + sector.value;
         } else if (sector.type === 'aura') {
             // Tặng hào quang cho pet trong đội hình
             const pet = (window.team && window.team[0]) || (window.farm && window.farm[0]);
@@ -286,7 +298,8 @@
                 pet.maxHp += 150;
                 pet.hp += 150;
             } else {
-                window.playerDiamonds = (window.playerDiamonds || 0) + 150;
+                if (typeof playerDiamonds !== 'undefined') playerDiamonds += 150;
+                window.playerDiamonds = ((typeof playerDiamonds !== 'undefined' ? playerDiamonds : window.playerDiamonds) || 0) + 150;
             }
         } else if (sector.type === 'chest') {
             // Rương Ấn Ký Tím
@@ -299,7 +312,8 @@
                     orb: Math.max(pet.gears?.orb || 0, 20)
                 };
             } else {
-                window.playerCoins = (window.playerCoins || 0) + 2000;
+                if (typeof playerCoins !== 'undefined') playerCoins += 2000;
+                window.playerCoins = ((typeof playerCoins !== 'undefined' ? playerCoins : window.playerCoins) || 0) + 2000;
             }
         } else if (sector.type === 'egg') {
             // Trứng Thần Thoại May Mắn
@@ -326,13 +340,17 @@
                 petData: mythicBaby
             });
         } else if (sector.type === 'shards') {
-            window.playerCoins = (window.playerCoins || 0) + 1500;
-            window.playerDiamonds = (window.playerDiamonds || 0) + 50;
+            if (typeof playerCoins !== 'undefined') playerCoins += 1500;
+            window.playerCoins = ((typeof playerCoins !== 'undefined' ? playerCoins : window.playerCoins) || 0) + 1500;
+            if (typeof playerDiamonds !== 'undefined') playerDiamonds += 50;
+            window.playerDiamonds = ((typeof playerDiamonds !== 'undefined' ? playerDiamonds : window.playerDiamonds) || 0) + 50;
         }
 
         if (typeof window.saveGameData === 'function') window.saveGameData();
+        else if (typeof saveGameData === 'function') saveGameData();
         if (typeof window.syncCurrentAccountToCloud === 'function') window.syncCurrentAccountToCloud();
         if (typeof window.triggerHaptic === 'function') window.triggerHaptic('success');
+        updateGachaHud();
 
         // Thông báo ra Kênh Thế Giới nếu trúng giải đặc biệt
         if (sector.type === 'aura' || sector.type === 'egg' || sector.type === 'chest') {

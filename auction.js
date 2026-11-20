@@ -5,7 +5,15 @@
 
 (function () {
     let activeP2pTab = 'browse'; // 'browse' | 'sell'
+    let activeMarketCategory = 'all'; // 'all' | 'egg' | 'pet' | 'stone'
     let cachedListings = [];
+
+    window.setMarketCategory = function (cat) {
+        activeMarketCategory = cat;
+        if (typeof window.openP2pMarketModal === 'function') {
+            window.openP2pMarketModal('browse');
+        }
+    };
 
     function getMyUser() {
         return (localStorage.getItem('ar_cloud_user') || '').trim();
@@ -110,7 +118,16 @@ ${notes.join('\n')}`);
         </div>`;
 
         if (activeP2pTab === 'browse') {
-            const rowsHtml = cachedListings.map(item => {
+            const totalCount = cachedListings.length;
+            const eggCount = cachedListings.filter(i => i.item_type === 'egg').length;
+            const petCount = cachedListings.filter(i => i.item_type === 'pet').length;
+            const stoneCount = cachedListings.filter(i => i.item_type === 'stone').length;
+
+            const filteredListings = activeMarketCategory === 'all'
+                ? cachedListings
+                : cachedListings.filter(i => i.item_type === activeMarketCategory);
+
+            const rowsHtml = filteredListings.map(item => {
                 let parsed = {};
                 try { parsed = JSON.parse(item.item_json || '{}'); } catch (e) {}
                 const isMine = item.seller.toLowerCase() === me.toLowerCase();
@@ -123,11 +140,11 @@ ${notes.join('\n')}`);
                 } else if (item.item_type === 'egg' && parsed.egg) {
                     detailSub = `${parsed.egg.rarity?.badge || ''} • Hệ ${parsed.egg.element} • Bước: ${parsed.egg.steps}/${parsed.egg.requiredSteps}`;
                 } else if (item.item_type === 'stone') {
-                    detailSub = `Gói x${parsed.qty || 1} viên Đá Ngũ Hành cường hóa`;
+                    detailSub = `Gói x${parsed.qty || 1} viên Đá Ngũ Hành`;
                 }
 
                 return `
-                <div class="bg-zinc-800/95 border border-zinc-700 p-2.5 rounded-xl flex items-center justify-between gap-2">
+                <div class="bg-zinc-800/95 border border-zinc-700/80 p-2.5 rounded-xl flex items-center justify-between gap-2 shadow-sm">
                     <div class="min-w-0">
                         <div class="text-xs font-black text-yellow-300 truncate">${item.item_name}</div>
                         <div class="text-[10px] text-zinc-300 truncate">${detailSub}</div>
@@ -143,9 +160,36 @@ ${notes.join('\n')}`);
                         }
                     </div>
                 </div>`;
-            }).join('') || `<div class="text-center text-zinc-400 text-xs py-8">Hiện chưa có vật phẩm nào được rao bán trên sàn!</div>`;
+            }).join('') || `<div class="text-center text-zinc-400 text-xs py-8">Không có mặt hàng nào trong danh mục này!</div>`;
 
-            content.innerHTML = `${tabHeader}<div class="space-y-2 max-h-[54vh] overflow-y-auto pr-1">${rowsHtml}</div>`;
+            content.innerHTML = `
+            ${tabHeader}
+            <div class="flex gap-2 min-h-[46vh] max-h-[55vh]">
+                <!-- CỘT BÊN TRÁI: DANH MỤC HÀNG HÓA -->
+                <div class="w-24 shrink-0 flex flex-col gap-1.5 bg-zinc-950/80 p-1 rounded-xl border border-zinc-800">
+                    <button onclick="setMarketCategory('all')" class="text-left px-2 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${activeMarketCategory === 'all' ? 'bg-amber-500 text-black shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}">
+                        <div>🌟 Tất Cả</div>
+                        <div class="text-[9px] opacity-75">(${totalCount})</div>
+                    </button>
+                    <button onclick="setMarketCategory('egg')" class="text-left px-2 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${activeMarketCategory === 'egg' ? 'bg-emerald-600 text-white shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}">
+                        <div>🥚 Trứng</div>
+                        <div class="text-[9px] opacity-75">(${eggCount})</div>
+                    </button>
+                    <button onclick="setMarketCategory('pet')" class="text-left px-2 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${activeMarketCategory === 'pet' ? 'bg-purple-600 text-white shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}">
+                        <div>🐾 Thú F1</div>
+                        <div class="text-[9px] opacity-75">(${petCount})</div>
+                    </button>
+                    <button onclick="setMarketCategory('stone')" class="text-left px-2 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${activeMarketCategory === 'stone' ? 'bg-cyan-600 text-white shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}">
+                        <div>💎 Đá Quý</div>
+                        <div class="text-[9px] opacity-75">(${stoneCount})</div>
+                    </button>
+                </div>
+
+                <!-- CỘT BÊN PHẢI: MẶT HÀNG ĐANG BÁN -->
+                <div class="grow space-y-2 overflow-y-auto max-h-[55vh] pr-1 no-scrollbar">
+                    ${rowsHtml}
+                </div>
+            </div>`;
             return;
         }
 

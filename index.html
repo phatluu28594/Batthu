@@ -328,34 +328,66 @@
     
     <!-- MÀN HÌNH SẢNH CHÍNH ĐẦU GAME (background.png) -->
     <div id="home-screen" class="absolute inset-0 z-30 bg-zinc-950 overflow-hidden">
-        <div class="fixed top-0 left-0 right-0 z-30 flex items-center justify-between p-2.5 bg-gradient-to-b from-black/85 to-transparent pointer-events-none">
-            <div class="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold pointer-events-auto">
+        <div id="home-top-nav-bar" class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-2 bg-gradient-to-b from-black/90 via-black/60 to-transparent pointer-events-none">
+            <div class="flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/40 text-xs font-bold pointer-events-auto shadow-lg shrink-0">
                 <span>🏠 Nhà Chính</span>
                 <span class="text-yellow-400 ml-1"><span class="ui-coins-val">1500</span>🪙</span>
                 <span class="text-cyan-300 ml-1"><span class="ui-diamonds-val">50</span>💎</span>
             </div>
-            <div class="flex items-center gap-1.5 pointer-events-auto">
-                <button id="btn-toggle-music" onclick="toggleGameMusic()" class="bg-black/85 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🔊</button>
-                <button onclick="openCarnivalModal()" title="Chuỗi Sự Kiện Tân Thủ 7 Ngày" class="relative bg-gradient-to-r from-amber-600 to-yellow-600 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold cursor-pointer">
-                    🎁 7N
-                    <span class="carnival-notify-badge hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping"></span>
-                </button>
-                <button onclick="openLuckyWheelModal()" title="Vòng Quay May Mắn" class="bg-gradient-to-r from-teal-600 to-emerald-600 px-2.5 py-1.5 rounded-full border border-emerald-300 text-xs font-bold cursor-pointer">
-                    🎡 Quay
-                </button>
-                <button onclick="installPwaApp()" title="Cài đặt App" class="pwa-install-btn hidden bg-zinc-800 hover:bg-zinc-700 px-2 py-1.5 rounded-full border border-white/20 text-xs font-bold cursor-pointer">
-                    📲 App
-                </button>
-                <button onclick="openCloudAccountModal()" class="bg-indigo-600/95 px-2.5 py-1.5 rounded-full border border-indigo-300 text-xs font-bold cursor-pointer">☁️ Nick</button>
-                <button onclick="openFriendsModal()" title="Bạn bè" class="relative bg-sky-600/95 px-2.5 py-1.5 rounded-full border border-sky-300 text-xs font-bold cursor-pointer">
-                    👥
-                    <span id="home-friend-dot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping"></span>
-                </button>
-                <button onclick="openTeamMenu()" class="bg-black/85 px-2.5 py-1.5 rounded-full border border-white/25 text-xs font-bold cursor-pointer">🎒(<span id="home-team-count">0</span>/3)</button>
-                <button onclick="openMonsterDexModal()" title="Bách Khoa Linh Thú" class="bg-emerald-700/95 px-2.5 py-1.5 rounded-full border border-emerald-300 text-xs font-bold cursor-pointer">📖</button>
-                <button onclick="openGuildModal()" title="Bang Hội" class="bg-purple-700/95 px-2.5 py-1.5 rounded-full border border-purple-300 text-xs font-bold cursor-pointer">🏰</button>
-                <button onclick="openMarketMenu()" class="bg-amber-600/95 px-2.5 py-1.5 rounded-full border border-amber-300 text-xs font-bold cursor-pointer">🛒 Chợ</button>
-                <button onclick="openQuestMenu()" class="bg-yellow-600/95 px-2.5 py-1.5 rounded-full border border-yellow-300 text-xs font-bold cursor-pointer">📜 NV</button>
+
+            <!-- THANH ĐIỀU HƯỚNG GÓC PHẢI SẢNH CHÍNH + NÚT MŨI TÊN ▼ -->
+            <div id="home-top-nav" class="relative z-[1000] flex flex-col items-end pointer-events-auto">
+                <div class="flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-2 py-1 rounded-full border border-white/15 shadow-xl">
+                    <button id="btn-toggle-music" onclick="toggleGameMusic()" class="bg-zinc-800 hover:bg-zinc-700 w-7 h-7 rounded-full border border-white/20 text-xs font-bold flex items-center justify-center cursor-pointer shadow">🔊</button>
+                    <button onclick="openCarnivalModal()" title="Sự Kiện 7 Ngày" class="relative bg-gradient-to-r from-amber-600 to-yellow-600 px-2.5 py-1 rounded-full border border-amber-300 text-xs font-bold cursor-pointer shadow">
+                        🎁 7N
+                        <span class="carnival-notify-badge hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping"></span>
+                    </button>
+                    <button onclick="openLuckyWheelModal()" title="Vòng Quay May Mắn" class="bg-gradient-to-r from-teal-600 to-emerald-600 px-2.5 py-1 rounded-full border border-emerald-300 text-xs font-bold cursor-pointer shadow">
+                        🎡 Quay
+                    </button>
+                    <button onclick="openTeamMenu()" class="bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 rounded-full border border-white/20 text-xs font-bold cursor-pointer shadow">
+                        🎒(<span id="home-team-count">0</span>/3)
+                    </button>
+                    <button id="home-nav-toggle" onclick="toggleHomeMoreTabs()" class="bg-sky-600 hover:bg-sky-500 w-7 h-7 rounded-full border border-sky-300 text-xs font-black text-white flex items-center justify-center shadow cursor-pointer transition-transform" title="Mở rộng menu">▼</button>
+                </div>
+
+                <!-- Menu xổ xuống khi bấm mũi tên ▼ ở Sảnh Chính -->
+                <div id="home-nav-dropdown" class="hidden absolute top-10 right-0 z-50 flex flex-col gap-1.5 min-w-[175px] bg-zinc-900/95 backdrop-blur-md p-2 rounded-2xl border border-sky-400/40 shadow-2xl">
+                    <button onclick="selectHomeDropdownTab(() => openInventoryBagModal())" class="w-full text-left bg-gradient-to-r from-amber-700/90 to-yellow-700/90 hover:brightness-110 px-3 py-2 rounded-xl border border-amber-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                        <span>🎒 Rương Đồ 5x10</span>
+                        <span class="text-amber-200 text-[10px] font-black">MỚI</span>
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openCloudAccountModal())" class="w-full text-left bg-indigo-700/90 hover:bg-indigo-600 px-3 py-2 rounded-xl border border-indigo-400/60 text-xs font-bold cursor-pointer">
+                        ☁️ Nick Cloud / Đồng Bộ
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openFriendsModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                        <span>👥 Bạn Bè</span>
+                        <span id="home-friend-dot" class="hidden w-2 h-2 rounded-full bg-red-500 border border-black animate-ping"></span>
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openMonsterDexModal())" class="w-full text-left bg-emerald-800/90 hover:bg-emerald-700 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-bold cursor-pointer">
+                        📖 Bách Khoa Linh Thú
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openGuildModal())" class="w-full text-left bg-purple-800/90 hover:bg-purple-700 px-3 py-2 rounded-xl border border-purple-400/60 text-xs font-bold cursor-pointer">
+                        🏰 Bang Hội
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openMarketMenu())" class="w-full text-left bg-amber-600/90 hover:bg-amber-500 px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold cursor-pointer">
+                        🛒 Chợ Hệ Thống
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-orange-700/90 hover:bg-orange-600 px-3 py-2 rounded-xl border border-orange-400/60 text-xs font-bold cursor-pointer">
+                        🏪 Chợ Người Chơi (P2P)
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openQuestMenu())" class="w-full text-left bg-yellow-600/90 hover:bg-yellow-500 px-3 py-2 rounded-xl border border-yellow-400 text-xs font-bold cursor-pointer">
+                        📜 Nhiệm Vụ Hàng Ngày
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openPvpArenaHub())" class="w-full text-left bg-red-600/90 hover:bg-red-500 px-3 py-2 rounded-xl border border-red-400 text-xs font-bold cursor-pointer">
+                        ⚔️ Đấu PvP (BXH)
+                    </button>
+                    <div class="border-t border-white/10 my-0.5"></div>
+                    <button onclick="selectHomeDropdownTab(() => installPwaApp())" class="pwa-install-btn hidden w-full text-left bg-zinc-800 hover:bg-zinc-700 px-3 py-2 rounded-xl border border-white/20 text-xs font-bold cursor-pointer">
+                        📲 Cài Đặt App (PWA)
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -477,6 +509,10 @@
                 </button>
                 <button onclick="selectMapDropdownTab(() => openMonsterDexModal())" class="w-full text-left bg-teal-800/90 hover:bg-teal-700 px-3 py-2 rounded-xl border border-teal-400/60 text-xs font-bold cursor-pointer">
                     📖 Bách Khoa Thú
+                </button>
+                <button onclick="selectMapDropdownTab(() => openInventoryBagModal())" class="w-full text-left bg-gradient-to-r from-amber-700/90 to-yellow-700/90 hover:brightness-110 px-3 py-2 rounded-xl border border-amber-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                    <span>🎒 Rương Đồ 5x10</span>
+                    <span class="text-amber-200 text-[10px] font-black">MỚI</span>
                 </button>
                 <button onclick="selectMapDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-orange-700/90 hover:bg-orange-600 px-3 py-2 rounded-xl border border-orange-400/60 text-xs font-bold cursor-pointer">
                     🏪 Chợ Người Chơi
@@ -823,8 +859,14 @@
 
         let inventory = safeParse('ar_inventory', {
             food: 15, toy: 15, trainer: 10,
-            stoneKim: 5, stoneMoc: 5, stoneThuy: 5, stoneHoa: 5, stoneTho: 5
+            stoneKim: 5, stoneMoc: 5, stoneThuy: 5, stoneHoa: 5, stoneTho: 5,
+            luckyTicket: 0, arenaTicket: 5, gearShardChest: 0,
+            expPotion: 5, cleanseWater: 2
         });
+        if (inventory.luckyTicket === undefined) inventory.luckyTicket = 0;
+        if (inventory.arenaTicket === undefined) inventory.arenaTicket = 5;
+        if (inventory.expPotion === undefined) inventory.expPotion = 5;
+        if (inventory.cleanseWater === undefined) inventory.cleanseWater = 2;
 
         let dailyQuests = safeParse('ar_quests', [
             { id: 1, title: 'Bắt 3 linh thú bất kỳ', target: 3, progress: 0, reward: 200, claimed: false },
@@ -907,6 +949,7 @@
                 localStorage.setItem('ar_team', JSON.stringify(team));
                 localStorage.setItem('ar_farm', JSON.stringify(farm));
                 localStorage.setItem('ar_eggs', JSON.stringify(eggs));
+                localStorage.setItem('ar_inventory', JSON.stringify(inventory));
                 localStorage.setItem('ar_coins', playerCoins);
                 localStorage.setItem('ar_diamonds', playerDiamonds);
                 localStorage.setItem('ar_tower_floor', towerFloor);
@@ -930,6 +973,25 @@
             let gateTag = document.getElementById('tower-gate-floor');
             if (gateTag) gateTag.innerText = towerFloor;
         }
+
+        try {
+            Object.defineProperty(window, 'playerCoins', {
+                get: () => playerCoins,
+                set: (v) => { playerCoins = Number(v) || 0; saveGameData(); },
+                configurable: true
+            });
+            Object.defineProperty(window, 'playerDiamonds', {
+                get: () => playerDiamonds,
+                set: (v) => { playerDiamonds = Number(v) || 0; saveGameData(); },
+                configurable: true
+            });
+            Object.defineProperty(window, 'inventory', {
+                get: () => inventory,
+                set: (v) => { inventory = v; saveGameData(); },
+                configurable: true
+            });
+            window.saveGameData = saveGameData;
+        } catch(e){}
 
         function goFromHomeToMap() {
             document.getElementById('home-screen').classList.add('hidden');
@@ -2481,7 +2543,18 @@
                     💡 Xếp đủ 3 thú cùng hệ, 3 hệ khác nhau hoặc 3 hệ tương sinh để mở khóa <span class="text-amber-300 font-bold">Trận Pháp Đội Hình</span>!
                    </div>`;
 
-            let html = `<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-lg">🎒 Đội Hình (${team.length}/3)</h3><button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button></div>`;
+            let html = `
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-1.5">
+                    <button onclick="openTeamMenu()" class="px-3 py-1.5 rounded-xl font-black text-xs bg-gradient-to-r from-amber-500 to-yellow-500 text-black shadow cursor-pointer transition">
+                        🐾 Đội Hình (${team.length}/3)
+                    </button>
+                    <button onclick="openInventoryBagModal()" class="px-3 py-1.5 rounded-xl font-bold text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-400 cursor-pointer transition">
+                        🎒 Rương Đồ 5x10
+                    </button>
+                </div>
+                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+            </div>`;
             html += synergyBannerHtml;
 
             if (team.length === 0) html += `<p class="text-zinc-400 text-sm text-center py-6">Đội hình trống!</p>`;
@@ -2515,6 +2588,129 @@
             }
             content.innerHTML = html;
         }
+
+        window.openInventoryBagModal = function() {
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            if (!modal || !content) return;
+            modal.classList.remove('hidden');
+
+            const inv = inventory || {};
+
+            const itemCatalog = [
+                { key: 'luckyTicket', name: 'Vé Quay May Mắn', icon: '🎟️', count: inv.luckyTicket || 0, desc: 'Dùng để quay thưởng tại Vòng Quay May Mắn ở Sảnh Chính.', border: 'border-emerald-500', actionName: '🎡 Quay Ngay', actionFn: "openLuckyWheelModal()" },
+                { key: 'arenaTicket', name: 'Vé Đấu Trường PvP', icon: '⚔️', count: inv.arenaTicket || 0, desc: 'Vé khiêu chiến các đấu thủ khác trên Bảng Xếp Hạng PvP.', border: 'border-red-500', actionName: '⚔️ Vào PvP', actionFn: "openPvpArenaHub()" },
+                { key: 'trainer', name: 'Thẻ Huấn Luyện', icon: '🥋', count: inv.trainer || 0, desc: 'Cho linh thú vào cọc gỗ rèn luyện tăng chỉ số trong 1 giờ.', border: 'border-indigo-500', actionName: '🥋 Vào Luyện Tập', actionFn: "openTrainingArenaModal()" },
+                { key: 'gearShardChest', name: 'Rương Mảnh Trang Bị', icon: '🧰', count: inv.gearShardChest || 0, desc: 'Mở ra ngẫu nhiên Đá Ngũ Hành và Vàng để cường hóa bảo vật.', border: 'border-purple-500', actionName: '🧰 Mở Rương Ngay', actionFn: "openGearShardChest()" },
+                { key: 'food', name: 'Tiệc Thịt Thần Kỳ', icon: '🍖', count: inv.food || 0, desc: 'Thức ăn cao cấp giúp linh thú hồi phục 30 Độ No và 25 Máu.', border: 'border-emerald-400', actionName: '🍖 Dùng Cho Đội', actionFn: "openTeamMenu()" },
+                { key: 'toy', name: 'Bóng Đồ Chơi', icon: '🎾', count: inv.toy || 0, desc: 'Đồ chơi tăng 35 điểm Hạnh Phúc cho linh thú, giúp tăng tỉ lệ chí mạng.', border: 'border-amber-400', actionName: '🎾 Dùng Cho Đội', actionFn: "openTeamMenu()" },
+                { key: 'stoneKim', name: 'Đá Tiến Hóa Kim', icon: '⚔️', count: inv.stoneKim || 0, desc: 'Nguyên liệu cần thiết để đột phá và tiến hóa linh thú Hệ Kim.', border: 'border-yellow-400', actionName: '⚡ Tiến Hóa', actionFn: "openSubRoom('evolve')" },
+                { key: 'stoneMoc', name: 'Đá Tiến Hóa Mộc', icon: '🌿', count: inv.stoneMoc || 0, desc: 'Nguyên liệu cần thiết để đột phá và tiến hóa linh thú Hệ Mộc.', border: 'border-green-400', actionName: '⚡ Tiến Hóa', actionFn: "openSubRoom('evolve')" },
+                { key: 'stoneThuy', name: 'Đá Tiến Hóa Thủy', icon: '💧', count: inv.stoneThuy || 0, desc: 'Nguyên liệu cần thiết để đột phá và tiến hóa linh thú Hệ Thủy.', border: 'border-cyan-400', actionName: '⚡ Tiến Hóa', actionFn: "openSubRoom('evolve')" },
+                { key: 'stoneHoa', name: 'Đá Tiến Hóa Hỏa', icon: '🔥', count: inv.stoneHoa || 0, desc: 'Nguyên liệu cần thiết để đột phá và tiến hóa linh thú Hệ Hỏa.', border: 'border-rose-400', actionName: '⚡ Tiến Hóa', actionFn: "openSubRoom('evolve')" },
+                { key: 'stoneTho', name: 'Đá Tiến Hóa Thổ', icon: '🪨', count: inv.stoneTho || 0, desc: 'Nguyên liệu cần thiết để đột phá và tiến hóa linh thú Hệ Thổ.', border: 'border-amber-600', actionName: '⚡ Tiến Hóa', actionFn: "openSubRoom('evolve')" },
+                { key: 'expPotion', name: 'Thuốc Tăng EXP', icon: '🧪', count: inv.expPotion || 0, desc: 'Thần dược tăng ngay 500 điểm Kinh Nghiệm cho linh thú.', border: 'border-sky-400', actionName: '🧪 Dùng Cho Đội', actionFn: "openTeamMenu()" },
+                { key: 'cleanseWater', name: 'Nước Thanh Tẩy', icon: '🍶', count: inv.cleanseWater || 0, desc: 'Thánh thủy giải trừ trạng thái kiệt sức và hồi phục sinh lực.', border: 'border-teal-400', actionName: '🏥 Bệnh Viện', actionFn: "openHospitalMenu()" }
+            ];
+
+            let slotsHtml = '';
+            const totalSlots = 50;
+
+            for (let i = 0; i < totalSlots; i++) {
+                const item = itemCatalog[i];
+                if (item && item.count > 0) {
+                    slotsHtml += `
+                    <div onclick="showInventoryItemDetail('${item.key}')" class="aspect-square bg-zinc-900 hover:bg-zinc-800 p-1 rounded-xl border ${item.border} flex flex-col items-center justify-between cursor-pointer relative shadow hover:scale-105 active:scale-95 transition">
+                        <span class="text-xl mt-0.5">${item.icon}</span>
+                        <span class="text-[9px] font-black text-amber-300 bg-black/80 px-1 rounded-md self-end">x${item.count}</span>
+                    </div>`;
+                } else if (item) {
+                    slotsHtml += `
+                    <div onclick="showInventoryItemDetail('${item.key}')" class="aspect-square bg-zinc-950/60 p-1 rounded-xl border border-zinc-800/80 flex flex-col items-center justify-between cursor-pointer opacity-40 hover:opacity-70 transition">
+                        <span class="text-lg grayscale mt-0.5">${item.icon}</span>
+                        <span class="text-[8px] font-bold text-zinc-500 self-end">0</span>
+                    </div>`;
+                } else {
+                    slotsHtml += `
+                    <div class="aspect-square bg-zinc-950/30 rounded-xl border border-dashed border-zinc-800/60 flex items-center justify-center text-[9px] text-zinc-700 font-bold select-none">
+                        ${i + 1}
+                    </div>`;
+                }
+            }
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-2.5 pb-2 border-b border-white/10">
+                <div class="flex items-center gap-1.5">
+                    <button onclick="openTeamMenu()" class="px-3 py-1.5 rounded-xl font-bold text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-400 cursor-pointer transition">
+                        🐾 Đội Hình (${team.length}/3)
+                    </button>
+                    <button onclick="openInventoryBagModal()" class="px-3 py-1.5 rounded-xl font-black text-xs bg-gradient-to-r from-amber-500 to-yellow-500 text-black shadow cursor-pointer transition">
+                        🎒 Rương Đồ 5x10
+                    </button>
+                </div>
+                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+            </div>
+
+            <!-- Khung thông tin vật phẩm -->
+            <div id="inv-item-detail-card" class="bg-zinc-900/90 border border-amber-400/40 rounded-2xl p-2.5 mb-2.5 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🎒</span>
+                    <div>
+                        <div class="font-black text-amber-300">Rương Chứa Đồ (5x10 = 50 Ô)</div>
+                        <div class="text-[10px] text-zinc-400">Bấm vào bất kỳ ô vật phẩm để xem chi tiết & sử dụng</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lưới 5x10 -->
+            <div class="grid grid-cols-5 gap-1.5 max-h-[48vh] overflow-y-auto p-1.5 bg-zinc-950/70 rounded-2xl border border-zinc-800/80 no-scrollbar">
+                ${slotsHtml}
+            </div>
+            `;
+        };
+
+        window.showInventoryItemDetail = function(itemKey) {
+            const inv = inventory || {};
+            const catalog = {
+                luckyTicket: { name: 'Vé Quay May Mắn', icon: '🎟️', count: inv.luckyTicket || 0, desc: 'Dùng để quay thưởng tại Vòng Quay May Mắn ở Sảnh Chính.', actionName: '🎡 Vào Vòng Quay', actionFn: "openLuckyWheelModal()" },
+                arenaTicket: { name: 'Vé Đấu Trường PvP', icon: '⚔️', count: inv.arenaTicket || 0, desc: 'Vé khiêu chiến các đấu thủ khác trên Bảng Xếp Hạng PvP.', actionName: '⚔️ Vào PvP', actionFn: "openPvpArenaHub()" },
+                trainer: { name: 'Thẻ Huấn Luyện', icon: '🥋', count: inv.trainer || 0, desc: 'Cho linh thú vào cọc gỗ rèn luyện tăng chỉ số trong 1 giờ.', actionName: '🥋 Vào Luyện Tập', actionFn: "openTrainingArenaModal()" },
+                gearShardChest: { name: 'Rương Mảnh Trang Bị', icon: '🧰', count: inv.gearShardChest || 0, desc: 'Mở ra ngẫu nhiên Đá Ngũ Hành và Vàng để cường hóa bảo vật.', actionName: '🧰 Mở Rương Ngay', actionFn: "openGearShardChest()" },
+                food: { name: 'Tiệc Thịt Thần Kỳ', icon: '🍖', count: inv.food || 0, desc: 'Thức ăn cao cấp giúp linh thú hồi phục 30 Độ No và 25 Máu.', actionName: '🍖 Dùng Cho Đội', actionFn: "openTeamMenu()" },
+                toy: { name: 'Bóng Đồ Chơi', icon: '🎾', count: inv.toy || 0, desc: 'Đồ chơi tăng 35 điểm Hạnh Phúc cho linh thú, giúp tăng tỉ lệ chí mạng.', actionName: '🎾 Dùng Cho Đội', actionFn: "openTeamMenu()" },
+                stoneKim: { name: 'Đá Tiến Hóa Kim', icon: '⚔️', count: inv.stoneKim || 0, desc: 'Nguyên liệu cần thiết để đột phá và tiến hóa linh thú Hệ Kim.', actionName: '⚡ Tiến Hóa', actionFn: "openSubRoom('evolve')" },
+                stoneMoc: { name: 'Đá Tiến Hóa Mộc', icon: '🌿', count: inv.stoneMoc || 0, desc: 'Nguyên liệu cần thiết để đột phá và tiến hóa linh thú Hệ Mộc.', actionName: '⚡ Tiến Hóa', actionFn: "openSubRoom('evolve')" },
+                stoneThuy: { name: 'Đá Tiến Hóa Thủy', icon: '💧', count: inv.stoneThuy || 0, desc: 'Nguyên liệu cần thiết để đột phá và tiến hóa linh thú Hệ Thủy.', actionName: '⚡ Tiến Hóa', actionFn: "openSubRoom('evolve')" },
+                stoneHoa: { name: 'Đá Tiến Hóa Hỏa', icon: '🔥', count: inv.stoneHoa || 0, desc: 'Nguyên liệu cần thiết để đột phá và tiến hóa linh thú Hệ Hỏa.', actionName: '⚡ Tiến Hóa', actionFn: "openSubRoom('evolve')" },
+                stoneTho: { name: 'Đá Tiến Hóa Thổ', icon: '🪨', count: inv.stoneTho || 0, desc: 'Nguyên liệu cần thiết để đột phá và tiến hóa linh thú Hệ Thổ.', actionName: '⚡ Tiến Hóa', actionFn: "openSubRoom('evolve')" },
+                expPotion: { name: 'Thuốc Tăng EXP', icon: '🧪', count: inv.expPotion || 0, desc: 'Thần dược tăng ngay 500 điểm Kinh Nghiệm cho linh thú.', actionName: '🧪 Dùng Cho Đội', actionFn: "openTeamMenu()" },
+                cleanseWater: { name: 'Nước Thanh Tẩy', icon: '🍶', count: inv.cleanseWater || 0, desc: 'Thánh thủy giải trừ trạng thái kiệt sức và hồi phục sinh lực.', actionName: '🏥 Bệnh Viện', actionFn: "openHospitalMenu()" }
+            };
+
+            const it = catalog[itemKey];
+            if (!it) return;
+
+            const card = document.getElementById('inv-item-detail-card');
+            if (!card) return;
+
+            card.innerHTML = `
+            <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                <span class="text-3xl shrink-0">${it.icon}</span>
+                <div class="min-w-0">
+                    <div class="font-black text-amber-300 text-xs flex items-center gap-2">
+                        <span>${it.name}</span>
+                        <span class="bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded text-[10px] font-bold">SL: ${it.count}</span>
+                    </div>
+                    <div class="text-[10px] text-zinc-300 mt-0.5 line-clamp-2">${it.desc}</div>
+                </div>
+            </div>
+            <div class="shrink-0">
+                <button onclick="${it.actionFn}" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 active:scale-95 text-white font-black text-[11px] px-3 py-1.5 rounded-xl shadow cursor-pointer transition">
+                    ${it.actionName}
+                </button>
+            </div>
+            `;
+        };
 
         function moveTeamToFarm(idx) {
             farm.push(team.splice(idx, 1)[0]);
@@ -3982,6 +4178,31 @@
             setTimeout(() => centerPanorama('home-scroller'), 150);
         };
 
+        function toggleHomeMoreTabs(forceState) {
+            const dropdown = document.getElementById('home-nav-dropdown');
+            const toggleBtn = document.getElementById('home-nav-toggle');
+            if (!dropdown || !toggleBtn) return;
+
+            const shouldOpen = typeof forceState === 'boolean'
+                ? forceState
+                : dropdown.classList.contains('hidden');
+
+            if (shouldOpen) {
+                dropdown.classList.remove('hidden');
+                dropdown.classList.add('flex');
+                toggleBtn.innerText = '▲';
+            } else {
+                dropdown.classList.add('hidden');
+                dropdown.classList.remove('flex');
+                toggleBtn.innerText = '▼';
+            }
+        }
+
+        function selectHomeDropdownTab(actionFn) {
+            toggleHomeMoreTabs(false);
+            if (typeof actionFn === 'function') actionFn();
+        }
+
         function toggleMapMoreTabs(forceState) {
             const dropdown = document.getElementById('map-nav-dropdown');
             const toggleBtn = document.getElementById('map-nav-toggle');
@@ -4008,9 +4229,13 @@
         }
 
         document.addEventListener('click', (e) => {
-            const navWrap = document.getElementById('map-top-nav');
-            if (navWrap && !navWrap.contains(e.target)) {
+            const mapNavWrap = document.getElementById('map-top-nav');
+            if (mapNavWrap && !mapNavWrap.contains(e.target)) {
                 toggleMapMoreTabs(false);
+            }
+            const homeNavWrap = document.getElementById('home-top-nav');
+            if (homeNavWrap && !homeNavWrap.contains(e.target)) {
+                toggleHomeMoreTabs(false);
             }
         });
 
@@ -5759,9 +5984,9 @@
     <script src="./admin.js?v=20261120"></script>
     <script src="arena.js?v=20261120"></script>
     <script src="pvp.js?v=20261120"></script>
-    <script src="pwa_tma.js?v=20261120"></script>
-    <script src="carnival.js?v=20261120"></script>
-    <script src="gacha.js?v=20261120"></script>
-    <script src="ar_share.js?v=20261120"></script>
+    <script src="pwa_tma.js?v=20261120_v2"></script>
+    <script src="carnival.js?v=20261120_v2"></script>
+    <script src="gacha.js?v=20261120_v2"></script>
+    <script src="ar_share.js?v=20261120_v2"></script>
 </body>
 </html>
