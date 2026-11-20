@@ -2940,6 +2940,66 @@
                 
                 if (mapMonstersData.length === 0) spawnMultipleMonsters();
                 initRoamingBeasts();
+
+                // ==========================================
+                // LỚP ĐÁNH DẤU QUẦN ĐẢO HOÀNG SA & TRƯỜNG SA TRÊN BẢN ĐỒ
+                // ==========================================
+                const vnArchipelagos = [
+                    {
+                        name: 'Quần Đảo Hoàng Sa',
+                        sub: 'Chủ quyền biển đảo Việt Nam',
+                        lat: 16.5333,
+                        lng: 112.0000,
+                        radiusMeters: 45000
+                    },
+                    {
+                        name: 'Quần Đảo Trường Sa',
+                        sub: 'Chủ quyền biển đảo Việt Nam',
+                        lat: 10.7233,
+                        lng: 115.8150,
+                        radiusMeters: 65000
+                    }
+                ];
+
+                if (!window.vnArchipelagoLayerGroup) {
+                    window.vnArchipelagoLayerGroup = L.layerGroup().addTo(map);
+                } else {
+                    window.vnArchipelagoLayerGroup.clearLayers();
+                }
+
+                vnArchipelagos.forEach(item => {
+                    L.circle([item.lat, item.lng], {
+                        radius: item.radiusMeters,
+                        color: '#facc15',
+                        weight: 1.5,
+                        dashArray: '6, 6',
+                        fillColor: '#facc15',
+                        fillOpacity: 0.08,
+                        interactive: false
+                    }).addTo(window.vnArchipelagoLayerGroup);
+
+                    const archIcon = L.divIcon({
+                        className: 'leaflet-div-icon',
+                        html: `
+                            <div class="flex flex-col items-center pointer-events-none select-none">
+                                <div class="bg-red-950/90 border border-amber-400 text-amber-200 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-lg whitespace-nowrap">
+                                    🇻🇳 ${item.name}
+                                </div>
+                                <div class="bg-black/75 text-[9px] text-amber-300/90 px-2 py-0.2 rounded-full mt-0.5 whitespace-nowrap">
+                                    ${item.sub}
+                                </div>
+                            </div>
+                        `,
+                        iconSize: [160, 38],
+                        iconAnchor: [80, 19]
+                    });
+
+                    L.marker([item.lat, item.lng], {
+                        icon: archIcon,
+                        interactive: false,
+                        zIndexOffset: 800
+                    }).addTo(window.vnArchipelagoLayerGroup);
+                });
                 
                 setTimeout(() => { if (map) map.invalidateSize(); }, 150);
                 setTimeout(() => { if (map) map.invalidateSize(); }, 500);
