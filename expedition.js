@@ -6,69 +6,111 @@
 (function () {
     const EXPEDITION_STORAGE_KEY = 'ar_active_expedition';
 
-    // CẤU HÌNH 3 VÙNG ĐẤT THÁM HIỂM ĐẶC TRƯNG
+    // CẤU HÌNH 5 VÙNG ĐẤT THÁM HIỂM THEO NGŨ HÀNH (KIM - MỘC - THỦY - HỎA - THỔ)
     const EXPEDITION_ZONES = [
         {
             id: 'forest',
             name: 'Rừng Sương Mù',
-            subtitle: 'Đại Ngàn Huyền Bí',
+            subtitle: 'Đại Ngàn Mộc Linh',
             icon: '🌲',
             bg: 'zone_forest.webp',
             fallbackBg: 'linear-gradient(135deg, #064e3b 0%, #022c22 100%)',
             badgeBg: 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300',
             accentColor: '#10b981',
-            favoredElements: ['Moc', 'Thuy'], // Mộc & Thủy
-            favoredLabel: 'Hệ Mộc 🌿 & Hệ Thủy 💧',
-            bonusDesc: '+35% Tỷ lệ Quà Quý & Cơ Hội Rơi Trứng Linh Thú Xanh',
-            lore: 'Khu rừng đại thụ ngàn năm rêu phong mây mờ ảo diệu. Nơi đây dồi dào sinh khí tự nhiên, ẩn chứa nhiều thảo mộc tăng lực và trứng linh thú hệ Mộc/Thủy.',
+            favoredElements: ['Moc'],
+            favoredLabel: 'Hệ Mộc 🌿',
+            bonusDesc: '+35% Tỷ lệ Quà Quý & Cơ Hội Rơi Trứng Linh Thú Mộc',
+            lore: 'Khu rừng đại thụ ngàn năm rêu phong mây mờ ảo diệu. Dồi dào linh khí Mộc tự nhiên, ẩn chứa nhiều thảo mộc tăng lực và Đá Mộc.',
             specialDrops: [
                 { key: 'stoneMoc', name: 'Đá Mộc', icon: '🌿' },
-                { key: 'stoneThuy', name: 'Đá Thủy', icon: '💧' },
                 { key: 'food', name: 'Thịt Thần', icon: '🍖' },
                 { key: 'toy', name: 'Đồ Chơi', icon: '🎾' },
-                { key: 'luckyTicket', name: 'Vé Quay', icon: '🎟️' }
+                { key: 'luckyTicket', name: 'Vé Quay', icon: '🎟️' },
+                { key: 'coins', name: 'Vàng Khủng', icon: '🪙' }
             ]
         },
         {
             id: 'volcano',
             name: 'Đỉnh Núi Lửa',
-            subtitle: 'Hoả Ngục Bất Tận',
+            subtitle: 'Hỏa Ngục Bất Tận',
             icon: '🌋',
             bg: 'zone_volcano.webp',
             fallbackBg: 'linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%)',
             badgeBg: 'bg-rose-950/80 border-rose-500/60 text-rose-300',
             accentColor: '#ef4444',
-            favoredElements: ['Hoa', 'Tho'], // Hỏa & Thổ
-            favoredLabel: 'Hệ Hỏa 🔥 & Hệ Thổ 🪨',
+            favoredElements: ['Hoa'],
+            favoredLabel: 'Hệ Hỏa 🔥',
             bonusDesc: '+35% Tỷ lệ Quà Quý & Cơ Hội Rơi Rương Ấn Ký / KC Khủng',
             lore: 'Miệng núi lửa bốc khói nham thạch đỏ rực trên vách đá bazan đen. Là thánh địa rèn đúc trang bị bảo vật và tích tụ khối lượng Vàng, Kim Cương khổng lồ.',
             specialDrops: [
                 { key: 'stoneHoa', name: 'Đá Hỏa', icon: '🔥' },
-                { key: 'stoneTho', name: 'Đá Thổ', icon: '🪨' },
                 { key: 'gearShardChest', name: 'Rương Mảnh TB', icon: '🧰' },
                 { key: 'diamonds', name: 'Kim Cương', icon: '💎' },
-                { key: 'coins', name: 'Vàng Khủng', icon: '🪙' }
+                { key: 'coins', name: 'Vàng Khủng', icon: '🪙' },
+                { key: 'luckyTicket', name: 'Vé Quay', icon: '🎟️' }
             ]
         },
         {
             id: 'swamp',
             name: 'Đầm Lầy Cổ Xưa',
-            subtitle: 'Vực Thẳm U Tịch',
-            icon: '🍄',
+            subtitle: 'Thao Thiết Kim Linh',
+            icon: '⚔️',
             bg: 'zone_swamp.webp',
             fallbackBg: 'linear-gradient(135deg, #3b0764 0%, #1e1b4b 100%)',
             badgeBg: 'bg-purple-950/80 border-purple-500/60 text-purple-300',
             accentColor: '#a855f7',
-            favoredElements: ['Kim', 'Thuy'], // Kim & Thủy
-            favoredLabel: 'Hệ Kim ⚔️ & Hệ Thủy 💧',
-            bonusDesc: '+35% Tỷ lệ Quà Quý & Cơ Hội Rơi Mảnh Thần Thoại / Trứng F1',
-            lore: 'Vùng đầm nước phản chiếu nấm phát quang tím ma mị và rễ cây đan xen cổ quái. Nơi lưu giữ tàn tích sinh học thượng cổ cùng mảnh ghép Thần Thú bí ẩn.',
+            favoredElements: ['Kim'],
+            favoredLabel: 'Hệ Kim ⚔️',
+            bonusDesc: '+35% Tỷ lệ Quà Quý & Cơ Hội Rơi Mảnh Thần Thoại / Vé PvP',
+            lore: 'Vùng đầm nước tàn tích giáp trụ cổ đại đan xen quặng sắt kim loại thượng cổ. Nơi tích tụ năng lượng Kim khí và mảnh vỡ Thần Thú bí ẩn.',
             specialDrops: [
                 { key: 'stoneKim', name: 'Đá Kim', icon: '⚔️' },
                 { key: 'mythicShards', name: 'Mảnh Thần', icon: '🧩' },
                 { key: 'arenaTicket', name: 'Vé PvP', icon: '⚔️' },
+                { key: 'expPotion', name: 'Thuốc EXP', icon: '🧪' },
+                { key: 'cleanseWater', name: 'Nước Thanh Tẩy', icon: '🍶' }
+            ]
+        },
+        {
+            id: 'ice',
+            name: 'Vực Băng Vĩnh Cửu',
+            subtitle: 'Hàn Băng Thấu Xương',
+            icon: '❄️',
+            bg: 'zone_ice.webp',
+            fallbackBg: 'linear-gradient(135deg, #0c4a6e 0%, #082f49 100%)',
+            badgeBg: 'bg-cyan-950/80 border-cyan-500/60 text-cyan-300',
+            accentColor: '#06b6d4',
+            favoredElements: ['Thuy'],
+            favoredLabel: 'Hệ Thủy 💧',
+            bonusDesc: '+35% Tỷ lệ Quà Quý & Rơi Nước Thanh Tẩy / Trứng Băng',
+            lore: 'Dải băng vĩnh cửu ngàn năm phủ tuyết trắng xóa và tinh thể băng lấp lánh. Tinh hoa hàn khí kết tinh thành Nước Thanh Tẩy và Đá Thủy cực phẩm.',
+            specialDrops: [
+                { key: 'stoneThuy', name: 'Đá Thủy', icon: '💧' },
                 { key: 'cleanseWater', name: 'Nước Thanh Tẩy', icon: '🍶' },
-                { key: 'expPotion', name: 'Thuốc EXP', icon: '🧪' }
+                { key: 'expPotion', name: 'Thuốc EXP', icon: '🧪' },
+                { key: 'luckyTicket', name: 'Vé Quay', icon: '🎟️' },
+                { key: 'diamonds', name: 'Kim Cương', icon: '💎' }
+            ]
+        },
+        {
+            id: 'desert',
+            name: 'Hoang Mạc Cát Vàng',
+            subtitle: 'Cổ Thổ Cằn Cỗi',
+            icon: '🏜️',
+            bg: 'zone_desert.webp',
+            fallbackBg: 'linear-gradient(135deg, #78350f 0%, #451a03 100%)',
+            badgeBg: 'bg-amber-950/80 border-amber-500/60 text-amber-300',
+            accentColor: '#f59e0b',
+            favoredElements: ['Tho'],
+            favoredLabel: 'Hệ Thổ 🪨',
+            bonusDesc: '+35% Tỷ lệ Quà Quý & Rơi Rương TB / Mảnh Thần Thoại',
+            lore: 'Vùng sa mạc cát vàng mênh mông che giấu những tàn tích và kim tự tháp ngàn năm. Ẩn sâu trong lòng đất là kho tàng Đá Thổ và rương báu thượng cổ.',
+            specialDrops: [
+                { key: 'stoneTho', name: 'Đá Thổ', icon: '🪨' },
+                { key: 'gearShardChest', name: 'Rương Mảnh TB', icon: '🧰' },
+                { key: 'mythicShards', name: 'Mảnh Thần', icon: '🧩' },
+                { key: 'coins', name: 'Vàng Khổng Lồ', icon: '🪙' },
+                { key: 'arenaTicket', name: 'Vé PvP', icon: '⚔️' }
             ]
         }
     ];
@@ -219,13 +261,13 @@
         const selectedPets = allAvailablePets.filter(p => selectedPetIds.includes(p.id));
         const hasFavoredElement = selectedPets.some(p => currentZone.favoredElements.includes(p.element));
 
-        // Render Tabs 3 vùng đất
+        // Render Tabs 5 vùng đất Ngũ Hành
         const tabsHtml = EXPEDITION_ZONES.map((zone, idx) => {
             const isActive = idx === selectedZoneIndex;
             return `
-            <button onclick="setExpeditionZone(${idx})" class="flex-1 py-2 px-1 rounded-2xl text-xs font-black transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isActive ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black shadow-lg scale-[1.02]' : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-white/5'}">
+            <button onclick="setExpeditionZone(${idx})" class="flex-shrink-0 min-w-[70px] sm:flex-1 py-1.5 px-1 rounded-2xl text-[11px] font-black transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isActive ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black shadow-lg scale-[1.02]' : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-white/5'}">
                 <span class="text-base">${zone.icon}</span>
-                <span class="truncate max-w-full">${zone.name}</span>
+                <span class="truncate max-w-full text-[10px]">${zone.name}</span>
             </button>
             `;
         }).join('');
@@ -288,8 +330,8 @@
                 <button onclick="closeExpeditionModal()" class="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-black flex items-center justify-center cursor-pointer">✕</button>
             </div>
 
-            <!-- Tab chọn Vùng Đất -->
-            <div class="px-3.5 pt-3 pb-1 flex gap-1.5 bg-zinc-950">
+            <!-- Tab chọn Vùng Đất Ngũ Hành -->
+            <div class="px-3 pt-2.5 pb-1 flex gap-1.5 bg-zinc-950 overflow-x-auto no-scrollbar">
                 ${tabsHtml}
             </div>
 
@@ -696,16 +738,19 @@
         const stoneList = [];
         if (zone.id === 'forest') {
             inv.stoneMoc = (Number(inv.stoneMoc) || 0) + baseStones;
-            inv.stoneThuy = (Number(inv.stoneThuy) || 0) + Math.max(1, Math.floor(baseStones * 0.7));
-            stoneList.push(`🌿 Đá Mộc (+${baseStones})`, `💧 Đá Thủy (+${Math.max(1, Math.floor(baseStones * 0.7))})`);
+            stoneList.push(`🌿 Đá Mộc (+${baseStones})`);
         } else if (zone.id === 'volcano') {
             inv.stoneHoa = (Number(inv.stoneHoa) || 0) + baseStones;
-            inv.stoneTho = (Number(inv.stoneTho) || 0) + Math.max(1, Math.floor(baseStones * 0.7));
-            stoneList.push(`🔥 Đá Hỏa (+${baseStones})`, `🪨 Đá Thổ (+${Math.max(1, Math.floor(baseStones * 0.7))})`);
-        } else {
+            stoneList.push(`🔥 Đá Hỏa (+${baseStones})`);
+        } else if (zone.id === 'swamp') {
             inv.stoneKim = (Number(inv.stoneKim) || 0) + baseStones;
-            inv.stoneThuy = (Number(inv.stoneThuy) || 0) + Math.max(1, Math.floor(baseStones * 0.7));
-            stoneList.push(`⚔️ Đá Kim (+${baseStones})`, `💧 Đá Thủy (+${Math.max(1, Math.floor(baseStones * 0.7))})`);
+            stoneList.push(`⚔️ Đá Kim (+${baseStones})`);
+        } else if (zone.id === 'ice') {
+            inv.stoneThuy = (Number(inv.stoneThuy) || 0) + baseStones;
+            stoneList.push(`💧 Đá Thủy (+${baseStones})`);
+        } else if (zone.id === 'desert') {
+            inv.stoneTho = (Number(inv.stoneTho) || 0) + baseStones;
+            stoneList.push(`🪨 Đá Thổ (+${baseStones})`);
         }
 
         // 3. Vật phẩm đặc sản theo vùng đất
@@ -746,6 +791,33 @@
                 inv.arenaTicket = (Number(inv.arenaTicket) || 0) + 1;
                 dropItems.push(`⚔️ Vé Đấu Trường PvP (+1)`);
             }
+        } else if (zone.id === 'ice') {
+            const cleanseQty = Math.max(1, Math.floor((1 + Math.random()) * petMultiplier));
+            inv.cleanseWater = (Number(inv.cleanseWater) || 0) + cleanseQty;
+            dropItems.push(`🍶 Nước Thanh Tẩy (+${cleanseQty})`);
+
+            const potionQty = Math.floor((1 + Math.random() * 2) * petMultiplier);
+            inv.expPotion = (Number(inv.expPotion) || 0) + potionQty;
+            dropItems.push(`🧪 Thuốc Tăng EXP (+${potionQty})`);
+
+            if (Math.random() < 0.45 * luckMultiplier) {
+                inv.luckyTicket = (Number(inv.luckyTicket) || 0) + 1;
+                dropItems.push(`🎟️ Vé Quay May Mắn (+1)`);
+            }
+        } else if (zone.id === 'desert') {
+            const chestQty = Math.max(1, Math.floor(petMultiplier));
+            inv.gearShardChest = (Number(inv.gearShardChest) || 0) + chestQty;
+            dropItems.push(`🧰 Rương Mảnh Trang Bị (+${chestQty})`);
+
+            if (Math.random() < 0.6 * luckMultiplier) {
+                const shardQty = Math.floor(2 + Math.random() * 3);
+                inv.mythicShards = (Number(inv.mythicShards) || 0) + shardQty;
+                dropItems.push(`🧩 Mảnh Thần Thoại (+${shardQty})`);
+            }
+            if (Math.random() < 0.4 * luckMultiplier) {
+                inv.arenaTicket = (Number(inv.arenaTicket) || 0) + 1;
+                dropItems.push(`⚔️ Vé Đấu Trường PvP (+1)`);
+            }
         }
 
         // 4. Cơ hội rơi Trứng Linh Thú
@@ -756,7 +828,7 @@
             if (zone.id === 'forest') {
                 eggDropped = {
                     name: 'Trứng Đại Ngàn Hiếm',
-                    element: Math.random() < 0.5 ? 'Moc' : 'Thuy',
+                    element: 'Moc',
                     rarity: { name: 'Hiếm', color: 'text-emerald-400', bg: 'border-emerald-500', badge: '🟢 Xanh', statMultiplier: 1.3 },
                     steps: 0,
                     requiredSteps: 35
@@ -769,16 +841,32 @@
                     steps: 0,
                     requiredSteps: 45
                 };
-            } else {
+            } else if (zone.id === 'swamp') {
                 eggDropped = {
-                    name: 'Trứng Đột Biến F1 Đầm Lầy',
+                    name: 'Trứng Đột Biến F1 Kim Giáp',
+                    element: 'Kim',
+                    rarity: { name: 'Cực Hiếm', color: 'text-yellow-400', bg: 'border-yellow-500', badge: '🟡 Vàng', statMultiplier: 1.6 },
+                    steps: 0,
+                    requiredSteps: 45
+                };
+            } else if (zone.id === 'ice') {
+                eggDropped = {
+                    name: 'Trứng Hàn Băng Bắc Cực',
                     element: 'Thuy',
+                    rarity: { name: 'Hiếm', color: 'text-cyan-400', bg: 'border-cyan-500', badge: '🟢 Xanh', statMultiplier: 1.35 },
+                    steps: 0,
+                    requiredSteps: 40
+                };
+            } else if (zone.id === 'desert') {
+                eggDropped = {
+                    name: 'Trứng Sa Mạc Cổ Kim F1',
+                    element: 'Tho',
                     rarity: { name: 'Cực Hiếm', color: 'text-yellow-400', bg: 'border-yellow-500', badge: '🟡 Vàng', statMultiplier: 1.6 },
                     steps: 0,
                     requiredSteps: 45
                 };
             }
-            targetEggs.push(eggDropped);
+            if (eggDropped) targetEggs.push(eggDropped);
         }
 
         // 5. Thưởng EXP cho tất cả linh thú tham gia chuyến đi

@@ -1946,6 +1946,10 @@ export default {
                         if (item.seller.toLowerCase() === me.toLowerCase()) {
                             return jsonResponse({ ok: false, error: "Không thể tự mua vật phẩm của chính mình!" }, 400);
                         }
+                        // Kiểm tra thời hạn 24 giờ
+                        if (Date.now() - Number(item.created_at || 0) >= 24 * 3600 * 1000) {
+                            return jsonResponse({ ok: false, error: "Vật phẩm này đã quá thời hạn 24 giờ trên sàn và đang chờ người bán thu hồi!" }, 400);
+                        }
 
                         const now = Date.now();
                         await db.prepare(
