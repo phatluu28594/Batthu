@@ -1538,6 +1538,7 @@ export default {
 
         // ==========================================
         // API 9: BANG HỘI / GIA TỘC THỢ SĂN (/api/guild)
+        // Hỗ trợ: Tự duyệt / Chờ duyệt, Tab Xin Vào Hội, Phó Hội (tối đa 2 người do Bang Chủ bổ nhiệm)
         // ==========================================
         if (url.pathname === "/api/guild") {
             try {
@@ -1553,6 +1554,7 @@ export default {
                             level INTEGER NOT NULL DEFAULT 1,
                             exp INTEGER NOT NULL DEFAULT 0,
                             coins_fund INTEGER NOT NULL DEFAULT 0,
+                            auto_approve INTEGER NOT NULL DEFAULT 1,
                             announcement TEXT DEFAULT 'Chào mừng các Thợ Săn gia nhập Bang Hội!',
                             created_at INTEGER NOT NULL
                         )
@@ -1564,6 +1566,15 @@ export default {
                             role TEXT NOT NULL DEFAULT 'member',
                             contribution INTEGER NOT NULL DEFAULT 0,
                             joined_at INTEGER NOT NULL
+                        )
+                    `),
+                    db.prepare(`
+                        CREATE TABLE IF NOT EXISTS guild_requests (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            guild_id INTEGER NOT NULL,
+                            username TEXT NOT NULL,
+                            created_at INTEGER NOT NULL,
+                            UNIQUE(guild_id, username)
                         )
                     `),
                     db.prepare(`
@@ -1587,8 +1598,14 @@ export default {
                         )
                     `),
                     db.prepare(`CREATE INDEX IF NOT EXISTS idx_guild_mem_gid ON guild_members(guild_id)`),
+                    db.prepare(`CREATE INDEX IF NOT EXISTS idx_guild_req_gid ON guild_requests(guild_id, id)`),
                     db.prepare(`CREATE INDEX IF NOT EXISTS idx_guild_chat_gid ON guild_chat(guild_id, id)`)
                 ]);
+
+                // Bổ sung cột auto_approve nếu bảng guilds đã tồn tại trước đó
+                try {
+                    await db.prepare("ALTER TABLE guilds ADD COLUMN auto_approve INTEGER NOT NULL DEFAULT 1").run();
+                } catch (e) {}
 
                 const weekKey = getCurrentWeekKey();
 
@@ -1597,6 +1614,8 @@ export default {
                     let myMembership = null;
                     let myGuild = null;
                     let members = [];
+                    let requests = [];
+                    let myPendingGuildIds = [];
                     let messages = [];
                     let guildBoss = null;
 
@@ -1610,10 +1629,21 @@ export default {
                                 .bind(myMembership.guild_id).first();
 
                             if (myGuild) {
-                                const { results: memRows } = await db.prepare(
-                                    "SELECT username, role, contribution, joined_at FROM guild_members WHERE guild_id = ? ORDER BY contribution DESC, joined_at ASC"
-                                ).bind(myGuild.id).all();
+                                const { results: memRows } = await db.prepare(`
+                                    SELECT username, role, contribution, joined_at
+                                    FROM guild_members
+                                    WHERE guild_id = ?
+                                    ORDER BY
+                                        CASE role WHEN 'leader' THEN 0 WHEN 'vice' THEN 1 ELSE 2 END ASC,
+                                        contribution DESC,
+                                        joined_at ASC
+                                `).bind(myGuild.id).all();
                                 members = memRows || [];
+
+                                const { results: reqRows } = await db.prepare(
+                                    "SELECT id, username, created_at FROM guild_requests WHERE guild_id = ? ORDER BY id ASC LIMIT 50"
+                                ).bind(myGuild.id).all();
+                                requests = reqRows || [];
 
                                 const { results: chatRows } = await db.prepare(
                                     "SELECT id, sender, text, created_at FROM guild_chat WHERE guild_id = ? ORDER BY id DESC LIMIT 30"
@@ -1639,11 +1669,17 @@ export default {
                                         .bind(myGuild.id).first();
                                 }
                             }
+                        } else {
+                            const { results: myReqs } = await db.prepare(
+                                "SELECT guild_id FROM guild_requests WHERE LOWER(username) = LOWER(?)"
+                            ).bind(me).all();
+                            myPendingGuildIds = (myReqs || []).map(r => Number(r.guild_id));
                         }
                     }
 
                     const { results: guildList } = await db.prepare(`
                         SELECT g.id, g.name, g.tag, g.leader, g.level, g.exp, g.announcement,
+                               COALESCE(g.auto_approve, 1) AS auto_approve,
                                (SELECT COUNT(*) FROM guild_members gm WHERE gm.guild_id = g.id) AS member_count
                         FROM guilds g
                         ORDER BY g.level DESC, g.exp DESC, g.id ASC
@@ -1655,6 +1691,8 @@ export default {
                         myMembership,
                         myGuild,
                         members,
+                        requests,
+                        myPendingGuildIds,
                         messages,
                         guildBoss,
                         guilds: guildList || []
@@ -1673,6 +1711,7 @@ export default {
                     if (action === "create") {
                         const name = String(body.name || "").trim().slice(0, 20);
                         const tag = String(body.tag || "").trim().toUpperCase().slice(0, 4);
+                        const autoApprove = body.autoApprove === false || Number(body.autoApprove) === 0 ? 0 : 1;
                         if (name.length < 3) return jsonResponse({ ok: false, error: "Tên Bang Hội phải từ 3-20 ký tự!" }, 400);
                         if (tag.length < 2) return jsonResponse({ ok: false, error: "Huy hiệu Bang phải từ 2-4 ký tự!" }, 400);
 
@@ -1686,13 +1725,15 @@ export default {
 
                         const now = Date.now();
                         const res = await db.prepare(
-                            "INSERT INTO guilds (name, tag, leader, level, exp, coins_fund, created_at) VALUES (?, ?, ?, 1, 0, 0, ?)"
-                        ).bind(name, tag, me, now).run();
+                            "INSERT INTO guilds (name, tag, leader, level, exp, coins_fund, auto_approve, created_at) VALUES (?, ?, ?, 1, 0, 0, ?, ?)"
+                        ).bind(name, tag, me, autoApprove, now).run();
                         const guildId = res.meta?.last_row_id;
 
                         await db.prepare(
                             "INSERT INTO guild_members (username, guild_id, role, contribution, joined_at) VALUES (?, ?, 'leader', 500, ?)"
                         ).bind(me, guildId, now).run();
+
+                        await db.prepare("DELETE FROM guild_requests WHERE LOWER(username) = LOWER(?)").bind(me).run();
 
                         await db.prepare(
                             "INSERT INTO guild_chat (guild_id, sender, text, created_at) VALUES (?, '📢 HỆ THỐNG', ?, ?)"
@@ -1707,7 +1748,9 @@ export default {
                             .bind(me).first();
                         if (already) return jsonResponse({ ok: false, error: "Bạn đã ở trong một Bang Hội rồi!" }, 400);
 
-                        const guild = await db.prepare("SELECT id, level FROM guilds WHERE id = ?").bind(guildId).first();
+                        const guild = await db.prepare(
+                            "SELECT id, name, level, COALESCE(auto_approve, 1) AS auto_approve FROM guilds WHERE id = ?"
+                        ).bind(guildId).first();
                         if (!guild) return jsonResponse({ ok: false, error: "Không tìm thấy Bang Hội!" }, 404);
 
                         const cntRow = await db.prepare("SELECT COUNT(*) as c FROM guild_members WHERE guild_id = ?")
@@ -1718,13 +1761,174 @@ export default {
                         }
 
                         const now = Date.now();
+                        // Nếu bật Tự Duyệt (auto_approve == 1) -> vào thẳng Bang Hội
+                        if (Number(guild.auto_approve) === 1) {
+                            await db.prepare(
+                                "INSERT INTO guild_members (username, guild_id, role, contribution, joined_at) VALUES (?, ?, 'member', 0, ?)"
+                            ).bind(me, guildId, now).run();
+
+                            await db.prepare("DELETE FROM guild_requests WHERE LOWER(username) = LOWER(?)").bind(me).run();
+
+                            await db.prepare(
+                                "INSERT INTO guild_chat (guild_id, sender, text, created_at) VALUES (?, '📢 HỆ THỐNG', ?, ?)"
+                            ).bind(guildId, `Chào mừng [${me}] gia nhập Bang Hội!`, now).run();
+
+                            return jsonResponse({ ok: true, status: "joined" });
+                        }
+
+                        // Nếu KHÔNG Tự Duyệt -> đưa vào danh sách chờ Bang Chủ / Phó Hội duyệt
+                        const dupReq = await db.prepare(
+                            "SELECT id FROM guild_requests WHERE guild_id = ? AND LOWER(username) = LOWER(?)"
+                        ).bind(guildId, me).first();
+                        if (dupReq) {
+                            return jsonResponse({ ok: false, error: "Bạn đã gửi đơn xin gia nhập Bang Hội này rồi, hãy chờ duyệt!" }, 400);
+                        }
+
+                        await db.prepare(
+                            "INSERT INTO guild_requests (guild_id, username, created_at) VALUES (?, ?, ?)"
+                        ).bind(guildId, me, now).run();
+
+                        return jsonResponse({ ok: true, status: "pending" });
+                    }
+
+                    if (action === "cancel_request") {
+                        const guildId = Number(body.guildId);
+                        await db.prepare(
+                            "DELETE FROM guild_requests WHERE guild_id = ? AND LOWER(username) = LOWER(?)"
+                        ).bind(guildId, me).run();
+                        return jsonResponse({ ok: true });
+                    }
+
+                    if (action === "toggle_auto_approve") {
+                        const mem = await db.prepare(
+                            "SELECT guild_id, role FROM guild_members WHERE LOWER(username) = LOWER(?)"
+                        ).bind(me).first();
+                        if (!mem || (mem.role !== "leader" && mem.role !== "vice")) {
+                            return jsonResponse({ ok: false, error: "Chỉ Bang Chủ hoặc Phó Hội mới được chỉnh chế độ duyệt!" }, 403);
+                        }
+                        const autoApprove = body.autoApprove ? 1 : 0;
+                        await db.prepare("UPDATE guilds SET auto_approve = ? WHERE id = ?")
+                            .bind(autoApprove, mem.guild_id).run();
+                        return jsonResponse({ ok: true, autoApprove });
+                    }
+
+                    if (action === "approve_request" || action === "reject_request") {
+                        const targetUser = String(body.targetUser || "").trim();
+                        const mem = await db.prepare(
+                            "SELECT guild_id, role FROM guild_members WHERE LOWER(username) = LOWER(?)"
+                        ).bind(me).first();
+                        if (!mem || (mem.role !== "leader" && mem.role !== "vice")) {
+                            return jsonResponse({ ok: false, error: "Chỉ Bang Chủ hoặc Phó Hội mới có quyền duyệt thành viên!" }, 403);
+                        }
+
+                        const reqRow = await db.prepare(
+                            "SELECT id, username FROM guild_requests WHERE guild_id = ? AND LOWER(username) = LOWER(?)"
+                        ).bind(mem.guild_id, targetUser).first();
+                        if (!reqRow) {
+                            return jsonResponse({ ok: false, error: "Đơn xin vào hội không còn tồn tại hoặc đã được xử lý!" }, 404);
+                        }
+
+                        await db.prepare("DELETE FROM guild_requests WHERE id = ?").bind(reqRow.id).run();
+
+                        if (action === "reject_request") {
+                            return jsonResponse({ ok: true });
+                        }
+
+                        const alreadyInGuild = await db.prepare(
+                            "SELECT guild_id FROM guild_members WHERE LOWER(username) = LOWER(?)"
+                        ).bind(reqRow.username).first();
+                        if (alreadyInGuild) {
+                            return jsonResponse({ ok: false, error: `[${reqRow.username}] đã gia nhập Bang Hội khác rồi!` }, 400);
+                        }
+
+                        const guild = await db.prepare("SELECT level FROM guilds WHERE id = ?").bind(mem.guild_id).first();
+                        const cntRow = await db.prepare("SELECT COUNT(*) as c FROM guild_members WHERE guild_id = ?")
+                            .bind(mem.guild_id).first();
+                        const maxMembers = 15 + ((guild?.level || 1) - 1) * 5;
+                        if ((cntRow?.c || 0) >= maxMembers) {
+                            return jsonResponse({ ok: false, error: `Bang Hội đã đủ thành viên (${maxMembers}/${maxMembers})!` }, 400);
+                        }
+
+                        const now = Date.now();
                         await db.prepare(
                             "INSERT INTO guild_members (username, guild_id, role, contribution, joined_at) VALUES (?, ?, 'member', 0, ?)"
-                        ).bind(me, guildId, now).run();
+                        ).bind(reqRow.username, mem.guild_id, now).run();
+                        await db.prepare("DELETE FROM guild_requests WHERE LOWER(username) = LOWER(?)").bind(reqRow.username).run();
+
+                        const roleTitle = mem.role === "leader" ? "Bang Chủ" : "Phó Hội";
+                        await db.prepare(
+                            "INSERT INTO guild_chat (guild_id, sender, text, created_at) VALUES (?, '📢 HỆ THỐNG', ?, ?)"
+                        ).bind(mem.guild_id, `${roleTitle} [${me}] đã duyệt [${reqRow.username}] gia nhập Bang Hội!`, now).run();
+
+                        return jsonResponse({ ok: true });
+                    }
+
+                    if (action === "set_role") {
+                        const targetUser = String(body.targetUser || "").trim();
+                        const newRole = body.role === "vice" ? "vice" : "member";
+
+                        const mem = await db.prepare(
+                            "SELECT guild_id, role FROM guild_members WHERE LOWER(username) = LOWER(?)"
+                        ).bind(me).first();
+                        if (!mem || mem.role !== "leader") {
+                            return jsonResponse({ ok: false, error: "Chỉ Bang Chủ mới có quyền bổ nhiệm hoặc miễn nhiệm Phó Hội!" }, 403);
+                        }
+
+                        const targetMem = await db.prepare(
+                            "SELECT username, role FROM guild_members WHERE guild_id = ? AND LOWER(username) = LOWER(?)"
+                        ).bind(mem.guild_id, targetUser).first();
+                        if (!targetMem || targetMem.role === "leader") {
+                            return jsonResponse({ ok: false, error: "Thành viên không hợp lệ!" }, 400);
+                        }
+
+                        if (newRole === "vice" && targetMem.role !== "vice") {
+                            const viceCnt = await db.prepare(
+                                "SELECT COUNT(*) as c FROM guild_members WHERE guild_id = ? AND role = 'vice'"
+                            ).bind(mem.guild_id).first();
+                            if ((viceCnt?.c || 0) >= 2) {
+                                return jsonResponse({ ok: false, error: "Mỗi Bang Hội chỉ được bổ nhiệm tối đa 2 Phó Hội!" }, 400);
+                            }
+                        }
+
+                        await db.prepare(
+                            "UPDATE guild_members SET role = ? WHERE guild_id = ? AND username = ?"
+                        ).bind(newRole, mem.guild_id, targetMem.username).run();
+
+                        const msgText = newRole === "vice"
+                            ? `🎖️ Bang Chủ [${me}] đã bổ nhiệm [${targetMem.username}] làm Phó Hội!`
+                            : `📋 Bang Chủ [${me}] đã miễn nhiệm chức Phó Hội của [${targetMem.username}].`;
+                        await db.prepare(
+                            "INSERT INTO guild_chat (guild_id, sender, text, created_at) VALUES (?, '📢 HỆ THỐNG', ?, ?)"
+                        ).bind(mem.guild_id, msgText, Date.now()).run();
+
+                        return jsonResponse({ ok: true });
+                    }
+
+                    if (action === "kick_member") {
+                        const targetUser = String(body.targetUser || "").trim();
+                        const mem = await db.prepare(
+                            "SELECT guild_id, role FROM guild_members WHERE LOWER(username) = LOWER(?)"
+                        ).bind(me).first();
+                        if (!mem || (mem.role !== "leader" && mem.role !== "vice")) {
+                            return jsonResponse({ ok: false, error: "Bạn không có quyền trục xuất thành viên!" }, 403);
+                        }
+
+                        const targetMem = await db.prepare(
+                            "SELECT username, role FROM guild_members WHERE guild_id = ? AND LOWER(username) = LOWER(?)"
+                        ).bind(mem.guild_id, targetUser).first();
+                        if (!targetMem || targetMem.role === "leader") {
+                            return jsonResponse({ ok: false, error: "Không thể trục xuất Bang Chủ!" }, 400);
+                        }
+                        if (mem.role === "vice" && targetMem.role === "vice") {
+                            return jsonResponse({ ok: false, error: "Phó Hội không thể trục xuất Phó Hội khác!" }, 403);
+                        }
+
+                        await db.prepare("DELETE FROM guild_members WHERE guild_id = ? AND username = ?")
+                            .bind(mem.guild_id, targetMem.username).run();
 
                         await db.prepare(
                             "INSERT INTO guild_chat (guild_id, sender, text, created_at) VALUES (?, '📢 HỆ THỐNG', ?, ?)"
-                        ).bind(guildId, `Chào mừng [${me}] gia nhập Bang Hội!`, now).run();
+                        ).bind(mem.guild_id, `🚪 [${targetMem.username}] đã bị mời rời khỏi Bang Hội bởi [${me}].`, Date.now()).run();
 
                         return jsonResponse({ ok: true });
                     }
@@ -1735,14 +1939,18 @@ export default {
                         if (!mem) return jsonResponse({ ok: false, error: "Bạn chưa vào Bang Hội nào!" }, 400);
 
                         if (mem.role === "leader") {
-                            const nextMember = await db.prepare(
-                                "SELECT username FROM guild_members WHERE guild_id = ? AND LOWER(username) != LOWER(?) ORDER BY contribution DESC LIMIT 1"
-                            ).bind(mem.guild_id, me).first();
+                            const nextMember = await db.prepare(`
+                                SELECT username FROM guild_members
+                                WHERE guild_id = ? AND LOWER(username) != LOWER(?)
+                                ORDER BY CASE role WHEN 'vice' THEN 0 ELSE 1 END ASC, contribution DESC
+                                LIMIT 1
+                            `).bind(mem.guild_id, me).first();
                             if (nextMember) {
                                 await db.prepare("UPDATE guilds SET leader = ? WHERE id = ?").bind(nextMember.username, mem.guild_id).run();
                                 await db.prepare("UPDATE guild_members SET role = 'leader' WHERE username = ?").bind(nextMember.username).run();
                             } else {
                                 await db.prepare("DELETE FROM guilds WHERE id = ?").bind(mem.guild_id).run();
+                                await db.prepare("DELETE FROM guild_requests WHERE guild_id = ?").bind(mem.guild_id).run();
                                 await db.prepare("DELETE FROM guild_chat WHERE guild_id = ?").bind(mem.guild_id).run();
                                 await db.prepare("DELETE FROM guild_boss WHERE guild_id = ?").bind(mem.guild_id).run();
                             }
@@ -1796,8 +2004,8 @@ export default {
                     if (action === "announcement") {
                         const mem = await db.prepare("SELECT guild_id, role FROM guild_members WHERE LOWER(username) = LOWER(?)")
                             .bind(me).first();
-                        if (!mem || mem.role !== "leader") {
-                            return jsonResponse({ ok: false, error: "Chỉ Bang Chủ mới có quyền sửa thông báo!" }, 403);
+                        if (!mem || (mem.role !== "leader" && mem.role !== "vice")) {
+                            return jsonResponse({ ok: false, error: "Chỉ Bang Chủ hoặc Phó Hội mới có quyền sửa thông báo!" }, 403);
                         }
                         const text = String(body.text || "").trim().slice(0, 140);
                         await db.prepare("UPDATE guilds SET announcement = ? WHERE id = ?").bind(text, mem.guild_id).run();

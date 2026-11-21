@@ -457,49 +457,29 @@
 
     <!-- MÀN HÌNH BẢN ĐỒ GPS -->
     <div id="map-screen" class="hidden absolute inset-0 z-20 flex flex-col justify-between bg-zinc-950 p-2 pb-2">
-        <!-- THANH ĐIỀU HƯỚNG GÓC PHẢI BẢN ĐỒ: NHÀ, THÁP, BOSS + MŨI TÊN XỔ XUỐNG -->
-        <div id="map-top-nav" class="relative z-[1000] px-2 pt-1 pb-1 shrink-0 w-full flex flex-col items-end">
-            <!-- Hàng chính bên trái mũi tên: Nhà, Tháp, Boss + Nút mũi tên ▼ -->
-            <div class="flex items-center gap-1.5 bg-black/85 backdrop-blur-md px-2 py-1 rounded-full border border-white/15 shadow-xl">
-                <button onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-full border border-amber-300/60 text-xs font-bold shadow cursor-pointer whitespace-nowrap text-amber-200">🏠 Nhà</button>
-                <button onclick="openCloudAccountModal()" class="bg-indigo-600/90 hover:bg-indigo-500 px-2.5 py-1.5 rounded-full border border-indigo-300 text-xs font-bold shadow cursor-pointer whitespace-nowrap">☁️</button>
-                <button onclick="openTowerMenu()" class="bg-purple-600/90 hover:bg-purple-500 px-3 py-1.5 rounded-full border border-purple-400 text-xs font-bold shadow cursor-pointer whitespace-nowrap">🗼 Tháp</button>
-                <button onclick="openWorldBossMenu()" class="bg-amber-700/90 hover:bg-amber-600 px-3 py-1.5 rounded-full border border-amber-400 text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap">👹 Boss</button>
-                <button id="map-nav-toggle" onclick="toggleMapMoreTabs()" class="bg-sky-600/90 hover:bg-sky-500 w-7 h-7 rounded-full border border-sky-300 text-xs font-black text-white flex items-center justify-center shadow cursor-pointer transition-transform" title="Mở rộng menu">▼</button>
+        <!-- THANH ĐIỀU HƯỚNG GÓC PHẢI BẢN ĐỒ: NHÀ, THÁP, BOSS, ĐẤU PVP + MŨI TÊN XỔ XUỐNG -->
+        <div id="map-top-nav" class="relative z-[1000] px-1.5 pt-1 pb-1 shrink-0 w-full flex flex-col items-end">
+            <!-- Hàng chính bên trái mũi tên: Nhà, Cloud, Tháp, Boss, PvP + Nút mũi tên ▼ -->
+            <div class="flex items-center gap-1 bg-black/85 backdrop-blur-md px-1.5 py-1 rounded-full border border-white/15 shadow-xl max-w-full">
+                <button onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-full border border-amber-300/60 text-[11px] sm:text-xs font-bold shadow cursor-pointer whitespace-nowrap text-amber-200">🏠 Nhà</button>
+                <button onclick="openCloudAccountModal()" class="bg-indigo-600/90 hover:bg-indigo-500 px-2 py-1.5 rounded-full border border-indigo-300 text-[11px] sm:text-xs font-bold shadow cursor-pointer whitespace-nowrap">☁️</button>
+                <button onclick="openTowerMenu()" class="bg-purple-600/90 hover:bg-purple-500 px-2.5 py-1.5 rounded-full border border-purple-400 text-[11px] sm:text-xs font-bold shadow cursor-pointer whitespace-nowrap">🗼 Tháp</button>
+                <button onclick="openWorldBossMenu()" class="bg-amber-700/90 hover:bg-amber-600 px-2.5 py-1.5 rounded-full border border-amber-400 text-[11px] sm:text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap">👹 Boss</button>
+                <button onclick="openPvpArenaHub()" class="bg-red-600/90 hover:bg-red-500 px-2.5 py-1.5 rounded-full border border-red-400 text-[11px] sm:text-xs font-bold shadow cursor-pointer whitespace-nowrap">⚔️ PvP</button>
+                <button id="map-nav-toggle" onclick="toggleMapMoreTabs()" class="bg-sky-600/90 hover:bg-sky-500 w-7 h-7 rounded-full border border-sky-300 text-xs font-black text-white flex items-center justify-center shadow cursor-pointer transition-transform shrink-0" title="Mở rộng menu">▼</button>
             </div>
 
-            <!-- Menu xổ xuống khi bấm mũi tên ▼ -->
-            <div id="map-nav-dropdown" class="hidden absolute top-11 right-0 z-50 flex-col gap-1.5 min-w-[165px] bg-zinc-900/95 backdrop-blur-md p-2 rounded-2xl border border-sky-400/40 shadow-2xl">
+            <!-- Menu xổ xuống khi bấm mũi tên ▼ (Sắp xếp đúng thứ tự yêu cầu) -->
+            <div id="map-nav-dropdown" class="hidden absolute top-11 right-0 z-50 flex-col gap-1.5 min-w-[180px] max-h-[75vh] overflow-y-auto bg-zinc-900/95 backdrop-blur-md p-2 rounded-2xl border border-sky-400/40 shadow-2xl">
                 <button onclick="selectMapDropdownTab(() => openTeamMenu())" class="w-full text-left bg-zinc-800 hover:bg-zinc-700 px-3 py-2 rounded-xl border border-white/15 text-xs font-bold cursor-pointer flex items-center justify-between">
-                    <span>🐾 Đội Hình Xuất Chiến</span>
+                    <span>🐾 Đội Hình</span>
                     <span class="text-amber-300">(<span id="team-count">0</span>/3)</span>
                 </button>
                 <button onclick="selectMapDropdownTab(() => openHomeStorageBagModal())" class="w-full text-left bg-sky-800/90 hover:bg-sky-700 px-3 py-2 rounded-xl border border-sky-400/60 text-xs font-extrabold cursor-pointer">
-                    🎒 Túi Chứa Đồ (5x10)
-                </button>
-                <button onclick="selectMapDropdownTab(() => openMarketMenu())" class="w-full text-left bg-amber-600/90 hover:bg-amber-500 px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold cursor-pointer">
-                    🛒 Chợ
+                    🎒 Túi Chứa Đồ
                 </button>
                 <button onclick="selectMapDropdownTab(() => openFarmMenu())" class="w-full text-left bg-emerald-600/90 hover:bg-emerald-500 px-3 py-2 rounded-xl border border-emerald-400 text-xs font-bold cursor-pointer">
-                    🏡 Trang trại
-                </button>
-                <button onclick="selectMapDropdownTab(() => openHospitalMenu())" class="w-full text-left bg-cyan-700/90 hover:bg-cyan-600 px-3 py-2 rounded-xl border border-cyan-400 text-xs font-bold cursor-pointer">
-                    🏥 Bệnh viện
-                </button>
-                <button onclick="selectMapDropdownTab(() => openQuestMenu())" class="w-full text-left bg-yellow-600/90 hover:bg-yellow-500 px-3 py-2 rounded-xl border border-yellow-400 text-xs font-bold cursor-pointer">
-                    📜 Nhiệm vụ
-                </button>
-                <div class="border-t border-white/10 my-0.5"></div>
-                <button onclick="selectMapDropdownTab(() => openSubRoom('egg'))" class="w-full text-left bg-emerald-800/90 hover:bg-emerald-700 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
-                    <span>🥚 Ấp trứng</span>
-                    <span class="text-emerald-200">(<span id="egg-count-badge">0</span>)</span>
-                </button>
-               <button onclick="selectMapDropdownTab(() => openPvpArenaHub())" class="w-full text-left bg-red-600/90 hover:bg-red-500 px-3 py-2 rounded-xl border border-red-400 text-xs font-bold cursor-pointer">
-                    ⚔️ Đấu PvP (BXH)
-                </button>
-                <button onclick="selectMapDropdownTab(() => openNearbyHuntersModal())" class="w-full text-left bg-cyan-800/90 hover:bg-cyan-700 px-3 py-2 rounded-xl border border-cyan-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
-                    <span>🧭 Thợ Săn Quanh Đây</span>
-                    <span id="nearby-hunters-badge" class="bg-emerald-500 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black">0</span>
+                    🏡 Trang Trại
                 </button>
                 <button onclick="selectMapDropdownTab(() => openFriendsModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
                     <span>👥 Bạn Bè</span>
@@ -508,23 +488,34 @@
                 <button onclick="selectMapDropdownTab(() => openGuildModal())" class="w-full text-left bg-purple-800/90 hover:bg-purple-700 px-3 py-2 rounded-xl border border-purple-400/60 text-xs font-bold cursor-pointer">
                     🏰 Bang Hội
                 </button>
-                <button onclick="selectMapDropdownTab(() => openMonsterDexModal())" class="w-full text-left bg-teal-800/90 hover:bg-teal-700 px-3 py-2 rounded-xl border border-teal-400/60 text-xs font-bold cursor-pointer">
-                    📖 Bách Khoa Thú
+                <button onclick="selectMapDropdownTab(() => openHospitalMenu())" class="w-full text-left bg-cyan-700/90 hover:bg-cyan-600 px-3 py-2 rounded-xl border border-cyan-400 text-xs font-bold cursor-pointer">
+                    🏥 Bệnh Viện
+                </button>
+                <button onclick="selectMapDropdownTab(() => openMarketMenu())" class="w-full text-left bg-amber-600/90 hover:bg-amber-500 px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold cursor-pointer">
+                    🛒 Chợ
                 </button>
                 <button onclick="selectMapDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-orange-700/90 hover:bg-orange-600 px-3 py-2 rounded-xl border border-orange-400/60 text-xs font-bold cursor-pointer">
                     🏪 Chợ Người Chơi
                 </button>
-                <button onclick="selectMapDropdownTab(() => openCarnivalModal())" class="w-full text-left bg-rose-700/90 hover:bg-rose-600 px-3 py-2 rounded-xl border border-amber-300/60 text-xs font-bold cursor-pointer flex items-center justify-between">
-                    <span>🎁 Tân Thủ 7 Ngày</span>
-                    <span class="carnival-notify-badge hidden bg-yellow-300 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black">QUÀ</span>
+                <button onclick="selectMapDropdownTab(() => openSubRoom('egg'))" class="w-full text-left bg-emerald-800/90 hover:bg-emerald-700 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                    <span>🥚 Ấp Trứng</span>
+                    <span class="text-emerald-200">(<span id="egg-count-badge">0</span>)</span>
                 </button>
-                <button onclick="selectMapDropdownTab(() => openExpeditionModal())" class="w-full text-left bg-emerald-700/90 hover:bg-emerald-600 px-3 py-2 rounded-xl border border-emerald-300/60 text-xs font-extrabold cursor-pointer flex items-center justify-between">
-                    <span>🧭 Thám Hiểm</span>
-                    <span class="expedition-notify-badge hidden w-2 h-2 rounded-full bg-yellow-300 animate-ping"></span>
+                <button onclick="selectMapDropdownTab(() => openCarnivalModal())" class="w-full text-left bg-rose-700/90 hover:bg-rose-600 px-3 py-2 rounded-xl border border-amber-300/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                    <span>🎁 Quà Tân Thủ</span>
+                    <span class="carnival-notify-badge hidden bg-yellow-300 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black">QUÀ</span>
                 </button>
                 <button onclick="selectMapDropdownTab(() => openLuckyWheelModal())" class="w-full text-left bg-pink-700/90 hover:bg-pink-600 px-3 py-2 rounded-xl border border-pink-400/60 text-xs font-bold cursor-pointer">
                     🎡 Vòng Quay May Mắn
                 </button>
+                <button onclick="selectMapDropdownTab(() => openMonsterDexModal())" class="w-full text-left bg-teal-800/90 hover:bg-teal-700 px-3 py-2 rounded-xl border border-teal-400/60 text-xs font-bold cursor-pointer">
+                    📖 Bách Khoa Thú
+                </button>
+                <button onclick="selectMapDropdownTab(() => openNearbyHuntersModal())" class="w-full text-left bg-cyan-800/90 hover:bg-cyan-700 px-3 py-2 rounded-xl border border-cyan-400/60 text-xs font-bold cursor-pointer flex items-center justify-between">
+                    <span>🧭 Thợ Săn Quanh Đây</span>
+                    <span id="nearby-hunters-badge" class="bg-emerald-500 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black">0</span>
+                </button>
+                <div class="border-t border-white/10 my-0.5"></div>
                 <button onclick="selectMapDropdownTab(() => openArShareModal('team', 0))" class="w-full text-left bg-indigo-700/90 hover:bg-indigo-600 px-3 py-2 rounded-xl border border-cyan-400/60 text-xs font-bold cursor-pointer">
                     📸 Chụp Ảnh AR Flex
                 </button>
@@ -534,9 +525,21 @@
         <div id="map-container-wrap" class="my-1 rounded-xl overflow-hidden border border-zinc-800 relative grow">
             <div id="map"></div>
 
-            <div class="absolute top-2.5 left-2.5 z-30 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 flex items-center gap-1.5 shadow-lg pointer-events-none">
-                <span id="weather-icon" class="text-xs">☀️</span>
-                <span id="weather-status" class="text-[10px] font-medium text-zinc-200">Trời quang</span>
+            <!-- CỤM GÓC TRÁI BẢN ĐỒ: THỜI TIẾT + THÁM HIỂM + NHIỆM VỤ GẮN CỐ ĐỊNH -->
+            <div class="absolute top-2.5 left-2.5 z-30 flex flex-col items-start gap-1.5 pointer-events-none">
+                <div class="bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 flex items-center gap-1.5 shadow-lg">
+                    <span id="weather-icon" class="text-xs">☀️</span>
+                    <span id="weather-status" class="text-[10px] font-medium text-zinc-200">Trời quang</span>
+                </div>
+                <button onclick="openExpeditionModal()" class="pointer-events-auto relative bg-emerald-700/95 hover:bg-emerald-600 active:scale-95 text-white px-3 py-1.5 rounded-full border border-emerald-300/80 text-xs font-extrabold shadow-xl cursor-pointer flex items-center gap-1.5 transition">
+                    <span>🧭</span>
+                    <span>Thám Hiểm</span>
+                    <span class="expedition-notify-badge hidden w-2.5 h-2.5 rounded-full bg-yellow-300 border border-black animate-ping"></span>
+                </button>
+                <button onclick="openQuestMenu()" class="pointer-events-auto bg-yellow-600/95 hover:bg-yellow-500 active:scale-95 text-white px-3 py-1.5 rounded-full border border-yellow-300/80 text-xs font-extrabold shadow-xl cursor-pointer flex items-center gap-1.5 transition">
+                    <span>📜</span>
+                    <span>Nhiệm Vụ</span>
+                </button>
             </div>
 
             <div class="absolute bottom-3 right-3 z-30 flex items-center gap-2">
@@ -5832,7 +5835,7 @@
     <script src="bag.js?v=20261120c"></script>
     <script src="expedition.js?v=20261121a"></script>
     <script src="dex.js?v=20261120b"></script>
-    <script src="guild.js?v=20261120b"></script>
+    <script src="guild.js?v=20261121b"></script>
     <script src="auction.js?v=20261120b"></script>
     <script src="carnival.js?v=20261120b"></script>
     <script src="gacha.js?v=20261120b"></script>
