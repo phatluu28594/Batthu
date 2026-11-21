@@ -79,14 +79,14 @@
                     </button>
                 </div>
 
-                <!-- Quái vật của tầng hiển thị ở chế độ Idle trên nền Tháp -->
-                <div onclick="openTowerMonsterInfoModal()" class="pointer-events-auto cursor-pointer flex flex-col items-center" style="position: absolute; top: 47%; left: 50%; transform: translate(-50%, -50%);">
-                    <div class="bg-black/80 backdrop-blur-xs px-3 py-0.5 rounded-full border border-purple-400/70 text-[10px] font-black text-yellow-300 whitespace-nowrap shadow-lg mb-1">
-                        ${mon.name} • <span class="${elemInfo.color}">${elemInfo.label}</span>
+                <!-- Quái vật của tầng đứng ngay trước cổng tháp (dưới dòng chữ Tầng X - Chạm Để Đấu) -->
+                <div onclick="openSelectFighterModal('tower')" class="pointer-events-auto cursor-pointer flex flex-col items-center" style="position: absolute; top: 72%; left: 50%; transform: translate(-50%, -50%);">
+                    <div class="relative flex flex-col items-center justify-center">
+                        ${buildTowerIdleSpriteHtml(mon, 108)}
+                        <div class="w-24 h-4 rounded-full bg-black/60 blur-[3px] -mt-2"></div>
                     </div>
-                    <div class="relative flex items-center justify-center">
-                        ${buildTowerIdleSpriteHtml(mon, 112)}
-                        <div class="w-24 h-4 rounded-full bg-black/55 blur-[3px] -mt-2"></div>
+                    <div class="bg-black/85 backdrop-blur-xs px-3 py-0.5 rounded-full border border-purple-400/70 text-[10px] font-black text-yellow-300 whitespace-nowrap shadow-lg mt-1">
+                        ${mon.name} • <span class="${elemInfo.color}">${elemInfo.label}</span>
                     </div>
                 </div>
             `;
