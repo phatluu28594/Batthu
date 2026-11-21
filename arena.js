@@ -352,16 +352,16 @@
                 idleTick += 0.14;
 
                 let cx = rect.width / 2, cy = rect.height * 0.63;
-                let defaultEnemyX = cx + 95;
+                let defaultEnemyX = (mode === 'boss') ? (cx + 38) : (cx + 45); // Quái & Boss căn giữa sàn đấu
 
                 const teamSlots = (mode === 'boss')
                     ? [
-                        { x: cx - 105, y: cy - 78 },
+                        { x: cx - 110, y: cy - 65 },
                         { x: cx - 72,  y: cy },
-                        { x: cx - 105, y: cy + 78 }
+                        { x: cx - 110, y: cy + 65 }
                     ]
                     : [
-                        { x: cx - 85,  y: cy }
+                        { x: cx - 75,  y: cy }
                     ];
 
                 if (!attacker && !battleEnded) {
@@ -651,7 +651,8 @@
                         enAnimState = 'hit';
                         enAnimFrame = Math.min(maxFrames - 1, Math.floor((12 - enemyHitShake) * (maxFrames / 12)));
                     }
-                    drawBossEntity(battleCtx, enemy, enAnimState, enAnimFrame, finalEnX, finalEnY, mode === 'boss' ? 105 : 90);
+                    let enemySize = (mode === 'boss') ? 126 : 108; // Quái và Boss to ra 20% (105->126, 90->108) căn giữa sàn đấu
+                    drawBossEntity(battleCtx, enemy, enAnimState, enAnimFrame, finalEnX, finalEnY, enemySize);
                 } else {
                     let enIdleScaleY = (isEnemyDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + 1) * 0.04);
                     let finalEnRotation = isEnemyDead ? (Math.PI / 2) : enemyRotation;
@@ -659,14 +660,14 @@
                     battleCtx.translate(finalEnX, finalEnY);
                     battleCtx.rotate(finalEnRotation);
                     battleCtx.scale(1, enIdleScaleY);
-                    battleCtx.font = "65px sans-serif";
+                    battleCtx.font = "78px sans-serif"; // To ra 20% (65->78)
                     battleCtx.textAlign = "center";
                     battleCtx.textBaseline = "middle";
                     battleCtx.fillText(enemy.emoji, 0, 0);
                     battleCtx.restore();
                 }
 
-                if (!isEnemyDead) drawSpriteStatusFX(battleCtx, enemyStatus, finalEnX, finalEnY, idleTick, mode === 'boss' ? 140 : 120);
+                if (!isEnemyDead) drawSpriteStatusFX(battleCtx, enemyStatus, finalEnX, finalEnY, idleTick, (mode === 'boss') ? 168 : 144);
 
                 if (teamSynergy && activeTeam.length === 3 && teamSlots.length === 3) {
                     drawTeamSynergyField(battleCtx, teamSynergy, teamSlots, idleTick);
@@ -683,8 +684,8 @@
                         teamHitShake[i]--;
                     }
 
-                    let baseSlot = teamSlots[i] || { x: cx - 85, y: cy };
-                    let posY = isPetDead ? (baseSlot.y + 12) : (baseSlot.y + myOffsetsY[i]);
+                    let baseSlot = teamSlots[i] || { x: cx - 75, y: cy };
+                    let posY = isPetDead ? (baseSlot.y + 10) : (baseSlot.y + myOffsetsY[i]);
                     let posX = isPetDead ? baseSlot.x : (baseSlot.x + myOffsetsX[i] + knockback);
                     let baseName = pet.name.replace('F1_', '');
                     let hasSprite = isPetSpriteReady(baseName);
@@ -707,10 +708,11 @@
                         animFrame = Math.min(pMaxFrames - 1, Math.floor((12 - teamHitShake[i]) * (pMaxFrames / 12)));
                     }
 
-                    if (!isPetDead) drawRarityAura(battleCtx, pet, posX, posY + 42, idleTick, 72);
+                    // Thú nhỏ lại 30% (Aura 72->50, Sprite 85->60, Emoji 52->36, FX 105->74)
+                    if (!isPetDead) drawRarityAura(battleCtx, pet, posX, posY + 30, idleTick, 50);
 
                     if (hasSprite) {
-                        drawPetEntity(battleCtx, pet, animState, animFrame, posX, posY, 85, false);
+                        drawPetEntity(battleCtx, pet, animState, animFrame, posX, posY, 60, false);
                     } else {
                         let idleScaleY = (isPetDead || battleEnded) ? 1 : (1 + Math.sin(idleTick + i * 1.2) * 0.04);
                         let petRot = isPetDead ? (-Math.PI / 2) : myRotations[i];
@@ -718,13 +720,13 @@
                         battleCtx.translate(posX, posY);
                         battleCtx.rotate(petRot);
                         battleCtx.scale(-1, idleScaleY);
-                        battleCtx.font = "52px sans-serif";
+                        battleCtx.font = "36px sans-serif";
                         battleCtx.textAlign = "center";
                         battleCtx.textBaseline = "middle";
                         battleCtx.fillText(pet.emoji, 0, 0);
                         battleCtx.restore();
                     }
-                    if (!isPetDead) drawSpriteStatusFX(battleCtx, teamStatus[i], posX, posY, idleTick, 105);
+                    if (!isPetDead) drawSpriteStatusFX(battleCtx, teamStatus[i], posX, posY, idleTick, 74);
                 });
 
                 for (let idx = impactEffects.length - 1; idx >= 0; idx--) {
@@ -1742,9 +1744,9 @@
             if (typeof drawBossEntity === 'function' && typeof bossSpriteConfigs !== 'undefined' && bossSpriteConfigs?.[bossSpriteKey]) {
                 const bossState = wbState.hp > 0 ? 'idle' : 'death';
                 const bossFrame = wbState.hp > 0 ? Math.floor(tick * 1.1) : 7;
-                drawBossEntity(ctx, { spriteKey: bossSpriteKey, emoji: activeWorldBossRegion?.emoji || '🐉' }, bossState, bossFrame, bx, by, 105);
+                drawBossEntity(ctx, { spriteKey: bossSpriteKey, emoji: activeWorldBossRegion?.emoji || '🐉' }, bossState, bossFrame, bx, by, 126);
             } else {
-                ctx.font = '68px serif';
+                ctx.font = '82px serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(wbState.hp > 0 ? (activeWorldBossRegion?.emoji || '🐉') : '💀', bx, by);
