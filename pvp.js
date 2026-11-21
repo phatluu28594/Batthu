@@ -657,16 +657,26 @@
             return fighters;
         }
 
+        let pvpIntroFrames = 26; // Đi bộ vào tâm võ đài đối mặt nhau
+
         pvpBattleInterval = setInterval(() => {
             pCtx.clearRect(0, 0, rect.width, rect.height);
             idleTick += 0.14;
 
             const cx = rect.width / 2;
             const cy = rect.height * 0.63;
-            const leftBaseX = cx - 90;
-            const rightBaseX = cx + 90;
+            const clashLeftX = cx - 45;  // Vị trí giao chiến đối mặt bên trái
+            const clashRightX = cx + 45; // Vị trí giao chiến đối mặt bên phải
+            const startLeftX = cx - 180;
+            const startRightX = cx + 180;
 
-            if (!attacker && !battleEnded) {
+            const marchT = (pvpIntroFrames > 0) ? Math.min(1, Math.max(0, 1 - (pvpIntroFrames / 26))) : 1;
+            const leftBaseX = startLeftX + (clashLeftX - startLeftX) * marchT;
+            const rightBaseX = startRightX + (clashRightX - startRightX) * marchT;
+
+            if (pvpIntroFrames > 0) {
+                pvpIntroFrames--;
+            } else if (!attacker && !battleEnded) {
                 if (turnDelayFrames > 0) {
                     turnDelayFrames--;
                 } else {
@@ -752,24 +762,17 @@
                 const atkStatus = isLeftAtk ? leftStatus : rightStatus;
                 const defStatus = isLeftAtk ? rightStatus : leftStatus;
                 const defX = isLeftAtk ? rightBaseX : leftBaseX;
-                const chargeDist = (rightBaseX - leftBaseX) - 42;
+                const lungeDist = 16; // Tấn công tại chỗ đối mặt, nhích tới trước 16px
 
-                if (attacker.step <= 9) {
-                    const t = attacker.step / 9;
-                    if (isLeftAtk) {
-                        leftOffsetX = t * chargeDist;
-                        leftOffsetY = -Math.sin(t * Math.PI) * 32;
-                        leftRot = t * 0.25;
-                    } else {
-                        rightOffsetX = -t * chargeDist;
-                        rightOffsetY = -Math.sin(t * Math.PI) * 32;
-                        rightRot = -t * 0.25;
-                    }
-                } else if (attacker.step <= 15) {
-                    if (isLeftAtk) { leftOffsetX = chargeDist; leftRot = 0.25; }
-                    else { rightOffsetX = -chargeDist; rightRot = -0.25; }
+                if (attacker.step <= 5) {
+                    const t = attacker.step / 5;
+                    if (isLeftAtk) leftOffsetX = t * lungeDist;
+                    else rightOffsetX = -t * lungeDist;
+                } else if (attacker.step <= 12) {
+                    if (isLeftAtk) leftOffsetX = lungeDist;
+                    else rightOffsetX = -lungeDist;
 
-                    if (attacker.step === 10) {
+                    if (attacker.step === 6) {
                         const comboTag = attacker.isComboHit ? ' 🔥LIÊN KÍCH!' : '';
                         const hitChance = Math.max(25, Math.min(100, (atkUnit.accuracy ?? 90) - (defUnit.dodgeRate ?? 15) + 15));
 
@@ -832,17 +835,10 @@
                             }
                         }
                     }
-                } else if (attacker.step <= 22) {
-                    const t = 1 - (attacker.step - 15) / 7;
-                    if (isLeftAtk) {
-                        leftOffsetX = chargeDist * t;
-                        leftOffsetY = -Math.sin(t * Math.PI) * 15;
-                        leftRot = t * 0.25;
-                    } else {
-                        rightOffsetX = -chargeDist * t;
-                        rightOffsetY = -Math.sin(t * Math.PI) * 15;
-                        rightRot = -t * 0.25;
-                    }
+                } else if (attacker.step <= 18) {
+                    const t = 1 - (attacker.step - 12) / 6;
+                    if (isLeftAtk) leftOffsetX = lungeDist * t;
+                    else rightOffsetX = -lungeDist * t;
                 } else {
                     const comboChance = atkUnit.comboRate ?? 20;
                     if (!attacker.isComboHit && leftHp > 0 && rightHp > 0 && (rng() * 100 < comboChance)) {
@@ -870,7 +866,7 @@
             const isLeftAtk = attacker && attacker.side === 'left';
             let leftKnock = 0;
             if (leftHitShake > 0) {
-                leftKnock = -Math.sin(leftHitShake * 1.8) * 10 - 6;
+                leftKnock = -Math.sin(leftHitShake * 1.8) * 8 - 4;
                 leftHitShake--;
             }
             const finalLeftX = isLeftDead ? leftBaseX : (leftBaseX + leftOffsetX + leftKnock);
@@ -881,12 +877,12 @@
             }
             const leftBaseName = (leftUnit.name || '').replace('F1_', '');
             if (typeof isPetSpriteReady === 'function' && isPetSpriteReady(leftBaseName) && typeof drawPetEntity === 'function') {
-                const lState = isLeftDead ? 'death' : (isLeftAtk ? 'attack' : (leftHitShake > 0 ? 'hit' : 'idle'));
+                const lState = isLeftDead ? 'death' : (isLeftAtk ? 'attack' : (leftHitShake > 0 ? 'hit' : (pvpIntroFrames > 0 ? 'walk' : 'idle')));
                 const lCfg = spriteConfigs[leftBaseName];
                 const lMaxF = lCfg ? (getSpriteGrid(lCfg, lState).totalFrames || 8) : 8;
-                let lFrame = Math.floor(idleTick * 2.2) % lMaxF;
+                let lFrame = Math.floor(idleTick * 2.4) % lMaxF;
                 if (isLeftDead) lFrame = lMaxF - 1;
-                else if (isLeftAtk) lFrame = Math.min(lMaxF - 1, Math.floor((attacker.step / 22) * lMaxF));
+                else if (isLeftAtk) lFrame = Math.min(lMaxF - 1, Math.floor((attacker.step / 18) * lMaxF));
                 drawPetEntity(pCtx, leftUnit, lState, lFrame, finalLeftX, finalLeftY, 92, false);
             } else {
                 pCtx.save();
@@ -909,7 +905,7 @@
             const isRightAtk = attacker && attacker.side === 'right';
             let rightKnock = 0;
             if (rightHitShake > 0) {
-                rightKnock = Math.sin(rightHitShake * 1.8) * 10 + 6;
+                rightKnock = Math.sin(rightHitShake * 1.8) * 8 + 4;
                 rightHitShake--;
             }
             const finalRightX = isRightDead ? rightBaseX : (rightBaseX + rightOffsetX + rightKnock);
@@ -920,12 +916,12 @@
             }
             const rightBaseName = (rightUnit.name || '').replace('F1_', '');
             if (typeof isPetSpriteReady === 'function' && isPetSpriteReady(rightBaseName) && typeof drawPetEntity === 'function') {
-                const rState = isRightDead ? 'death' : (isRightAtk ? 'attack' : (rightHitShake > 0 ? 'hit' : 'idle'));
+                const rState = isRightDead ? 'death' : (isRightAtk ? 'attack' : (rightHitShake > 0 ? 'hit' : (pvpIntroFrames > 0 ? 'walk' : 'idle')));
                 const rCfg = spriteConfigs[rightBaseName];
                 const rMaxF = rCfg ? (getSpriteGrid(rCfg, rState).totalFrames || 8) : 8;
-                let rFrame = Math.floor(idleTick * 2.2) % rMaxF;
+                let rFrame = Math.floor(idleTick * 2.4) % rMaxF;
                 if (isRightDead) rFrame = rMaxF - 1;
-                else if (isRightAtk) rFrame = Math.min(rMaxF - 1, Math.floor((attacker.step / 22) * rMaxF));
+                else if (isRightAtk) rFrame = Math.min(rMaxF - 1, Math.floor((attacker.step / 18) * rMaxF));
                 drawPetEntity(pCtx, rightUnit, rState, rFrame, finalRightX, finalRightY, 92, true);
             } else {
                 pCtx.save();

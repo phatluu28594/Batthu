@@ -492,6 +492,7 @@
             }
 
             let idleTick = 0;
+            let introFrames = 26; // Hiệu ứng đi bộ vào tâm võ đài lúc bắt đầu trận đấu
             let teamHitShake = [0, 0, 0];
             let enemyHitShake = 0;
             let impactEffects = [];
@@ -505,23 +506,32 @@
 
                 // Căn chỉnh sàn đấu chuẩn Widescreen 16:9 Landscape:
                 // - Vị trí đứng dọc (cy) nằm đúng vùng vòng tròn tâm võ đài (~65% chiều cao)
-                // - Đội thú bố trí cánh trái võ đài (~22% width), Quái/Boss bố trí cánh phải võ đài (~78% width)
+                // - Đội thú và Quái/Boss đi bộ từ 2 cánh vào đối mặt nhau ngay tâm sàn đấu (43% vs 57% width)
                 let cy = rect.height * 0.65;
-                let leftEdgeX = Math.max(70, rect.width * 0.22);
-                let rightEdgeX = Math.min(rect.width - 70, rect.width * 0.78);
-                let defaultEnemyX = rightEdgeX;
+                let clashLeftX = rect.width * 0.43;  // Vị trí giao chiến đội thú bên trái
+                let clashRightX = rect.width * 0.57; // Vị trí giao chiến Quái/Boss bên phải
+                let startLeftX = rect.width * 0.12;
+                let startRightX = rect.width * 0.88;
+
+                let marchT = (introFrames > 0) ? Math.min(1, Math.max(0, 1 - (introFrames / 26))) : 1;
+                let curLeftX = startLeftX + (clashLeftX - startLeftX) * marchT;
+                let curRightX = startRightX + (clashRightX - startRightX) * marchT;
+                let defaultEnemyX = curRightX;
 
                 const teamSlots = (mode === 'boss')
                     ? [
-                        { x: leftEdgeX + 24, y: cy - 48 },
-                        { x: leftEdgeX,      y: cy },
-                        { x: leftEdgeX + 24, y: cy + 48 }
+                        { x: curLeftX,       y: cy },
+                        { x: curLeftX - 35,  y: cy - 42 },
+                        { x: curLeftX - 35,  y: cy + 42 }
                     ]
                     : [
-                        { x: leftEdgeX,      y: cy }
+                        { x: curLeftX,       y: cy }
                     ];
 
-                if (!attacker && !battleEnded) {
+                if (introFrames > 0) {
+                    introFrames--;
+                    // Trong lúc 2 bên đang đi bộ vào giữa đối mặt nhau, tạm dừng đếm hiệp
+                } else if (!attacker && !battleEnded) {
                     if (turnDelayFrames > 0) {
                         turnDelayFrames--;
                     } else {
@@ -541,7 +551,7 @@
                             let st = nextActor.side === 'team' ? teamStatus[nextActor.index] : enemyStatus;
                             let actorName = nextActor.side === 'team' ? activeTeam[nextActor.index].name : enemy.name;
                             let actorMaxHp = nextActor.side === 'team' ? activeTeam[nextActor.index].maxHp : enemy.maxHp;
-                            let fxX = nextActor.side === 'team' ? (teamSlots[nextActor.index]?.x || cx - 85) : defaultEnemyX;
+                            let fxX = nextActor.side === 'team' ? (teamSlots[nextActor.index]?.x || clashLeftX) : defaultEnemyX;
                             let fxY = nextActor.side === 'team' ? (teamSlots[nextActor.index]?.y || cy) : cy;
 
                             let dotDmg = 0;
@@ -584,7 +594,7 @@
                                     const caster = activeTeam[nextActor.index];
                                     if (caster && caster.skill && caster.skill.type === 'heal_lowest') {
                                         if ((caster.skillCd || 0) <= 0) {
-                                            usedHealSkill = tryCastHealLowestAlly(caster, activeTeam, teamHpList, teamSlots, cx - 85, cy, impactEffects);
+                                            usedHealSkill = tryCastHealLowestAlly(caster, activeTeam, teamHpList, teamSlots, clashLeftX, cy, impactEffects);
                                             if (usedHealSkill) {
                                                 caster.skillCd = caster.skill.cooldown || 3;
                                                 syncBattleHpToTeam();
@@ -616,28 +626,21 @@
 
                     if (attacker.side === 'team') {
                         let idx = attacker.index;
-                        let startSlot = teamSlots[idx] || { x: leftEdgeX, y: cy };
-                        let chargeDist = Math.max(40, (defaultEnemyX - 42) - startSlot.x);
-                        let targetY = cy;
-                        let startY = startSlot.y;
+                        const lungeDist = 16; // Tấn công tại chỗ đối mặt, nhích tới trước 16px
 
-                        if (attacker.step <= 9) {
-                            let t = attacker.step / 9;
-                            myOffsetsX[idx] = t * chargeDist;
-                            myOffsetsY[idx] = (targetY - startY) * t - Math.sin(t * Math.PI) * 32;
-                            myRotations[idx] = t * 0.25;
-                        } else if (attacker.step <= 15) {
-                            myOffsetsX[idx] = chargeDist;
-                            myOffsetsY[idx] = targetY - startY;
-                            myRotations[idx] = 0.25;
+                        if (attacker.step <= 5) {
+                            let t = attacker.step / 5;
+                            myOffsetsX[idx] = t * lungeDist;
+                        } else if (attacker.step <= 12) {
+                            myOffsetsX[idx] = lungeDist;
 
-                            if (attacker.step === 10) {
+                            if (attacker.step === 6) {
                                 let pet = activeTeam[idx];
                                 let comboTag = attacker.isComboHit ? ' 🔥LIÊN KÍCH!' : '';
                                 let hitChance = Math.max(25, Math.min(100, (pet.accuracy ?? 90) - (enemy.dodgeRate ?? 15) + 15));
                                 if (Math.random() * 100 > hitChance) {
                                     impactEffects.push({
-                                        x: defaultEnemyX - 15,
+                                        x: defaultEnemyX - 10,
                                         y: cy,
                                         radius: 10,
                                         alpha: 1,
@@ -673,7 +676,7 @@
 
                                     let tags = `${isCrit ? '💥' : ''}${isBlocked ? '🛡️' : ''}${attacker.isComboHit ? '🔥' : ''}`;
                                     impactEffects.push({
-                                        x: defaultEnemyX - 15,
+                                        x: defaultEnemyX - 10,
                                         y: cy,
                                         radius: 10,
                                         alpha: 1,
@@ -683,11 +686,9 @@
                                     document.getElementById('battle-log').innerText = `[Hiệp ${roundNumber}] ⚡${pet.speed} ${pet.name}${comboTag}: -${finalDmg} dmg ${isCrit ? '[CHÍ MẠNG!] ' : ''}${isBlocked ? '[BỊ ĐỠ!] ' : ''}${isCounter ? '[KHẮC HỆ!]' : ''}`;
                                 }
                             }
-                        } else if (attacker.step <= 22) {
-                            let t = 1 - (attacker.step - 15) / 7;
-                            myOffsetsX[idx] = chargeDist * t;
-                            myOffsetsY[idx] = (targetY - startY) * t - Math.sin(t * Math.PI) * 15;
-                            myRotations[idx] = t * 0.25;
+                        } else if (attacker.step <= 18) {
+                            let t = 1 - (attacker.step - 12) / 6;
+                            myOffsetsX[idx] = lungeDist * t;
                         } else {
                             let pet = activeTeam[idx];
                             let comboChance = pet.comboRate ?? 20;
@@ -700,27 +701,23 @@
                         }
                     } else if (attacker.side === 'enemy') {
                         let targetIdx = teamHpList.findIndex(h => h > 0);
-                        let targetSlot = targetIdx !== -1 ? (teamSlots[targetIdx] || { x: leftEdgeX, y: cy }) : { x: leftEdgeX, y: cy };
+                        let targetSlot = targetIdx !== -1 ? (teamSlots[targetIdx] || { x: clashLeftX, y: cy }) : { x: clashLeftX, y: cy };
                         let targetY = targetSlot.y;
-                        let enemyChargeDist = Math.max(40, defaultEnemyX - (targetSlot.x + 42));
+                        const enLungeDist = 16; // Quái/Boss nhích sang trái 16px tấn công đối mặt
 
-                        if (attacker.step <= 9) {
-                            let t = attacker.step / 9;
-                            enemyOffsetX = -t * enemyChargeDist;
-                            enemyOffsetY = (targetY - cy) * t - Math.sin(t * Math.PI) * 32;
-                            enemyRotation = -t * 0.25;
-                        } else if (attacker.step <= 15) {
-                            enemyOffsetX = -enemyChargeDist;
-                            enemyOffsetY = targetY - cy;
-                            enemyRotation = -0.25;
+                        if (attacker.step <= 5) {
+                            let t = attacker.step / 5;
+                            enemyOffsetX = -t * enLungeDist;
+                        } else if (attacker.step <= 12) {
+                            enemyOffsetX = -enLungeDist;
 
-                            if (attacker.step === 10 && targetIdx !== -1) {
+                            if (attacker.step === 6 && targetIdx !== -1) {
                                 let targetPet = activeTeam[targetIdx];
                                 let comboTag = attacker.isComboHit ? ' 🔥LIÊN KÍCH!' : '';
                                 let hitChance = Math.max(25, Math.min(100, (enemy.accuracy ?? 88) - (targetPet.dodgeRate ?? 15) + 15));
                                 if (Math.random() * 100 > hitChance) {
                                     impactEffects.push({
-                                        x: targetSlot.x + 15,
+                                        x: targetSlot.x + 10,
                                         y: targetY,
                                         radius: 10,
                                         alpha: 1,
@@ -745,7 +742,7 @@
 
                                     let tags = `${isCrit ? '💥' : ''}${isBlocked ? '🛡️' : ''}${attacker.isComboHit ? '🔥' : ''}`;
                                     impactEffects.push({
-                                        x: targetSlot.x + 15,
+                                        x: targetSlot.x + 10,
                                         y: targetY,
                                         radius: 10,
                                         alpha: 1,
@@ -755,11 +752,9 @@
                                     document.getElementById('battle-log').innerText = `[Hiệp ${roundNumber}] ⚡${enemy.speed} ${enemy.name}${comboTag}: -${enDmg} dmg lên ${targetPet.name} ${isBlocked ? '[ĐỠ ĐÒN!] ' : ''}${isCrit ? '[CHÍ MẠNG!]' : ''}`;
                                 }
                             }
-                        } else if (attacker.step <= 22) {
-                            let t = 1 - (attacker.step - 15) / 7;
-                            enemyOffsetX = -enemyChargeDist * t;
-                            enemyOffsetY = (targetY - cy) * t - Math.sin(t * Math.PI) * 15;
-                            enemyRotation = -t * 0.25;
+                        } else if (attacker.step <= 18) {
+                            let t = 1 - (attacker.step - 12) / 6;
+                            enemyOffsetX = -enLungeDist * t;
                         } else {
                             let enemyComboChance = enemy.comboRate ?? 20;
                             let stillAlive = teamHpList.some(h => h > 0);
@@ -786,7 +781,7 @@
                 let isEnemyHit = enemyHitShake > 0;
                 let enKnockback = 0;
                 if (isEnemyHit) {
-                    enKnockback = Math.sin(enemyHitShake * 1.8) * 10 + 6;
+                    enKnockback = Math.sin(enemyHitShake * 1.8) * 8 + 4;
                     enemyHitShake--;
                 }
 
@@ -795,15 +790,15 @@
 
                 if (enemy.spriteKey && bossSpriteConfigs[enemy.spriteKey]) {
                     let bossCfg = bossSpriteConfigs[enemy.spriteKey];
-                    let maxFrames = bossCfg.singleSheet ? (bossCfg.cols || 8) : (getSpriteGrid(bossCfg, isEnemyDead ? 'death' : (isEnemyAttacking ? 'attack' : (isEnemyHit ? 'hit' : 'idle'))).totalFrames);
-                    let enAnimState = 'idle';
-                    let enAnimFrame = Math.floor(idleTick * 2.2) % maxFrames;
+                    let maxFrames = bossCfg.singleSheet ? (bossCfg.cols || 8) : (getSpriteGrid(bossCfg, isEnemyDead ? 'death' : (isEnemyAttacking ? 'attack' : (isEnemyHit ? 'hit' : (introFrames > 0 ? 'walk' : 'idle')))).totalFrames);
+                    let enAnimState = (introFrames > 0) ? 'walk' : 'idle';
+                    let enAnimFrame = Math.floor(idleTick * 2.4) % maxFrames;
                     if (isEnemyDead) {
                         enAnimState = 'death';
                         enAnimFrame = maxFrames - 1;
                     } else if (isEnemyAttacking) {
                         enAnimState = 'attack';
-                        enAnimFrame = Math.min(maxFrames - 1, Math.floor((attacker.step / 22) * maxFrames));
+                        enAnimFrame = Math.min(maxFrames - 1, Math.floor((attacker.step / 18) * maxFrames));
                     } else if (isEnemyHit) {
                         enAnimState = 'hit';
                         enAnimFrame = Math.min(maxFrames - 1, Math.floor((12 - enemyHitShake) * (maxFrames / 12)));
@@ -837,17 +832,17 @@
                     let knockback = 0;
 
                     if (isHit) {
-                        knockback = -Math.sin(teamHitShake[i] * 1.8) * 10 - 6;
+                        knockback = -Math.sin(teamHitShake[i] * 1.8) * 8 - 4;
                         teamHitShake[i]--;
                     }
 
-                    let baseSlot = teamSlots[i] || { x: cx - 75, y: cy };
+                    let baseSlot = teamSlots[i] || { x: clashLeftX, y: cy };
                     let posY = isPetDead ? (baseSlot.y + 10) : (baseSlot.y + myOffsetsY[i]);
                     let posX = isPetDead ? baseSlot.x : (baseSlot.x + myOffsetsX[i] + knockback);
                     let baseName = pet.name.replace('F1_', '');
                     let hasSprite = isPetSpriteReady(baseName);
 
-                    let animState = 'idle';
+                    let animState = (introFrames > 0) ? 'walk' : 'idle';
                     if (isPetDead) animState = 'death';
                     else if (isAttacking) animState = 'attack';
                     else if (isHit) animState = 'hit';
@@ -856,11 +851,11 @@
                     let petGrid = petCfg ? getSpriteGrid(petCfg, animState) : { totalFrames: 16 };
                     let pMaxFrames = petGrid.totalFrames || 16;
 
-                    let animFrame = Math.floor(idleTick * 2.2) % pMaxFrames;
+                    let animFrame = Math.floor(idleTick * 2.4) % pMaxFrames;
                     if (isPetDead) {
                         animFrame = pMaxFrames - 1;
                     } else if (isAttacking) {
-                        animFrame = Math.min(pMaxFrames - 1, Math.floor((attacker.step / 22) * pMaxFrames));
+                        animFrame = Math.min(pMaxFrames - 1, Math.floor((attacker.step / 18) * pMaxFrames));
                     } else if (isHit) {
                         animFrame = Math.min(pMaxFrames - 1, Math.floor((12 - teamHitShake[i]) * (pMaxFrames / 12)));
                     }

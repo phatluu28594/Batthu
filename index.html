@@ -26,19 +26,97 @@
         }
         window.addEventListener('click', tryLockLandscape, { once: true });
         window.addEventListener('touchstart', tryLockLandscape, { once: true });
+
+        function applyForcedLandscapePreference() {
+            const pref = localStorage.getItem('batthu_force_landscape');
+            // Mặc định cưỡng chế tự xoay ngang màn hình (force-landscape) nếu người dùng chưa tắt thủ công
+            if (pref !== 'false') {
+                document.body.classList.add('force-landscape');
+            } else {
+                document.body.classList.remove('force-landscape');
+            }
+        }
+
+        function enableForcedLandscape() {
+            localStorage.setItem('batthu_force_landscape', 'true');
+            document.body.classList.add('force-landscape');
+            dismissRotatePrompt();
+            if (typeof map !== 'undefined' && map) {
+                setTimeout(() => map.invalidateSize(), 200);
+            }
+        }
+
+        function disableForcedLandscape() {
+            localStorage.setItem('batthu_force_landscape', 'false');
+            document.body.classList.remove('force-landscape');
+            dismissRotatePrompt();
+            if (typeof map !== 'undefined' && map) {
+                setTimeout(() => map.invalidateSize(), 200);
+            }
+        }
+
+        function toggleForcedLandscape() {
+            const isForced = document.body.classList.contains('force-landscape');
+            if (isForced) {
+                disableForcedLandscape();
+            } else {
+                enableForcedLandscape();
+            }
+        }
+
         function dismissRotatePrompt() {
             const el = document.getElementById('landscape-rotate-prompt');
             if (el) el.classList.add('dismissed');
         }
+
+        window.addEventListener('DOMContentLoaded', applyForcedLandscapePreference);
+        window.addEventListener('resize', () => {
+            if (typeof map !== 'undefined' && map) {
+                setTimeout(() => map.invalidateSize(), 150);
+            }
+        });
     </script>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; height: 100dvh; width: 100%; overflow: hidden; background: #09090b; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
         
-        /* Cảnh báo xoay ngang màn hình khi người dùng cầm dọc điện thoại */
+        /* Cảnh báo và Cưỡng chế xoay ngang màn hình (Forced Landscape 16:9) */
         #landscape-rotate-prompt { display: none; }
         @media (orientation: portrait) and (max-width: 900px) {
             #landscape-rotate-prompt:not(.dismissed) {
                 display: flex !important;
+            }
+            body.force-landscape {
+                position: fixed !important;
+                inset: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                overflow: hidden !important;
+            }
+            body.force-landscape #game-viewport {
+                position: fixed !important;
+                top: 0 !important;
+                left: 100vw !important;
+                width: 100dvh !important;
+                height: 100dvw !important;
+                transform: rotate(90deg) !important;
+                transform-origin: top left !important;
+                overflow: hidden !important;
+            }
+            body.force-landscape #landscape-rotate-prompt {
+                display: none !important;
+            }
+        }
+        @media (orientation: landscape) {
+            #game-viewport {
+                position: relative !important;
+                width: 100% !important;
+                height: 100% !important;
+                transform: none !important;
+                left: 0 !important;
+                top: 0 !important;
+            }
+            #landscape-rotate-prompt {
+                display: none !important;
             }
         }
 
@@ -322,7 +400,7 @@
         <source id="bg-music-source" src="./nhac_cho.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- BẢNG NHẮC XOAY NGANG MÀN HÌNH (LANDSCAPE ORIENTATION OVERLAY) -->
+    <!-- BẢNG NHẮC & CƯỠNG CHẾ XOAY NGANG MÀN HÌNH (LANDSCAPE ORIENTATION OVERLAY) -->
     <div id="landscape-rotate-prompt" class="hidden fixed inset-0 z-[99999] bg-zinc-950/95 backdrop-blur-lg flex flex-col items-center justify-center p-6 text-center select-none">
         <div class="relative w-28 h-28 mb-4 flex items-center justify-center">
             <div class="w-16 h-24 border-4 border-amber-400 rounded-2xl flex items-center justify-center animate-spin" style="animation-duration: 3.5s;">
@@ -330,14 +408,22 @@
             </div>
             <span class="absolute text-3xl">🔄</span>
         </div>
-        <h2 class="text-xl font-black text-amber-300 tracking-wide uppercase mb-2">Vui Lòng Xoay Ngang Màn Hình</h2>
+        <h2 class="text-xl font-black text-amber-300 tracking-wide uppercase mb-2">Trải Nghiệm Màn Hình Ngang</h2>
         <p class="text-xs text-zinc-300 max-w-xs leading-relaxed mb-4">
-            Bắt Thú Vương đã chuyển đổi thành <span class="text-yellow-400 font-black">Game Màn Hình Ngang (Landscape Widescreen)</span> để trải nghiệm săn bắt và đấu trường hoành tráng nhất!
+            Bắt Thú Vương là <span class="text-yellow-400 font-black">Game Màn Hình Ngang (Landscape 16:9)</span>. Bạn có thể bật <span class="text-cyan-300 font-bold">Cưỡng Chế Tự Xoay Ngang 90°</span> ngay mà không cần điện thoại phải bật tự xoay trong cài đặt máy!
         </p>
-        <button onclick="dismissRotatePrompt()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-bold px-4 py-2 rounded-full text-xs cursor-pointer border border-white/10 transition">
-            Tiếp tục giữ màn hình dọc
-        </button>
+        <div class="flex flex-col gap-2.5 w-full max-w-xs">
+            <button onclick="enableForcedLandscape()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-zinc-950 font-black px-4 py-3 rounded-2xl text-xs cursor-pointer shadow-lg transform active:scale-95 transition">
+                ⚡ BẬT CƯỠNG CHẾ TỰ XOAY NGANG 90°
+            </button>
+            <button onclick="disableForcedLandscape()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-bold px-4 py-2 rounded-2xl text-xs cursor-pointer border border-white/10 transition">
+                📱 Tiếp tục giữ màn hình dọc
+            </button>
+        </div>
     </div>
+
+    <!-- KHUNG CHỨA TOÀN BỘ GIAO DIỆN GAME (HỖ TRỢ CƯỠNG CHẾ XOAY NGANG 90 ĐỘ TRÊN DI ĐỘNG) -->
+    <div id="game-viewport" class="relative w-full h-full overflow-hidden">
 
     <!-- BẢNG YÊU CẦU MỞ TOÀN MÀN HÌNH (FULLSCREEN / PWA IOS) -->
     <div id="fullscreen-prompt-overlay" class="hidden absolute inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
@@ -378,6 +464,7 @@
             <!-- Cụm nút chức năng bên phải: Luôn vừa khít mọi kích thước màn hình + Nút mở rộng ▼ -->
             <div class="relative flex items-center gap-1 bg-black/85 backdrop-blur-md px-1.5 py-1 rounded-full border border-white/15 pointer-events-auto shadow-xl">
                 <button id="btn-toggle-music" onclick="toggleGameMusic()" title="Bật/Tắt nhạc" class="bg-zinc-800/90 hover:bg-zinc-700 w-7 h-7 sm:w-auto sm:px-2.5 sm:py-1 rounded-full border border-white/20 text-xs font-bold cursor-pointer flex items-center justify-center shrink-0">🔊</button>
+                <button onclick="toggleForcedLandscape()" title="Cưỡng chế xoay ngang 90°" class="bg-zinc-800/90 hover:bg-zinc-700 w-7 h-7 sm:w-auto sm:px-2.5 sm:py-1 rounded-full border border-white/20 text-xs font-bold cursor-pointer flex items-center justify-center shrink-0">🔄<span class="hidden md:inline"> Xoay</span></button>
                 <button onclick="openCloudAccountModal()" title="Tài khoản Cloud" class="bg-indigo-600/95 hover:bg-indigo-500 px-2 py-1 rounded-full border border-indigo-300 text-[11px] sm:text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">☁️<span class="hidden md:inline"> Nick</span></button>
                 <button onclick="openTeamMenu()" title="Đội hình" class="bg-zinc-800/95 hover:bg-zinc-700 px-2 py-1 rounded-full border border-white/25 text-[11px] sm:text-xs font-bold cursor-pointer whitespace-nowrap shrink-0">🎒<span id="home-team-count">0</span>/3</button>
                 <button onclick="openCarnivalModal()" title="Tân Thủ 7 Ngày" class="relative bg-rose-600/95 hover:bg-rose-500 w-7 h-7 sm:w-auto sm:px-2.5 sm:py-1 rounded-full border border-amber-300 text-xs font-bold cursor-pointer flex items-center justify-center shrink-0">
@@ -430,26 +517,30 @@
                 <img src="./background.webp" alt="Sảnh Chính" class="panorama-img" onload="centerPanorama('home-scroller')">
                 <div id="home-roaming-pets-layer" class="absolute inset-0 pointer-events-none z-10 overflow-hidden"></div>
 
-                <div onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 48%; left: 8%; width: 22%; height: 26%;">
-                    <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ</div>
+                <!-- Cửa lớn đi săn (Cánh cửa gỗ đôi lớn bên trái tường) -->
+                <div onclick="goFromHomeToMap()" class="hotspot flex flex-col items-center justify-center" style="top: 32%; left: 4%; width: 15%; height: 40%;">
+                    <div class="home-label animate-bounce" style="border-color: #f59e0b; color: #fef08a;">🚪 Cửa lớn: Đi săn thú</div>
                 </div>
 
-                <div onclick="goFromHomeToMap()" class="hotspot flex flex-col items-center justify-center" style="top: 28%; left: 42%; width: 16%; height: 26%;">
-                    <div class="home-label animate-bounce">🚪 Đi săn thú</div>
+                <!-- Giường ngủ hồi sức (Giường gỗ có chăn ấm bên trái giữa) -->
+                <div onclick="startSleeping()" class="hotspot flex flex-col items-center justify-center" style="top: 50%; left: 27%; width: 22%; height: 23%;">
+                    <div class="home-label" style="border-color: #60a5fa; color: #bfdbfe;">🛏️ Giường ngủ hồi sức</div>
                 </div>
 
-                <div onclick="openFarmMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 28%; left: 80%; width: 16%; height: 26%;">
-                    <div class="home-label" style="border-color: #34d399; color: #a7f3d0;">🏡 Đi Trang trại</div>
+                <!-- Chiếc Tivi trên tường -->
+                <div onclick="openTvInfoModal()" class="hotspot flex flex-col items-center justify-center" style="top: 24%; left: 50%; width: 11%; height: 13%;">
+                    <div class="home-label" style="border-color: #a855f7; color: #e9d5ff;">📺 Xem Tivi</div>
                 </div>
 
-                <div onclick="openTvInfoModal()" class="hotspot flex flex-col items-center justify-center" style="top: 42%; left: 64%; width: 14%; height: 22%;">
-                    <div class="home-label" style="border-color: #a855f7; color: #e9d5ff;">📺 Xem tivi</div>
+                <!-- Chiếc điện thoại liên lạc trên bàn làm việc -->
+                <div onclick="openPhoneCommunicatorMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 44%; left: 52%; width: 11%; height: 16%;">
+                    <div class="home-label" style="border-color: #38bdf8; color: #bae6fd;">📱 Điện thoại liên lạc</div>
                 </div>
 
-                <div onclick="openHospitalMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 64%; left: 78%; width: 16%; height: 20%;">
-                    <div class="home-label" style="border-color: #f472b6; color: #fbcfe8;">☎️ Gọi bệnh viện</div>
+                <!-- Cửa phụ ra trang trại (Cửa gỗ mở nhìn ra đồi cỏ bên phải tường) -->
+                <div onclick="openFarmMenu()" class="hotspot flex flex-col items-center justify-center" style="top: 30%; left: 76%; width: 16%; height: 38%;">
+                    <div class="home-label" style="border-color: #34d399; color: #a7f3d0;">🏡 Cửa phụ: Ra Trang trại</div>
                 </div>
-
 
             </div>
         </div>
@@ -501,6 +592,7 @@
             <!-- Hàng chính bên trái mũi tên: Nhà, Cloud, Tháp, Boss, PvP + Nút mũi tên ▼ -->
             <div class="flex items-center gap-1 bg-black/85 backdrop-blur-md px-1.5 py-1 rounded-full border border-white/15 shadow-xl max-w-full">
                 <button onclick="goBackToHome()" class="bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-full border border-amber-300/60 text-[11px] sm:text-xs font-bold shadow cursor-pointer whitespace-nowrap text-amber-200">🏠 Nhà</button>
+                <button onclick="toggleForcedLandscape()" title="Cưỡng chế xoay ngang 90°" class="bg-zinc-800 hover:bg-zinc-700 px-2 py-1.5 rounded-full border border-white/20 text-[11px] sm:text-xs font-bold shadow cursor-pointer whitespace-nowrap">🔄</button>
                 <button onclick="openCloudAccountModal()" class="bg-indigo-600/90 hover:bg-indigo-500 px-2 py-1.5 rounded-full border border-indigo-300 text-[11px] sm:text-xs font-bold shadow cursor-pointer whitespace-nowrap">☁️</button>
                 <button onclick="openTowerMenu()" class="bg-purple-600/90 hover:bg-purple-500 px-2.5 py-1.5 rounded-full border border-purple-400 text-[11px] sm:text-xs font-bold shadow cursor-pointer whitespace-nowrap">🗼 Tháp</button>
                 <button onclick="openWorldBossMenu()" class="bg-amber-700/90 hover:bg-amber-600 px-2.5 py-1.5 rounded-full border border-amber-400 text-[11px] sm:text-xs font-bold shadow cursor-pointer animate-pulse whitespace-nowrap">👹 Boss</button>
@@ -821,6 +913,7 @@
     <div id="modal-container" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-4 select-none">
         <div id="modal-content" class="bg-zinc-900/95 border border-amber-500/50 w-full max-w-4xl rounded-3xl p-3.5 sm:p-5 flex flex-col max-h-[92vh] max-h-[92dvh] overflow-hidden relative shadow-2xl"></div>
     </div>
+    </div> <!-- /#game-viewport -->
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="monster.js"></script>
@@ -1088,6 +1181,51 @@
                 </p>
             </div>
             <button onclick="closeModal()" class="mt-4 w-full bg-purple-600 hover:bg-purple-500 py-2.5 rounded-xl font-bold text-xs text-white cursor-pointer shadow-lg">Đóng Tivi</button>`;
+        }
+
+        function openPhoneCommunicatorMenu() {
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            if (!modal || !content) return;
+            modal.classList.remove('hidden');
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3 border-b border-cyan-500/30 pb-2">
+                <h3 class="font-black text-base text-cyan-300 flex items-center gap-2">
+                    <span>📱</span> Điện Thoại Liên Lạc & Dịch Vụ
+                </h3>
+                <button onclick="closeModal()" class="text-zinc-400 hover:text-white text-xl font-bold p-1">✕</button>
+            </div>
+            <p class="text-xs text-zinc-300 mb-4">Thiết bị liên lạc di động giúp bạn kết nối nhanh đến các cơ sở dịch vụ và bạn bè:</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button onclick="closeModal(); openHospitalMenu();" class="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-pink-950/80 to-zinc-900 border border-pink-400/40 hover:border-pink-300 transition text-left cursor-pointer shadow-lg group">
+                    <span class="text-3xl group-hover:scale-110 transition-transform">🏥</span>
+                    <div>
+                        <div class="text-xs font-bold text-pink-300">Gọi Bệnh Viện Trị Thương</div>
+                        <div class="text-[10px] text-zinc-400">Hồi sinh và phục hồi 100% HP đội hình miễn phí</div>
+                    </div>
+                </button>
+                <button onclick="closeModal(); openFriendsModal();" class="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-sky-950/80 to-zinc-900 border border-sky-400/40 hover:border-sky-300 transition text-left cursor-pointer shadow-lg group">
+                    <span class="text-3xl group-hover:scale-110 transition-transform">👥</span>
+                    <div>
+                        <div class="text-xs font-bold text-sky-300">Danh Sách Bạn Bè</div>
+                        <div class="text-[10px] text-zinc-400">Xem bạn bè online, gửi lời mời và chat 1vs1</div>
+                    </div>
+                </button>
+                <button onclick="closeModal(); openCloudAccountModal();" class="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-indigo-950/80 to-zinc-900 border border-indigo-400/40 hover:border-indigo-300 transition text-left cursor-pointer shadow-lg group">
+                    <span class="text-3xl group-hover:scale-110 transition-transform">☁️</span>
+                    <div>
+                        <div class="text-xs font-bold text-indigo-300">Tài Khoản Cloud Đồng Bộ</div>
+                        <div class="text-[10px] text-zinc-400">Lưu dữ liệu máy chủ và chuyển đổi thiết bị</div>
+                    </div>
+                </button>
+                <button onclick="closeModal(); openP2pMarketModal();" class="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-amber-950/80 to-zinc-900 border border-amber-400/40 hover:border-amber-300 transition text-left cursor-pointer shadow-lg group">
+                    <span class="text-3xl group-hover:scale-110 transition-transform">🏪</span>
+                    <div>
+                        <div class="text-xs font-bold text-amber-300">Chợ Giao Dịch P2P</div>
+                        <div class="text-[10px] text-zinc-400">Mua bán linh thú, trứng và đá ngũ hành</div>
+                    </div>
+                </button>
+            </div>`;
         }
 
         function checkPetSurvival() {
@@ -6071,19 +6209,20 @@
         let homeRoamAnimId = null;
         let lastTeamSignature = '';
 
-        // Các vùng vật cản trên sàn nhà (tọa độ % theo ảnh nền căn phòng)
+        // Các vùng vật cản trên sàn nhà (tọa độ % theo ảnh nền căn phòng mới)
         const FLOOR_OBSTACLES = [
-            // Giường xanh lớn phía bên trái
-            { xMin: 5,  xMax: 36, yMin: 44, yMax: 63 },
-            // Đệm nằm tròn xanh có thú ngủ phía trái dưới
-            { xMin: 8,  xMax: 37, yMin: 61, yMax: 73 },
-            // Bàn ăn khăn caro xanh & ghế phía phải
-            { xMin: 61, xMax: 89, yMin: 62, yMax: 81 },
-            // Tủ gỗ & chậu hoa góc phải dưới
-            { xMin: 71, xMax: 98, yMin: 81, yMax: 98 },
-            // Kệ TV & khu vực sát tường trái / phải
-            { xMin: 0,  xMax: 12, yMin: 45, yMax: 98 },
-            { xMin: 89, xMax: 100,yMin: 45, yMax: 98 }
+            // Giường gỗ bên trái giữa
+            { xMin: 22, xMax: 49, yMin: 46, yMax: 72 },
+            // Bàn làm việc có điện thoại và kệ giữa phòng
+            { xMin: 49, xMax: 64, yMin: 44, yMax: 68 },
+            // Bàn trà nhỏ bên phải
+            { xMin: 66, xMax: 84, yMin: 72, yMax: 86 },
+            // Ghế bành & chậu cây góc phải dưới
+            { xMin: 84, xMax: 100, yMin: 68, yMax: 100 },
+            // Thùng gỗ góc trái dưới
+            { xMin: 0,  xMax: 16, yMin: 75, yMax: 100 },
+            // Khu vực trên cao sát tường/cửa
+            { xMin: 0,  xMax: 100, yMin: 0, yMax: 50 }
         ];
 
         function isBlockedByFurniture(xPct, yPct) {
@@ -6094,14 +6233,14 @@
         }
 
         function computePerspectiveScale(xPct, yPct) {
-            const depthRatio = Math.max(0, Math.min(1, (yPct - 49) / (90 - 49)));
-            const depthScale = 0.42 + depthRatio * 0.84;
+            const depthRatio = Math.max(0, Math.min(1, (yPct - 50) / (90 - 50)));
+            const depthScale = 0.45 + depthRatio * 0.80;
 
             const distToDoor = Math.hypot((xPct - HUNT_DOOR.x) * 0.75, yPct - HUNT_DOOR.y);
             const doorPull = Math.max(0, Math.min(1, distToDoor / 36));
             const finalScale = depthScale * (0.80 + 0.20 * doorPull);
 
-            return Math.max(0.36, Math.min(1.30, finalScale));
+            return Math.max(0.38, Math.min(1.25, finalScale));
         }
 
         function getHomePetSignature() {
@@ -6110,13 +6249,20 @@
         }
 
         function setActorAnimState(actor, stateName) {
-            if (!actor || !actor.petData || actor.animState === stateName) return;
+            if (!actor || !actor.petData) return;
             actor.animState = stateName;
             const slot = actor.el?.querySelector('.home-pet-sprite-slot');
             if (slot && typeof getPetSpriteHtml === 'function') {
                 slot.innerHTML = getPetSpriteHtml(actor.petData, stateName, 78);
                 const box = slot.querySelector('.home-pet-flip-box');
-                if (box) actor.flipBox = box;
+                if (box) {
+                    actor.flipBox = box;
+                    const movingLeft = actor.facing === 'left';
+                    const shouldFlip = movingLeft
+                        ? (actor.facingDefault !== 'left')
+                        : (actor.facingDefault === 'left');
+                    actor.flipBox.style.transform = shouldFlip ? 'scaleX(-1)' : 'scaleX(1)';
+                }
             }
         }
 
@@ -6136,15 +6282,15 @@
 
             if (squad.length === 0) return;
 
-            // Các điểm xuất phát trên sàn trống (không trùng giường, đệm, bàn ăn)
+            // Các điểm xuất phát trên sàn trống rộng rãi
             const startSpots = [
-                { x: 48, y: 66 },
-                { x: 53, y: 78 },
-                { x: 41, y: 84 }
+                { x: 36, y: 76 },
+                { x: 55, y: 78 },
+                { x: 46, y: 88 }
             ];
 
             squad.forEach((pet, idx) => {
-                const spot = startSpots[idx] || { x: 48 + idx * 4, y: 72 };
+                const spot = startSpots[idx] || { x: 38 + idx * 8, y: 76 };
                 const baseName = String(pet.name || '').replace(/^F1_/i, '');
                 const cfg = (typeof spriteConfigs !== 'undefined' && spriteConfigs[baseName]) ? spriteConfigs[baseName] : null;
                 const spriteHtml = typeof getPetSpriteHtml === 'function'
@@ -6168,6 +6314,10 @@
                     petIndex: idx,
                     animState: 'walk',
                     hitTimer: 0,
+                    attackTimer: 0,
+                    deathTimer: 0,
+                    duelCooldown: 2.0 + idx * 1.5,
+                    facing: 'right',
                     flipBox: null,
                     facingDefault: cfg?.facing || 'right',
                     x: spot.x,
@@ -6180,7 +6330,6 @@
 
                 actorEl.onclick = (e) => {
                     e.stopPropagation();
-                    // Kích hoạt trạng thái `hit` phản ứng khi bấm vào thú rồi mở trang thông tin chi tiết
                     actorObj.hitTimer = 0.45;
                     setActorAnimState(actorObj, 'hit');
                     setTimeout(() => {
@@ -6211,18 +6360,10 @@
         };
 
         function pickNextHomeTarget(actor) {
-            // Tìm ngẫu nhiên 1 điểm trên sàn nhà không chạm giường/đệm/bàn ăn
+            // Tìm ngẫu nhiên 1 điểm trên sàn trống và thảm tròn rộng rãi
             for (let attempt = 0; attempt < 25; attempt++) {
-                let candX, candY;
-                if (Math.random() < 0.30) {
-                    // Khu vực gần cửa đi săn (thu nhỏ theo phối cảnh xa)
-                    candX = 41 + Math.random() * 18;
-                    candY = 50 + Math.random() * 9;
-                } else {
-                    // Khắp không gian sàn nhà từ sát cửa xuống sát mép dưới (phóng to theo phối cảnh gần)
-                    candX = 14 + Math.random() * 72;
-                    candY = 51 + Math.random() * 41;
-                }
+                let candX = 18 + Math.random() * 48;
+                let candY = 66 + Math.random() * 26;
                 if (!isBlockedByFurniture(candX, candY)) {
                     actor.tx = candX;
                     actor.ty = candY;
@@ -6230,7 +6371,7 @@
                 }
             }
             actor.tx = 48;
-            actor.ty = 74;
+            actor.ty = 82;
         }
 
         let lastStepTime = performance.now();
@@ -6244,8 +6385,83 @@
                     window.syncHomeRoamingPets();
                 }
 
+                // Kiểm tra va chạm đánh nhau giữa các linh thú chạm nhau
+                for (let i = 0; i < homePetActors.length; i++) {
+                    for (let j = i + 1; j < homePetActors.length; j++) {
+                        const a = homePetActors[i];
+                        const b = homePetActors[j];
+                        if (a.deathTimer > 0 || b.deathTimer > 0) continue;
+                        if (a.attackTimer > 0 || b.attackTimer > 0) continue;
+                        if (a.hitTimer > 0 || b.hitTimer > 0) continue;
+                        if (a.duelCooldown > 0 || b.duelCooldown > 0) continue;
+
+                        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+                        if (dist < 4.8) {
+                            // 2 thú chạm nhau -> Bắt đầu đánh nhau
+                            const attacker = Math.random() < 0.5 ? a : b;
+                            const defender = (attacker === a) ? b : a;
+
+                            // Quay mặt vào nhau
+                            if (attacker.x < defender.x) {
+                                attacker.facing = 'right'; defender.facing = 'left';
+                            } else {
+                                attacker.facing = 'left'; defender.facing = 'right';
+                            }
+                            if (attacker.flipBox) {
+                                const flipAtk = (attacker.facing === 'left') ? (attacker.facingDefault !== 'left') : (attacker.facingDefault === 'left');
+                                attacker.flipBox.style.transform = flipAtk ? 'scaleX(-1)' : 'scaleX(1)';
+                            }
+                            if (defender.flipBox) {
+                                const flipDef = (defender.facing === 'left') ? (defender.facingDefault !== 'left') : (defender.facingDefault === 'left');
+                                defender.flipBox.style.transform = flipDef ? 'scaleX(-1)' : 'scaleX(1)';
+                            }
+
+                            // Attacker tấn công
+                            attacker.attackTimer = 0.9;
+                            attacker.duelCooldown = 8.0;
+                            setActorAnimState(attacker, 'attack');
+
+                            // Defender dính đòn rồi ngã gục (death 3s)
+                            setTimeout(() => {
+                                if (defender && defender.deathTimer <= 0) {
+                                    defender.hitTimer = 0.35;
+                                    setActorAnimState(defender, 'hit');
+                                }
+                            }, 350);
+
+                            setTimeout(() => {
+                                if (defender) {
+                                    defender.deathTimer = 3.0; // Death 3 giây
+                                    defender.duelCooldown = 10.0;
+                                    setActorAnimState(defender, 'death');
+                                }
+                            }, 700);
+                        }
+                    }
+                }
+
                 homePetActors.forEach(actor => {
-                    if (actor.hitTimer > 0) {
+                    actor.duelCooldown = Math.max(0, actor.duelCooldown - dt);
+
+                    if (actor.deathTimer > 0) {
+                        actor.deathTimer = Math.max(0, actor.deathTimer - dt);
+                        setActorAnimState(actor, 'death');
+                        if (actor.deathTimer <= 0) {
+                            // Hết 3 giây tử trận -> Sống lại tiếp tục dạo chơi
+                            actor.waitTimer = 1.0;
+                            actor.duelCooldown = 8.0;
+                            setActorAnimState(actor, 'idle');
+                            pickNextHomeTarget(actor);
+                        }
+                    } else if (actor.attackTimer > 0) {
+                        actor.attackTimer = Math.max(0, actor.attackTimer - dt);
+                        setActorAnimState(actor, 'attack');
+                        if (actor.attackTimer <= 0) {
+                            actor.waitTimer = 1.2;
+                            setActorAnimState(actor, 'idle');
+                            pickNextHomeTarget(actor);
+                        }
+                    } else if (actor.hitTimer > 0) {
                         actor.hitTimer = Math.max(0, actor.hitTimer - dt);
                         setActorAnimState(actor, 'hit');
                     } else if (actor.waitTimer > 0) {
@@ -6275,16 +6491,18 @@
                                 actor.x = nextX;
                                 actor.y = nextY;
                             } else {
-                                // Nếu gặp vật cản bàn/giường thì đổi hướng ngay thay vì leo lên
                                 pickNextHomeTarget(actor);
                             }
 
-                            if (actor.flipBox && Math.abs(dx) > 0.15) {
-                                const movingLeft = dx < 0;
-                                const shouldFlip = movingLeft
-                                    ? (actor.facingDefault !== 'left')
-                                    : (actor.facingDefault === 'left');
-                                actor.flipBox.style.transform = shouldFlip ? 'scaleX(-1)' : 'scaleX(1)';
+                            if (Math.abs(dx) > 0.15) {
+                                actor.facing = dx < 0 ? 'left' : 'right';
+                                if (actor.flipBox) {
+                                    const movingLeft = dx < 0;
+                                    const shouldFlip = movingLeft
+                                        ? (actor.facingDefault !== 'left')
+                                        : (actor.facingDefault === 'left');
+                                    actor.flipBox.style.transform = shouldFlip ? 'scaleX(-1)' : 'scaleX(1)';
+                                }
                             }
                         }
                     }
