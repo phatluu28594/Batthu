@@ -3,11 +3,155 @@
 // Đã đồng bộ hoàn toàn Server (/api/world-boss), Sảnh Boss MMO & Đánh Boss 3vs1
 // ============================================================================
 
-// 1. THÁP VÔ TẬN (TOWER)
+// 1. THÁP VÔ TẬN (TOWER) - HIỂN THỊ QUÁI CHẾ ĐỘ IDLE & NÚT XEM THÔNG TIN QUÁI
+        function getTowerFloorMonster(floorNum) {
+            const fl = Math.max(1, Number(floorNum) || 1);
+            const bossKeys = (typeof bossSpriteConfigs !== 'undefined') ? Object.keys(bossSpriteConfigs) : [];
+            const spriteKey = bossKeys.length > 0 ? bossKeys[(fl - 1) % bossKeys.length] : null;
+            const cfg = spriteKey && bossSpriteConfigs[spriteKey] ? bossSpriteConfigs[spriteKey] : null;
+            const elem = cfg?.element || ['Hoa', 'Moc', 'Thuy', 'Kim', 'Tho'][(fl - 1) % 5];
+
+            const cycle = Math.floor((fl - 1) / 10);
+            const bonusScale = 1 + Math.floor(cycle / 2);
+            const stepInCycle = ((fl - 1) % 10) + 1;
+            const TOWER_FLOOR_ITEMS = [
+                { key: 'stoneKim',       qty: 1 * bonusScale, label: `${1 * bonusScale} ⚔️ Đá Kim` },
+                { key: 'stoneMoc',       qty: 1 * bonusScale, label: `${1 * bonusScale} 🌿 Đá Mộc` },
+                { key: 'stoneThuy',      qty: 1 * bonusScale, label: `${1 * bonusScale} 💧 Đá Thủy` },
+                { key: 'stoneHoa',       qty: 1 * bonusScale, label: `${1 * bonusScale} 🔥 Đá Hỏa` },
+                { key: 'stoneTho',       qty: 1 * bonusScale, label: `${1 * bonusScale} 🪨 Đá Thổ` },
+                { key: 'luckyTicket',    qty: 1,              label: `1 🎟️ Vé Quay May Mắn` },
+                { key: 'trainer',        qty: 1 * bonusScale, label: `${1 * bonusScale} 🎫 Vé Tập Luyện` },
+                { key: 'food',           qty: 2 * bonusScale, label: `${2 * bonusScale} 🍖 Thức Ăn` },
+                { key: 'toy',            qty: 2 * bonusScale, label: `${2 * bonusScale} 🎾 Đồ Chơi` },
+                { key: 'gearShardChest', qty: 1,              label: `1 🧰 Rương Mảnh Trang Bị` }
+            ];
+
+            return {
+                floor: fl,
+                name: `${cfg?.displayName || 'Thủ Vệ Tháp'} (Tầng ${fl})`,
+                baseName: cfg?.displayName || 'Thủ Vệ Tháp',
+                spriteKey,
+                element: elem,
+                emoji: '👹',
+                hp: 120 + (fl * 25),
+                maxHp: 120 + (fl * 25),
+                atk: 20 + fl * 4,
+                speed: 40 + fl * 2,
+                accuracy: 88,
+                dodgeRate: Math.min(35, 10 + fl),
+                critRate: 15,
+                blockRate: Math.min(40, 12 + fl),
+                armorBreak: Math.min(35, 10 + fl),
+                comboRate: Math.min(50, 15 + fl * 2),
+                rewardGold: 300 + (fl * 50),
+                rewardDiamond: fl % 5 === 0 ? 5 : 0,
+                rewardItem: TOWER_FLOOR_ITEMS[stepInCycle - 1]?.label || ''
+            };
+        }
+
+        function buildTowerIdleSpriteHtml(mon, sizePx = 110) {
+            if (mon.spriteKey && typeof bossSpriteConfigs !== 'undefined' && bossSpriteConfigs[mon.spriteKey]) {
+                const cfg = bossSpriteConfigs[mon.spriteKey];
+                const cols = cfg.cols || 8;
+                const rows = cfg.totalRows || 5;
+                const idleRow = (cfg.rowMap && cfg.rowMap.idle !== undefined) ? cfg.rowMap.idle : 0;
+                const posY = rows > 1 ? (idleRow / (rows - 1)) * 100 : 0;
+                return `<div class="animated-sprite-box" data-cols="${cols}" data-rows="${rows}" data-total="${cols}" data-fixed-row="${idleRow}" style="width:${sizePx}px; height:${sizePx}px; display:inline-block; background-image:url('${cfg.sheet}'); background-size:${cols * 100}% ${rows * 100}%; background-position:0% ${posY}%; background-repeat:no-repeat; filter: drop-shadow(0 8px 14px rgba(0,0,0,0.85));"></div>`;
+            }
+            return `<span class="pet-walk-anim" style="font-size:${Math.floor(sizePx * 0.65)}px;">${mon.emoji || '👹'}</span>`;
+        }
+
+        function renderTowerIdleGuardian() {
+            const stage = document.getElementById('tower-guardian-stage');
+            if (!stage) return;
+            const mon = getTowerFloorMonster(towerFloor);
+            const elemInfo = (typeof elementNames !== 'undefined' && elementNames[mon.element])
+                ? elementNames[mon.element]
+                : { label: mon.element, color: 'text-amber-300' };
+
+            stage.innerHTML = `
+                <!-- Nút Xem Thông Tin Quái Chuẩn Bị Đánh -->
+                <div class="absolute top-3 left-3 z-30 pointer-events-auto flex items-center gap-2">
+                    <button onclick="openTowerMonsterInfoModal()" class="bg-amber-950/90 hover:bg-amber-900 text-amber-200 px-3.5 py-2 rounded-full border border-amber-400/80 text-xs font-black shadow-xl cursor-pointer flex items-center gap-1.5 transition active:scale-95">
+                        <span>🔍</span>
+                        <span>Thông Tin Quái (Tầng ${mon.floor})</span>
+                    </button>
+                </div>
+
+                <!-- Quái vật của tầng hiển thị ở chế độ Idle trên nền Tháp -->
+                <div onclick="openTowerMonsterInfoModal()" class="pointer-events-auto cursor-pointer flex flex-col items-center" style="position: absolute; top: 47%; left: 50%; transform: translate(-50%, -50%);">
+                    <div class="bg-black/80 backdrop-blur-xs px-3 py-0.5 rounded-full border border-purple-400/70 text-[10px] font-black text-yellow-300 whitespace-nowrap shadow-lg mb-1">
+                        ${mon.name} • <span class="${elemInfo.color}">${elemInfo.label}</span>
+                    </div>
+                    <div class="relative flex items-center justify-center">
+                        ${buildTowerIdleSpriteHtml(mon, 112)}
+                        <div class="w-24 h-4 rounded-full bg-black/55 blur-[3px] -mt-2"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.openTowerMonsterInfoModal = function() {
+            const mon = getTowerFloorMonster(towerFloor);
+            const elemInfo = (typeof elementNames !== 'undefined' && elementNames[mon.element])
+                ? elementNames[mon.element]
+                : { label: mon.element, color: 'text-amber-300' };
+            const counterElem = (typeof elementCounterMap !== 'undefined') ? elementCounterMap[mon.element] : null;
+            const counterLabel = counterElem && elementNames?.[counterElem]?.label ? elementNames[counterElem].label : (counterElem || '—');
+
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            if (!modal || !content) return;
+            modal.classList.remove('hidden');
+
+            const diaText = mon.rewardDiamond > 0 ? ` + ${mon.rewardDiamond}💎` : '';
+            const itemText = mon.rewardItem ? ` + ${mon.rewardItem}` : '';
+
+            content.innerHTML = `
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-purple-500/40">
+                <div>
+                    <h3 class="font-black text-base text-amber-300">👹 THÔNG TIN QUÁI TẦNG ${mon.floor}</h3>
+                    <div class="text-[11px] text-zinc-400">Trạng thái: <span class="text-emerald-400 font-bold">Chờ Khiêu Chiến (Idle)</span></div>
+                </div>
+                <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
+            </div>
+
+            <div class="bg-zinc-800/90 border border-purple-500/40 rounded-2xl p-3.5 mb-3 flex flex-col items-center text-center">
+                <div class="mb-1 flex justify-center">${buildTowerIdleSpriteHtml(mon, 96)}</div>
+                <div class="text-sm font-black text-yellow-300">${mon.name}</div>
+                <div class="text-xs font-bold ${elemInfo.color} mt-0.5">
+                    Hệ: ${elemInfo.label} • Khắc chế bởi: <span class="text-emerald-300">${counterLabel}</span>
+                </div>
+
+                <div class="w-full grid grid-cols-2 gap-1.5 mt-3 text-[11px] bg-zinc-950/80 p-2.5 rounded-xl border border-zinc-700 text-left">
+                    <div>❤️ Máu (HP): <span class="font-bold text-emerald-400">${mon.maxHp}</span></div>
+                    <div>⚔️ ATK: <span class="font-bold text-red-400">${mon.atk}</span></div>
+                    <div>⚡ Tốc độ: <span class="font-bold text-cyan-400">${mon.speed}</span></div>
+                    <div>🔥 Liên kích: <span class="font-bold text-orange-400">${mon.comboRate}%</span></div>
+                    <div>💥 Chí mạng: <span class="font-bold text-blue-400">${mon.critRate}%</span></div>
+                    <div>🛡️ Đỡ đòn: <span class="font-bold text-purple-400">${mon.blockRate}%</span></div>
+                    <div>🗡️ Phá giáp: <span class="font-bold text-rose-400">${mon.armorBreak}%</span></div>
+                    <div>🏃 Né tránh: <span class="font-bold text-emerald-300">${mon.dodgeRate}%</span></div>
+                </div>
+
+                <div class="w-full mt-2.5 bg-amber-950/50 border border-amber-400/40 rounded-xl p-2 text-left text-[11px]">
+                    <div class="font-extrabold text-amber-300">🎁 Thưởng Vượt Tầng ${mon.floor}:</div>
+                    <div class="text-zinc-200 font-bold mt-0.5">+${mon.rewardGold}🪙 Vàng${diaText}${itemText}</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="closeModal()" class="bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-xl font-bold text-xs text-zinc-200 cursor-pointer border border-zinc-600">Đóng</button>
+                <button onclick="closeModal(); openSelectFighterModal('tower');" class="bg-gradient-to-r from-purple-600 to-amber-500 hover:brightness-110 py-2.5 rounded-xl font-black text-xs text-white cursor-pointer shadow-lg">⚔️ Khiêu Chiến Ngay</button>
+            </div>`;
+        };
+
         function openTowerMenu() {
             checkPetSurvival();
             let gateTag = document.getElementById('tower-gate-floor');
             if (gateTag) gateTag.innerText = towerFloor;
+            renderTowerIdleGuardian();
             document.getElementById('tower-screen').classList.remove('hidden');
         }
         function closeTowerScreen() {
@@ -791,6 +935,7 @@
                                 let clearedFloor = towerFloor;
                                 towerFloor++;
                                 localStorage.setItem('ar_tower_floor', towerFloor);
+                                if (typeof renderTowerIdleGuardian === 'function') renderTowerIdleGuardian();
 
                                 // Chu kỳ phần thưởng 10 tầng luân phiên từng loại vật phẩm
                                 const cycle = Math.floor((clearedFloor - 1) / 10);

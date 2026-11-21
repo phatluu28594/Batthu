@@ -356,12 +356,12 @@
                     <button onclick="selectHomeDropdownTab(() => openHomeStorageBagModal())" class="w-full text-left bg-sky-700/90 hover:bg-sky-600 px-3 py-2 rounded-xl border border-sky-300/60 text-xs font-extrabold cursor-pointer">
                         🎒 Túi Đồ Nhà (5x10)
                     </button>
-                    <button onclick="selectHomeDropdownTab(() => openExpeditionModal())" class="w-full text-left bg-gradient-to-r from-emerald-700/90 to-teal-700/90 hover:brightness-110 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-black cursor-pointer flex items-center justify-between">
-                        <span>🧭 Thám Hiểm (Tự Động)</span>
-                        <span class="expedition-notify-badge hidden bg-yellow-300 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black animate-pulse">QUÀ</span>
-                    </button>
                     <button onclick="selectHomeDropdownTab(() => openQuestMenu())" class="w-full text-left bg-yellow-600/90 hover:bg-yellow-500 px-3 py-2 rounded-xl border border-yellow-300/60 text-xs font-bold cursor-pointer">
                         📜 Nhiệm Vụ Ngày
+                    </button>
+                    <button onclick="selectHomeDropdownTab(() => openExpeditionModal())" class="w-full text-left bg-emerald-700/90 hover:bg-emerald-600 px-3 py-2 rounded-xl border border-emerald-300/60 text-xs font-extrabold cursor-pointer flex items-center justify-between">
+                        <span>🧭 Thám Hiểm</span>
+                        <span class="expedition-notify-badge hidden w-2 h-2 rounded-full bg-yellow-300 animate-ping"></span>
                     </button>
                     <button onclick="selectHomeDropdownTab(() => openLuckyWheelModal())" class="w-full text-left bg-pink-700/90 hover:bg-pink-600 px-3 py-2 rounded-xl border border-pink-400/60 text-xs font-bold cursor-pointer">
                         🎡 Vòng Quay May Mắn
@@ -514,13 +514,13 @@
                 <button onclick="selectMapDropdownTab(() => openP2pMarketModal())" class="w-full text-left bg-orange-700/90 hover:bg-orange-600 px-3 py-2 rounded-xl border border-orange-400/60 text-xs font-bold cursor-pointer">
                     🏪 Chợ Người Chơi
                 </button>
-                <button onclick="selectMapDropdownTab(() => openExpeditionModal())" class="w-full text-left bg-gradient-to-r from-emerald-700/90 to-teal-700/90 hover:brightness-110 px-3 py-2 rounded-xl border border-emerald-400/60 text-xs font-black cursor-pointer flex items-center justify-between">
-                    <span>🧭 Thám Hiểm (Tự Động)</span>
-                    <span class="expedition-notify-badge hidden bg-yellow-300 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black animate-pulse">QUÀ</span>
-                </button>
                 <button onclick="selectMapDropdownTab(() => openCarnivalModal())" class="w-full text-left bg-rose-700/90 hover:bg-rose-600 px-3 py-2 rounded-xl border border-amber-300/60 text-xs font-bold cursor-pointer flex items-center justify-between">
                     <span>🎁 Tân Thủ 7 Ngày</span>
                     <span class="carnival-notify-badge hidden bg-yellow-300 text-black text-[9px] px-1.5 py-0.5 rounded-full font-black">QUÀ</span>
+                </button>
+                <button onclick="selectMapDropdownTab(() => openExpeditionModal())" class="w-full text-left bg-emerald-700/90 hover:bg-emerald-600 px-3 py-2 rounded-xl border border-emerald-300/60 text-xs font-extrabold cursor-pointer flex items-center justify-between">
+                    <span>🧭 Thám Hiểm</span>
+                    <span class="expedition-notify-badge hidden w-2 h-2 rounded-full bg-yellow-300 animate-ping"></span>
                 </button>
                 <button onclick="selectMapDropdownTab(() => openLuckyWheelModal())" class="w-full text-left bg-pink-700/90 hover:bg-pink-600 px-3 py-2 rounded-xl border border-pink-400/60 text-xs font-bold cursor-pointer">
                     🎡 Vòng Quay May Mắn
@@ -560,10 +560,6 @@
 
     <!-- MÀN HÌNH TRANG TRẠI PANORAMA -->
     <div id="fullscreen-farm-screen" class="hidden absolute inset-0 z-40 bg-zinc-950 overflow-hidden">
-        <button onclick="openExpeditionModal()" class="fixed top-3 left-3 z-50 bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white px-3.5 py-1.5 rounded-full font-black text-xs cursor-pointer border border-emerald-400/80 shadow-xl flex items-center gap-1.5">
-            <span>🧭 Thám Hiểm</span>
-            <span class="expedition-notify-badge hidden bg-yellow-300 text-black text-[9px] px-1 py-0.2 rounded-full font-black animate-pulse">QUÀ</span>
-        </button>
         <button onclick="closeFullscreenFarm()" class="fixed top-3 right-3 z-50 bg-black/80 hover:bg-black text-white px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/25 shadow-xl">✕ Thoát</button>
         <div class="fixed bottom-3 left-0 right-0 z-40 text-center pointer-events-none">
             <span class="bg-black/75 text-zinc-200 text-[10px] px-3 py-1 rounded-full border border-white/15">↔️ Vuốt ngang để xem toàn cảnh Trang Trại</span>
@@ -666,7 +662,8 @@
         <button onclick="closeTowerScreen()" class="absolute top-3 right-3 z-30 bg-black/70 hover:bg-black text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-white/20 shadow-xl">✕ Thoát</button>
         <div class="relative w-full h-full overflow-hidden flex flex-col items-center justify-end pb-12">
             <img src="./tower-bg.webp" alt="Tháp Vô Tận" class="absolute inset-0 w-full h-full object-cover z-0">
-            <div onclick="openSelectFighterModal('tower')" class="hotspot flex flex-col items-center justify-center animate-pulse" style="top: 60%; left: 35%; width: 30%; height: 20%;" title="Khiêu chiến Tháp">
+            <div id="tower-guardian-stage" class="absolute inset-0 z-10 pointer-events-none"></div>
+            <div onclick="openSelectFighterModal('tower')" class="hotspot flex flex-col items-center justify-center animate-pulse z-20" style="top: 66%; left: 35%; width: 30%; height: 18%;" title="Khiêu chiến Tháp">
                 <div class="bg-purple-900/90 text-yellow-300 font-extrabold px-3 py-1.5 rounded-full border-2 border-yellow-400 text-xs shadow-2xl tracking-wider text-center">
                     🗼 TẦNG <span id="tower-gate-floor">1</span><br><span class="text-[9px] text-white">CHẠM ĐỂ ĐẤU</span>
                 </div>
@@ -1162,50 +1159,12 @@
 
 
         function hatchEgg(idx) {
-            if (!Array.isArray(eggs) || idx < 0 || idx >= eggs.length) {
-                return;
-            }
             let egg = eggs.splice(idx, 1)[0];
-            if (!egg) return;
-
             let newPet = egg.petData;
-            if (!newPet) {
-                // Tự động sinh linh thú nếu trứng chưa có sẵn petData
-                const elem = egg.element || 'Hoa';
-                const matchingMonsters = (typeof allMonsters !== 'undefined' ? allMonsters : []).filter(m => m.element === elem);
-                const template = matchingMonsters.length > 0
-                    ? matchingMonsters[Math.floor(Math.random() * matchingMonsters.length)]
-                    : ((typeof allMonsters !== 'undefined' && allMonsters[0]) ? allMonsters[0] : { id: 101, name: 'Linh Thú Trứng', element: elem, hp: 120, maxHp: 120, atk: 45, speed: 50 });
-
-                const eggRarity = egg.rarity || ((typeof rarities !== 'undefined' && rarities[1]) ? rarities[1] : { name: 'Hiếm', color: 'text-emerald-400', bg: 'border-emerald-500', badge: '🟢 Xanh', statMultiplier: 1.3 });
-                const statMult = eggRarity.statMultiplier || 1.3;
-
-                newPet = {
-                    id: 'pet_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-                    name: `F1_${template.name.replace(/^F1_/i, '')}`,
-                    element: elem,
-                    level: 1,
-                    exp: 0,
-                    hearts: 3,
-                    rarity: eggRarity,
-                    gender: Math.random() < 0.5 ? 'Đực' : 'Cái',
-                    hp: Math.floor(template.hp * statMult),
-                    maxHp: Math.floor(template.maxHp * statMult),
-                    atk: Math.floor(template.atk * statMult),
-                    speed: Math.floor((template.speed || 50) * (1 + (statMult - 1) * 0.4)),
-                    gears: {}
-                };
-            }
-
             farm.push(newPet);
             saveGameData();
-            if (typeof syncMonsterDexFromOwned === 'function') syncMonsterDexFromOwned();
-            if (typeof updateTeamCount === 'function') updateTeamCount();
-
-            alert(`🎉 Trứng đã nở thành công!\nChúc mừng bạn nhận được linh thú F1: ${newPet.name} (${newPet.rarity?.badge || ''})!`);
-            if (typeof activeSubRoomType !== 'undefined' && activeSubRoomType === 'egg' && typeof renderSubRoomEggs === 'function') {
-                renderSubRoomEggs();
-            }
+            alert(`🎉 Trứng đã nở thành công! Chúc mừng bạn nhận được linh thú F1: ${newPet.name}!`);
+            if (activeSubRoomType === 'egg') renderSubRoomEggs();
             openEggIncubatorMenu();
         }
 
@@ -1426,7 +1385,7 @@
 
         function openSelectPetForTraining(poleIdx) {
             if ((inventory.trainer || 0) <= 0) {
-                alert('⚠️ Bạn đã hết 🎟️ Vé Tập Luyện!\nHãy vào Chợ mua Vé Tập Luyện (1.000🪙) trước khi đưa thú vào luyện tập.');
+                alert('⚠️ Bạn đã hết 🎟️ Vé Tập Luyện!\nHãy vào Chợ mua Vé Tập Luyện (100🪙) trước khi đưa thú vào luyện tập.');
                 return;
             }
             if (farm.length === 0) {
@@ -1612,7 +1571,7 @@
             let pet = farm[farmIndex];
             if (!pet) return;
             ensurePetGears(pet);
-            if (!pet.trait || typeof pet.trait === 'string') {
+            if (!pet.trait) {
                 pet.trait = possibleTraits[Math.floor(Math.random() * possibleTraits.length)];
                 saveGameData();
             }
@@ -1657,7 +1616,7 @@
                 <div class="mb-1 flex justify-center">${getPetSpriteHtml(pet, 'walk', 92)}</div>
                 <div class="text-sm font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${Math.floor(pet.level)}</span></div>
                 <div class="text-[11px] font-bold ${elementNames[pet.element]?.color}">Hệ: ${elementNames[pet.element]?.label} • Tim: ${heartsStr}</div>
-                <div id="pet-detail-trait-badge" class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
+                <div class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
                     <span class="w-5 h-5 inline-block rounded-full bg-black" style="background-image:url('assets/magic.webp'); background-size:800% 500%; background-position:0% ${(statusFxRowMap[pet.trait.type] || 0) * 25}%; mix-blend-mode:screen;"></span>
                     <span class="text-[11px] font-extrabold text-amber-300">Đặc kỹ: ${pet.trait.name} (${Math.max(30, pet.trait.chance || 30)}%)</span>
                 </div>
@@ -2437,71 +2396,10 @@
 
         
 
-        function getDailyStoneBuys() {
-            try {
-                const today = new Date().toISOString().slice(0, 10);
-                const raw = localStorage.getItem('ar_daily_stone_buys');
-                if (raw) {
-                    const data = JSON.parse(raw);
-                    if (data && data.date === today && typeof data.counts === 'object') {
-                        return data;
-                    }
-                }
-                return { date: today, counts: {} };
-            } catch (e) {
-                return { date: new Date().toISOString().slice(0, 10), counts: {} };
-            }
-        }
-
-        function saveDailyStoneBuys(data) {
-            try {
-                localStorage.setItem('ar_daily_stone_buys', JSON.stringify(data));
-            } catch (e) {}
-        }
-
-        function getDailyStoneBuyCount(stoneKey) {
-            const data = getDailyStoneBuys();
-            return Number(data.counts[stoneKey]) || 0;
-        }
-
-        function recordDailyStoneBuy(stoneKey, qty = 1) {
-            const data = getDailyStoneBuys();
-            data.counts[stoneKey] = (Number(data.counts[stoneKey]) || 0) + qty;
-            saveDailyStoneBuys(data);
-        }
-
         function openMarketMenu() {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
-
-            const stoneItems = [
-                { key: 'stoneKim', label: '⚔️ Đá Kim', color: 'text-yellow-200' },
-                { key: 'stoneMoc', label: '🌿 Đá Mộc', color: 'text-emerald-400' },
-                { key: 'stoneThuy', label: '💧 Đá Thủy', color: 'text-blue-400' },
-                { key: 'stoneHoa', label: '🔥 Đá Hỏa', color: 'text-red-400' },
-                { key: 'stoneTho', label: '🪨 Đá Thổ', color: 'text-amber-500' }
-            ];
-
-            const stoneRowsHtml = stoneItems.map(s => {
-                const bought = getDailyStoneBuyCount(s.key);
-                const rem = Math.max(0, 3 - bought);
-                const countInBag = inventory[s.key] || 0;
-                const btnHtml = rem > 0
-                    ? `<button onclick="buyShopItem('${s.key}', 150, 1)" class="bg-amber-600 hover:bg-amber-500 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua (${rem}/3)</button>`
-                    : `<button disabled class="bg-zinc-700 text-zinc-500 px-2.5 py-1 rounded text-xs font-bold cursor-not-allowed">Hết lượt (3/3)</button>`;
-
-                return `
-                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between border border-zinc-700/60">
-                    <div class="text-xs">
-                        <span class="font-bold ${s.color}">${s.label}</span>
-                        <span class="text-zinc-400 text-[10px]"> [Kho: ${countInBag}]</span>
-                        <span class="text-[10px] ${rem > 0 ? 'text-amber-300' : 'text-zinc-500'}"> (Còn ${rem}/3 hôm nay)</span>
-                    </div>
-                    ${btnHtml}
-                </div>`;
-            }).join('');
-
             content.innerHTML = `
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold text-lg text-amber-300">🛒 Chợ Đen & Vật Phẩm</h3>
@@ -2542,17 +2440,18 @@
                 </div>
                 <div class="bg-zinc-800 p-2.5 rounded-xl flex items-center justify-between border border-zinc-700">
                     <div>
-                        <div class="text-xs font-bold text-indigo-300">🎟️ Vé Tập Luyện (1.000🪙) [Kho: ${inventory.trainer || 0}]</div>
+                        <div class="text-xs font-bold text-indigo-300">🎟️ Vé Tập Luyện (100🪙) [Kho: ${inventory.trainer || 0}]</div>
                         <div class="text-[10px] text-zinc-400">Tập luyện 1 tiếng tại Bãi Tập Trang Trại (+1 Cấp)</div>
                     </div>
-                    <button onclick="buyShopItem('trainer', 1000, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer shrink-0">Mua</button>
+                    <button onclick="buyShopItem('trainer', 100, 1)" class="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-xs font-bold cursor-pointer shrink-0">Mua</button>
                 </div>
                 
-                <div class="text-xs font-bold text-yellow-400 mt-2 flex items-center justify-between">
-                    <span>💎 Đá Ngũ Hành Cường Hóa (150🪙 / viên)</span>
-                    <span class="text-[10px] text-amber-300/80 font-normal">Giới hạn: 3 viên/ngày/loại</span>
-                </div>
-                ${stoneRowsHtml}
+                <div class="text-xs font-bold text-yellow-400 mt-2">💎 Đá Ngũ Hành Cường Hóa (150🪙 / viên)</div>
+                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">⚔️ Đá Kim [Kho: ${inventory.stoneKim}]</div><button onclick="buyShopItem('stoneKim', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
+                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🌿 Đá Mộc [Kho: ${inventory.stoneMoc}]</div><button onclick="buyShopItem('stoneMoc', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
+                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">💧 Đá Thủy [Kho: ${inventory.stoneThuy}]</div><button onclick="buyShopItem('stoneThuy', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
+                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🔥 Đá Hỏa [Kho: ${inventory.stoneHoa}]</div><button onclick="buyShopItem('stoneHoa', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
+                <div class="bg-zinc-800 p-2 rounded-xl flex items-center justify-between"><div class="text-xs">🪨 Đá Thổ [Kho: ${inventory.stoneTho}]</div><button onclick="buyShopItem('stoneTho', 150, 1)" class="bg-amber-600 px-2.5 py-1 rounded text-xs font-bold cursor-pointer">Mua</button></div>
             </div>`;
         }
 
@@ -2592,22 +2491,8 @@
         }
 
         function buyShopItem(itemKey, price, qty) {
-            const stoneKeys = ['stoneKim', 'stoneMoc', 'stoneThuy', 'stoneHoa', 'stoneTho'];
-            if (stoneKeys.includes(itemKey)) {
-                const bought = getDailyStoneBuyCount(itemKey);
-                if (bought >= 3) {
-                    alert('⚠️ Bạn đã mua tối đa 3 viên đá loại này hôm nay! Vui lòng quay lại vào ngày mai.');
-                    return;
-                }
-            }
-
             if (playerCoins < price) { alert('Không đủ vàng!'); return; }
-            playerCoins -= price;
-
-            if (stoneKeys.includes(itemKey)) {
-                recordDailyStoneBuy(itemKey, qty);
-            }
-
+            playerCoins -= price; saveGameData();
             if (itemKey === 'catchStamina') { 
                 catchStamina = Math.min(15, catchStamina + qty); 
                 localStorage.setItem('ar_catch_stamina', catchStamina); 
@@ -2712,7 +2597,7 @@
             let pet = team[index];
             if (!pet) return;
             ensurePetGears(pet);
-            if (!pet.trait || typeof pet.trait === 'string') {
+            if (!pet.trait) {
                 pet.trait = possibleTraits[Math.floor(Math.random() * possibleTraits.length)];
                 saveGameData();
             }
@@ -2803,7 +2688,7 @@
                 <div class="mb-1 flex justify-center">${getPetSpriteHtml(pet, 'walk', 92)}</div>
                 <div class="text-sm font-bold text-yellow-300">${pet.name} (${pet.gender}) - <span class="${pet.rarity.color}">${pet.rarity.badge}</span> <span class="text-xs text-white">Lv.${Math.floor(pet.level)}</span></div>
                 <div class="text-[11px] font-bold ${elementNames[pet.element]?.color}">Hệ: ${elementNames[pet.element]?.label} • Tim: ${heartsStr}</div>
-                <div id="pet-detail-trait-badge" class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
+                <div class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
                     <span class="w-5 h-5 inline-block rounded-full bg-black" style="background-image:url('assets/magic.webp'); background-size:800% 500%; background-position:0% ${(statusFxRowMap[pet.trait.type] || 0) * 25}%; mix-blend-mode:screen;"></span>
                     <span class="text-[11px] font-extrabold text-amber-300">Đặc kỹ: ${pet.trait.name} (${Math.max(30, pet.trait.chance || 30)}%)</span>
                 </div>
@@ -4122,7 +4007,6 @@
             initStepCounter();
             saveGameData();
             checkFullscreenOnStart();
-            if (typeof updateExpeditionNotifyBadges === 'function') updateExpeditionNotifyBadges();
             const btnMusic = document.getElementById('btn-toggle-music');
             if (btnMusic) btnMusic.innerText = isMusicMuted ? '🔇' : '🔊';
             setTimeout(() => centerPanorama('home-scroller'), 100);
@@ -5865,7 +5749,7 @@
                 <div class="text-sm font-black text-yellow-300">${pet.name} (${pet.gender}) - <span class="${rarity.color}">${rarity.badge}</span> <span class="text-xs text-white">Lv.${pet.level}</span></div>
                 <div class="text-[11px] font-bold ${elemInfo.color}">Hệ: ${elemInfo.label} • Tim: ${heartsStr}</div>
                 ${pet.trait ? `
-                <div id="pet-detail-trait-badge" class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
+                <div class="mt-1.5 inline-flex items-center gap-2 bg-amber-950/70 border border-amber-400/50 px-3 py-1 rounded-full">
                     <span class="w-5 h-5 inline-block rounded-full bg-black" style="background-image:url('assets/magic.webp'); background-size:800% 500%; background-position:0% ${(statusFxRowMap[pet.trait.type] || 0) * 25}%; mix-blend-mode:screen;"></span>
                     <span class="text-[11px] font-extrabold text-amber-300">Đặc kỹ: ${pet.trait.name} (${Math.max(30, pet.trait.chance || 30)}%)</span>
                 </div>` : ''}
@@ -5938,9 +5822,6 @@
                 if (data.worldBoss && Array.isArray(data.worldBoss.bosses)) {
                     window.serverWorldBossActive = !!data.worldBoss.active;
                 }
-                if (typeof window.updateExpeditionNotifyBadges === 'function') {
-                    window.updateExpeditionNotifyBadges();
-                }
             } catch (e) {}
         }
 
@@ -5948,17 +5829,17 @@
         setTimeout(runUnifiedHeartbeat, 4000);
     })();
     </script>
-    <script src="bag.js?v=20261120d"></script>
-    <script src="expedition.js?v=20261120d"></script>
-    <script src="dex.js?v=20261120d"></script>
-    <script src="guild.js?v=20261120d"></script>
-    <script src="auction.js?v=20261120d"></script>
-    <script src="carnival.js?v=20261120d"></script>
-    <script src="gacha.js?v=20261120d"></script>
-    <script src="ar_share.js?v=20261120d"></script>
-    <script src="./admin.js?v=20261120d"></script>
-    <script src="arena.js?v=20261120d"></script>
-    <script src="pvp.js?v=20261120d"></script>
+    <script src="bag.js?v=20261120c"></script>
+    <script src="expedition.js?v=20261121a"></script>
+    <script src="dex.js?v=20261120b"></script>
+    <script src="guild.js?v=20261120b"></script>
+    <script src="auction.js?v=20261120b"></script>
+    <script src="carnival.js?v=20261120b"></script>
+    <script src="gacha.js?v=20261120b"></script>
+    <script src="ar_share.js?v=20261120b"></script>
+    <script src="./admin.js?v=20261120b"></script>
+    <script src="arena.js?v=20261120b"></script>
+    <script src="pvp.js?v=20261120b"></script>
     <script>
     // ============================================================================
     // LINH THÚ TRONG ĐỘI HÌNH ĐI DẠO TRONG NHÀ CHÍNH (HOME) VỚI PHỐI CẢNH XA/GẦN
@@ -6019,39 +5900,9 @@
             const slot = actor.el?.querySelector('.home-pet-sprite-slot');
             if (slot && typeof getPetSpriteHtml === 'function') {
                 slot.innerHTML = getPetSpriteHtml(actor.petData, stateName, 78);
-                updateActorFacing(actor, actor.isFacingLeft);
+                const box = slot.querySelector('.home-pet-flip-box');
+                if (box) actor.flipBox = box;
             }
-        }
-
-        function updateActorFacing(actor, movingLeft) {
-            if (!actor) return;
-            actor.isFacingLeft = movingLeft;
-            const shouldFlip = movingLeft
-                ? (actor.facingDefault !== 'left')
-                : (actor.facingDefault === 'left');
-            const flipTransform = shouldFlip ? 'scaleX(-1)' : 'scaleX(1)';
-
-            if (actor.flipBox) {
-                actor.flipBox.style.transform = flipTransform;
-            }
-            const spriteEl = actor.el?.querySelector('.animated-sprite-box') || actor.el?.querySelector('.pet-walk-anim');
-            if (spriteEl) {
-                spriteEl.style.transform = flipTransform;
-                spriteEl.style.transformOrigin = 'center center';
-            }
-        }
-
-        function showActorCombatFx(actor, text) {
-            if (!actor || !actor.el) return;
-            const fx = document.createElement('div');
-            fx.className = 'absolute -top-7 text-xs font-black pointer-events-none z-50 whitespace-nowrap animate-bounce';
-            fx.style.textShadow = '0 1px 3px rgba(0,0,0,0.9), 0 0 6px #f59e0b';
-            fx.style.color = text.includes('💀') ? '#ef4444' : (text.includes('💚') ? '#10b981' : (text.includes('🏆') ? '#fbbf24' : '#f97316'));
-            fx.innerText = text;
-            actor.el.appendChild(fx);
-            setTimeout(() => {
-                if (fx.parentNode) fx.parentNode.removeChild(fx);
-            }, 1400);
         }
 
         window.syncHomeRoamingPets = function (forceRebuild = false) {
@@ -6102,11 +5953,6 @@
                     petIndex: idx,
                     animState: 'walk',
                     hitTimer: 0,
-                    combatTimer: 0,
-                    deathTimer: 0,
-                    combatCooldown: 1.0 + idx * 1.0,
-                    isLoser: false,
-                    isFacingLeft: false,
                     flipBox: null,
                     facingDefault: cfg?.facing || 'right',
                     x: spot.x,
@@ -6119,7 +5965,6 @@
 
                 actorEl.onclick = (e) => {
                     e.stopPropagation();
-                    if (actorObj.deathTimer > 0) return; // Đang gục ngã 3s không mở popup
                     // Kích hoạt trạng thái `hit` phản ứng khi bấm vào thú rồi mở trang thông tin chi tiết
                     actorObj.hitTimer = 0.45;
                     setActorAnimState(actorObj, 'hit');
@@ -6137,8 +5982,8 @@
                     </div>
                     <div class="relative flex items-center justify-center">
                         ${auraRingHtml}
-                        <div class="home-pet-flip-box" style="display:inline-block; transform-origin:center center;">
-                            <div class="home-pet-sprite-slot">${spriteHtml}</div>
+                        <div class="home-pet-sprite-slot">
+                            <div class="home-pet-flip-box transition-transform duration-300">${spriteHtml}</div>
                         </div>
                         <div class="absolute -bottom-1 w-14 h-3.5 rounded-full bg-black/55 blur-[2px] -z-10"></div>
                     </div>
@@ -6151,26 +5996,15 @@
         };
 
         function pickNextHomeTarget(actor) {
-            // Có 40% cơ hội di chuyển về phía một linh thú khác trong phòng để chạm mặt và giao lưu / đánh nhau
-            const otherActors = homePetActors.filter(a => a !== actor && a.deathTimer <= 0);
-            if (otherActors.length > 0 && Math.random() < 0.40) {
-                const targetPet = otherActors[Math.floor(Math.random() * otherActors.length)];
-                const targetX = targetPet.x + (Math.random() - 0.5) * 4;
-                const targetY = targetPet.y + (Math.random() - 0.5) * 4;
-                if (!isBlockedByFurniture(targetX, targetY)) {
-                    actor.tx = Math.max(14, Math.min(86, targetX));
-                    actor.ty = Math.max(51, Math.min(90, targetY));
-                    return;
-                }
-            }
-
             // Tìm ngẫu nhiên 1 điểm trên sàn nhà không chạm giường/đệm/bàn ăn
             for (let attempt = 0; attempt < 25; attempt++) {
                 let candX, candY;
                 if (Math.random() < 0.30) {
+                    // Khu vực gần cửa đi săn (thu nhỏ theo phối cảnh xa)
                     candX = 41 + Math.random() * 18;
                     candY = 50 + Math.random() * 9;
                 } else {
+                    // Khắp không gian sàn nhà từ sát cửa xuống sát mép dưới (phóng to theo phối cảnh gần)
                     candX = 14 + Math.random() * 72;
                     candY = 51 + Math.random() * 41;
                 }
@@ -6195,108 +6029,8 @@
                     window.syncHomeRoamingPets();
                 }
 
-                // Kiểm tra va chạm giữa 2 thú khi di chuyển chạm nhau để đánh nhau (attack clashing)
-                for (let i = 0; i < homePetActors.length; i++) {
-                    for (let j = i + 1; j < homePetActors.length; j++) {
-                        const a = homePetActors[i];
-                        const b = homePetActors[j];
-                        if (a.deathTimer <= 0 && b.deathTimer <= 0 &&
-                            a.combatTimer <= 0 && b.combatTimer <= 0 &&
-                            a.combatCooldown <= 0 && b.combatCooldown <= 0 &&
-                            a.hitTimer <= 0 && b.hitTimer <= 0) {
-
-                            const dist = Math.hypot(a.x - b.x, a.y - b.y);
-                            if (dist < 8.8) {
-                                // Hai thú chạm nhau -> Bắt đầu lao vào chiến đấu!
-                                a.combatTimer = 1.4;
-                                b.combatTimer = 1.4;
-                                a.waitTimer = 0;
-                                b.waitTimer = 0;
-
-                                // Quay mặt vào nhau
-                                if (a.x < b.x) {
-                                    updateActorFacing(a, false); // A quay sang phải
-                                    updateActorFacing(b, true);  // B quay sang trái
-                                } else {
-                                    updateActorFacing(a, true);  // A quay sang trái
-                                    updateActorFacing(b, false); // B quay sang phải
-                                }
-
-                                setActorAnimState(a, 'attack');
-                                setActorAnimState(b, 'attack');
-
-                                const loserIsA = Math.random() < 0.5;
-                                a.isLoser = loserIsA;
-                                b.isLoser = !loserIsA;
-
-                                showActorCombatFx(a, '💥 Đấm!');
-                                showActorCombatFx(b, '⚔️ Chém!');
-                            }
-                        }
-                    }
-                }
-
                 homePetActors.forEach(actor => {
-                    if (actor.combatCooldown > 0) {
-                        actor.combatCooldown = Math.max(0, actor.combatCooldown - dt);
-                    }
-
-                    if (actor.deathTimer > 0) {
-                        // TRẠNG THÁI GỤC NGÃ (DEATH 3 GIÂY)
-                        actor.deathTimer = Math.max(0, actor.deathTimer - dt);
-                        if (actor.flipBox) {
-                            actor.flipBox.style.transform = `${actor.isFacingLeft ? 'scaleX(-1)' : 'scaleX(1)'} rotate(90deg) translateY(12px)`;
-                            actor.flipBox.style.filter = 'grayscale(90%) brightness(0.6)';
-                            actor.flipBox.style.opacity = '0.55';
-                        }
-                        const spr = actor.el?.querySelector('.animated-sprite-box') || actor.el?.querySelector('.pet-walk-anim');
-                        if (spr) {
-                            spr.style.transform = `${actor.isFacingLeft ? 'scaleX(-1)' : 'scaleX(1)'} rotate(90deg) translateY(12px)`;
-                            spr.style.filter = 'grayscale(90%) brightness(0.6)';
-                            spr.style.opacity = '0.55';
-                        }
-
-                        if (actor.deathTimer <= 0) {
-                            // HẾT 3 GIÂY: HỒI SINH & TIẾP TỤC DẠO CHƠI (WALK)!
-                            actor.isLoser = false;
-                            actor.combatCooldown = 7.0;
-                            if (actor.flipBox) {
-                                actor.flipBox.style.transform = actor.isFacingLeft ? 'scaleX(-1)' : 'scaleX(1)';
-                                actor.flipBox.style.filter = 'none';
-                                actor.flipBox.style.opacity = '1';
-                            }
-                            if (spr) {
-                                spr.style.transform = actor.isFacingLeft ? 'scaleX(-1)' : 'scaleX(1)';
-                                spr.style.filter = 'none';
-                                spr.style.opacity = '1';
-                            }
-                            showActorCombatFx(actor, '💚 Hồi sinh!');
-                            pickNextHomeTarget(actor);
-                            setActorAnimState(actor, 'walk');
-                        }
-                    } else if (actor.combatTimer > 0) {
-                        // ĐANG ĐÁNH NHAU (ATTACK CLASH)
-                        actor.combatTimer = Math.max(0, actor.combatTimer - dt);
-                        setActorAnimState(actor, 'attack');
-                        const shakeX = (Math.random() - 0.5) * 0.35;
-                        actor.x += shakeX;
-
-                        if (actor.combatTimer <= 0) {
-                            if (actor.isLoser) {
-                                // Thua trận -> Gục ngã death 3s
-                                actor.deathTimer = 3.0;
-                                setActorAnimState(actor, 'hit');
-                                showActorCombatFx(actor, '💀 Gục ngã (3s)...');
-                            } else {
-                                // Thắng trận -> Ăn mừng rồi tiếp tục walk
-                                showActorCombatFx(actor, '🏆 Thắng trận!');
-                                actor.waitTimer = 1.4;
-                                actor.combatCooldown = 7.0;
-                                setActorAnimState(actor, 'idle');
-                                pickNextHomeTarget(actor);
-                            }
-                        }
-                    } else if (actor.hitTimer > 0) {
+                    if (actor.hitTimer > 0) {
                         actor.hitTimer = Math.max(0, actor.hitTimer - dt);
                         setActorAnimState(actor, 'hit');
                     } else if (actor.waitTimer > 0) {
@@ -6326,11 +6060,16 @@
                                 actor.x = nextX;
                                 actor.y = nextY;
                             } else {
+                                // Nếu gặp vật cản bàn/giường thì đổi hướng ngay thay vì leo lên
                                 pickNextHomeTarget(actor);
                             }
 
-                            if (Math.abs(dx) > 0.1) {
-                                updateActorFacing(actor, dx < 0);
+                            if (actor.flipBox && Math.abs(dx) > 0.15) {
+                                const movingLeft = dx < 0;
+                                const shouldFlip = movingLeft
+                                    ? (actor.facingDefault !== 'left')
+                                    : (actor.facingDefault === 'left');
+                                actor.flipBox.style.transform = shouldFlip ? 'scaleX(-1)' : 'scaleX(1)';
                             }
                         }
                     }
