@@ -399,17 +399,25 @@
                 speed: 48 + bossLevel * 3,
                 accuracy: 95, dodgeRate: 15, critRate: 20, blockRate: 20, armorBreak: 20, comboRate: 25
             } :
-            mode === 'tower' ? {
-                name: `${chosenBossCfg.displayName} (Tầng ${towerFloor})`,
-                spriteKey: randomBossKey,
-                element: chosenBossCfg.element,
-                emoji: '👹',
-                hp: 120 + (towerFloor * 25),
-                maxHp: 120 + (towerFloor * 25),
-                atk: 20 + towerFloor * 4,
-                speed: 40 + towerFloor * 2,
-                accuracy: 88, dodgeRate: Math.min(35, 10 + towerFloor), critRate: 15, blockRate: Math.min(40, 12 + towerFloor), armorBreak: Math.min(35, 10 + towerFloor), comboRate: Math.min(50, 15 + towerFloor * 2)
-            } :
+            mode === 'tower' ? (() => {
+                const towerMon = getTowerFloorMonster(towerFloor);
+                return {
+                    name: towerMon.name,
+                    spriteKey: towerMon.spriteKey,
+                    element: towerMon.element,
+                    emoji: towerMon.emoji || '👹',
+                    hp: towerMon.hp,
+                    maxHp: towerMon.maxHp,
+                    atk: towerMon.atk,
+                    speed: towerMon.speed,
+                    accuracy: towerMon.accuracy,
+                    dodgeRate: towerMon.dodgeRate,
+                    critRate: towerMon.critRate,
+                    blockRate: towerMon.blockRate,
+                    armorBreak: towerMon.armorBreak,
+                    comboRate: towerMon.comboRate
+                };
+            })() :
             { name: 'Đối Thủ PvP', element: 'Tho', emoji: '🤖', hp: 160, maxHp: 160, atk: 25, speed: 52, accuracy: 90, dodgeRate: 18, critRate: 18, blockRate: 18, armorBreak: 16, comboRate: 22 };
 
             let enemyHp = enemy.hp;
