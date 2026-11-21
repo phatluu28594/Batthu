@@ -321,7 +321,7 @@
                         if (teamHpList[idx] > 0 && teamHpList[idx] < pet.maxHp) {
                             const healAmt = Math.max(1, Math.floor(pet.maxHp * 0.08));
                             teamHpList[idx] = Math.min(pet.maxHp, teamHpList[idx] + healAmt);
-                            const pPos = { x: rect.width / 2 - 85, y: rect.height * 0.63 };
+                            const pPos = { x: leftEdgeX, y: cy };
                             impactEffects.push({ x: pPos.x, y: pPos.y - 25, radius: 10, alpha: 1, color: '#34d399', text: `+${healAmt}💚` });
                         }
                     });
@@ -351,17 +351,22 @@
                 battleCtx.clearRect(0, 0, rect.width, rect.height);
                 idleTick += 0.14;
 
-                let cx = rect.width / 2, cy = rect.height * 0.63;
-                let defaultEnemyX = (mode === 'boss') ? (cx + 38) : (cx + 45); // Quái & Boss căn giữa sàn đấu
+                // Căn chỉnh sàn đấu theo nền bàn chân thú:
+                // - Vị trí đứng dọc (cy) nằm đúng vùng vòng tròn bàn chân thú trên nền sàn (~66% chiều cao)
+                // - Đội thú ép sát viền trái màn hình, Boss/Quái tháp ép sát viền phải màn hình để 2 bên cách xa nhau tối đa
+                let cy = rect.height * 0.66;
+                let leftEdgeX = Math.max(58, Math.min(rect.width * 0.18, 120));
+                let rightEdgeX = Math.min(rect.width - 58, Math.max(rect.width * 0.82, rect.width - 120));
+                let defaultEnemyX = rightEdgeX;
 
                 const teamSlots = (mode === 'boss')
                     ? [
-                        { x: cx - 110, y: cy - 65 },
-                        { x: cx - 72,  y: cy },
-                        { x: cx - 110, y: cy + 65 }
+                        { x: leftEdgeX + 14, y: cy - 56 },
+                        { x: leftEdgeX,      y: cy },
+                        { x: leftEdgeX + 14, y: cy + 56 }
                     ]
                     : [
-                        { x: cx - 75,  y: cy }
+                        { x: leftEdgeX,      y: cy }
                     ];
 
                 if (!attacker && !battleEnded) {
@@ -459,8 +464,8 @@
 
                     if (attacker.side === 'team') {
                         let idx = attacker.index;
-                        let startSlot = teamSlots[idx] || { x: cx - 85, y: cy };
-                        let chargeDist = (defaultEnemyX - 35) - startSlot.x;
+                        let startSlot = teamSlots[idx] || { x: leftEdgeX, y: cy };
+                        let chargeDist = Math.max(40, (defaultEnemyX - 42) - startSlot.x);
                         let targetY = cy;
                         let startY = startSlot.y;
 
@@ -543,9 +548,9 @@
                         }
                     } else if (attacker.side === 'enemy') {
                         let targetIdx = teamHpList.findIndex(h => h > 0);
-                        let targetSlot = targetIdx !== -1 ? (teamSlots[targetIdx] || { x: cx - 85, y: cy }) : { x: cx - 85, y: cy };
+                        let targetSlot = targetIdx !== -1 ? (teamSlots[targetIdx] || { x: leftEdgeX, y: cy }) : { x: leftEdgeX, y: cy };
                         let targetY = targetSlot.y;
-                        let enemyChargeDist = defaultEnemyX - (targetSlot.x + 35);
+                        let enemyChargeDist = Math.max(40, defaultEnemyX - (targetSlot.x + 42));
 
                         if (attacker.step <= 9) {
                             let t = attacker.step / 9;
