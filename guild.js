@@ -106,28 +106,37 @@
             }).join('') || `<div class="text-center text-xs text-zinc-400 py-4">Chưa có Bang Hội nào trên máy chủ. Hãy là người đầu tiên sáng lập!</div>`;
 
             content.innerHTML = `
-            <div class="flex justify-between items-center mb-3 pb-2 border-b border-amber-500/40">
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-amber-500/40 shrink-0">
                 <h3 class="font-black text-base text-amber-300">🏰 GIA TỘC & BANG HỘI THỢ SĂN</h3>
                 <button onclick="closeGuildModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
             </div>
 
-            <div class="bg-zinc-800/90 border border-amber-500/40 rounded-xl p-3 mb-3 space-y-2 text-xs">
-                <div class="font-extrabold text-yellow-300">✨ Sáng Lập Bang Hội Mới (Phí: 3.000🪙)</div>
-                <div class="grid grid-cols-3 gap-1.5">
-                    <input id="guild-create-tag" type="text" maxlength="4" placeholder="Huy hiệu (2-4)" class="bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-1.5 text-white uppercase font-bold">
-                    <input id="guild-create-name" type="text" maxlength="20" placeholder="Tên Bang Hội (3-20 ký tự)" class="col-span-2 bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-white">
+            <!-- BỐ CỤC 2 CỘT WIDESCREEN LANDSCAPE -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 min-h-0">
+                <!-- CỘT TRÁI: SÁNG LẬP BANG HỘI -->
+                <div class="bg-zinc-800/90 border border-amber-500/40 rounded-xl p-3 space-y-2 text-xs flex flex-col justify-between">
+                    <div class="space-y-2">
+                        <div class="font-extrabold text-yellow-300">✨ Sáng Lập Bang Hội Mới (Phí: 3.000🪙)</div>
+                        <div class="grid grid-cols-3 gap-1.5">
+                            <input id="guild-create-tag" type="text" maxlength="4" placeholder="Huy hiệu" class="bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-1.5 text-white uppercase font-bold text-center">
+                            <input id="guild-create-name" type="text" maxlength="20" placeholder="Tên Bang Hội (3-20 ký tự)" class="col-span-2 bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-white">
+                        </div>
+                        <label class="flex items-center gap-2 bg-zinc-950/80 border border-zinc-700 rounded-lg px-2.5 py-1.5 cursor-pointer select-none">
+                            <input id="guild-create-auto-approve" type="checkbox" checked class="w-4 h-4 accent-emerald-500 cursor-pointer">
+                            <span class="text-[11px] text-zinc-200 font-bold">⚡ Tự duyệt vào ngay <span class="text-zinc-400 font-normal">(Bỏ tick = Chờ duyệt)</span></span>
+                        </label>
+                    </div>
+                    <button onclick="createNewGuild()" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:brightness-110 py-2.5 rounded-xl font-black text-white cursor-pointer shadow mt-2">
+                        🚩 Lập Bang Hội Ngay (-3.000🪙)
+                    </button>
                 </div>
-                <label class="flex items-center gap-2 bg-zinc-950/80 border border-zinc-700 rounded-lg px-2.5 py-1.5 cursor-pointer select-none">
-                    <input id="guild-create-auto-approve" type="checkbox" checked class="w-4 h-4 accent-emerald-500 cursor-pointer">
-                    <span class="text-[11px] text-zinc-200 font-bold">⚡ Tự duyệt thành viên vào hội ngay <span class="text-zinc-400 font-normal">(Bỏ tick = Chờ Bang Chủ/Phó Hội duyệt)</span></span>
-                </label>
-                <button onclick="createNewGuild()" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:brightness-110 py-2 rounded-xl font-black text-white cursor-pointer shadow">
-                    🚩 Lập Bang Hội Ngay (-3.000🪙)
-                </button>
-            </div>
 
-            <div class="text-xs font-extrabold text-sky-300 mb-1.5">📜 Danh Sách Bang Hội Đang Tuyển Quân:</div>
-            <div class="space-y-2 max-h-[36vh] overflow-y-auto pr-1">${listRows}</div>`;
+                <!-- CỘT PHẢI: DANH SÁCH BANG HỘI -->
+                <div class="flex flex-col bg-zinc-950/70 p-2.5 rounded-xl border border-zinc-800">
+                    <div class="text-xs font-extrabold text-sky-300 mb-1.5 shrink-0">📜 Bang Hội Đang Tuyển Quân:</div>
+                    <div class="space-y-2 max-h-[46vh] overflow-y-auto pr-1 no-scrollbar">${listRows}</div>
+                </div>
+            </div>`;
             return;
         }
 
@@ -318,7 +327,7 @@
                 </div>`;
             }).join('');
 
-            bodyHtml = `${headerNote}<div class="space-y-1.5 max-h-60 overflow-y-auto pr-1">${rows}</div>`;
+            bodyHtml = `${headerNote}<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[46vh] overflow-y-auto pr-1">${rows}</div>`;
         } else if (activeGuildTab === 'requests') {
             const reqRows = requests.map((r, i) => {
                 const safeUser = r.username.replace(/'/g, "\'");
@@ -352,7 +361,7 @@
                         </label>
                     ` : ''}
                 </div>
-                <div class="space-y-1.5 max-h-60 overflow-y-auto pr-1">${reqRows}</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[46vh] overflow-y-auto pr-1">${reqRows}</div>
             </div>`;
         }
 

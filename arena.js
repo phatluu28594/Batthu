@@ -503,19 +503,19 @@
                 battleCtx.clearRect(0, 0, rect.width, rect.height);
                 idleTick += 0.14;
 
-                // Căn chỉnh sàn đấu theo nền bàn chân thú:
-                // - Vị trí đứng dọc (cy) nằm đúng vùng vòng tròn bàn chân thú trên nền sàn (~66% chiều cao)
-                // - Đội thú ép sát viền trái màn hình, Boss/Quái tháp ép sát viền phải màn hình để 2 bên cách xa nhau tối đa
-                let cy = rect.height * 0.66;
-                let leftEdgeX = Math.max(58, Math.min(rect.width * 0.18, 120));
-                let rightEdgeX = Math.min(rect.width - 58, Math.max(rect.width * 0.82, rect.width - 120));
+                // Căn chỉnh sàn đấu chuẩn Widescreen 16:9 Landscape:
+                // - Vị trí đứng dọc (cy) nằm đúng vùng vòng tròn tâm võ đài (~65% chiều cao)
+                // - Đội thú bố trí cánh trái võ đài (~22% width), Quái/Boss bố trí cánh phải võ đài (~78% width)
+                let cy = rect.height * 0.65;
+                let leftEdgeX = Math.max(70, rect.width * 0.22);
+                let rightEdgeX = Math.min(rect.width - 70, rect.width * 0.78);
                 let defaultEnemyX = rightEdgeX;
 
                 const teamSlots = (mode === 'boss')
                     ? [
-                        { x: leftEdgeX + 14, y: cy - 56 },
+                        { x: leftEdgeX + 24, y: cy - 48 },
                         { x: leftEdgeX,      y: cy },
-                        { x: leftEdgeX + 14, y: cy + 56 }
+                        { x: leftEdgeX + 24, y: cy + 48 }
                     ]
                     : [
                         { x: leftEdgeX,      y: cy }
@@ -1372,7 +1372,7 @@
             </div>
             ${pendingRewardHtml}
             ${statusHtml}
-            <div class="space-y-2 mb-3">${regionsHtml}</div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 mb-3">${regionsHtml}</div>
             <div class="text-[10px] text-zinc-400 text-center">
                 🎁 Hạ gục Boss chia thưởng theo <b>Top Sát Thương</b>: Rương Mảnh Trang Bị, Đá Ngũ Hành, Kim Cương & Vàng!
             </div>`;

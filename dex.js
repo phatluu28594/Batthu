@@ -219,19 +219,19 @@
             <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
         </div>
 
-        <div class="bg-zinc-950/90 border border-amber-500/30 rounded-xl p-2.5 mb-3 space-y-1.5">
+        <div class="bg-zinc-950/90 border border-amber-500/30 rounded-xl p-2.5 mb-2.5 space-y-1.5">
             <div class="text-[11px] font-extrabold text-cyan-300">✨ Buff Vĩnh Viễn Đang Kích Hoạt Cho Toàn Đội:</div>
             <div class="text-[11px] text-zinc-200 font-bold">
                 ⚔️ +${buffs.atkPct}% ATK • ❤️ +${buffs.hpPct}% HP • ⚡ +${buffs.speedPct}% Tốc • 💥 +${buffs.critBonus}% CM • 🛡️ +${buffs.blockBonus}% Đỡ • 🏃 +${buffs.dodgeBonus}% Né
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-1">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1 pt-1">
                 ${setBadgesHtml}
             </div>
         </div>
 
-        <div class="flex flex-wrap gap-1 mb-2.5">${tabsHtml}</div>
+        <div class="flex flex-wrap gap-1 mb-2">${tabsHtml}</div>
 
-        <div class="grid grid-cols-3 gap-2 max-h-[44vh] overflow-y-auto pr-1">
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-[50vh] overflow-y-auto pr-1">
             ${cardsHtml}
         </div>`;
     };

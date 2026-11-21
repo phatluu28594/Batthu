@@ -272,7 +272,7 @@
                 class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white focus:border-yellow-400 outline-none">
         </div>
 
-        <div class="space-y-3 max-h-[62vh] overflow-y-auto pr-1 text-xs">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[62vh] overflow-y-auto pr-1 text-xs">
             <!-- 1. TẠO LINH THÚ -->
             <div class="bg-zinc-800/90 border border-emerald-500/40 rounded-xl p-3 space-y-2">
                 <div class="font-extrabold text-emerald-300">🐾 1. Tạo & Gửi Linh Thú</div>

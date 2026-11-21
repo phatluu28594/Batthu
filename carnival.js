@@ -149,13 +149,13 @@
         wrap.id = 'carnival-modal';
         wrap.className = 'fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 hidden';
         wrap.innerHTML = `
-            <div class="relative w-full max-w-lg max-h-[92vh] bg-gradient-to-b from-zinc-900 to-black rounded-3xl border border-amber-500/40 shadow-2xl flex flex-col overflow-hidden text-white animate-scale-up">
+            <div class="relative w-full max-w-4xl max-h-[92vh] bg-gradient-to-b from-zinc-900 to-black rounded-3xl border border-amber-500/40 shadow-2xl flex flex-col overflow-hidden text-white animate-scale-up">
                 <!-- Header -->
-                <div class="p-4 bg-gradient-to-r from-amber-950/80 via-zinc-900 to-amber-950/80 border-b border-amber-500/30 flex items-center justify-between">
+                <div class="p-3.5 sm:p-4 bg-gradient-to-r from-amber-950/80 via-zinc-900 to-amber-950/80 border-b border-amber-500/30 flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-2.5">
                         <span class="text-3xl animate-bounce">🎁</span>
                         <div>
-                            <h2 class="text-base font-black text-amber-300 tracking-wide uppercase flex items-center gap-1.5">
+                            <h2 class="text-sm sm:text-base font-black text-amber-300 tracking-wide uppercase flex items-center gap-1.5">
                                 Chuỗi Sự Kiện Tân Thủ 7 Ngày
                             </h2>
                             <p class="text-[11px] text-zinc-300">Đăng nhập mỗi ngày để nhận Thú Hiếm & Trang Bị Tím!</p>
@@ -164,14 +164,14 @@
                     <button onclick="closeCarnivalModal()" class="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-black flex items-center justify-center cursor-pointer transition">✕</button>
                 </div>
 
-                <!-- Days Container -->
-                <div id="carnival-days-list" class="p-3.5 space-y-2.5 overflow-y-auto max-h-[68vh] no-scrollbar">
+                <!-- Days Grid Widescreen Landscape -->
+                <div id="carnival-days-list" class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 overflow-y-auto max-h-[70vh] no-scrollbar">
                     <!-- Render dynamic cards -->
                 </div>
 
                 <!-- Footer -->
-                <div class="p-3 bg-zinc-950/90 border-t border-white/10 flex items-center justify-between text-xs text-zinc-400">
-                    <span id="carnival-day-summary">Đã đăng nhập: 1 / 7 Ngày</span>
+                <div class="p-3 bg-zinc-950/90 border-t border-white/10 flex items-center justify-between text-xs text-zinc-400 shrink-0">
+                    <span id="carnival-day-summary" class="font-bold text-amber-300">Đã đăng nhập: 1 / 7 Ngày</span>
                     <button onclick="closeCarnivalModal()" class="bg-zinc-800 hover:bg-zinc-700 px-4 py-1.5 rounded-xl font-bold text-white cursor-pointer transition">Đóng</button>
                 </div>
             </div>
@@ -194,38 +194,42 @@
             let borderStyle = isClaimed
                 ? 'border-zinc-800 bg-zinc-900/50 opacity-70'
                 : canClaim
-                ? 'border-amber-400/80 bg-gradient-to-r from-amber-950/40 via-zinc-900 to-amber-950/20 shadow-lg shadow-amber-950/30 ring-1 ring-amber-400/30'
-                : 'border-zinc-800 bg-zinc-950/60 opacity-60';
+                ? 'border-amber-400/80 bg-gradient-to-b from-amber-950/40 via-zinc-900 to-amber-950/20 shadow-lg shadow-amber-950/30 ring-1 ring-amber-400/40'
+                : 'border-zinc-800/80 bg-zinc-950/60 opacity-60';
 
             let btnHtml = '';
             if (isClaimed) {
-                btnHtml = `<span class="bg-zinc-800 text-zinc-500 text-[11px] font-bold px-3 py-1.5 rounded-xl border border-white/5">✓ Đã Nhận</span>`;
+                btnHtml = `<span class="w-full text-center bg-zinc-800 text-zinc-500 text-[11px] font-bold py-1.5 rounded-xl border border-white/5">✓ Đã Nhận</span>`;
             } else if (canClaim) {
                 btnHtml = `
-                    <button onclick="claimCarnivalReward(${cfg.day})" class="bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-black font-black text-xs px-3.5 py-1.5 rounded-xl shadow-md cursor-pointer animate-pulse transition">
+                    <button onclick="claimCarnivalReward(${cfg.day})" class="w-full py-1.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-black font-black text-xs rounded-xl shadow-md cursor-pointer animate-pulse transition">
                         Nhận Ngay
                     </button>
                 `;
             } else {
-                btnHtml = `<span class="bg-zinc-900 text-zinc-500 text-[10px] font-bold px-2.5 py-1.5 rounded-xl border border-white/5">🔒 Mở vào Ngày ${cfg.day}</span>`;
+                btnHtml = `<span class="w-full text-center bg-zinc-900 text-zinc-500 text-[10px] font-bold py-1.5 rounded-xl border border-white/5">🔒 Ngày ${cfg.day}</span>`;
             }
 
             return `
-                <div class="flex items-center justify-between p-3 rounded-2xl border ${borderStyle} transition">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center text-2xl shrink-0 relative overflow-hidden">
-                            <span>${cfg.icon}</span>
-                            ${isClaimed ? '<div class="absolute inset-0 bg-black/60 flex items-center justify-center text-emerald-400 font-bold text-sm">✓</div>' : ''}
+                <div class="flex flex-col justify-between p-3 rounded-2xl border ${borderStyle} transition gap-2">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${canClaim ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-zinc-300'}">Ngày ${cfg.day}</span>
+                            <span class="text-xs">${isClaimed ? '✅' : (canClaim ? '🎁' : '🔒')}</span>
                         </div>
-                        <div class="text-left">
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-black ${canClaim ? 'text-amber-300' : 'text-zinc-300'}">${cfg.title}</span>
-                                <span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-400/30 px-1.5 py-0.5 rounded font-bold">${cfg.badge}</span>
+                        <div class="flex items-center gap-2.5 mb-2">
+                            <div class="w-11 h-11 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center text-2xl shrink-0 relative overflow-hidden">
+                                <span>${cfg.icon}</span>
+                                ${isClaimed ? '<div class="absolute inset-0 bg-black/60 flex items-center justify-center text-emerald-400 font-bold text-sm">✓</div>' : ''}
                             </div>
-                            <div class="text-[11px] text-zinc-400 mt-0.5">${cfg.desc}</div>
+                            <div class="min-w-0">
+                                <div class="text-xs font-black truncate ${canClaim ? 'text-amber-300' : 'text-zinc-200'}">${cfg.title.replace(/^Ngày \d+:\s*/, '')}</div>
+                                <div class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-400/30 px-1 py-0.2 rounded font-bold truncate inline-block mt-0.5">${cfg.badge}</div>
+                            </div>
                         </div>
+                        <div class="text-[10px] text-zinc-400 line-clamp-2 leading-tight">${cfg.desc}</div>
                     </div>
-                    <div class="shrink-0 ml-2">
+                    <div class="mt-2 pt-1 border-t border-white/5 flex items-center">
                         ${btnHtml}
                     </div>
                 </div>

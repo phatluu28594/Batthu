@@ -114,39 +114,34 @@
                     </div>
                 </div>
 
-                <!-- KHUNG VIỀN THƯƠNG HIỆU & THÔNG TIN FLEX DƯỚI CÙNG -->
-                <div class="relative z-20 p-3 flex flex-col gap-2.5">
+                <!-- KHUNG VIỀN THƯƠNG HIỆU & THÔNG TIN FLEX DƯỚI CÙNG WIDESCREEN LANDSCAPE -->
+                <div class="relative z-20 p-2 sm:p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 bg-gradient-to-t from-black/95 via-black/80 to-transparent">
                     <!-- Khung Viền Thương Hiệu Game -->
-                    <div class="bg-gradient-to-r from-black/90 via-zinc-950/95 to-black/90 backdrop-blur-md p-3 rounded-2xl border border-amber-500/40 shadow-2xl text-white">
-                        <div class="flex items-center justify-between border-b border-white/10 pb-1.5 mb-1.5">
-                            <div class="flex items-center gap-1.5">
-                                <span class="text-amber-400 text-xs font-black tracking-wider uppercase">🎮 BẮT THÚ VƯƠNG AR</span>
-                                <span class="bg-red-600 text-white text-[9px] px-1.5 py-0.2 rounded font-black uppercase">FLEX</span>
-                            </div>
-                            <span id="ar-share-date" class="text-[10px] text-zinc-400">20/11/2026</span>
+                    <div class="bg-black/85 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-amber-500/40 text-white min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-amber-400 text-xs font-black tracking-wider uppercase">🎮 BẮT THÚ VƯƠNG AR</span>
+                            <span class="bg-red-600 text-white text-[9px] px-1.5 py-0.2 rounded font-black uppercase">FLEX</span>
+                            <span id="ar-share-date" class="text-[10px] text-zinc-400 ml-auto md:ml-2">20/11/2026</span>
                         </div>
-                        <div id="ar-share-caption" class="text-xs font-bold text-amber-200">
-                            Thợ Săn [Hà Nội] vừa thuần hóa thành công F1 Rồng Lửa!
+                        <div id="ar-share-caption" class="text-xs font-bold text-amber-200 truncate mt-0.5">
+                            Thợ Săn vừa thuần hóa linh thú!
                         </div>
-                        <div id="ar-share-stats" class="text-[10px] text-zinc-300 flex items-center gap-3 mt-1">
+                        <div id="ar-share-stats" class="text-[10px] text-zinc-300 flex items-center gap-3 mt-0.5">
                             <span>⚔️ ATK: 120</span>
                             <span>❤️ HP: 550</span>
-                            <span>⚡ Tốc: 65</span>
                             <span class="text-emerald-400">📍 GPS Verified</span>
                         </div>
                     </div>
 
                     <!-- HÀNG NÚT CHỨC NĂNG 1 CHẠM -->
-                    <div class="grid grid-cols-2 gap-2">
-                        <!-- Nút Tải Ảnh -->
-                        <button onclick="captureAndDownloadArPhoto()" class="py-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-110 active:scale-95 text-black font-black text-xs rounded-2xl shadow-xl flex items-center justify-center gap-2 cursor-pointer transition">
-                            <span class="text-base">📸</span>
-                            <span>LƯU ẢNH (PNG)</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button onclick="captureAndDownloadArPhoto()" class="flex-1 md:flex-none px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-110 active:scale-95 text-black font-black text-xs rounded-xl shadow-xl flex items-center justify-center gap-1.5 cursor-pointer transition">
+                            <span class="text-sm">📸</span>
+                            <span>LƯU ẢNH (16:9)</span>
                         </button>
-                        <!-- Nút Chia Sẻ Mạng Xã Hội -->
-                        <button onclick="shareArPhotoToSocial()" class="py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 hover:brightness-110 active:scale-95 text-white font-black text-xs rounded-2xl shadow-xl flex items-center justify-center gap-2 cursor-pointer transition">
-                            <span class="text-base">🚀</span>
-                            <span>FLEX NGAY (SHARE)</span>
+                        <button onclick="shareArPhotoToSocial()" class="flex-1 md:flex-none px-4 py-2.5 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 hover:brightness-110 active:scale-95 text-white font-black text-xs rounded-xl shadow-xl flex items-center justify-center gap-1.5 cursor-pointer transition">
+                            <span class="text-sm">🚀</span>
+                            <span>FLEX NGAY</span>
                         </button>
                     </div>
                 </div>
@@ -353,10 +348,10 @@
         }
     }
 
-    // Tạo Canvas hợp nhất để xuất ảnh chụp Flex độ phân giải cao
+    // Tạo Canvas hợp nhất để xuất ảnh chụp Flex độ phân giải cao 16:9 Widescreen Landscape
     async function generateCompositeCanvas() {
-        const width = 1080;
-        const height = 1350;
+        const width = 1920;
+        const height = 1080;
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
@@ -396,7 +391,7 @@
         // 2. Vẽ bóng của con thú
         ctx.save();
         ctx.beginPath();
-        ctx.ellipse(width / 2, height * 0.72, 220, 45, 0, 0, Math.PI * 2);
+        ctx.ellipse(width / 2, height * 0.70, 260, 42, 0, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
         ctx.filter = 'blur(10px)';
         ctx.fill();
@@ -404,10 +399,10 @@
 
         // 3. Vẽ Sprite Con Thú
         const img = document.getElementById('ar-pet-img');
-        const petW = 440;
-        const petH = 440;
+        const petW = 420;
+        const petH = 420;
         const petX = (width - petW) / 2;
-        const petY = height * 0.38;
+        const petY = height * 0.28;
 
         if (img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
             try {
@@ -467,51 +462,51 @@
 
         // Header trên
         ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.fillRect(35, 35, width - 70, 90);
+        ctx.fillRect(35, 25, width - 70, 75);
         ctx.strokeStyle = 'rgba(234, 179, 8, 0.6)';
         ctx.lineWidth = 2;
-        ctx.strokeRect(35, 35, width - 70, 90);
+        ctx.strokeRect(35, 25, width - 70, 75);
 
         ctx.fillStyle = '#fde047';
-        ctx.font = 'bold 36px sans-serif';
-        ctx.fillText('🎮 BẮT THÚ VƯƠNG AR', 60, 95);
+        ctx.font = 'bold 32px sans-serif';
+        ctx.fillText('🎮 BẮT THÚ VƯƠNG AR', 60, 72);
 
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 22px sans-serif';
+        ctx.font = 'bold 20px sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText('HUNT & BATTLE • GPS REALITY', width - 60, 93);
+        ctx.fillText('HUNT & BATTLE • GPS REALITY', width - 60, 70);
 
         // Footer dưới (Thẻ Thông Tin Thợ Săn)
-        const footerY = height - 230;
+        const footerY = height - 150;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
-        ctx.fillRect(35, footerY, width - 70, 180);
+        ctx.fillRect(35, footerY, width - 70, 115);
         ctx.strokeStyle = 'rgba(234, 179, 8, 0.8)';
         ctx.lineWidth = 2.5;
-        ctx.strokeRect(35, footerY, width - 70, 180);
+        ctx.strokeRect(35, footerY, width - 70, 115);
 
         ctx.textAlign = 'left';
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 32px sans-serif';
+        ctx.font = 'bold 26px sans-serif';
         const hunter = localStorage.getItem('ar_cloud_user') || 'Một Thợ Săn';
         const petName = currentPet ? currentPet.name : 'Linh Thú';
         const rarityBadge = currentPet?.rarity?.badge || '🟢';
-        ctx.fillText(`Thợ Săn [${hunter}] vừa thuần hóa thành công ${rarityBadge} ${petName}!`, 60, footerY + 55);
+        ctx.fillText(`Thợ Săn [${hunter}] vừa thuần hóa thành công ${rarityBadge} ${petName}!`, 60, footerY + 38);
 
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '24px sans-serif';
+        ctx.font = '20px sans-serif';
         const statsStr = `⚔️ ATK: ${currentPet?.atk || 50}  |  ❤️ HP: ${currentPet?.maxHp || 200}  |  ⚡ Tốc: ${currentPet?.speed || 50}  |  Bậc: ${currentPet?.gearTier || 0}`;
-        ctx.fillText(statsStr, 60, footerY + 105);
+        ctx.fillText(statsStr, 60, footerY + 72);
 
         ctx.fillStyle = '#34d399';
-        ctx.font = 'bold 20px sans-serif';
+        ctx.font = 'bold 16px sans-serif';
         const now = new Date();
         const dateStr = `📍 Tọa Độ Thực Tế GPS  •  ⏱️ ${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-        ctx.fillText(dateStr, 60, footerY + 150);
+        ctx.fillText(dateStr, 60, footerY + 98);
 
         ctx.fillStyle = '#94a3b8';
-        ctx.font = 'bold 18px sans-serif';
+        ctx.font = 'bold 16px sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText('batthu.pages.dev', width - 60, footerY + 150);
+        ctx.fillText('batthu.pages.dev', width - 60, footerY + 98);
 
         ctx.restore();
         return canvas;

@@ -217,8 +217,8 @@
         const content = document.getElementById('modal-content');
         if (!modal || !content) return;
 
-        // Kích thước Túi Đồ 90% chiều rộng & 90% chiều cao màn hình
-        content.className = 'bg-zinc-900/95 border-2 border-amber-400/75 w-[90vw] max-w-[90vw] h-[90vh] h-[90dvh] max-h-[90dvh] rounded-3xl p-3.5 sm:p-5 flex flex-col overflow-hidden relative shadow-2xl';
+        // Kích thước Túi Đồ 94% chiều rộng & 92% chiều cao màn hình (Widescreen Landscape)
+        content.className = 'bg-zinc-900/95 border-2 border-amber-400/75 w-[94vw] max-w-5xl h-[92vh] max-h-[92dvh] rounded-3xl p-3 sm:p-4 flex flex-col overflow-hidden relative shadow-2xl';
         modal.classList.remove('hidden');
 
         const slots = window.getBag5x10Slots();
@@ -238,47 +238,61 @@
             return `
             <div onclick="openHomeStorageBagModal(${idx})"
                 class="aspect-square rounded-xl border ${slot.rarity} flex flex-col items-center justify-center relative cursor-pointer transition p-1 shadow-inner ${selRing}">
-                <span class="text-2xl sm:text-3xl leading-none">${slot.icon}</span>
+                <span class="text-xl sm:text-2xl leading-none">${slot.icon}</span>
                 <span class="mt-1 text-[9px] sm:text-[10px] font-bold text-zinc-200 truncate w-full text-center px-0.5">${slot.name}</span>
-                <span class="absolute top-1 right-1.5 bg-black/85 text-amber-300 text-[10px] font-black px-1.5 py-0.2 rounded-md border border-amber-400/40">
+                <span class="absolute top-1 right-1.5 bg-black/85 text-amber-300 text-[9px] font-black px-1.5 py-0.2 rounded-md border border-amber-400/40">
                     x${slot.qty}
                 </span>
             </div>`;
         }).join('');
 
-        let detailBarHtml = '';
+        let detailSidePanelHtml = '';
         if (activeItem) {
             let btnHtml = '';
             if (activeItem.actionType && activeItem.actionType !== 'none' && activeItem.actionLabel) {
                 const disabledShard = activeItem.actionType === 'combine_mythic_shards' && activeItem.qty < 20;
                 btnHtml = `
                 <button onclick="executeBagSlotAction(${selectedBagSlotIdx})" ${disabledShard ? 'disabled' : ''}
-                    class="${disabledShard
+                    class="w-full ${disabledShard
                         ? 'bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-amber-500 via-orange-500 to-pink-600 hover:brightness-110 text-white cursor-pointer shadow-lg'} font-black text-xs px-4 py-2.5 rounded-xl shrink-0 transition">
+                        : 'bg-gradient-to-r from-amber-500 via-orange-500 to-pink-600 hover:brightness-110 text-white cursor-pointer shadow-lg'} font-black text-xs py-2.5 rounded-xl transition">
                     ${disabledShard ? `Cần 20 Mảnh (${activeItem.qty}/20)` : activeItem.actionLabel}
                 </button>`;
             }
 
-            detailBarHtml = `
-            <div class="bg-zinc-950/95 border border-amber-400/50 rounded-2xl p-3 flex items-center justify-between gap-3 shrink-0 mt-2.5">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-12 h-12 rounded-xl bg-zinc-900 border border-white/15 flex items-center justify-center text-3xl shrink-0">
-                        ${activeItem.icon}
-                    </div>
-                    <div class="min-w-0">
-                        <div class="text-xs sm:text-sm font-black text-yellow-300 truncate">
-                            ${activeItem.name} <span class="text-emerald-400">(Đang có: ${activeItem.qty})</span>
+            detailSidePanelHtml = `
+            <div class="w-full md:w-72 lg:w-80 bg-zinc-950/95 border border-amber-400/50 rounded-2xl p-3 flex flex-col justify-between shrink-0 shadow-lg">
+                <div class="space-y-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-14 h-14 rounded-2xl bg-zinc-900 border border-white/15 flex items-center justify-center text-3xl shrink-0 shadow-inner">
+                            ${activeItem.icon}
                         </div>
-                        <div class="text-[11px] text-zinc-300 line-clamp-2">${activeItem.desc}</div>
+                        <div class="min-w-0">
+                            <div class="text-xs sm:text-sm font-black text-yellow-300 truncate">
+                                ${activeItem.name}
+                            </div>
+                            <div class="text-[11px] text-emerald-400 font-bold">
+                                Đang có: <span class="text-white text-xs">${activeItem.qty}</span>
+                            </div>
+                            <div class="text-[10px] text-zinc-400">
+                                Ô vị trí: #${selectedBagSlotIdx + 1}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-2.5 text-xs text-zinc-200 leading-relaxed">
+                        ${activeItem.desc}
                     </div>
                 </div>
-                ${btnHtml}
+                <div class="mt-2.5 pt-2 border-t border-white/10">
+                    ${btnHtml || '<div class="text-[10px] text-zinc-500 text-center py-1">Vật phẩm lưu kho tự động</div>'}
+                </div>
             </div>`;
         } else {
-            detailBarHtml = `
-            <div class="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-3 text-center text-xs text-zinc-400 shrink-0 mt-2.5">
-                Ô chứa #${selectedBagSlotIdx + 1} đang trống • Chạm vào vật phẩm để xem chi tiết hoặc sử dụng.
+            detailSidePanelHtml = `
+            <div class="w-full md:w-72 lg:w-80 bg-zinc-950/80 border border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center text-xs text-zinc-400 shrink-0">
+                <span class="text-3xl mb-2 opacity-50">📦</span>
+                <div class="font-bold text-zinc-300">Ô Chứa #${selectedBagSlotIdx + 1} Đang Trống</div>
+                <p class="text-[11px] text-zinc-500 mt-1">Chạm vào bất kỳ ô vật phẩm nào bên trái để xem mô tả chỉ số & sử dụng nhanh.</p>
             </div>`;
         }
 
@@ -286,24 +300,28 @@
         const curDiamonds = (typeof playerDiamonds !== 'undefined' ? playerDiamonds : window.playerDiamonds) || 0;
 
         content.innerHTML = `
-        <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-amber-500/40 shrink-0">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-amber-500/40 shrink-0">
             <div>
-                <h3 class="font-black text-base sm:text-lg text-amber-300">🎒 TÚI CHỨA ĐỒ NHÀ CHÍNH (5x10)</h3>
+                <h3 class="font-black text-sm sm:text-base text-amber-300">🎒 TÚI CHỨA ĐỒ NHÀ CHÍNH (5x10)</h3>
                 <div class="text-[11px] text-zinc-300">
                     Đang chứa: <b class="text-emerald-400">${usedCount}/50</b> ô • Vàng: <b class="text-yellow-400">${curCoins.toLocaleString()}🪙</b> • KC: <b class="text-cyan-300">${curDiamonds.toLocaleString()}💎</b>
                 </div>
             </div>
-            <button onclick="closeModal()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3.5 py-1.5 rounded-full font-black text-sm cursor-pointer border border-zinc-600">✕ Đóng</button>
+            <button onclick="closeModal()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1 rounded-full font-black text-xs sm:text-sm cursor-pointer border border-zinc-600">✕ Đóng</button>
         </div>
 
-        <!-- LƯỚI TÚI ĐỒ 5 CỘT x 10 HÀNG (50 Ô) -->
-        <div class="flex-1 overflow-y-auto pr-1">
-            <div class="grid grid-cols-5 gap-2 sm:gap-2.5">
-                ${gridHtml}
+        <!-- BỐ CỤC 2 CỘT WIDESCREEN: TRÁI LƯỚI 50 Ô (10 CỘT X 5 HÀNG) - PHẢI THẺ CHI TIẾT VẬT PHẨM -->
+        <div class="flex-1 flex flex-col md:flex-row gap-2.5 sm:gap-3 min-h-0 overflow-hidden">
+            <!-- CỘT TRÁI: LƯỚI 10 CỘT x 5 HÀNG -->
+            <div class="flex-1 overflow-y-auto pr-1">
+                <div class="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-1 sm:gap-1.5">
+                    ${gridHtml}
+                </div>
             </div>
-        </div>
 
-        ${detailBarHtml}`;
+            <!-- CỘT PHẢI: BẢNG SOI THÔNG TIN CHI TIẾT & SỬ DỤNG VẬT PHẨM -->
+            ${detailSidePanelHtml}
+        </div>`;
     };
 
     // Giao diện chọn linh thú ngay trong Túi 5x10 để dùng Rương Tím / Hào Quang / Thức Ăn / Đồ Chơi
@@ -359,8 +377,10 @@
             </div>
             <button onclick="openHomeStorageBagModal()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer border border-zinc-600">‹ Quay Lại Túi</button>
         </div>
-        <div class="flex-1 overflow-y-auto space-y-2 pr-1">
-            ${listHtml}
+        <div class="flex-1 overflow-y-auto pr-1">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                ${listHtml}
+            </div>
         </div>`;
     }
 

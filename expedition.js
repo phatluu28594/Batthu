@@ -222,9 +222,9 @@
     function createExpeditionModalDOM() {
         const wrap = document.createElement('div');
         wrap.id = 'expedition-modal';
-        wrap.className = 'fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-4 hidden select-none';
+        wrap.className = 'fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 hidden select-none';
         wrap.innerHTML = `
-            <div id="expedition-modal-body" class="relative w-full max-w-md max-h-[92vh] max-h-[92dvh] bg-zinc-950 rounded-3xl border-2 border-emerald-500/50 shadow-2xl flex flex-col overflow-hidden text-white animate-scale-up">
+            <div id="expedition-modal-body" class="relative w-full max-w-4xl w-[94vw] max-h-[92vh] max-h-[92dvh] bg-zinc-950 rounded-3xl border-2 border-emerald-500/50 shadow-2xl flex flex-col overflow-hidden text-white animate-scale-up">
                 <!-- Nội dung render động -->
             </div>
         `;
@@ -246,7 +246,7 @@
     }
 
     // ==========================================
-    // 1. MÀN HÌNH THIẾT LẬP CHUYẾN ĐI MỚI
+    // 1. MÀN HÌNH THIẾT LẬP CHUYẾN ĐI MỚI (LANDSCAPE 2 CỘT)
     // ==========================================
     function renderSetupExpeditionScreen(container) {
         const currentZone = EXPEDITION_ZONES[selectedZoneIndex];
@@ -265,9 +265,9 @@
         const tabsHtml = EXPEDITION_ZONES.map((zone, idx) => {
             const isActive = idx === selectedZoneIndex;
             return `
-            <button onclick="setExpeditionZone(${idx})" class="flex-shrink-0 min-w-[70px] sm:flex-1 py-1.5 px-1 rounded-2xl text-[11px] font-black transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isActive ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black shadow-lg scale-[1.02]' : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-white/5'}">
+            <button onclick="setExpeditionZone(${idx})" class="flex-1 py-1.5 px-2 rounded-2xl text-[11px] font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${isActive ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black shadow-lg scale-[1.02]' : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-white/5'}">
                 <span class="text-base">${zone.icon}</span>
-                <span class="truncate max-w-full text-[10px]">${zone.name}</span>
+                <span class="truncate text-[11px] font-bold">${zone.name}</span>
             </button>
             `;
         }).join('');
@@ -277,7 +277,7 @@
             const isSelected = d.hours === selectedDurationHours;
             return `
             <button onclick="setExpeditionDuration(${d.hours})" class="flex-1 p-2 rounded-2xl border text-center transition cursor-pointer ${isSelected ? 'border-amber-400 bg-amber-500/20 text-amber-300 font-black shadow' : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 font-bold hover:bg-zinc-800'}">
-                <div class="text-xs">${d.title}</div>
+                <div class="text-xs font-black">${d.title}</div>
                 <div class="text-[9px] opacity-75 mt-0.5">${d.tag.split(' ')[0]}</div>
             </button>
             `;
@@ -293,8 +293,8 @@
                 petSlotsHtml += `
                 <div onclick="removeExpeditionPet('${pet.id}')" class="relative aspect-square rounded-2xl border-2 ${isFavored ? 'border-emerald-400 ring-2 ring-emerald-500/30' : 'border-amber-400/80'} bg-zinc-900/90 p-1 flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition shadow">
                     <span class="absolute -top-1.5 -right-1.5 bg-red-600 hover:bg-red-500 text-white w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center shadow">✕</span>
-                    <div class="w-10 h-10 flex items-center justify-center overflow-hidden mb-0.5">
-                        ${typeof getPetSpriteHtml === 'function' ? getPetSpriteHtml(pet, 'idle', 38) : '🐾'}
+                    <div class="w-12 h-12 flex items-center justify-center overflow-hidden mb-0.5">
+                        ${typeof getPetSpriteHtml === 'function' ? getPetSpriteHtml(pet, 'idle', 44) : '🐾'}
                     </div>
                     <span class="text-[10px] font-black text-yellow-300 truncate w-full text-center">${pet.name}</span>
                     <span class="text-[8px] font-extrabold ${isFavored ? 'text-emerald-400' : 'text-zinc-400'}">Lv.${Math.floor(pet.level || 1)} • ${pet.element}</span>
@@ -302,7 +302,7 @@
                 </div>`;
             } else {
                 petSlotsHtml += `
-                <div onclick="openSelectPetForExpeditionPicker()" class="aspect-square rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-950/60 hover:border-amber-400/80 hover:bg-zinc-900/80 flex flex-col items-center justify-center cursor-pointer transition text-zinc-500 hover:text-amber-300">
+                <div onclick="openSelectPetForExpeditionPicker()" class="aspect-square rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-950/60 hover:border-amber-400/80 hover:bg-zinc-900/80 flex flex-col items-center justify-center cursor-pointer transition text-zinc-500 hover:text-amber-300 min-h-[85px]">
                     <span class="text-2xl mb-0.5">+</span>
                     <span class="text-[9px] font-bold">Thêm Thú</span>
                 </div>`;
@@ -311,7 +311,7 @@
 
         // Render đặc sản rơi
         const dropsHtml = currentZone.specialDrops.map(d => `
-            <span class="inline-flex items-center gap-1 bg-black/60 border border-white/10 px-2 py-0.5 rounded-full text-[10px] text-zinc-300">
+            <span class="inline-flex items-center gap-1 bg-black/70 border border-white/10 px-2 py-0.5 rounded-full text-[10px] text-zinc-200">
                 <span>${d.icon}</span>
                 <span class="font-bold">${d.name}</span>
             </span>
@@ -319,96 +319,96 @@
 
         container.innerHTML = `
             <!-- Header -->
-            <div class="p-3.5 bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-900 border-b border-white/10 flex items-center justify-between">
+            <div class="p-3 bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-900 border-b border-white/10 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="text-2xl">🧭</span>
                     <div>
-                        <h2 class="text-sm font-black text-amber-300 uppercase tracking-wide">Thám Hiểm Phó Bản Tự Động</h2>
-                        <div class="text-[10px] text-zinc-400">Phái thú đi thám hiểm nhận Vàng, Kim Cương, Đá & Trứng kể cả khi Offline!</div>
+                        <h2 class="text-sm font-black text-amber-300 uppercase tracking-wide">Thám Hiểm Phó Bản Tự Động (Offline Dispatch)</h2>
+                        <div class="text-[10px] text-zinc-400">Phái thú khai hoang nhận Vàng, Kim Cương, Đá Ngũ Hành & Trứng kể cả khi Offline!</div>
                     </div>
                 </div>
                 <button onclick="closeExpeditionModal()" class="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-black flex items-center justify-center cursor-pointer">✕</button>
             </div>
 
-            <!-- Tab chọn Vùng Đất Ngũ Hành -->
-            <div class="px-3 pt-2.5 pb-1 flex gap-1.5 bg-zinc-950 overflow-x-auto no-scrollbar">
+            <!-- Tab chọn 5 Vùng Đất Ngũ Hành -->
+            <div class="px-3 pt-2 pb-1.5 flex gap-1.5 bg-zinc-950 border-b border-white/5">
                 ${tabsHtml}
             </div>
 
-            <!-- Khung Vùng Đất Chính với Background -->
-            <div class="p-3.5 overflow-y-auto max-h-[70vh] space-y-3 no-scrollbar">
-                <div class="relative w-full rounded-3xl overflow-hidden border border-white/15 shadow-xl bg-cover bg-center min-h-[175px] flex flex-col justify-between p-3.5"
-                    style="background-image: url('${currentZone.bg}'), ${currentZone.fallbackBg};">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20 pointer-events-none"></div>
+            <!-- BỐ CỤC 2 CỘT MÀN HÌNH NGANG -->
+            <div class="p-3.5 grid grid-cols-1 md:grid-cols-2 gap-3.5 overflow-y-auto max-h-[68vh] no-scrollbar">
+                <!-- CỘT TRÁI: HÌNH ẢNH 16:9 & ĐẶC SẢN VÙNG ĐẤT -->
+                <div class="flex flex-col gap-2.5">
+                    <div class="relative w-full rounded-3xl overflow-hidden border border-white/15 shadow-xl bg-cover bg-center min-h-[190px] flex flex-col justify-between p-3.5"
+                        style="background-image: url('${currentZone.bg}'), ${currentZone.fallbackBg};">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20 pointer-events-none"></div>
 
-                    <!-- Thông tin đầu thẻ -->
-                    <div class="relative z-10 flex items-center justify-between">
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase ${currentZone.badgeBg}">
-                            ${currentZone.subtitle}
-                        </span>
-                        <span class="bg-black/75 px-2.5 py-0.5 rounded-full text-[10px] font-black text-amber-300 border border-amber-400/30">
-                            Ưu đãi: ${currentZone.favoredLabel}
-                        </span>
-                    </div>
+                        <div class="relative z-10 flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase ${currentZone.badgeBg}">
+                                ${currentZone.subtitle}
+                            </span>
+                            <span class="bg-black/75 px-2.5 py-0.5 rounded-full text-[10px] font-black text-amber-300 border border-amber-400/30">
+                                Ưu đãi: ${currentZone.favoredLabel}
+                            </span>
+                        </div>
 
-                    <!-- Mô tả & Đặc sản -->
-                    <div class="relative z-10 space-y-1.5 mt-4">
-                        <h3 class="text-base font-black text-white drop-shadow">${currentZone.icon} ${currentZone.name}</h3>
-                        <p class="text-[11px] text-zinc-200 leading-snug drop-shadow-sm">${currentZone.lore}</p>
-                        <div class="flex flex-wrap gap-1 pt-1">
-                            ${dropsHtml}
+                        <div class="relative z-10 space-y-1 mt-6">
+                            <h3 class="text-base font-black text-white drop-shadow">${currentZone.icon} ${currentZone.name}</h3>
+                            <p class="text-[11px] text-zinc-200 leading-snug drop-shadow-sm">${currentZone.lore}</p>
+                            <div class="flex flex-wrap gap-1 pt-1.5">
+                                ${dropsHtml}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Bảng Chọn Mốc Thời Gian -->
-                <div class="bg-zinc-900/80 p-3 rounded-2xl border border-zinc-800 space-y-2">
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="font-bold text-zinc-300">⏱️ Chọn Thời Gian Thám Hiểm:</span>
-                        <span class="text-amber-300 text-[11px] font-bold">Thời gian càng dài, quà càng khủng!</span>
-                    </div>
-                    <div class="flex gap-2">
-                        ${durationsHtml}
-                    </div>
-                </div>
-
-                <!-- Bảng Chọn Linh Thú Tham Gia (1-3 con) -->
-                <div class="bg-zinc-900/80 p-3 rounded-2xl border border-zinc-800 space-y-2">
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="font-bold text-zinc-300">🐾 Đội Hình Xuất Phát (${selectedPetIds.length}/3 Linh Thú):</span>
-                        <span class="text-[10px] text-emerald-400 font-bold">${hasFavoredElement ? '⚡ Kích hoạt +35% Quà Quý' : 'Chọn đúng Hệ để nhận Buff'}</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2.5">
-                        ${petSlotsHtml}
-                    </div>
                     ${hasFavoredElement ? `
-                    <div class="bg-emerald-950/60 border border-emerald-400/50 rounded-xl px-2.5 py-1 text-[10px] text-emerald-300 flex items-center gap-1.5">
-                        <span>✨</span>
-                        <span>Đội hình có linh thú <b>${currentZone.favoredLabel}</b>! Tăng <b>+35%</b> tỷ lệ nhặt Đá Hiếm, Mảnh Thần & Trứng!</span>
+                    <div class="bg-emerald-950/70 border border-emerald-400/50 rounded-2xl p-2.5 text-[11px] text-emerald-300 flex items-center gap-2 shadow">
+                        <span class="text-lg">✨</span>
+                        <span>Đội hình có linh thú <b>${currentZone.favoredLabel}</b>! Kích hoạt <b>+35%</b> tỷ lệ nhặt Đá Hiếm, Mảnh Thần & Trứng!</span>
                     </div>` : `
-                    <div class="bg-zinc-950/60 border border-zinc-800 rounded-xl px-2.5 py-1 text-[10px] text-zinc-400">
-                        💡 Mẹo: Phái thú có Hệ Mộc/Thủy vào Rừng, Hệ Hỏa/Thổ vào Núi Lửa để nhận +35% tỷ lệ rơi quà quý!
+                    <div class="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-2.5 text-[11px] text-zinc-400">
+                        💡 Mẹo: Phái thú có Hệ trùng hoặc tương sinh với Bản Đồ để nhận <b>+35%</b> tỷ lệ rơi vật phẩm quý!
                     </div>`}
                 </div>
-            </div>
 
-            <!-- Footer nút xuất kích -->
-            <div class="p-3.5 bg-zinc-950 border-t border-white/10 flex items-center justify-between gap-3">
-                <div class="text-[11px] text-zinc-400">
-                    <span>Đã chọn: </span>
-                    <b class="text-amber-300">${selectedPetIds.length} thú</b> • 
-                    <b class="text-white">${selectedDurationHours} tiếng</b>
+                <!-- CỘT PHẢI: CHỌN THỜI GIAN, ĐỘI HÌNH & XUẤT PHÁT -->
+                <div class="flex flex-col justify-between gap-3">
+                    <div class="bg-zinc-900/80 p-3 rounded-2xl border border-zinc-800 space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-zinc-300">⏱️ Chọn Thời Gian Thám Hiểm:</span>
+                            <span class="text-amber-300 text-[10px] font-bold">Càng dài, quà càng khủng!</span>
+                        </div>
+                        <div class="flex gap-2">
+                            ${durationsHtml}
+                        </div>
+                    </div>
+
+                    <div class="bg-zinc-900/80 p-3 rounded-2xl border border-zinc-800 space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-zinc-300">🐾 Đội Hình Xuất Phát (${selectedPetIds.length}/3 Thú):</span>
+                            <span class="text-[10px] text-emerald-400 font-bold">${hasFavoredElement ? '⚡ Đã kích hoạt Buff' : 'Chọn đúng Hệ nhận +35%'}</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2.5">
+                            ${petSlotsHtml}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-3 p-3 bg-zinc-950/90 rounded-2xl border border-white/10">
+                        <div class="text-[11px] text-zinc-300">
+                            Thời gian: <b class="text-yellow-400">${selectedDurationHours} tiếng</b> • Phái: <b class="text-emerald-400">${selectedPetIds.length} thú</b>
+                        </div>
+                        <button onclick="startExpeditionDispatch()" ${selectedPetIds.length === 0 ? 'disabled' : ''}
+                            class="px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-wide transition cursor-pointer shadow-lg ${selectedPetIds.length > 0 ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:brightness-110 text-black shadow-emerald-900/40 active:scale-95' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-white/5'}">
+                            🚀 Xuất Phát Ngay
+                        </button>
+                    </div>
                 </div>
-                <button onclick="startExpeditionDispatch()" ${selectedPetIds.length === 0 ? 'disabled' : ''}
-                    class="px-5 py-2.5 rounded-2xl font-black text-xs uppercase tracking-wide transition cursor-pointer shadow-lg ${selectedPetIds.length > 0 ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:brightness-110 text-black shadow-emerald-900/40 active:scale-95' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-white/5'}">
-                    🚀 Xuất Phát Ngay
-                </button>
             </div>
         `;
     }
 
     // ==========================================
-    // 2. MÀN HÌNH CHUYẾN ĐI ĐANG DIỄN RA
+    // 2. MÀN HÌNH CHUYẾN ĐI ĐANG DIỄN RA (LANDSCAPE 2 CỘT)
     // ==========================================
     function renderActiveExpeditionScreen(container, exp) {
         const zone = EXPEDITION_ZONES.find(z => z.id === exp.zoneId) || EXPEDITION_ZONES[0];
@@ -421,8 +421,8 @@
         // Render các thú đang hành quân
         const petsHtml = (exp.pets || []).map(p => `
             <div class="flex flex-col items-center bg-black/60 backdrop-blur-md p-2 rounded-2xl border border-white/15 shadow text-center">
-                <div class="w-12 h-12 flex items-center justify-center overflow-hidden mb-1 animate-bounce" style="animation-duration: 1.8s;">
-                    ${typeof getPetSpriteHtml === 'function' ? getPetSpriteHtml(p, 'walk', 46) : '🐾'}
+                <div class="w-14 h-14 flex items-center justify-center overflow-hidden mb-1 animate-bounce" style="animation-duration: 1.8s;">
+                    ${typeof getPetSpriteHtml === 'function' ? getPetSpriteHtml(p, 'walk', 48) : '🐾'}
                 </div>
                 <span class="text-xs font-black text-yellow-300 truncate w-20">${p.name}</span>
                 <span class="text-[9px] text-zinc-300">Lv.${Math.floor(p.level || 1)} • ${p.element}</span>
@@ -431,12 +431,12 @@
 
         container.innerHTML = `
             <!-- Header -->
-            <div class="p-3.5 bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-900 border-b border-white/10 flex items-center justify-between">
+            <div class="p-3 bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-900 border-b border-white/10 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="text-2xl">${isCompleted ? '🎉' : '🧭'}</span>
                     <div>
                         <h2 class="text-sm font-black text-amber-300 uppercase tracking-wide">
-                            ${isCompleted ? 'Thám Hiểm Đã Hoàn Thành!' : 'Đang Thám Hiểm...'}
+                            ${isCompleted ? 'Thám Hiểm Đã Hoàn Thành!' : 'Đang Thám Hiểm Phó Bản...'}
                         </h2>
                         <div class="text-[10px] text-zinc-400">Vùng đất: <b class="text-white">${zone.name}</b> (${exp.durationHours} tiếng)</div>
                     </div>
@@ -444,9 +444,10 @@
                 <button onclick="closeExpeditionModal()" class="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-black flex items-center justify-center cursor-pointer">✕</button>
             </div>
 
-            <!-- Bối cảnh thực tế của vùng đất đang thám hiểm -->
-            <div class="p-3.5 space-y-3 overflow-y-auto max-h-[72vh] no-scrollbar">
-                <div class="relative w-full rounded-3xl overflow-hidden border border-white/15 shadow-2xl bg-cover bg-center min-h-[260px] flex flex-col justify-between p-4"
+            <!-- BỐ CỤC 2 CỘT MÀN HÌNH NGANG -->
+            <div class="p-3.5 grid grid-cols-1 md:grid-cols-2 gap-3.5 overflow-y-auto max-h-[70vh] no-scrollbar">
+                <!-- CỘT TRÁI: BỐI CẢNH 16:9 & THÚ ĐANG BĂNG RỪNG -->
+                <div class="relative w-full rounded-3xl overflow-hidden border border-white/15 shadow-2xl bg-cover bg-center min-h-[240px] flex flex-col justify-between p-4"
                     style="background-image: url('${zone.bg}'), ${zone.fallbackBg};">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/30 pointer-events-none"></div>
 
@@ -461,7 +462,7 @@
                     </div>
 
                     <!-- Linh thú đang đi dạo giữa bối cảnh -->
-                    <div class="relative z-10 flex items-center justify-center gap-3 my-4">
+                    <div class="relative z-10 flex items-center justify-center gap-3 my-3">
                         ${petsHtml}
                     </div>
 
@@ -477,35 +478,36 @@
                     </div>
                 </div>
 
-                <!-- Lời khuyên hoặc danh sách thu hoạch dự kiến -->
-                <div class="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1.5">
-                    <div class="font-bold text-amber-300 flex items-center gap-1.5">
-                        <span>🎁</span>
-                        <span>Dự kiến mang về từ ${zone.name}:</span>
+                <!-- CỘT PHẢI: DANH SÁCH THU HOẠCH & NÚT HÀNH ĐỘNG -->
+                <div class="flex flex-col justify-between gap-3">
+                    <div class="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3.5 text-xs space-y-2">
+                        <div class="font-black text-amber-300 flex items-center gap-1.5 text-sm">
+                            <span>🎁</span>
+                            <span>Phần thưởng dự kiến từ ${zone.name}:</span>
+                        </div>
+                        <div class="text-[11px] text-zinc-300 leading-relaxed space-y-1">
+                            <div>• Hàng ngàn Vàng 🪙, Kim Cương 💎 và Đá Tiến Hóa tương ứng.</div>
+                            <div>• Cơ hội rơi Thịt Thần, Bóng Đồ Chơi, Vé Quay hoặc Mảnh Thần Thoại.</div>
+                            <div>• Mỗi linh thú tham gia nhận được một lượng lớn điểm EXP rèn luyện!</div>
+                        </div>
                     </div>
-                    <div class="text-[11px] text-zinc-300 leading-relaxed">
-                        • Hàng ngàn Vàng 🪙, Kim Cương 💎 và Đá Tiến Hóa Ngũ Hành tương ứng.<br>
-                        • Thịt Thần, Bóng Đồ Chơi, Vé Quay hoặc Mảnh Thú Thần Thoại.<br>
-                        • Mỗi linh thú tham gia nhận được một lượng lớn điểm EXP rèn luyện!
+
+                    <div class="p-3 bg-zinc-950/90 rounded-2xl border border-white/10 flex items-center justify-between gap-3">
+                        ${isCompleted ? `
+                            <button onclick="claimExpeditionRewards()" class="w-full py-3 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:brightness-110 text-black font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-amber-900/40 cursor-pointer animate-pulse transition active:scale-95">
+                                🎁 THU HOẠCH PHẦN THƯỞNG NGAY
+                            </button>
+                        ` : `
+                            <button onclick="confirmCancelExpedition()" class="px-4 py-2.5 bg-zinc-800 hover:bg-red-950 hover:text-red-300 text-zinc-400 font-bold text-xs rounded-xl border border-white/10 cursor-pointer transition">
+                                ✕ Hủy Chuyến Đi
+                            </button>
+                            <span class="text-xs text-amber-300 font-bold flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                <span>Đang tự động thám hiểm...</span>
+                            </span>
+                        `}
                     </div>
                 </div>
-            </div>
-
-            <!-- Footer hành động -->
-            <div class="p-3.5 bg-zinc-950 border-t border-white/10 flex items-center justify-between gap-3">
-                ${isCompleted ? `
-                    <button onclick="claimExpeditionRewards()" class="w-full py-3 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:brightness-110 text-black font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-amber-900/40 cursor-pointer animate-pulse transition active:scale-95">
-                        🎁 THU HOẠCH PHẦN THƯỞNG NGAY
-                    </button>
-                ` : `
-                    <button onclick="confirmCancelExpedition()" class="px-4 py-2.5 bg-zinc-800 hover:bg-red-950 hover:text-red-300 text-zinc-400 font-bold text-xs rounded-xl border border-white/10 cursor-pointer transition">
-                        ✕ Hủy Chuyến Đi
-                    </button>
-                    <span class="text-xs text-amber-300 font-bold flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                        <span>Đang thám hiểm...</span>
-                    </span>
-                `}
             </div>
         `;
     }

@@ -231,34 +231,34 @@ ${notes.join('\n')}`);
 
             content.innerHTML = `
             ${tabHeader}
-            <div class="flex gap-2 min-h-[46vh] max-h-[55vh]">
+            <div class="flex gap-2.5 min-h-[46vh] max-h-[58vh]">
                 <!-- CỘT BÊN TRÁI: DANH MỤC HÀNG HÓA -->
-                <div class="w-24 shrink-0 flex flex-col gap-1.5 bg-zinc-950/80 p-1 rounded-xl border border-zinc-800">
-                    <button onclick="setMarketCategory('all')" class="text-left px-2 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${activeMarketCategory === 'all' ? 'bg-amber-500 text-black shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}">
+                <div class="w-28 sm:w-32 shrink-0 flex flex-col gap-1.5 bg-zinc-950/80 p-1.5 rounded-xl border border-zinc-800">
+                    <button onclick="setMarketCategory('all')" class="text-left px-2.5 py-2 rounded-lg text-xs font-bold cursor-pointer transition ${activeMarketCategory === 'all' ? 'bg-amber-500 text-black shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}">
                         <div>🌟 Tất Cả</div>
                         <div class="text-[9px] opacity-75">(${totalCount})</div>
                     </button>
-                    <button onclick="setMarketCategory('egg')" class="text-left px-2 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${activeMarketCategory === 'egg' ? 'bg-emerald-600 text-white shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}">
+                    <button onclick="setMarketCategory('egg')" class="text-left px-2.5 py-2 rounded-lg text-xs font-bold cursor-pointer transition ${activeMarketCategory === 'egg' ? 'bg-emerald-600 text-white shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}">
                         <div>🥚 Trứng</div>
                         <div class="text-[9px] opacity-75">(${eggCount})</div>
                     </button>
-                    <button onclick="setMarketCategory('pet')" class="text-left px-2 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${activeMarketCategory === 'pet' ? 'bg-purple-600 text-white shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}">
+                    <button onclick="setMarketCategory('pet')" class="text-left px-2.5 py-2 rounded-lg text-xs font-bold cursor-pointer transition ${activeMarketCategory === 'pet' ? 'bg-purple-600 text-white shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}">
                         <div>🐾 Thú F1</div>
                         <div class="text-[9px] opacity-75">(${petCount})</div>
                     </button>
-                    <button onclick="setMarketCategory('stone')" class="text-left px-2 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${activeMarketCategory === 'stone' ? 'bg-cyan-600 text-white shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}">
+                    <button onclick="setMarketCategory('stone')" class="text-left px-2.5 py-2 rounded-lg text-xs font-bold cursor-pointer transition ${activeMarketCategory === 'stone' ? 'bg-cyan-600 text-white shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}">
                         <div>💎 Đá Quý</div>
                         <div class="text-[9px] opacity-75">(${stoneCount})</div>
                     </button>
                 </div>
 
-                <!-- CỘT BÊN PHẢI: MẶT HÀNG ĐANG BÁN & THANH LỌC/SẮP XẾP -->
+                <!-- CỘT BÊN PHẢI: MẶT HÀNG ĐANG BÁN LƯỚI 2 CỘT WIDESCREEN & THANH LỌC/SẮP XẾP -->
                 <div class="grow flex flex-col min-w-0">
                     <!-- Thanh công cụ Lọc Phẩm Cấp & Sắp Xếp Giá -->
-                    <div class="flex items-center justify-between gap-1.5 mb-2 pb-1.5 border-b border-zinc-800">
+                    <div class="flex items-center justify-between gap-1.5 mb-2 pb-1.5 border-b border-zinc-800 shrink-0">
                         <div class="flex items-center gap-1 min-w-0">
                             <span class="text-[10px] text-zinc-400 font-bold shrink-0">Phẩm:</span>
-                            <select onchange="setMarketRarityFilter(this.value)" class="bg-zinc-900 border border-zinc-700 text-[10px] text-amber-300 font-bold rounded-lg px-1.5 py-1 focus:outline-none cursor-pointer max-w-[105px] truncate">
+                            <select onchange="setMarketRarityFilter(this.value)" class="bg-zinc-900 border border-zinc-700 text-[10px] text-amber-300 font-bold rounded-lg px-1.5 py-1 focus:outline-none cursor-pointer max-w-[110px] truncate">
                                 <option value="all" ${activeRarityFilter === 'all' ? 'selected' : ''}>🌟 Tất cả</option>
                                 <option value="Thường" ${activeRarityFilter === 'Thường' ? 'selected' : ''}>⚪ Trắng</option>
                                 <option value="Hiếm" ${activeRarityFilter === 'Hiếm' ? 'selected' : ''}>🟢 Xanh</option>
@@ -277,7 +277,8 @@ ${notes.join('\n')}`);
                         </div>
                     </div>
 
-                    <div class="space-y-2 overflow-y-auto max-h-[48vh] pr-1 no-scrollbar">
+                    <!-- LƯỚI 2 CỘT MẶT HÀNG TRÊN WIDESCREEN LANDSCAPE -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 overflow-y-auto max-h-[50vh] pr-1 no-scrollbar">
                         ${rowsHtml}
                     </div>
                 </div>
@@ -573,9 +574,9 @@ Bạn đã mua [${data.listing.item_name}] từ [${data.listing.seller}]!`);
             : '🐾';
 
         modal.innerHTML = `
-            <div class="relative w-full max-w-sm bg-gradient-to-b from-zinc-900 to-black rounded-3xl border-2 border-cyan-400 shadow-2xl p-4 flex flex-col gap-3 animate-scale-up">
+            <div class="relative w-full max-w-2xl bg-gradient-to-b from-zinc-900 to-black rounded-3xl border-2 border-cyan-400 shadow-2xl p-4 flex flex-col gap-3 animate-scale-up">
                 <!-- Header -->
-                <div class="flex justify-between items-center pb-2 border-b border-white/10">
+                <div class="flex justify-between items-center pb-2 border-b border-white/10 shrink-0">
                     <div>
                         <div class="text-[10px] text-zinc-400 uppercase tracking-wider">Hồ Sơ Linh Thú Chợ P2P</div>
                         <h3 class="text-sm font-black text-amber-300">${p.name}</h3>
@@ -583,76 +584,83 @@ Bạn đã mua [${data.listing.item_name}] từ [${data.listing.seller}]!`);
                     <button onclick="document.getElementById('p2p-pet-inspect-modal').classList.add('hidden')" class="w-7 h-7 rounded-full bg-zinc-800 text-zinc-300 hover:text-white font-black flex items-center justify-center cursor-pointer">✕</button>
                 </div>
 
-                <!-- Pet Avatar & Basic Info -->
-                <div class="flex items-center gap-3 bg-zinc-950/80 p-3 rounded-2xl border border-white/10">
-                    <div class="w-16 h-16 rounded-2xl bg-zinc-900/90 border border-white/10 flex items-center justify-center shrink-0">
-                        ${spriteHtml}
-                    </div>
-                    <div class="min-w-0 space-y-1">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-xs font-black text-yellow-300">${p.name}</span>
-                            <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-white/10">${rarityBadge}</span>
+                <!-- 2 CỘT WIDESCREEN LANDSCAPE -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 min-h-0">
+                    <!-- CỘT TRÁI: AVATAR & THÔNG TIN CƠ BẢN & NIÊM YẾT -->
+                    <div class="flex flex-col gap-2.5">
+                        <div class="flex items-center gap-3 bg-zinc-950/80 p-3 rounded-2xl border border-white/10">
+                            <div class="w-16 h-16 rounded-2xl bg-zinc-900/90 border border-white/10 flex items-center justify-center shrink-0">
+                                ${spriteHtml}
+                            </div>
+                            <div class="min-w-0 space-y-1">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-xs font-black text-yellow-300">${p.name}</span>
+                                    <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-white/10">${rarityBadge}</span>
+                                </div>
+                                <div class="text-xs text-zinc-300">
+                                    Cấp độ: <b class="text-cyan-300">Lv.${Math.floor(p.level || 1)}</b> • Giới tính: <b>${p.gender || 'Đực'}</b>
+                                </div>
+                                <div class="text-xs text-zinc-300">
+                                    Hệ nguyên tố: <b class="text-amber-300">${elementIcon}</b>
+                                </div>
+                            </div>
                         </div>
-                        <div class="text-xs text-zinc-300">
-                            Cấp độ: <b class="text-cyan-300">Lv.${Math.floor(p.level || 1)}</b> • Giới tính: <b>${p.gender || 'Đực'}</b>
+
+                        <!-- Thông tin người bán, giá niêm yết & thời gian -->
+                        <div class="bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800 space-y-1 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-zinc-400">Người bán:</span>
+                                <b class="text-sky-300">${item.seller}</b>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-zinc-400">Giá niêm yết:</span>
+                                <b class="text-yellow-300 text-sm">${Number(item.price).toLocaleString()} ${curIcon}</b>
+                            </div>
+                            <div class="flex justify-between pt-1 border-t border-white/5 text-[10px]">
+                                <span class="text-zinc-400">Thời hạn:</span>
+                                <span class="${isExpired ? 'text-rose-400 font-black' : 'text-amber-300 font-bold'}">${timeStr}</span>
+                            </div>
                         </div>
-                        <div class="text-xs text-zinc-300">
-                            Hệ nguyên tố: <b class="text-amber-300">${elementIcon}</b>
+                    </div>
+
+                    <!-- CỘT PHẢI: CHỈ SỐ CHI TIẾT & NÚT HÀNH ĐỘNG -->
+                    <div class="flex flex-col justify-between gap-2.5">
+                        <div class="grid grid-cols-2 gap-2 bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800 text-xs">
+                            <div class="flex justify-between p-1.5 bg-zinc-900/60 rounded-xl">
+                                <span class="text-zinc-400">⚔️ Công kích:</span>
+                                <b class="text-rose-400">${Math.floor(p.atk || 0)}</b>
+                            </div>
+                            <div class="flex justify-between p-1.5 bg-zinc-900/60 rounded-xl">
+                                <span class="text-zinc-400">🛡️ Phòng thủ:</span>
+                                <b class="text-sky-400">${Math.floor(p.def || 0)}</b>
+                            </div>
+                            <div class="flex justify-between p-1.5 bg-zinc-900/60 rounded-xl">
+                                <span class="text-zinc-400">❤️ Sinh lực:</span>
+                                <b class="text-emerald-400">${Math.floor(p.hp || p.maxHp || 0)} / ${Math.floor(p.maxHp || 100)}</b>
+                            </div>
+                            <div class="flex justify-between p-1.5 bg-zinc-900/60 rounded-xl">
+                                <span class="text-zinc-400">⚡ Tốc độ:</span>
+                                <b class="text-yellow-400">${Math.floor(p.spd || p.speed || 10)}</b>
+                            </div>
+                            <div class="flex justify-between p-1.5 bg-zinc-900/60 rounded-xl col-span-2">
+                                <span class="text-zinc-400">💖 Thân thiết:</span>
+                                <b class="text-pink-400">${p.hearts || 3} / 5 Trái Tim</b>
+                            </div>
+                        </div>
+
+                        <!-- Footer nút hành động -->
+                        <div class="flex gap-2">
+                            <button onclick="document.getElementById('p2p-pet-inspect-modal').classList.add('hidden')" class="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-bold text-xs cursor-pointer">
+                                Đóng
+                            </button>
+                            ${isMine
+                                ? `<button onclick="document.getElementById('p2p-pet-inspect-modal').classList.add('hidden'); cancelP2pListing(${item.id});" class="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-black text-xs cursor-pointer shadow">Thu Hồi</button>`
+                                : (isExpired
+                                    ? `<button disabled class="flex-1 py-2 bg-zinc-800 text-zinc-500 rounded-xl font-black text-xs cursor-not-allowed">Đã Hết Hạn</button>`
+                                    : `<button onclick="document.getElementById('p2p-pet-inspect-modal').classList.add('hidden'); buyP2pListing(${item.id});" class="flex-1 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 text-black font-black text-xs rounded-xl cursor-pointer shadow">Mua Ngay</button>`)
+                            }
                         </div>
                     </div>
-                </div>
-
-                <!-- Chỉ số chi tiết (ATK, DEF, HP, SPD, Thân thiết) -->
-                <div class="grid grid-cols-2 gap-2 bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800 text-xs">
-                    <div class="flex justify-between p-1.5 bg-zinc-900/60 rounded-xl">
-                        <span class="text-zinc-400">⚔️ Công kích:</span>
-                        <b class="text-rose-400">${Math.floor(p.atk || 0)}</b>
-                    </div>
-                    <div class="flex justify-between p-1.5 bg-zinc-900/60 rounded-xl">
-                        <span class="text-zinc-400">🛡️ Phòng thủ:</span>
-                        <b class="text-sky-400">${Math.floor(p.def || 0)}</b>
-                    </div>
-                    <div class="flex justify-between p-1.5 bg-zinc-900/60 rounded-xl">
-                        <span class="text-zinc-400">❤️ Sinh lực:</span>
-                        <b class="text-emerald-400">${Math.floor(p.hp || p.maxHp || 0)} / ${Math.floor(p.maxHp || 100)}</b>
-                    </div>
-                    <div class="flex justify-between p-1.5 bg-zinc-900/60 rounded-xl">
-                        <span class="text-zinc-400">⚡ Tốc độ:</span>
-                        <b class="text-yellow-400">${Math.floor(p.spd || p.speed || 10)}</b>
-                    </div>
-                    <div class="flex justify-between p-1.5 bg-zinc-900/60 rounded-xl col-span-2">
-                        <span class="text-zinc-400">💖 Độ thân thiết:</span>
-                        <b class="text-pink-400">${p.hearts || 3} / 5 Trái Tim</b>
-                    </div>
-                </div>
-
-                <!-- Thông tin người bán, giá niêm yết & thời gian -->
-                <div class="bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800 space-y-1 text-xs">
-                    <div class="flex justify-between">
-                        <span class="text-zinc-400">Người bán:</span>
-                        <b class="text-sky-300">${item.seller}</b>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-zinc-400">Giá niêm yết:</span>
-                        <b class="text-yellow-300 text-sm">${Number(item.price).toLocaleString()} ${curIcon}</b>
-                    </div>
-                    <div class="flex justify-between pt-1 border-t border-white/5 text-[10px]">
-                        <span class="text-zinc-400">Thời hạn:</span>
-                        <span class="${isExpired ? 'text-rose-400 font-black' : 'text-amber-300 font-bold'}">${timeStr}</span>
-                    </div>
-                </div>
-
-                <!-- Footer nút hành động -->
-                <div class="flex gap-2">
-                    <button onclick="document.getElementById('p2p-pet-inspect-modal').classList.add('hidden')" class="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-bold text-xs cursor-pointer">
-                        Đóng
-                    </button>
-                    ${isMine
-                        ? `<button onclick="document.getElementById('p2p-pet-inspect-modal').classList.add('hidden'); cancelP2pListing(${item.id});" class="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-black text-xs cursor-pointer shadow">Thu Hồi</button>`
-                        : (isExpired
-                            ? `<button disabled class="flex-1 py-2 bg-zinc-800 text-zinc-500 rounded-xl font-black text-xs cursor-not-allowed">Đã Hết Hạn</button>`
-                            : `<button onclick="document.getElementById('p2p-pet-inspect-modal').classList.add('hidden'); buyP2pListing(${item.id});" class="flex-1 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 text-black font-black text-xs rounded-xl cursor-pointer shadow">Mua Ngay</button>`)
-                    }
                 </div>
             </div>
         `;

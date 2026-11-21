@@ -64,49 +64,69 @@
     function createLuckyWheelModalDOM() {
         const wrap = document.createElement('div');
         wrap.id = 'lucky-wheel-modal';
-        wrap.className = 'fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 hidden';
+        wrap.className = 'fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 hidden select-none';
         wrap.innerHTML = `
-            <div class="relative w-full max-w-sm bg-gradient-to-b from-zinc-900 to-black rounded-3xl border border-amber-500/50 shadow-2xl flex flex-col items-center p-4 text-white animate-scale-up">
+            <div class="relative w-full max-w-2xl w-[94vw] max-h-[92vh] bg-gradient-to-b from-zinc-900 to-black rounded-3xl border border-amber-500/50 shadow-2xl flex flex-col p-3.5 sm:p-4 text-white animate-scale-up overflow-hidden">
                 <!-- Nút Đóng -->
-                <button onclick="closeLuckyWheelModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-black flex items-center justify-center cursor-pointer transition">✕</button>
+                <button onclick="closeLuckyWheelModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-black flex items-center justify-center cursor-pointer transition z-30">✕</button>
 
                 <!-- Header -->
-                <div class="text-center mb-2">
-                    <h2 class="text-base font-black text-amber-300 uppercase tracking-wider flex items-center justify-center gap-1.5">
-                        🎡 Vòng Quay May Mắn
-                    </h2>
-                    <p class="text-[11px] text-zinc-300">Cơ hội trúng Hào Quang, Trứng Thần & Rương Tím!</p>
-                </div>
-
-                <!-- Thông tin tài nguyên -->
-                <div class="flex items-center justify-between w-full mb-3 text-xs bg-zinc-950/80 px-3 py-1.5 rounded-full border border-white/10">
-                    <span class="text-amber-400 font-black">🪙 <span id="gacha-coin-count">0</span></span>
-                    <span class="text-cyan-300 font-black">💎 <span id="gacha-diamond-count">0</span></span>
-                    <span class="text-emerald-400 font-black">🎟️ <span id="gacha-ticket-count">0</span></span>
-                    <span id="gacha-free-status" class="text-amber-300 font-bold">Free: 1/1</span>
-                </div>
-
-                <!-- Bánh Xe Vòng Quay -->
-                <div class="relative w-64 h-64 my-1 flex items-center justify-center">
-                    <!-- Kim Chỉ Vòng Quay (ở đỉnh trên cùng) -->
-                    <div class="absolute -top-3 z-20 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[20px] border-t-amber-400 filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></div>
-
-                    <!-- Canvas Vẽ Bánh Xe -->
-                    <canvas id="wheel-canvas" width="256" height="256" class="rounded-full shadow-2xl border-4 border-amber-500/80"></canvas>
-
-                    <!-- Nút Trục Tâm Bánh Xe -->
-                    <div onclick="startLuckySpin()" class="absolute z-10 w-12 h-12 rounded-full bg-gradient-to-b from-amber-400 to-yellow-600 border-2 border-white shadow-xl flex items-center justify-center font-black text-black text-[11px] cursor-pointer hover:scale-105 active:scale-95 transition">
-                        QUAY
+                <div class="flex items-center gap-2 mb-2.5 pb-2 border-b border-amber-500/30">
+                    <span class="text-2xl">🎡</span>
+                    <div>
+                        <h2 class="text-sm font-black text-amber-300 uppercase tracking-wider">Vòng Quay May Mắn</h2>
+                        <p class="text-[10px] text-zinc-400">Quay thưởng hàng ngày trúng Hào Quang Ngũ Sắc, Trứng Thần & Rương Tím!</p>
                     </div>
                 </div>
 
-                <!-- Nút Bấm Quay Phía Dưới -->
-                <div class="w-full mt-3 flex flex-col gap-2">
-                    <button id="btn-spin-main" onclick="startLuckySpin()" class="w-full py-2.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:brightness-110 text-black font-black text-xs uppercase rounded-2xl shadow-lg shadow-amber-900/30 cursor-pointer transition">
-                        Quay Miễn Phí (1/1)
-                    </button>
-                    <div class="text-center text-[10px] text-zinc-400">
-                        * Bắt thú ngoài map (tỷ lệ 30%) hoặc leo Tháp Vô Tận để nhận thêm vé quay!
+                <!-- BỐ CỤC 2 CỘT MÀN HÌNH NGANG -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 items-center overflow-y-auto max-h-[70vh] no-scrollbar">
+                    <!-- CỘT TRÁI: BÁNH XE VÒNG QUAY -->
+                    <div class="flex justify-center items-center py-1">
+                        <div class="relative w-60 h-60 flex items-center justify-center">
+                            <!-- Kim Chỉ Vòng Quay (ở đỉnh trên cùng) -->
+                            <div class="absolute -top-3 z-20 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[20px] border-t-amber-400 filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></div>
+
+                            <!-- Canvas Vẽ Bánh Xe -->
+                            <canvas id="wheel-canvas" width="240" height="240" class="rounded-full shadow-2xl border-4 border-amber-500/80"></canvas>
+
+                            <!-- Nút Trục Tâm Bánh Xe -->
+                            <div onclick="startLuckySpin()" class="absolute z-10 w-12 h-12 rounded-full bg-gradient-to-b from-amber-400 to-yellow-600 border-2 border-white shadow-xl flex items-center justify-center font-black text-black text-[11px] cursor-pointer hover:scale-105 active:scale-95 transition">
+                                QUAY
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CỘT PHẢI: TÀI NGUYÊN, DANH SÁCH GIẢI & NÚT QUAY -->
+                    <div class="flex flex-col justify-between gap-2.5">
+                        <div class="flex items-center justify-between text-xs bg-zinc-950/80 px-3 py-1.5 rounded-xl border border-white/10">
+                            <span class="text-amber-400 font-black">🪙 <span id="gacha-coin-count">0</span></span>
+                            <span class="text-cyan-300 font-black">💎 <span id="gacha-diamond-count">0</span></span>
+                            <span class="text-emerald-400 font-black">🎟️ <span id="gacha-ticket-count">0</span></span>
+                            <span id="gacha-free-status" class="text-amber-300 font-bold">Free: 1/1</span>
+                        </div>
+
+                        <!-- 8 Ô Thưởng Xem Trước -->
+                        <div class="grid grid-cols-2 gap-1.5 text-[10px] bg-zinc-950/60 p-2 rounded-2xl border border-zinc-800">
+                            <div class="flex items-center gap-1.5 text-sky-300"><span>💎</span><span>150 Kim Cương</span></div>
+                            <div class="flex items-center gap-1.5 text-yellow-400"><span>🪙</span><span>3.000 Vàng</span></div>
+                            <div class="flex items-center gap-1.5 text-purple-300"><span>🌈</span><span>Hào Quang Ngũ Sắc</span></div>
+                            <div class="flex items-center gap-1.5 text-pink-300"><span>🧩</span><span>5x Mảnh Thần</span></div>
+                            <div class="flex items-center gap-1.5 text-emerald-300"><span>🎟️</span><span>3x Vé Quay</span></div>
+                            <div class="flex items-center gap-1.5 text-indigo-300"><span>🛡️</span><span>1x Rương Tím</span></div>
+                            <div class="flex items-center gap-1.5 text-orange-300"><span>🥚</span><span>1x Trứng Thần</span></div>
+                            <div class="flex items-center gap-1.5 text-teal-300"><span>🍖</span><span>10x Thịt Thần</span></div>
+                        </div>
+
+                        <!-- Nút Bấm Quay -->
+                        <div class="space-y-1.5">
+                            <button id="btn-spin-main" onclick="startLuckySpin()" class="w-full py-2.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:brightness-110 text-black font-black text-xs uppercase rounded-2xl shadow-lg shadow-amber-900/30 cursor-pointer transition">
+                                Quay Miễn Phí (1/1)
+                            </button>
+                            <div class="text-center text-[10px] text-zinc-400">
+                                * Bắt thú bản đồ hoặc leo Tháp Vô Tận để nhận thêm vé quay!
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -85,6 +85,13 @@
                 tg.ready();
                 tg.expand();
 
+                if (tg.requestFullscreen) {
+                    try { tg.requestFullscreen(); } catch (e) {}
+                }
+                if (tg.lockOrientation) {
+                    try { tg.lockOrientation(); } catch (e) {}
+                }
+
                 if (tg.setHeaderColor) tg.setHeaderColor('#09090b');
                 if (tg.setBackgroundColor) tg.setBackgroundColor('#09090b');
                 if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();

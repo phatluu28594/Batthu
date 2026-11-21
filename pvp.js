@@ -119,7 +119,7 @@
         }).join('') || `<div class="text-center text-zinc-400 text-xs py-4">Chưa có dữ liệu xếp hạng tuần này. Hãy là người đầu tiên ghi danh!</div>`;
 
         content.innerHTML = `
-            <div class="flex justify-between items-center mb-3 pb-2 border-b border-amber-500/40">
+            <div class="flex justify-between items-center mb-2.5 pb-2 border-b border-amber-500/40 shrink-0">
                 <div>
                     <h3 class="font-black text-base text-amber-300">⚔️ ĐẤU TRƯỜNG DANH VỌNG 1VS1</h3>
                     <div class="text-[10px] text-zinc-400">Mùa giải tuần: <span class="text-sky-300 font-bold">${rankData.weekKey}</span> (Reset Thứ 2)</div>
@@ -127,36 +127,46 @@
                 <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
             </div>
 
-            <div class="grid grid-cols-3 gap-1.5 bg-zinc-900/90 border border-amber-500/30 rounded-xl p-2.5 mb-3 text-center">
-                <div>
-                    <div class="text-[10px] text-zinc-400">Điểm Danh Vọng</div>
-                    <div class="font-black text-sm text-yellow-300">🏆 ${rankData.myRank.points}</div>
-                </div>
-                <div>
-                    <div class="text-[10px] text-zinc-400">Thắng / Thua</div>
-                    <div class="font-black text-sm text-emerald-400">${rankData.myRank.wins} <span class="text-zinc-500">/</span> <span class="text-rose-400">${rankData.myRank.losses}</span></div>
-                </div>
-                <div>
-                    <div class="text-[10px] text-zinc-400">Thể thức</div>
-                    <div class="font-black text-xs text-sky-300 mt-0.5">1vs1 Auto</div>
-                </div>
-            </div>
+            <!-- BỐ CỤC 2 CỘT WIDESCREEN LANDSCAPE -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 min-h-0">
+                <!-- CỘT TRÁI: ĐIỂM SỐ, CHỌN THÚ & NÚT CHIẾN ĐẤU -->
+                <div class="flex flex-col gap-2.5">
+                    <div class="grid grid-cols-3 gap-1.5 bg-zinc-900/90 border border-amber-500/30 rounded-xl p-2.5 text-center">
+                        <div>
+                            <div class="text-[10px] text-zinc-400">Điểm Danh Vọng</div>
+                            <div class="font-black text-sm text-yellow-300">🏆 ${rankData.myRank.points}</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-zinc-400">Thắng / Thua</div>
+                            <div class="font-black text-sm text-emerald-400">${rankData.myRank.wins} <span class="text-zinc-500">/</span> <span class="text-rose-400">${rankData.myRank.losses}</span></div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-zinc-400">Thể thức</div>
+                            <div class="font-black text-xs text-sky-300 mt-0.5">1vs1 Auto</div>
+                        </div>
+                    </div>
 
-            <div class="bg-zinc-800/90 border border-emerald-500/40 rounded-xl p-3 mb-3 space-y-2">
-                <div class="text-xs font-extrabold text-emerald-300">🐾 Chọn 1 Linh Thú Chủ Lực Xuất Chiến:</div>
-                ${owned.length > 0
-                    ? `<select id="pvp-rank-pet-select" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-2 text-xs text-white">${petOptions}</select>
-                       <button onclick="startRankedPvp1v1()" class="w-full bg-gradient-to-r from-amber-500 to-red-600 hover:brightness-110 py-2.5 rounded-xl font-black text-xs text-white shadow-lg cursor-pointer">
-                           🔥 TÌM ĐỐI THỦ & ĐẤU NGAY (+25 / -15 ĐV)
-                       </button>`
-                    : `<div class="text-xs text-rose-400 font-bold">Bạn chưa có linh thú nào để xuất chiến!</div>`
-                }
-                <div class="text-[10px] text-zinc-400 text-center">🛡️ Chế độ Danh Vọng an toàn: Thua chỉ trừ điểm xếp hạng, KHÔNG mất thú.</div>
-            </div>
+                    <div class="bg-zinc-800/90 border border-emerald-500/40 rounded-xl p-3 space-y-2">
+                        <div class="text-xs font-extrabold text-emerald-300">🐾 Chọn 1 Linh Thú Chủ Lực Xuất Chiến:</div>
+                        ${owned.length > 0
+                            ? `<select id="pvp-rank-pet-select" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-2 text-xs text-white">${petOptions}</select>
+                               <button onclick="startRankedPvp1v1()" class="w-full bg-gradient-to-r from-amber-500 to-red-600 hover:brightness-110 py-2.5 rounded-xl font-black text-xs text-white shadow-lg cursor-pointer">
+                                   🔥 TÌM ĐỐI THỦ & ĐẤU NGAY (+25 / -15 ĐV)
+                               </button>`
+                            : `<div class="text-xs text-rose-400 font-bold">Bạn chưa có linh thú nào để xuất chiến!</div>`
+                        }
+                        <div class="text-[10px] text-zinc-400 text-center">🛡️ Chế độ Danh Vọng an toàn: Thua chỉ trừ điểm xếp hạng, KHÔNG mất thú.</div>
+                    </div>
+                </div>
 
-            <div>
-                <div class="font-extrabold text-xs text-yellow-300 mb-1.5">🏆 BẢNG XẾP HẠNG DANH VỌNG TUẦN (TOP 20)</div>
-                <div class="space-y-1.5 max-h-[34vh] overflow-y-auto pr-1">${lbRows}</div>
+                <!-- CỘT PHẢI: BẢNG XẾP HẠNG TOP 20 -->
+                <div class="flex flex-col bg-zinc-950/70 p-2.5 rounded-2xl border border-zinc-800">
+                    <div class="font-extrabold text-xs text-yellow-300 mb-1.5 shrink-0 flex items-center justify-between">
+                        <span>🏆 BẢNG XẾP HẠNG DANH VỌNG TUẦN (TOP 20)</span>
+                        <span class="text-[10px] text-zinc-400 font-normal">Cập nhật实时</span>
+                    </div>
+                    <div class="space-y-1.5 max-h-[46vh] overflow-y-auto pr-1 no-scrollbar">${lbRows}</div>
+                </div>
             </div>
         `;
     };
@@ -221,6 +231,8 @@
         if (!modal || !content) return;
         modal.classList.remove('hidden');
 
+        window._currentDeathmatchTarget = targetUsername;
+
         const petOptions = owned.map((item, i) => {
             const p = item.pet;
             const traitLabel = p.trait ? ` • ${p.trait.icon}` : '';
@@ -228,31 +240,40 @@
         }).join('');
 
         content.innerHTML = `
-            <div class="flex justify-between items-center mb-3 pb-2 border-b border-red-500/50">
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-red-500/50 shrink-0">
                 <h3 class="font-black text-base text-red-400">☠️ KHIÊU CHIẾN SINH TỬ 1VS1</h3>
                 <button onclick="closeModal()" class="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full font-bold text-sm cursor-pointer border border-zinc-600">✕</button>
             </div>
 
-            <div class="bg-red-950/60 border border-red-500/70 rounded-xl p-3 mb-3 text-xs text-red-200 space-y-1">
-                <div class="font-black text-red-400 text-sm">⚠️ CẢNH BÁO LUẬT SINH TỬ:</div>
-                <div>• Đối thủ: <span class="font-black text-yellow-300">${targetUsername}</span></div>
-                <div>• Trận đấu diễn ra <b>Tự Động (Auto)</b> trên Đấu Trường theo chỉ số & đặc kỹ.</div>
-                <div>• <b>BÊN THUA SẼ MẤT VĨNH VIỄN LINH THÚ XUẤT CHIẾN!</b></div>
-            </div>
-
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="font-extrabold text-amber-300 block mb-1">🐾 Chọn Linh Thú Cược Mạng Xuất Chiến:</label>
-                    <select id="duel-pet-select" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-2 text-white">${petOptions}</select>
+            <!-- BỐ CỤC 2 CỘT WIDESCREEN LANDSCAPE -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 min-h-0">
+                <div class="bg-red-950/60 border border-red-500/70 rounded-xl p-3 text-xs text-red-200 space-y-1.5 flex flex-col justify-between">
+                    <div>
+                        <div class="font-black text-red-400 text-sm">⚠️ CẢNH BÁO LUẬT SINH TỬ:</div>
+                        <div class="mt-1">• Đối thủ: <span class="font-black text-yellow-300">${targetUsername}</span></div>
+                        <div>• Trận đấu diễn ra <b>Tự Động (Auto)</b> trên Đấu Trường.</div>
+                        <div class="text-rose-300 font-extrabold">• BÊN THUA SẼ MẤT VĨNH VIỄN LINH THÚ XUẤT CHIẾN!</div>
+                    </div>
+                    <div class="text-[10px] text-zinc-400 bg-black/40 p-2 rounded-lg border border-red-900/50">
+                        🛡️ Hãy cân nhắc kỹ trước khi bấm gửi chiến thư!
+                    </div>
                 </div>
-                <button onclick="sendDeathmatchChallenge('${targetUsername.replace(/'/g, "\\'")}')" class="w-full bg-gradient-to-r from-red-600 to-rose-700 hover:brightness-110 py-2.5 rounded-xl font-black text-white shadow-lg cursor-pointer">
-                    ⚔️ GỬI LỜI KHIÊU CHIẾN SINH TỬ
-                </button>
+
+                <div class="space-y-3 text-xs flex flex-col justify-between">
+                    <div>
+                        <label class="font-extrabold text-amber-300 block mb-1">🐾 Chọn Linh Thú Cược Mạng Xuất Chiến:</label>
+                        <select id="duel-pet-select" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-2 text-white">${petOptions}</select>
+                    </div>
+                    <button onclick="sendDeathmatchChallenge()" class="w-full bg-gradient-to-r from-red-600 to-rose-700 hover:brightness-110 py-2.5 rounded-xl font-black text-white shadow-lg cursor-pointer">
+                        ⚔️ GỬI LỜI KHIÊU CHIẾN SINH TỬ
+                    </button>
+                </div>
             </div>
         `;
     };
 
-    window.sendDeathmatchChallenge = async function (targetUsername) {
+    window.sendDeathmatchChallenge = async function (targetParam) {
+        const targetUsername = targetParam || window._currentDeathmatchTarget;
         const me = getMyUser();
         const owned = getAllOwnedPets();
         const idx = parseInt(document.getElementById('duel-pet-select')?.value || '0', 10);

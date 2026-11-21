@@ -1,5 +1,5 @@
-// Service Worker cơ bản cho AR Monster
-const CACHE_NAME = 'ar-monster-v3.8';
+// Service Worker cơ bản cho AR Monster (Widescreen Landscape)
+const CACHE_NAME = 'ar-monster-v4.0-landscape';
 const urlsToCache = [
     './index.html',
     './manifest.json',
